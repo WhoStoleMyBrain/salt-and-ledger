@@ -13,7 +13,7 @@ site/
 .vs/
 .idea/
 
-# Unity-generated folders (when a Unity project is added)
+# Unity-generated folders
 **/[Ll]ibrary/
 **/[Tt]emp/
 **/[Ll]ogs/
@@ -21,6 +21,20 @@ site/
 **/[Uu]ser[Ss]ettings/
 **/[Bb]uild/
 **/[Bb]uilds/
+
+# Unity IDE projects and generated simulation/content assets
+/unity/*.csproj
+/unity/*.sln
+/unity/*.slnx
+/unity/.vscode/
+/unity/.vs/
+/unity/.idea/
+/unity/Assets/Generated/
+/unity/Assets/Generated.meta
+/unity/.simulation-staging.json
+/unity/MemoryCaptures/
+/unity/Recordings/
+
 
 # OS files
 .DS_Store
