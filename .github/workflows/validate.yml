@@ -1,0 +1,44 @@
+name: Validate foundation
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  headless:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install documentation dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Validate canonical definitions
+        run: python tools/validate_data.py
+      - name: Test data and documentation pipeline
+        run: python -m unittest discover -s tests/python -v
+      - name: Check generated reference freshness
+        run: python tools/generate_docs.py --check
+      - name: Build documentation strictly
+        run: python -m mkdocs build --strict
+      - name: Restore standalone projects
+        run: dotnet restore SaltAndLedger.sln
+      - name: Compile standalone foundation
+        run: dotnet build SaltAndLedger.sln --configuration Release --no-restore
+      - name: Test simulation
+        run: dotnet test SaltAndLedger.sln --configuration Release --no-build
+      - name: Run data-to-simulation demonstration
+        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json
