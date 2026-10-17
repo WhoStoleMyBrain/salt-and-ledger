@@ -1,0 +1,17 @@
+{
+    "name": "SaltAndLedger.UnityHost.PlayModeTests",
+    "rootNamespace": "SaltAndLedger.UnityHost.Tests",
+    "references": [
+        "SaltAndLedger.UnityHost",
+        "UnityEngine.TestRunner"
+    ],
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll",
+        "SaltAndLedger.Simulation.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ]
+}

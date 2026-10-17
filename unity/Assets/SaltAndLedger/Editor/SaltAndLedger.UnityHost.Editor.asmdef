@@ -1,0 +1,11 @@
+{
+    "name": "SaltAndLedger.UnityHost.Editor",
+    "rootNamespace": "SaltAndLedger.UnityHost.Editor",
+    "references": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "overrideReferences": true,
+    "precompiledReferences": [],
+    "autoReferenced": true
+}
