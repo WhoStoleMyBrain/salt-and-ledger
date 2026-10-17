@@ -42,3 +42,7 @@ jobs:
         run: dotnet test SaltAndLedger.sln --configuration Release --no-build
       - name: Run data-to-simulation demonstration
         run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json
+      - name: Prepare Unity integration assets
+        run: python tools/prepare_unity.py
+      - name: Check Unity integration asset freshness
+        run: python tools/prepare_unity.py --check
