@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "8.0.x"
+          dotnet-version: "10.0.x"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
@@ -35,7 +35,7 @@ jobs:
       - name: Build documentation strictly
         run: python -m mkdocs build --strict
       - name: Restore standalone projects
-        run: dotnet restore SaltAndLedger.sln
+        run: dotnet restore SaltAndLedger.sln --locked-mode
       - name: Compile standalone foundation
         run: dotnet build SaltAndLedger.sln --configuration Release --no-restore
       - name: Test simulation
