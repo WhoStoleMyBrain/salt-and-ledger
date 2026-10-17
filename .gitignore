@@ -1,0 +1,27 @@
+# Local tooling and build products
+.venv/
+.dotnet/
+.nuget/
+.cache/
+**/bin/
+**/obj/
+**/TestResults/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+site/
+.vs/
+.idea/
+
+# Unity-generated folders (when a Unity project is added)
+**/[Ll]ibrary/
+**/[Tt]emp/
+**/[Ll]ogs/
+**/[Oo]bj/
+**/[Uu]ser[Ss]ettings/
+**/[Bb]uild/
+**/[Bb]uilds/
+
+# OS files
+.DS_Store
+Thumbs.db
