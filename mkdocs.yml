@@ -1,0 +1,24 @@
+site_name: Salt and Ledger
+site_description: Design notes and generated content reference for the economic simulation foundation.
+docs_dir: docs
+site_dir: site
+theme:
+  name: mkdocs
+nav:
+  - Overview: index.md
+  - Game design: GAME_DESIGN.md
+  - Architecture: ARCHITECTURE.md
+  - Implemented mechanics: MECHANICS.md
+  - Content reference: reference/index.md
+  - Economy questions: ECONOMY.md
+  - Roadmap: ROADMAP.md
+  - Decisions: DECISIONS.md
+  - Deferred ideas: IDEAS.md
+  - Unity integration: UNITY.md
+validation:
+  nav:
+    omitted_files: ignore
+    not_found: warn
+  links:
+    not_found: warn
+    anchors: warn

@@ -1,0 +1,58 @@
+{
+  "formatVersion": 1,
+  "sourceSchemaVersion": 1,
+  "goods": [
+    {
+      "id": "logs",
+      "name": "Logs",
+      "description": "Unprocessed timber used by the sample sawmill recipe.",
+      "wikiPath": "reference/goods/logs.md",
+      "consumedByRecipeIds": [
+        "saw_planks"
+      ],
+      "producedByRecipeIds": []
+    },
+    {
+      "id": "planks",
+      "name": "Planks",
+      "description": "Sawn timber produced by the sample sawmill recipe.",
+      "wikiPath": "reference/goods/planks.md",
+      "consumedByRecipeIds": [],
+      "producedByRecipeIds": [
+        "saw_planks"
+      ]
+    }
+  ],
+  "buildings": [
+    {
+      "id": "sawmill",
+      "name": "Sawmill",
+      "description": "A building that can use the logs-to-planks recipe.",
+      "wikiPath": "reference/buildings/sawmill.md",
+      "recipeIds": [
+        "saw_planks"
+      ]
+    }
+  ],
+  "recipes": [
+    {
+      "id": "saw_planks",
+      "name": "Saw planks",
+      "description": "Convert logs into planks in one sample production batch.",
+      "wikiPath": "reference/recipes/saw_planks.md",
+      "buildingId": "sawmill",
+      "inputs": [
+        {
+          "goodId": "logs",
+          "quantity": 2
+        }
+      ],
+      "outputs": [
+        {
+          "goodId": "planks",
+          "quantity": 1
+        }
+      ]
+    }
+  ]
+}
