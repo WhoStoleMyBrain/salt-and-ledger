@@ -1,6 +1,6 @@
 # Implemented architecture
 
-Phase 0 separates content, simulation, host presentation, and reference generation using a small set of concrete modules. It does not introduce services or extension points for future systems.
+Phase 0 separates content, simulation, host presentation, and reference generation using a small set of concrete modules. Phase 0.5 connects the same simulation to a minimal Unity host. Neither introduces services or extension points for future systems.
 
 ```text
 data/content.json + data/content.schema.json
@@ -13,7 +13,7 @@ data/content.json + data/content.schema.json
             +-- immutable ContentCatalog
                     +-- Inventory + Production.TryRunBatch
                             +-- console demo / headless tests
-                            +-- future Unity presentation host
+                            +-- Unity Bootstrap smoke component
 ```
 
 ## Modules and dependencies
@@ -21,15 +21,26 @@ data/content.json + data/content.schema.json
 | Module | Responsibility | Dependencies |
 | --- | --- | --- |
 | `src/SaltAndLedger.Simulation` | Content loading, immutable definitions, inventory, one-batch production | `netstandard2.1`, C# 8, Newtonsoft.Json 13.0.3 |
-| `samples/SaltAndLedger.Demo` | Read a content file and demonstrate successful and rejected production | `net8.0`, simulation project |
-| `tests/SaltAndLedger.Simulation.Tests` | Headless tests of loading, content rules, inventory, and production | `net8.0`, simulation project, test dependencies |
+| `samples/SaltAndLedger.Demo` | Read a content file and demonstrate successful and rejected production | `net10.0`, simulation project |
+| `tests/SaltAndLedger.Simulation.Tests` | Headless tests of loading, content rules, inventory, and production | `net10.0`, simulation project, test dependencies |
+| `unity` | Bootstrap smoke scene/component, integration tests, and a player build entry point | Unity 6000.6.6f1, staged simulation DLL, Unity Newtonsoft package 3.2.2 |
 | `data` | Canonical content and Draft 2020-12 JSON Schema | No host or presentation dependency |
-| `tools` | Validate authoring data; generate reproducible reference artifacts | Python, dependencies in `requirements.txt` |
+| `tools` | Validate authoring data; generate reference artifacts; prepare Unity runtime assets | Python, dependencies in `requirements.txt`; .NET 10 for Unity preparation |
 | `tests/python` | Schema, semantic validator, and generation tests | Python test runner and pipeline dependencies |
 | `docs` and `mkdocs.yml` | Authored specifications and external reference site | MkDocs |
-| `.github/workflows` | Headless build, test, validation, freshness, and site checks | .NET SDK and Python; no Unity Editor |
+| `.github/workflows` | Headless build, test, validation, freshness, site, and Unity staging checks | .NET 10 SDK and Python; no Unity Editor |
 
-There is no Unity project yet. The simulation does not reference `UnityEngine`, access an Editor API, or decide where a host stores its content. The console host reads a file and passes JSON text into the library; a future Unity host can supply the same text from an asset. [Unity integration](UNITY.md) describes a minimal local verification path.
+The simulation does not reference `UnityEngine`, access an Editor API, or decide where a host stores its content. The console host supplies JSON from a file; the Unity host supplies the same JSON from a `TextAsset`. The existing Unity project and its template packages remain in place; the integration adds no economic rules.
+
+## Toolchain and Unity dependency boundary
+
+`global.json` selects stable .NET 10 SDKs starting at 10.0.100 with `latestFeature` roll-forward within 10.0. This lets developers receive SDK servicing updates without adopting a later major runtime. The simulation's `netstandard2.1` and C# 8 targets remain unchanged. All three standalone projects have NuGet lock files, and CI restores with `--locked-mode`.
+
+`python tools/prepare_unity.py` validates canonical content, builds the existing simulation project in Release, and stages only `SaltAndLedger.Simulation.dll` and `data/content.json` under `unity/Assets/Generated/`, with stable generated metadata. The content becomes `Resources/CanonicalContent.json`. No simulation source is copied or compiled a second way. Preparation must be rerun after relevant changes; `--check` compares source, configuration, and output hashes without rebuilding. These local artifacts and their manifest are ignored by Git.
+
+Unity's versioned package manifest and lock file supply `com.unity.nuget.newtonsoft-json` 3.2.2. The NuGet build dependency remains Newtonsoft.Json 13.0.3. The inspected Unity package contains upstream 13.0.2, with the same strong-named assembly identity (`Newtonsoft.Json`, version `13.0.0.0`, public key token `30ad4fe6b2a6aeed`). Matching identity permits dependency resolution but does not establish behavior on every backend. Integration tests exercise the actual Unity package; [Unity integration](UNITY.md) records results and remaining platform checks. Do not stage the NuGet Newtonsoft DLL, demo, or headless test assemblies into Unity.
+
+The Bootstrap component loads the staged content, invokes the existing production command for three successful batches and one rejected batch, and reports the resulting inventory. Unity tests and player verification cover the host boundary; standalone tests remain the main simulation regression suite. Runtime content distribution beyond this small `Resources` asset is deferred.
 
 ## Content contract
 

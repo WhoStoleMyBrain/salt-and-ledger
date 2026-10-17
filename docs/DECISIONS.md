@@ -4,7 +4,7 @@ These records describe accepted foundation decisions as of 2026-10-17. Unresolve
 
 ## ADR 001: Keep the simulation independent of Unity
 
-**Status:** Accepted.
+**Status:** Accepted boundary; .NET 8 host targets and the absence of a Unity project are superseded by ADR 007 and ADR 008.
 
 Use a concrete C# library targeting `netstandard2.1` and C# 8 for simulation and content loading. Keep the console demo and tests in separate `net8.0` projects. Unity 6 is the intended presentation host; no Unity project is introduced by this foundation.
 
@@ -49,3 +49,19 @@ The generator describes only source facts. Authored [Mechanics](MECHANICS.md) sp
 GitHub Actions builds the standalone simulation, runs the C# and Python tests, validates content, checks generated-document freshness, and builds MkDocs strictly. Tests cover meaningful success, rejection, determinism, reference consistency, and generated-output behavior.
 
 This keeps the foundation independently verifiable. CI does not certify Unity imports, Editor compilation, or player builds. Report the actual verification performed and retain practical local instructions for those integration points.
+
+## ADR 007: Move standalone hosts to .NET 10 LTS
+
+**Status:** Accepted; supersedes ADR 001's .NET 8 demo and test targets.
+
+The demo and headless tests target `net10.0`; the reusable library keeps `netstandard2.1` and C# 8. `global.json` selects stable SDK 10.0.100 or a later installed 10.0 feature band. This accepts servicing updates while preventing an implicit major-version upgrade. CI installs .NET 10 and restores committed NuGet lock files with `--locked-mode`. Microsoft.NET.Test.Sdk is 18.11.0; the working xUnit framework and adapter remain unchanged.
+
+## ADR 008: Stage one portable assembly into the existing Unity project
+
+**Status:** Accepted; supersedes ADR 001's Phase 0 decision to omit a Unity project and implements ADR 003's host-owned JSON dependency.
+
+Keep the existing Unity project at `unity/`, pinned to Editor 6000.6.6f1. Use `tools/prepare_unity.py` to validate content, rebuild the standalone simulation, and stage its single DLL plus canonical JSON with stable asset metadata. Ignore staged outputs and check their source/output hashes with `--check`. This avoids duplicated simulation source, machine-specific links, and hand-maintained content copies. It requires an explicit preparation step after simulation or content edits.
+
+Unity owns the Newtonsoft assembly through pinned UPM package `com.unity.nuget.newtonsoft-json` 3.2.2 and `packages-lock.json`; the portable build retains NuGet 13.0.3. The inspected Unity upstream 13.0.2 DLL has the same strong-named assembly identity as the NuGet dependency. No NuGet JSON DLL is copied into Unity. Actual Editor and player checks, including their limits, are recorded in [Unity integration](UNITY.md).
+
+The Bootstrap smoke component only orchestrates the existing loader and production command. Focused Edit Mode and Play Mode tests and a Windows Mono player build entry point verify that boundary. CI validates preparation and freshness without requiring a Unity license. Other backends and content-delivery systems remain separate verification work.

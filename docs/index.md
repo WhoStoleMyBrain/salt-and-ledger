@@ -2,7 +2,7 @@
 
 Salt & Ledger is a planned single-player maritime trading and economic strategy game for Unity 6. Its central activity is intelligent optimization and automation of trading networks within a simulated economy.
 
-The current repository is a minimal foundation: a Unity-independent C# simulation, validated sample content, a console demonstration, headless tests, and generated reference documentation. No Unity game or encyclopedia UI has been implemented.
+The current repository contains the Phase 0 foundation and Phase 0.5 integration: a Unity-independent C# simulation, validated sample content, a .NET 10 console demonstration and tests, generated reference documentation, and a minimal Unity 6 smoke scene. The Unity host uses the existing simulation assembly; no playable economic game or encyclopedia UI has been implemented.
 
 ## Read the project
 
@@ -14,7 +14,7 @@ The current repository is a minimal foundation: a Unity-independent C# simulatio
 - [Roadmap](ROADMAP.md): provisional development sequence.
 - [Decisions](DECISIONS.md): accepted foundation decisions and their tradeoffs.
 - [Ideas](IDEAS.md): experiments and intentionally deferred concepts.
-- [Unity integration](UNITY.md): local import and verification instructions.
+- [Unity integration](UNITY.md): reproducible preparation, Editor/player verification, and recorded limits.
 
 ## Canonical definitions and maintained rules
 
