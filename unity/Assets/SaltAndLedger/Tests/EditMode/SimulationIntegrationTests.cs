@@ -90,6 +90,39 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(sold.After.Trading.TraderCash, Is.EqualTo(11L), "Earlier snapshots must remain detached.");
         }
 
+        [TestCase(InventoryPricingModel.Linear, 57L, 20L)]
+        [TestCase(InventoryPricingModel.Scarcity, 72L, 35L)]
+        public void StagedDynamicQuoteMatchesBulkExecutionAndReversal(InventoryPricingModel model, long total, long lastPrice)
+        {
+            var asset = Resources.Load<TextAsset>("CanonicalContent");
+            Assert.That(asset, Is.Not.Null, "Run python tools/prepare_unity.py before opening Unity.");
+            var world = new WorldState(ContentLoader.Load(asset.text), "harbor", new BuildingInstance[0],
+                new Dictionary<string, int> { ["logs"] = 3 }, market: new MarketConfiguration(new[]
+                {
+                    new MarketQuote("logs", new InventoryPricing(model, 10, 10, 10, 1, 100, 1))
+                }, 100, "trader", 1000));
+            var before = world.Snapshot();
+            var command = new TradeCommand(TradeDirection.Buy, "logs", 3);
+            var preview = before.PreviewTrade(command);
+            Assert.That(before.GetMarketQuote("logs").Ask, Is.EqualTo(18L));
+            Assert.That(preview.Price.FirstMarginalPrice, Is.EqualTo(18L));
+            Assert.That(preview.Price.LastMarginalPrice, Is.EqualTo(lastPrice));
+            Assert.That(preview.Price.TotalAmount, Is.EqualTo(total));
+            Assert.That(world.Snapshot(), Is.SameAs(before));
+            var bought = world.Step(trades: new[] { command });
+            Assert.That(bought.TradeAttempts[0].Outcome, Is.EqualTo(TradeOutcome.Traded));
+            Assert.That(bought.TradeAttempts[0].TotalAmount, Is.EqualTo(preview.TotalAmount));
+            Assert.That(bought.TradeAttempts[0].ExecutedQuantity, Is.EqualTo(3));
+            Assert.That(bought.After.GetMarketQuote("logs").Ask, Is.Null);
+            Assert.That(bought.After.Trading.TraderCash, Is.EqualTo(1000L - total));
+            var returned = world.Step(trades: new[] { new TradeCommand(TradeDirection.Sell, "logs", 3) });
+            Assert.That(returned.After.Inventory["logs"], Is.EqualTo(3));
+            Assert.That(returned.After.Trading.TraderInventory["logs"], Is.Zero);
+            Assert.That(returned.After.Trading.TraderCash, Is.EqualTo(994L));
+            Assert.That(returned.After.Trading.MarketCash, Is.EqualTo(106L));
+            Assert.That(before.GetMarketQuote("logs").Ask, Is.EqualTo(18L));
+        }
+
         [Test]
         public void SimulationResolvesOneNewtonsoftAssemblyFromTheUnityPackage()
         {
