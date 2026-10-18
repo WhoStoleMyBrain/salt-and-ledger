@@ -19,7 +19,8 @@ namespace SaltAndLedger.Simulation
         public string LocationId => state.LocationId;
 
         public WorldState(ContentCatalog content, string locationId, IEnumerable<BuildingInstance> buildings,
-            IReadOnlyDictionary<string, int>? initialQuantities = null, long initialTick = 0)
+            IReadOnlyDictionary<string, int>? initialQuantities = null, long initialTick = 0,
+            MarketConfiguration? market = null)
         {
             this.content = content ?? throw new ArgumentNullException(nameof(content));
             RuntimeIdentifier.Validate(locationId, nameof(locationId));
@@ -42,17 +43,19 @@ namespace SaltAndLedger.Simulation
             }
 
             var inventory = new Inventory(content, initialQuantities);
-            state = new WorldSnapshot(initialTick, locationId, inventory.Snapshot(), instances);
+            state = new WorldSnapshot(initialTick, locationId, inventory.Snapshot(), instances,
+                market?.CreateSnapshot(content));
         }
 
         public WorldSnapshot Snapshot() => state;
 
         /// <summary>
         /// Validates every command before applying them in declared order, then runs
-        /// production against staged state. Shortages are recorded and time advances.
-        /// Any exception leaves inventory, controls, and tick unchanged.
+        /// trades and production against staged state. Shortages are recorded and time advances.
+        /// Any exception leaves both inventories, cash, controls, and tick unchanged.
         /// </summary>
-        public StepResult Step(IEnumerable<SetProductionEnabledCommand>? commands = null)
+        public StepResult Step(IEnumerable<SetProductionEnabledCommand>? commands = null,
+            IEnumerable<TradeCommand>? trades = null)
         {
             if (stepping) throw new InvalidOperationException("A world step cannot be entered recursively.");
             stepping = true;
@@ -77,14 +80,33 @@ namespace SaltAndLedger.Simulation
                     }
                 }
 
+                var validatedTrades = new List<TradeCommand>();
+                if (trades != null)
+                {
+                    foreach (var trade in trades)
+                    {
+                        if (trade == null) throw new ArgumentException("Trades cannot contain null.", nameof(trades));
+                        content.GetGood(trade.GoodId);
+                        if (before.Trading == null)
+                            throw new InvalidOperationException("Trading requires market configuration.");
+                        if (!before.Trading.Quotes.ContainsKey(trade.GoodId))
+                            throw new KeyNotFoundException("No market quote for good '" + trade.GoodId + "'.");
+                        validatedTrades.Add(trade);
+                    }
+                }
+
                 var nextTick = checked(before.Tick + 1);
                 var inventory = new Inventory(content, before.Inventory);
+                var trading = before.Trading == null ? null : new TradingState(content, before.Trading);
                 var buildings = before.Buildings.ToArray();
                 foreach (var command in validatedCommands)
                 {
                     var index = buildingIndexes[command.BuildingInstanceId];
                     buildings[index] = buildings[index].WithProductionEnabled(command.Enabled);
                 }
+
+                var tradeAttempts = new List<TradeAttempt>();
+                foreach (var trade in validatedTrades) tradeAttempts.Add(trading!.Execute(inventory, trade));
 
                 // Snapshot order is already priority then ordinal ID. Controls do not
                 // change that order, and eligibility is fixed before production begins.
@@ -108,8 +130,8 @@ namespace SaltAndLedger.Simulation
 
                 // Build every outward-facing object before the only state mutation.
                 // A later facility's overflow therefore rolls back the whole step.
-                var after = new WorldSnapshot(nextTick, before.LocationId, inventory.Snapshot(), buildings);
-                var result = new StepResult(before.Tick, after, attempts);
+                var after = new WorldSnapshot(nextTick, before.LocationId, inventory.Snapshot(), buildings, trading?.Snapshot());
+                var result = new StepResult(before.Tick, after, attempts, tradeAttempts);
                 state = after;
                 return result;
             }

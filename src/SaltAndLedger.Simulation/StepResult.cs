@@ -53,12 +53,15 @@ namespace SaltAndLedger.Simulation
         public long Tick { get; }
         public WorldSnapshot After { get; }
         public IReadOnlyList<ProductionAttempt> ProductionAttempts { get; }
+        public IReadOnlyList<TradeAttempt> TradeAttempts { get; }
 
-        internal StepResult(long tick, WorldSnapshot after, IEnumerable<ProductionAttempt> productionAttempts)
+        internal StepResult(long tick, WorldSnapshot after, IEnumerable<ProductionAttempt> productionAttempts,
+            IEnumerable<TradeAttempt> tradeAttempts)
         {
             Tick = tick;
             After = after;
             ProductionAttempts = Array.AsReadOnly(productionAttempts.ToArray());
+            TradeAttempts = Array.AsReadOnly(tradeAttempts.ToArray());
         }
     }
 }

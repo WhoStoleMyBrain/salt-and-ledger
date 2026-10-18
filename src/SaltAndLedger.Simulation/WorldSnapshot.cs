@@ -12,12 +12,14 @@ namespace SaltAndLedger.Simulation
         public string LocationId { get; }
         public IReadOnlyDictionary<string, int> Inventory { get; }
         public IReadOnlyList<BuildingInstance> Buildings { get; }
+        public TradingSnapshot? Trading { get; }
 
         internal WorldSnapshot(long tick, string locationId, IReadOnlyDictionary<string, int> inventory,
-            IEnumerable<BuildingInstance> buildings)
+            IEnumerable<BuildingInstance> buildings, TradingSnapshot? trading = null)
         {
             Tick = tick;
             LocationId = locationId;
+            Trading = trading;
             var quantities = new SortedDictionary<string, int>(StringComparer.Ordinal);
             foreach (var quantity in inventory) quantities.Add(quantity.Key, quantity.Value);
             Inventory = new ReadOnlyDictionary<string, int>(quantities);
