@@ -40,6 +40,29 @@ namespace SaltAndLedger.UnityHost.Tests
         }
 
         [Test]
+        public void StagedWorldSchedulesSharedInventoryByInstanceId()
+        {
+            var asset = Resources.Load<TextAsset>("CanonicalContent");
+            Assert.That(asset, Is.Not.Null, "Run python tools/prepare_unity.py before opening Unity.");
+            var world = new WorldState(ContentLoader.Load(asset.text), "harbor", new[]
+            {
+                new BuildingInstance("sawmill_b", "sawmill", "saw_planks"),
+                new BuildingInstance("sawmill_a", "sawmill", "saw_planks")
+            }, new Dictionary<string, int> { ["logs"] = 2 });
+
+            var step = world.Step();
+
+            Assert.That(step.Tick, Is.Zero);
+            Assert.That(world.Tick, Is.EqualTo(1L));
+            Assert.That(step.ProductionAttempts.Select(attempt => attempt.BuildingInstanceId),
+                Is.EqualTo(new[] { "sawmill_a", "sawmill_b" }));
+            Assert.That(step.ProductionAttempts.Select(attempt => attempt.Outcome),
+                Is.EqualTo(new[] { ProductionOutcome.Produced, ProductionOutcome.ResourceShortage }));
+            Assert.That(step.After.Inventory["logs"], Is.Zero);
+            Assert.That(step.After.Inventory["planks"], Is.EqualTo(1));
+        }
+
+        [Test]
         public void SimulationResolvesOneNewtonsoftAssemblyFromTheUnityPackage()
         {
             var simulationReference = typeof(ContentLoader).Assembly.GetReferencedAssemblies()
