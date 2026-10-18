@@ -1,17 +1,29 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using SaltAndLedger.Simulation;
 
-if (args.Length != 1)
+var worldMode = args.Length >= 2 && args[1] == "--world";
+if (args.Length != 1 && !(worldMode && args.Length <= 3))
 {
-    Console.Error.WriteLine("Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json");
+    Console.Error.WriteLine("Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--world [initialLogs]]");
+    return 1;
+}
+
+var initialLogs = 6;
+if (worldMode && args.Length == 3 &&
+    !int.TryParse(args[2], NumberStyles.None, CultureInfo.InvariantCulture, out initialLogs))
+{
+    Console.Error.WriteLine("initialLogs must be an integer from 0 through 2147483647.");
     return 1;
 }
 
 try
 {
     var content = ContentLoader.Load(File.ReadAllText(args[0]));
+    if (worldMode) return WorldDemo.Run(content, initialLogs);
+
     var inventory = new Inventory(content, new Dictionary<string, int> { ["logs"] = 6 });
     Console.WriteLine($"Loaded schema {content.SchemaVersion}: {content.Goods.Count} goods, {content.Buildings.Count} building, {content.Recipes.Count} recipe.");
     Console.WriteLine($"Initial: logs={inventory.GetQuantity("logs")}, planks={inventory.GetQuantity("planks")}");
@@ -24,7 +36,7 @@ try
 }
 catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException ||
     exception is ContentValidationException || exception is KeyNotFoundException || exception is OverflowException ||
-    exception is ArgumentException)
+    exception is ArgumentException || exception is InvalidOperationException)
 {
     Console.Error.WriteLine("Demo failed: " + exception.Message);
     return 1;
