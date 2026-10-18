@@ -49,10 +49,49 @@ A missing staged asset or invalid outcome fails explicitly. No Inspector content
 
 Open **Window > General > Test Runner** and run:
 
-- **Edit Mode:** `SaltAndLedger.UnityHost.EditModeTests` (3 tests covering explicit production, deterministic world scheduling with shared stock, and the single UPM Newtonsoft provider, including a hash comparison of the loaded DLL against the pinned package binary).
+- **Edit Mode:** `SaltAndLedger.UnityHost.EditModeTests` (4 tests covering explicit production, deterministic world scheduling, a sale feeding same-tick production followed by a next-tick purchase, and the single UPM Newtonsoft provider, including a hash comparison of the loaded DLL against the pinned package binary).
 - **Play Mode:** `SaltAndLedger.UnityHost.PlayModeTests` (1 test that loads Bootstrap and checks the component's actual `Start()` result).
 
 For repeatable command-line tests, close the Editor instance using this project first, or use a separate complete checkout prepared with the same commands. Do not launch a second Editor against an already-open project. The PowerShell examples below run from the repository root; change the Editor path for your installation. Piping to `Out-Host` makes PowerShell wait for the GUI executable to finish.
+
+### Official Unity Agent Plugin workflow
+
+Task 1.2 uses the locally installed `unity@unity-agent-plugin` **`unity:unity-cli`** skill and supported `unity test`/`unity build` commands. These batch workflows do not require a running Editor or the live Pipeline connection. The primary economic verification remains the headless suite; the new Unity trade test checks that the same staged assembly works in the Editor. Bootstrap and its Play Mode/player checks retain their original production behavior.
+
+With the plugin's Unity CLI installed, check its version and discover existing Editors before starting a batch run. If sandbox restrictions prevent network or process discovery, retry with the required access; do not interpret restricted discovery as proof that no Editor is open. These examples assume `unity` is on PATH (the local Windows installation used `%LOCALAPPDATA%/Unity/bin/unity.exe`):
+
+```powershell
+unity self-update --check --format json
+unity status --project-path "$PWD/unity" --format json
+unity editors --installed --format json
+
+$unityProject = (Resolve-Path 'unity').Path
+$resultsDir = Join-Path $PWD '.cache/unity-results'
+New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
+unity test $unityProject --editor-version 6000.6.6f1 --mode EditMode `
+    --filter SaltAndLedger.UnityHost.Tests.SimulationIntegrationTests `
+    --output "$resultsDir/editmode.xml" --timeout 600 --format json `
+    -- -nographics -logFile "$resultsDir/editmode.log"
+if ($LASTEXITCODE -ne 0) { throw "Unity Edit Mode failed: $LASTEXITCODE" }
+unity test $unityProject --editor-version 6000.6.6f1 --mode PlayMode `
+    --filter SaltAndLedger.UnityHost.Tests.BootstrapSmokeTests `
+    --output "$resultsDir/playmode.xml" --timeout 600 --format json `
+    -- -nographics -logFile "$resultsDir/playmode.log"
+if ($LASTEXITCODE -ne 0) { throw "Unity Play Mode failed: $LASTEXITCODE" }
+
+[xml]$editResults = Get-Content "$resultsDir/editmode.xml"
+[xml]$playResults = Get-Content "$resultsDir/playmode.xml"
+if ($editResults.'test-run'.result -ne 'Passed' -or [int]$editResults.'test-run'.passed -ne 4 -or
+    $playResults.'test-run'.result -ne 'Passed' -or [int]$playResults.'test-run'.passed -ne 1) {
+    throw 'Unexpected Unity test outcome or test count; inspect XML and logs.'
+}
+```
+
+The CLI supplies `-batchmode`, test flags, and result paths. Do not forward reserved flags or add `-quit` to a test run. Keep logs local; Editor logs may include authentication arguments, so redact them before sharing.
+
+### Direct Editor alternative
+
+For developers without the CLI, the existing direct Editor commands remain usable:
 
 ```powershell
 $unityEditor = 'E:\UnityInstalls\6000.6.6f1\Editor\Unity.exe'
@@ -75,14 +114,28 @@ Do **not** add `-quit` to `-runTests`: the test runner owns completion and Edito
 
 ## Windows Mono player
 
-With Windows build support installed, the following entry point builds only Bootstrap to `unity/Builds/Smoke/Windows/SaltAndLedger.Smoke.exe`. It temporarily chooses Mono and restores the previous backend setting. The first build can take several minutes compiling shaders from the retained template packages, including the inference package; allow this compilation to finish. Use the variables from the test commands above:
+With Windows build support installed, the following entry point builds only Bootstrap to `unity/Builds/Smoke/Windows/SaltAndLedger.Smoke.exe`. It temporarily chooses Mono and restores the previous backend setting. The first build can take several minutes compiling shaders from the retained template packages, including the inference package; allow this compilation to finish. Using the official CLI and variables above:
+
+```powershell
+unity build $unityProject --editor-version 6000.6.6f1 --target StandaloneWindows64 `
+    --execute-method SaltAndLedger.UnityHost.Editor.SmokePlayerBuild.BuildWindowsMono `
+    --allow-dirty-build --timeout 1200 `
+    --log-file "$resultsDir/build-mono.log" --no-tail --format json
+if ($LASTEXITCODE -ne 0) { throw "Unity player build failed: $LASTEXITCODE" }
+```
+
+The custom method chooses the output path and throws on a failed Unity build; inspect the build log and CLI provenance manifest as well as the exit code. The direct Editor alternative is:
 
 ```powershell
 & $unityEditor -batchmode -nographics -quit -projectPath $unityProject `
     -executeMethod SaltAndLedger.UnityHost.Editor.SmokePlayerBuild.BuildWindowsMono `
     -logFile "$resultsDir/build-mono.log" | Out-Host
 if ($LASTEXITCODE -ne 0) { throw "Unity player build failed: $LASTEXITCODE" }
+```
 
+After either build command, run the resulting player:
+
+```powershell
 $smokePlayer = Join-Path $unityProject 'Builds/Smoke/Windows/SaltAndLedger.Smoke.exe'
 & $smokePlayer -batchmode -nographics -saltAndLedgerSmokeTest `
     -logFile "$resultsDir/player-mono.log" | Out-Host
@@ -130,7 +183,34 @@ The revised assembly was checked again on Windows on 2026-10-17 using the same .
 
 Task 1.1 test results and logs use the local `.cache/task11-*.xml` and `.cache/task11-*.log` filenames. The world API is exercised headlessly and in Edit Mode; the player smoke checks the existing Bootstrap integration, not a world-simulation UI or a shipping backend configuration.
 
-Editor/player verification uses an isolated copy under `.cache/unity-verification` so the already-open working project is not interrupted. This copy is a local test artifact, not a second source location. Both Editor test runs used batch mode, and the Mono player ran with `-batchmode -nographics`; visual rendering was not assessed. NUnit XML results and Editor/build/player logs are retained locally under `.cache/` and are not version controlled.
+Task 1.1 Editor/player verification used an isolated copy under `.cache/unity-verification` so the then-open working project was not interrupted. This copy is a local test artifact, not a second source location. Both Editor test runs used batch mode, and the Mono player ran with `-batchmode -nographics`; visual rendering was not assessed. NUnit XML results and Editor/build/player logs are retained locally under `.cache/` and are not version controlled.
+
+### Task 1.2 regression verification
+
+Checked on Windows on **2026-10-18**, using .NET SDK 10.0.402/runtime 10.0.13, Unity **6000.6.6f1**, and the official Unity CLI **1.0.0-beta.13** from plugin **0.1.8-beta**. `unity self-update --check` confirmed the CLI was current. Unrestricted discovery confirmed no running Editor. The existing isolated verification copy was refreshed from `unity/Assets`, `Packages`, and `ProjectSettings`; hashes confirmed the staged simulation DLL and new Edit Mode test matched the working project.
+
+| Check | Result |
+| --- | --- |
+| Locked NuGet restore and Release solution build | Passed, zero build warnings/errors; dependency locks unchanged |
+| Standalone .NET tests | 158 passed, including 32 market cases |
+| Original and world demos | Passed with their original outcomes and world repeatability check |
+| New `--market` demo | Passed; tick 4, market 0 logs / 1 plank / 25 cash, trader 0 logs / 2 planks / 2 cash; repeated and reordered setup transcripts match |
+| Python pipeline tests | 39 passed |
+| Canonical validation, reference freshness, strict MkDocs | Passed; canonical content/schema and generated references unchanged |
+| Authored documentation review | Rules, API, ownership assumptions, rejection/error distinction, roadmap, and numeric examples checked against implementation; per-tick example covered by a headless test |
+| Unity preparation/freshness | Passed; same compiled library and canonical content staged, no extra JSON assembly |
+| Official CLI Edit Mode | 4 passed; includes finite trade/production integration and single pinned Newtonsoft binary |
+| Official CLI Play Mode | 1 passed; Bootstrap still finishes with 0 logs / 3 planks |
+| Official CLI Windows x64 Mono build and player execution | Passed; fresh build and hidden headless player exit 0, with the exact Bootstrap smoke completion message |
+| IL2CPP, other player platforms, visual rendering, large-scale performance, remote GitHub Actions | Not run |
+
+Local artifacts use `.cache/task12-editmode.xml`, `.cache/task12-playmode.xml`, corresponding logs, and `.cache/task12-build-mono.provenance.json`. No test run relied on an exit code alone: NUnit counts and individual test outcomes were inspected. Trading is exercised headlessly and in Edit Mode; Bootstrap remains a production-only player smoke, not a player trading UI or a complete backend certification.
+
+Tooling observations were investigated rather than bypassing the official workflow:
+
+- The first sandboxed CLI update/discovery calls could not access the update host or reliably enumerate processes. Repeating with required access succeeded and confirmed CLI version and Editor state.
+- An initial `unity build --args=-nographics` invocation was rejected before launching the Editor because the CLI owns that flag. Removing the duplicate flag allowed the supported build workflow to start; the command examples above incorporate that correction.
+- Editor logs emitted `.cache is not a valid directory name` and licensing/package diagnostics. The Editor nevertheless opened the intended verification path, imported the updated assembly, and produced the expected passing test reports. The successful CLI build also reported licensing-client validation and entitlement-404 diagnostics in `editorErrors`. A read-only `unity license status` check confirmed an active license and signed-in state; the provenance manifest and player execution confirmed a successful build. The specific entitlement-diagnostic cause remains unresolved. No package or licensing configuration was changed to suppress it, and passing smoke tests do not validate unrelated package services.
 
 For an intended IL2CPP target, install its Unity build support and native compiler prerequisites, select Bootstrap in the Build Profile, set **Scripting Backend: IL2CPP**, retain **API Compatibility Level: .NET Standard 2.1**, and select the intended managed stripping level. Build a development player, launch it with the smoke flag, and inspect its exit code and log as above. Record Editor version, operating system, target architecture, backend, stripping level, UPM version, and result. No blanket `link.xml` is supplied; investigate concrete stripping failures before adding preservation rules.
 

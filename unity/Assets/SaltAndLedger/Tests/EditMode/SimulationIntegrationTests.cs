@@ -63,6 +63,34 @@ namespace SaltAndLedger.UnityHost.Tests
         }
 
         [Test]
+        public void StagedMarketTransfersGoodsAndCashBeforeProduction()
+        {
+            var asset = Resources.Load<TextAsset>("CanonicalContent");
+            Assert.That(asset, Is.Not.Null, "Run python tools/prepare_unity.py before opening Unity.");
+            var world = new WorldState(ContentLoader.Load(asset.text), "harbor",
+                new[] { new BuildingInstance("sawmill_a", "sawmill", "saw_planks") },
+                market: new MarketConfiguration(new[] { new MarketQuote("logs", 2, 3), new MarketQuote("planks", 4, 5) },
+                    20, "trader", 7, new Dictionary<string, int> { ["logs"] = 2 }));
+
+            var sold = world.Step(trades: new[] { new TradeCommand(TradeDirection.Sell, "logs", 2) });
+            Assert.That(sold.TradeAttempts[0].Outcome, Is.EqualTo(TradeOutcome.Traded));
+            Assert.That(sold.TradeAttempts[0].TotalAmount, Is.EqualTo(4L));
+            Assert.That(sold.ProductionAttempts[0].Outcome, Is.EqualTo(ProductionOutcome.Produced));
+            Assert.That(sold.After.Inventory["logs"], Is.Zero);
+            Assert.That(sold.After.Inventory["planks"], Is.EqualTo(1));
+            Assert.That(sold.After.Trading.MarketCash, Is.EqualTo(16L));
+            Assert.That(sold.After.Trading.TraderCash, Is.EqualTo(11L));
+            var bought = world.Step(trades: new[] { new TradeCommand(TradeDirection.Buy, "planks", 1) });
+            Assert.That(bought.TradeAttempts[0].Outcome, Is.EqualTo(TradeOutcome.Traded));
+            Assert.That(bought.After.Inventory["planks"], Is.Zero);
+            Assert.That(bought.After.Trading.TraderInventory["logs"], Is.Zero);
+            Assert.That(bought.After.Trading.TraderInventory["planks"], Is.EqualTo(1));
+            Assert.That(bought.After.Trading.MarketCash, Is.EqualTo(21L));
+            Assert.That(bought.After.Trading.TraderCash, Is.EqualTo(6L));
+            Assert.That(sold.After.Trading.TraderCash, Is.EqualTo(11L), "Earlier snapshots must remain detached.");
+        }
+
+        [Test]
         public void SimulationResolvesOneNewtonsoftAssemblyFromTheUnityPackage()
         {
             var simulationReference = typeof(ContentLoader).Assembly.GetReferencedAssemblies()
