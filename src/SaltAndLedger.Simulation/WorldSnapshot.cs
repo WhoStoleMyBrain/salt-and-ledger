@@ -30,7 +30,7 @@ namespace SaltAndLedger.Simulation
         {
             if (command == null) throw new ArgumentNullException(nameof(command));
             if (Trading == null) throw new InvalidOperationException("Trading requires market configuration.");
-            return TradingState.Preview(Trading.Quotes[command.GoodId], command,
+            return TradeCalculator.Preview(Trading.Quotes[command.GoodId], command,
                 Inventory[command.GoodId], Trading.TraderInventory[command.GoodId], Trading.MarketCash, Trading.TraderCash);
         }
 

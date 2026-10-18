@@ -6,7 +6,8 @@ namespace SaltAndLedger.Simulation
         InsufficientMarketInventory,
         InsufficientTraderInventory,
         InsufficientTraderFunds,
-        InsufficientMarketFunds
+        InsufficientMarketFunds,
+        InsufficientCargoCapacity
     }
 
     public sealed class CashChange
@@ -24,7 +25,7 @@ namespace SaltAndLedger.Simulation
 
     /// <summary>
     /// A proposed or completed attempt. Price describes the full requested trade, not a payment.
-    /// Dynamic stock rejections have no Price. UnitPrice is the first marginal price, not an average.
+    /// Dynamic stock/cargo-capacity rejections have no Price. UnitPrice is the first marginal price, not an average.
     /// </summary>
     public sealed class TradeAttempt
     {
