@@ -47,6 +47,8 @@ jobs:
       - name: Run finite market demonstration
         # The market demo also asserts repeatability and its documented final state.
         run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --market
+      - name: Verify pricing experiments and report freshness
+        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --pricing --check
       - name: Prepare Unity integration assets
         run: python tools/prepare_unity.py
       - name: Check Unity integration asset freshness

@@ -6,9 +6,12 @@ using SaltAndLedger.Simulation;
 
 var worldMode = args.Length >= 2 && args[1] == "--world";
 var marketMode = args.Length == 2 && args[1] == "--market";
-if (args.Length != 1 && !(worldMode && args.Length <= 3) && !marketMode)
+var pricingMode = args.Length >= 2 && args[1] == "--pricing";
+var checkPricing = pricingMode && args.Length >= 3 && args[2] == "--check";
+if (args.Length != 1 && !(worldMode && args.Length <= 3) && !marketMode &&
+    !(pricingMode && args.Length <= (checkPricing ? 4 : 3)))
 {
-    Console.Error.WriteLine("Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--world [initialLogs] | --market]");
+    Console.Error.WriteLine("Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--world [initialLogs] | --market | --pricing [--check] [output.json]]");
     return 1;
 }
 
@@ -25,6 +28,11 @@ try
     var content = ContentLoader.Load(File.ReadAllText(args[0]));
     if (worldMode) return WorldDemo.Run(content, initialLogs);
     if (marketMode) return MarketDemo.Run(content);
+    if (pricingMode)
+    {
+        var outputIndex = checkPricing ? 3 : 2;
+        return PricingExperiments.Run(content, args.Length > outputIndex ? args[outputIndex] : null, checkPricing);
+    }
 
     var inventory = new Inventory(content, new Dictionary<string, int> { ["logs"] = 6 });
     Console.WriteLine($"Loaded schema {content.SchemaVersion}: {content.Goods.Count} goods, {content.Buildings.Count} building, {content.Recipes.Count} recipe.");
