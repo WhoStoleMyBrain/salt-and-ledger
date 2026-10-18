@@ -2,7 +2,7 @@
 
 A single-player maritime trading and economic strategy game intended for Unity 6. The long-term focus is building, optimizing, and automating trading networks within a simulated economy, inspired by Port Royale 2, Patrician 2, Antimatter Dimensions, and economic roguelikes.
 
-This repository contains **the Phase 0/0.5 foundation and Task 1.1 deterministic world simulation**. It loads validated definitions for logs, planks, a sawmill, and one production recipe; advances a fixed world through explicit integer ticks; and generates wiki pages and encyclopedia data from the same definitions. Two sawmill instances share stock and compete in a stable order. The console demo and Unity smoke scene use the same simulation assembly. There is no playable economic game yet.
+This repository contains **the Phase 0/0.5 foundation, Task 1.1 deterministic world, and Task 1.2 finite trading/accounting prototype**. It loads validated logs, planks, a sawmill, and one recipe; advances an explicitly stepped world; transfers goods and cash between one market and one trader; and generates reference documentation from canonical definitions. The console demos and Unity host use the same simulation assembly. There is no playable economic game yet.
 
 ## Prerequisites
 
@@ -56,7 +56,19 @@ The optional final argument sets initial logs from 0 through 2,147,483,647; the 
 
 The final world tick is **5**, with **0 logs and 3 planks**. The example reruns the same scenario and compares the complete transcript, then compares another run with reversed building input order. A mismatch fails explicitly. Different initial stock changes the outcomes while keeping the controls and schedule fixed.
 
-Each enabled building attempts one batch per abstract tick, ordered by ascending priority and ordinal instance ID. Controls affect the tick in which they are submitted. Shortage is an expected outcome; exceptional failure rolls back the entire tick, including controls and earlier batches. Immutable snapshots and structured results expose what happened without retaining unbounded history in the world. See [Mechanics](docs/MECHANICS.md) for exact semantics and [Architecture](docs/ARCHITECTURE.md) for the API. Tick duration, market phases, prices, wages, and configurable automation remain unresolved.
+Each enabled building attempts one batch per abstract tick, ordered by ascending priority and ordinal instance ID. Controls affect the tick in which they are submitted. Shortage is an expected outcome; exceptional failure rolls back the entire tick, including controls and earlier batches. Immutable snapshots and structured results expose what happened without retaining unbounded history in the world. See [Mechanics](docs/MECHANICS.md) for exact semantics and [Architecture](docs/ARCHITECTURE.md) for the API. Tick duration, dynamic pricing, wages, and configurable automation remain unresolved.
+
+## Run the finite market example
+
+```powershell
+dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --market
+```
+
+One sawmill produces into the existing location inventory, now the market's stock. The trader owns separate goods and cash. This public-market ownership of production is a prototype assumption, not a permanent factory-ownership model. Prices are fixed experimental bid/ask quotes: logs 2/3, planks 4/5. The trader buys at ask and sells at bid. Money uses checked `long` arithmetic in indivisible units; prices, currency scale, and initial balances are experimental.
+
+The market starts with 2 logs and 20 cash; the trader starts with 4 logs and 7 cash. Four ticks demonstrate purchases, sales, stock/funds rejections, and production using sold logs. Trades execute in declared order before production: sold logs can be consumed this tick; newly produced planks are tradeable next tick. The final state is market **0 logs, 1 plank, 25 cash** and trader **0 logs, 2 planks, 2 cash**, at tick **4**. Combined cash stays **27**. There is no automatic replenishment or income.
+
+Expected shortages reject one whole trade and allow later commands to continue. Invalid requests or overflow roll back the entire tick, including both inventories, cash, production, controls, and clock. The demo prints each transaction's before/after balances, checks its final state, and compares repeated/reordered setup runs. A headless test verifies the [documented per-tick example](docs/MECHANICS.md#executable-market-example).
 
 ## Open the Unity smoke scene
 
@@ -79,6 +91,7 @@ dotnet build SaltAndLedger.sln -c Release --no-restore
 dotnet test SaltAndLedger.sln -c Release --no-build
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --world
+dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --market
 python -m unittest discover -s tests/python -v
 python tools/validate_data.py
 python tools/generate_docs.py --check
@@ -95,8 +108,8 @@ For an intentional NuGet dependency change, run `dotnet restore SaltAndLedger.sl
 
 | Path | Purpose |
 | --- | --- |
-| `src/SaltAndLedger.Simulation/` | Unity-independent content, atomic production, deterministic world steps, and immutable results |
-| `samples/SaltAndLedger.Demo/` | Original production example and repeatable world scenario using canonical content |
+| `src/SaltAndLedger.Simulation/` | Unity-independent content, atomic production/trading, finite accounts, deterministic world steps, and immutable results |
+| `samples/SaltAndLedger.Demo/` | Original production, repeatable world, and finite market examples using canonical content |
 | `tests/SaltAndLedger.Simulation.Tests/` | Standalone C# tests |
 | `unity/` | Existing Unity 6 project, Bootstrap smoke component, and integration tests |
 | `data/content.json` | Canonical example content |

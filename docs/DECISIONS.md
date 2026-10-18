@@ -1,6 +1,6 @@
 # Architectural decisions
 
-These records describe accepted decisions through Task 1.1. Unresolved game rules live in [Economy](ECONOMY.md); hypotheses and deferred concepts live in [Ideas](IDEAS.md). New evidence can supersede a decision explicitly.
+These records describe accepted decisions through Task 1.2. Unresolved game rules live in [Economy](ECONOMY.md); hypotheses and deferred concepts live in [Ideas](IDEAS.md). New evidence can supersede a decision explicitly.
 
 ## ADR 001: Keep the simulation independent of Unity
 
@@ -68,7 +68,7 @@ The Bootstrap smoke component only orchestrates the existing loader and producti
 
 ## ADR 009: Advance a small world through explicitly ordered integer ticks
 
-**Status:** Accepted for Task 1.1; extends ADR 004 without changing its one-batch production contract.
+**Status:** Accepted for Task 1.1; extends ADR 004 without changing its one-batch production contract. ADR 012 extends this schedule with trading before production.
 
 Use one fixed runtime location with one inventory and explicit building instances that reference immutable canonical building and recipe definitions. A nonnegative signed 64-bit tick advances only when a host calls `WorldState.Step` successfully. A tick is an abstract economic step; no conversion to in-game hours, real seconds, or Unity frames is selected.
 
@@ -85,3 +85,23 @@ Keep the current world state as one immutable snapshot. Each step stages invento
 Copying small state each tick favors a simple failure contract over unmeasured optimization. It has an allocation cost; measure representative workloads before changing the representation. Snapshots and instance values expose no mutation path, and the API supports one sequential caller, with reentrant steps rejected. Thread-safe simulation is not implemented.
 
 Return `StepResult` with the starting tick, committed next snapshot, and ordered per-building outcomes. Changes contain only net-changed goods, sorted by ordinal ID. A shortage has no inventory changes; a successful zero-net batch can also have no changes, so its outcome remains explicit. Snapshot buildings and inventory have stable ordering as well. Do not retain step history in the world; hosts decide which results to keep. This supports inspection and deterministic comparison without claiming a persistent replay protocol or save format.
+
+## ADR 011: Validate finite accounting with fixed local quotes
+
+**Status:** Accepted for Task 1.2 as an experimental baseline.
+
+Use the existing location inventory as market stock and give one trader a separate inventory. Keep two nonnegative `long` cash balances and `long` unit prices, with checked transaction arithmetic and indivisible integer currency units. An immutable runtime `MarketConfiguration` supplies initial accounts and unique per-good quotes. The trader buys at ask and sells at bid, requiring `Ask >= Bid > 0` to prevent profitable immediate round trips at unchanged quotes. No global content prices or schema changes are needed.
+
+Calculate all four affected balances before applying a trade. Goods and cash are transferred, never implicitly created. Short stock or funds rejects the whole transaction; no partial fills, borrowing, fees, queues, or replenishment exist. Compute the checked requested total first, then check seller stock before buyer cash, giving stable rejection precedence. Receiver overflow remains exceptional.
+
+Market-owned production is a temporary ownership assumption and does not decide how player-owned factories work. Currency scale, starting balances, and prices are experimental. Fixed quotes isolate accounting correctness from future price formation; Task 1.2b should compare pricing hypotheses before adopting a dynamic model.
+
+## ADR 012: Execute trades before production within the atomic world step
+
+**Status:** Accepted prototype ordering; extends ADR 009 and ADR 010.
+
+Extend `Step` with optional ordered trade commands, preserving existing production-control source calls and behavior when no trading is configured. Validate all controls and trades, check tick overflow, stage private accounts and buildings, apply controls, execute trades in declared order, then run the existing production schedule. Construct the complete next snapshot and result before the single world commit.
+
+Sold logs can feed same-tick production, purchased logs cannot, and new production output is tradeable only next tick. Expected stock/funds rejections return explicit `TradeOutcome` values and allow later commands to proceed. Exceptions roll back both inventories, both cash balances, all controls, production, and clock together; no successful-looking partial result escapes. This is an experimental phase rule, not a finalized economic time model.
+
+`WorldSnapshot.Trading` is an optional immutable account snapshot; `Inventory` remains the sole market stock. `TradeAttempts` records ordered requests, quotes, outcomes, and before/after goods and cash. Rejected requests retain their quoted total with zero actual changes. No account service, message bus, persistent transaction history, or second simulation clock is introduced.
