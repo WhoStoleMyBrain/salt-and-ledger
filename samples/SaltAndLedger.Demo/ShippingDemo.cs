@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -7,9 +6,9 @@ using SaltAndLedger.Simulation;
 
 internal static class ShippingDemo
 {
-    private const string North = "northport";
-    private const string South = "southhaven";
-    private const int Capacity = 6;
+    private const string North = ShippingScenario.North;
+    private const string South = ShippingScenario.South;
+    private const int Capacity = ShippingScenario.Capacity;
 
     internal static int Run(ContentCatalog content)
     {
@@ -30,20 +29,7 @@ internal static class ShippingDemo
 
     private static string Simulate(ContentCatalog content, int logs, bool reversePorts)
     {
-        var ports = new[]
-        {
-            new PortConfiguration(North, new[]
-            {
-                Linear("logs", 10, 12, 6, 50), Linear("planks", 24, 6, 12, 60)
-            }, 1000, Array.Empty<BuildingInstance>(), new Dictionary<string, int> { ["logs"] = 18 }),
-            new PortConfiguration(South, new[]
-            {
-                Linear("logs", 20, 6, 12, 60), Linear("planks", 12, 6, 6, 50)
-            }, 1000, new[] { new BuildingInstance("sawmill_a", "sawmill", "saw_planks") },
-                new Dictionary<string, int> { ["logs"] = 2 })
-        };
-        var world = new MaritimeWorldState(content, reversePorts ? ports.Reverse() : ports,
-            "trader", 100, new ShipConfiguration("ship", Capacity, North), travelTicks: 2);
+        var world = ShippingScenario.Create(content, reversePorts);
         var output = new StringBuilder();
         output.AppendLine(FormattableString.Invariant($"Decision: buy {logs} logs, return with 2 planks."));
         AppendState(output, world.Snapshot());
@@ -125,10 +111,6 @@ internal static class ShippingDemo
             $"Result: purchased logs={logs}, planks=2; cost={purchaseCost}; sold logs={logs}, planks=2; revenue={saleRevenue}; realized gross profit={profit}; ticks={final.Tick}; cargo={final.Ship.CargoUnits}; trader cash=100->{final.TraderCash}."));
         return output.ToString();
     }
-
-    private static MarketQuote Linear(string goodId, long referencePrice, int target, long sensitivity, long maximum) =>
-        new MarketQuote(goodId, new InventoryPricing(InventoryPricingModel.Linear,
-            referencePrice, target, sensitivity, 1, maximum, 1));
 
     private static PortTradeCommand Trade(string portId, TradeDirection direction, string goodId, int quantity) =>
         new PortTradeCommand(portId, direction, goodId, quantity);

@@ -52,6 +52,9 @@ jobs:
       - name: Run manual shipping comparison
         # Checks measured balances, empty final cargo, repeatability, and reversed port setup.
         run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --shipping
+      - name: Run configurable route automation comparison
+        # Checks marginal limits, bounded waiting, determinism, and manual-equivalent states.
+        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --automation
       - name: Prepare Unity integration assets
         run: python tools/prepare_unity.py
       - name: Check Unity integration asset freshness

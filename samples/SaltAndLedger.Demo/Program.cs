@@ -7,12 +7,13 @@ using SaltAndLedger.Simulation;
 var worldMode = args.Length >= 2 && args[1] == "--world";
 var marketMode = args.Length == 2 && args[1] == "--market";
 var shippingMode = args.Length == 2 && args[1] == "--shipping";
+var automationMode = args.Length == 2 && args[1] == "--automation";
 var pricingMode = args.Length >= 2 && args[1] == "--pricing";
 var checkPricing = pricingMode && args.Length >= 3 && args[2] == "--check";
-if (args.Length != 1 && !(worldMode && args.Length <= 3) && !marketMode && !shippingMode &&
+if (args.Length != 1 && !(worldMode && args.Length <= 3) && !marketMode && !shippingMode && !automationMode &&
     !(pricingMode && args.Length <= (checkPricing ? 4 : 3)))
 {
-    Console.Error.WriteLine("Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--world [initialLogs] | --market | --pricing [--check] [output.json] | --shipping]");
+    Console.Error.WriteLine("Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--world [initialLogs] | --market | --pricing [--check] [output.json] | --shipping | --automation]");
     return 1;
 }
 
@@ -30,6 +31,7 @@ try
     if (worldMode) return WorldDemo.Run(content, initialLogs);
     if (marketMode) return MarketDemo.Run(content);
     if (shippingMode) return ShippingDemo.Run(content);
+    if (automationMode) return AutomationDemo.Run(content);
     if (pricingMode)
     {
         var outputIndex = checkPricing ? 3 : 2;
