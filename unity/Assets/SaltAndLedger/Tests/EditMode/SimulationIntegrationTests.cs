@@ -123,6 +123,48 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(before.GetMarketQuote("logs").Ask, Is.EqualTo(18L));
         }
 
+        [TestCase(InventoryPricingModel.Linear, 35L)]
+        [TestCase(InventoryPricingModel.Scarcity, 50L)]
+        public void StagedShipTransportsCargoAndTradesAtDestination(InventoryPricingModel model, long saleRevenue)
+        {
+            var asset = Resources.Load<TextAsset>("CanonicalContent");
+            Assert.That(asset, Is.Not.Null, "Run python tools/prepare_unity.py before opening Unity.");
+            var world = new MaritimeWorldState(ContentLoader.Load(asset.text), new[]
+            {
+                new PortConfiguration("northport", new[] { new MarketQuote("logs", 2, 3) }, 100,
+                    new BuildingInstance[0], new Dictionary<string, int> { ["logs"] = 2 }),
+                new PortConfiguration("southhaven", new[]
+                    { new MarketQuote("logs", new InventoryPricing(model, 10, 10, 10, 1, 100, 1)) }, 100,
+                    new[] { new BuildingInstance("sawmill_a", "sawmill", "saw_planks") })
+            }, "trader", 100, new ShipConfiguration("sloop", 2, "northport"), 2);
+            var initial = world.Snapshot();
+            var departed = world.Step(trades: new[] { new PortTradeCommand("northport", TradeDirection.Buy, "logs", 2) },
+                sailCommands: new[] { new SailCommand("southhaven") });
+            Assert.That(departed.After.Ship.DockedPortId, Is.Null);
+            Assert.That(departed.After.Ship.RemainingTravelTicks, Is.EqualTo(1));
+            Assert.That(departed.After.Ship.Cargo["logs"], Is.EqualTo(2));
+            Assert.That(departed.After.TraderCash, Is.EqualTo(94L));
+            var preview = departed.After.PreviewTrade("southhaven", new TradeCommand(TradeDirection.Sell, "logs", 2));
+            Assert.That(preview.TotalAmount, Is.EqualTo(saleRevenue), "Remote preview is hypothetical, not permission to trade.");
+            Assert.Throws<System.InvalidOperationException>(() => world.Step(trades:
+                new[] { new PortTradeCommand("southhaven", TradeDirection.Sell, "logs", 2) }));
+            Assert.That(world.Snapshot(), Is.SameAs(departed.After));
+            var arrived = world.Step();
+            Assert.That(arrived.After.Ship.DockedPortId, Is.EqualTo("southhaven"));
+            Assert.That(arrived.After.Tick, Is.EqualTo(2L));
+            Assert.That(arrived.MovementEvents.Last().Kind, Is.EqualTo(ShipMovementKind.Arrival));
+            var sold = world.Step(trades: new[] { new PortTradeCommand("southhaven", TradeDirection.Sell, "logs", 2) });
+            Assert.That(sold.TradeAttempts[0].Trade.TotalAmount, Is.EqualTo(saleRevenue));
+            Assert.That(sold.After.TraderCash, Is.EqualTo(94L + saleRevenue));
+            Assert.That(sold.After.Ports["northport"].MarketCash, Is.EqualTo(106L));
+            Assert.That(sold.After.Ports["southhaven"].MarketCash, Is.EqualTo(100L - saleRevenue));
+            Assert.That(sold.After.Ports["southhaven"].Inventory["logs"], Is.Zero);
+            Assert.That(sold.After.Ports["southhaven"].Inventory["planks"], Is.EqualTo(1));
+            Assert.That(sold.After.Ship.CargoUnits, Is.Zero);
+            Assert.That(initial.Ship.DockedPortId, Is.EqualTo("northport"));
+            Assert.That(initial.Ports["northport"].Inventory["logs"], Is.EqualTo(2));
+        }
+
         [Test]
         public void SimulationResolvesOneNewtonsoftAssemblyFromTheUnityPackage()
         {
