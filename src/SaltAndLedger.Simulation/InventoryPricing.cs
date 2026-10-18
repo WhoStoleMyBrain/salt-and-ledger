@@ -56,6 +56,17 @@ namespace SaltAndLedger.Simulation
         /// <summary>Sum the exact marginal prices over a legal market stock movement.</summary>
         public TradePrice Quote(TradeDirection direction, int marketStock, int quantity)
         {
+            var total = CalculateTotal(direction, marketStock, quantity);
+            var firstEdge = direction == TradeDirection.Buy ? marketStock : checked(marketStock + 1);
+            var lastEdge = direction == TradeDirection.Buy ? checked(marketStock - quantity + 1) : checked(marketStock + quantity);
+            return new TradePrice(quantity, PriceAtEdge(direction, firstEdge), PriceAtEdge(direction, lastEdge),
+                checked((long)total));
+        }
+
+        // Search probes may exceed a long buyer budget. Compare the existing exact sum
+        // before conversion; public quotes and executable transactions remain checked long.
+        internal BigInteger CalculateTotal(TradeDirection direction, int marketStock, int quantity)
+        {
             ValidateDirection(direction);
             if (marketStock < 0) throw new ArgumentOutOfRangeException(nameof(marketStock));
             if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity));
@@ -83,10 +94,7 @@ namespace SaltAndLedger.Simulation
                 low = severeHigh + 1;
             }
             if (low <= high) total += SumSegment(low, high, offset, false);
-            var firstEdge = direction == TradeDirection.Buy ? marketStock : checked(marketStock + 1);
-            var lastEdge = direction == TradeDirection.Buy ? checked(marketStock - quantity + 1) : high;
-            return new TradePrice(quantity, PriceAtEdge(direction, firstEdge), PriceAtEdge(direction, lastEdge),
-                checked((long)total));
+            return total;
         }
 
         private int ScarcityThreshold => Math.Max(1, TargetStock / 4);

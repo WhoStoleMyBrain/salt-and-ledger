@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Numerics;
 
 namespace SaltAndLedger.Simulation
 {
@@ -37,6 +38,13 @@ namespace SaltAndLedger.Simulation
             if (Pricing != null) return Pricing.Quote(command.Direction, marketStock, command.Quantity);
             var price = command.Direction == TradeDirection.Buy ? fixedAsk : fixedBid;
             return new TradePrice(command.Quantity, price, price, checked(command.Quantity * price));
+        }
+
+        internal bool FitsBudget(TradeDirection direction, int marketStock, int quantity, long budget)
+        {
+            var total = Pricing != null ? Pricing.CalculateTotal(direction, marketStock, quantity) :
+                (BigInteger)quantity * (direction == TradeDirection.Buy ? fixedAsk : fixedBid);
+            return total <= budget;
         }
 
         internal MarketPrice AtStock(int marketStock)
