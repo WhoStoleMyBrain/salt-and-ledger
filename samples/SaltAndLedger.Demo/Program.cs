@@ -5,9 +5,10 @@ using System.IO;
 using SaltAndLedger.Simulation;
 
 var worldMode = args.Length >= 2 && args[1] == "--world";
-if (args.Length != 1 && !(worldMode && args.Length <= 3))
+var marketMode = args.Length == 2 && args[1] == "--market";
+if (args.Length != 1 && !(worldMode && args.Length <= 3) && !marketMode)
 {
-    Console.Error.WriteLine("Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--world [initialLogs]]");
+    Console.Error.WriteLine("Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--world [initialLogs] | --market]");
     return 1;
 }
 
@@ -23,6 +24,7 @@ try
 {
     var content = ContentLoader.Load(File.ReadAllText(args[0]));
     if (worldMode) return WorldDemo.Run(content, initialLogs);
+    if (marketMode) return MarketDemo.Run(content);
 
     var inventory = new Inventory(content, new Dictionary<string, int> { ["logs"] = 6 });
     Console.WriteLine($"Loaded schema {content.SchemaVersion}: {content.Goods.Count} goods, {content.Buildings.Count} building, {content.Recipes.Count} recipe.");
