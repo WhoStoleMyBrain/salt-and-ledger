@@ -14,6 +14,26 @@ namespace SaltAndLedger.Simulation
         public IReadOnlyList<BuildingInstance> Buildings { get; }
         public TradingSnapshot? Trading { get; }
 
+        /// <summary>Derives stock-feasible marginal prices; cash is checked by PreviewTrade.</summary>
+        public MarketPrice GetMarketQuote(string goodId)
+        {
+            if (goodId == null) throw new ArgumentNullException(nameof(goodId));
+            if (Trading == null) throw new InvalidOperationException("Trading requires market configuration.");
+            return Trading.Quotes[goodId].AtStock(Inventory[goodId]);
+        }
+
+        /// <summary>
+        /// Read-only evaluation against this snapshot, using the execution calculator.
+        /// Reported transfers are hypothetical until a matching command is stepped.
+        /// </summary>
+        public TradeAttempt PreviewTrade(TradeCommand command)
+        {
+            if (command == null) throw new ArgumentNullException(nameof(command));
+            if (Trading == null) throw new InvalidOperationException("Trading requires market configuration.");
+            return TradingState.Preview(Trading.Quotes[command.GoodId], command,
+                Inventory[command.GoodId], Trading.TraderInventory[command.GoodId], Trading.MarketCash, Trading.TraderCash);
+        }
+
         internal WorldSnapshot(long tick, string locationId, IReadOnlyDictionary<string, int> inventory,
             IEnumerable<BuildingInstance> buildings, TradingSnapshot? trading = null)
         {

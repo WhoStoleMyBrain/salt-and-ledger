@@ -20,17 +20,36 @@ namespace SaltAndLedger.Simulation
 
         internal TradeAttempt Execute(Inventory marketInventory, TradeCommand command)
         {
+            var attempt = Preview(before.Quotes[command.GoodId], command,
+                marketInventory.GetQuantity(command.GoodId), traderInventory.GetQuantity(command.GoodId), marketCash, traderCash);
+            if (attempt.Outcome == TradeOutcome.Traded)
+            {
+                var marketUpdate = new Dictionary<string, int> { [command.GoodId] = attempt.MarketInventoryChange.After };
+                var traderUpdate = new Dictionary<string, int> { [command.GoodId] = attempt.TraderInventoryChange.After };
+                marketInventory.Commit(marketUpdate);
+                traderInventory.Commit(traderUpdate);
+                marketCash = attempt.MarketCashChange.After;
+                traderCash = attempt.TraderCashChange.After;
+            }
+            return attempt;
+        }
+
+        internal static TradeAttempt Preview(MarketQuote quote, TradeCommand command,
+            int marketQuantity, int traderQuantity, long marketCash, long traderCash)
+        {
             var buy = command.Direction == TradeDirection.Buy;
-            var quote = before.Quotes[command.GoodId];
-            var price = buy ? quote.Ask : quote.Bid;
-            var total = checked(command.Quantity * price);
-            var marketQuantity = marketInventory.GetQuantity(command.GoodId);
-            var traderQuantity = traderInventory.GetQuantity(command.GoodId);
+            // Fixed mode retains Task 1.2's total-overflow-before-shortage precedence.
+            // Dynamic mode prices only a feasible market inventory path, after seller-stock checks.
+            TradePrice? price = quote.IsFixed ? quote.Price(command, marketQuantity) : null;
             var outcome = TradeOutcome.Traded;
             if (buy && marketQuantity < command.Quantity) outcome = TradeOutcome.InsufficientMarketInventory;
             else if (!buy && traderQuantity < command.Quantity) outcome = TradeOutcome.InsufficientTraderInventory;
-            else if (buy && traderCash < total) outcome = TradeOutcome.InsufficientTraderFunds;
-            else if (!buy && marketCash < total) outcome = TradeOutcome.InsufficientMarketFunds;
+            if (outcome == TradeOutcome.Traded)
+            {
+                price = price ?? quote.Price(command, marketQuantity);
+                if (buy && traderCash < price.TotalAmount) outcome = TradeOutcome.InsufficientTraderFunds;
+                else if (!buy && marketCash < price.TotalAmount) outcome = TradeOutcome.InsufficientMarketFunds;
+            }
 
             var nextMarketQuantity = marketQuantity;
             var nextTraderQuantity = traderQuantity;
@@ -38,6 +57,7 @@ namespace SaltAndLedger.Simulation
             var nextTraderCash = traderCash;
             if (outcome == TradeOutcome.Traded)
             {
+                var total = price!.TotalAmount;
                 // Check every destination before applying any part of the transfer.
                 checked
                 {
@@ -48,20 +68,10 @@ namespace SaltAndLedger.Simulation
                 }
             }
 
-            var attempt = new TradeAttempt(command, price, total, outcome,
+            return new TradeAttempt(command, price, outcome,
                 new InventoryChange(command.GoodId, marketQuantity, nextMarketQuantity),
                 new InventoryChange(command.GoodId, traderQuantity, nextTraderQuantity),
                 new CashChange(marketCash, nextMarketCash), new CashChange(traderCash, nextTraderCash));
-            if (outcome == TradeOutcome.Traded)
-            {
-                var marketUpdate = new Dictionary<string, int> { [command.GoodId] = nextMarketQuantity };
-                var traderUpdate = new Dictionary<string, int> { [command.GoodId] = nextTraderQuantity };
-                marketInventory.Commit(marketUpdate);
-                traderInventory.Commit(traderUpdate);
-                marketCash = nextMarketCash;
-                traderCash = nextTraderCash;
-            }
-            return attempt;
         }
 
         internal TradingSnapshot Snapshot() => new TradingSnapshot(before.Quotes, marketCash,
