@@ -165,6 +165,67 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(initial.Ports["northport"].Inventory["logs"], Is.EqualTo(2));
         }
 
+        [TestCase(10L, 6, 219L, 990L, 891L, 2)]
+        [TestCase(8L, 2, 169L, 952L, 979L, 0)]
+        public void StagedPolicyCompletesTheMeasuredTradingExpedition(long buyLimit, int logs,
+            long traderCash, long northCash, long southCash, int southPlanks)
+        {
+            var asset = Resources.Load<TextAsset>("CanonicalContent");
+            Assert.That(asset, Is.Not.Null, "Run python tools/prepare_unity.py before opening Unity.");
+            var world = new MaritimeWorldState(ContentLoader.Load(asset.text), new[]
+            {
+                new PortConfiguration("northport", new[]
+                {
+                    AutomationLinear("logs", 10, 12, 6, 50),
+                    AutomationLinear("planks", 24, 6, 12, 60)
+                }, 1000, new BuildingInstance[0], new Dictionary<string, int> { ["logs"] = 18 }),
+                new PortConfiguration("southhaven", new[]
+                {
+                    AutomationLinear("logs", 20, 6, 12, 60),
+                    AutomationLinear("planks", 12, 6, 6, 50)
+                }, 1000, new[] { new BuildingInstance("sawmill_a", "sawmill", "saw_planks") },
+                    new Dictionary<string, int> { ["logs"] = 2 })
+            }, "trader", 100, new ShipConfiguration("ship", 6, "northport"), 2);
+            var policy = new TradeRoutePolicy("northport", "southhaven",
+                new RouteLeg("logs", 6, 2, buyLimit, 19), new RouteLeg("planks", 2, 2, 18, 31));
+            var initial = world.Snapshot();
+            var decision = RoutePolicyEvaluator.Evaluate(initial, policy);
+            Assert.That(world.Snapshot(), Is.SameAs(initial));
+            Assert.That(decision.SelectedQuantity, Is.EqualTo(logs));
+            Assert.That(decision.Action, Is.EqualTo(AutomationAction.BuyAndDepart));
+            var departed = TradeRouteAutomation.Execute(world, decision);
+            Assert.That(departed.After.Ship.RemainingTravelTicks, Is.EqualTo(1));
+            Assert.That(departed.After.Ship.Cargo["logs"], Is.EqualTo(logs));
+            Assert.Throws<System.InvalidOperationException>(() => TradeRouteAutomation.Execute(world, decision));
+            var arrived = TradeRouteAutomation.Advance(world, policy);
+            Assert.That(arrived.Decision.Action, Is.EqualTo(AutomationAction.ContinueSailing));
+            Assert.That(arrived.Result.After.Ship.DockedPortId, Is.EqualTo("southhaven"));
+            var delivered = TradeRouteAutomation.Advance(world, policy);
+            Assert.That(delivered.Result.TradeAttempts[0].Trade.ExecutedQuantity, Is.EqualTo(logs));
+            Assert.That(delivered.Result.After.Ports["southhaven"].Inventory["planks"], Is.EqualTo(2));
+            var remainder = AutomationRunner.Run(world, policy, 3, 3);
+            Assert.That(remainder.StopReason, Is.EqualTo(AutomationStopReason.TickLimit));
+            var after = remainder.After;
+            Assert.That(after.Tick, Is.EqualTo(6L));
+            Assert.That(after.Ship.DockedPortId, Is.EqualTo("northport"));
+            Assert.That(after.Ship.CargoUnits, Is.Zero);
+            Assert.That(after.TraderCash, Is.EqualTo(traderCash));
+            Assert.That(after.Ports["northport"].MarketCash, Is.EqualTo(northCash));
+            Assert.That(after.Ports["southhaven"].MarketCash, Is.EqualTo(southCash));
+            Assert.That(after.Ports["northport"].Inventory["logs"], Is.EqualTo(18 - logs));
+            Assert.That(after.Ports["northport"].Inventory["planks"], Is.EqualTo(2));
+            Assert.That(after.Ports["southhaven"].Inventory["logs"], Is.Zero);
+            Assert.That(after.Ports["southhaven"].Inventory["planks"], Is.EqualTo(southPlanks));
+            Assert.That(initial.TraderCash, Is.EqualTo(100L));
+            Assert.That(initial.Ship.CargoUnits, Is.Zero);
+        }
+
+        private static MarketQuote AutomationLinear(string goodId, long price, int target, long sensitivity, long maximum)
+        {
+            return new MarketQuote(goodId, new InventoryPricing(InventoryPricingModel.Linear,
+                price, target, sensitivity, 1, maximum, 1));
+        }
+
         [Test]
         public void SimulationResolvesOneNewtonsoftAssemblyFromTheUnityPackage()
         {
