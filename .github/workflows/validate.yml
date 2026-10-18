@@ -49,6 +49,9 @@ jobs:
         run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --market
       - name: Verify pricing experiments and report freshness
         run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --pricing --check
+      - name: Run manual shipping comparison
+        # Checks measured balances, empty final cargo, repeatability, and reversed port setup.
+        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --shipping
       - name: Prepare Unity integration assets
         run: python tools/prepare_unity.py
       - name: Check Unity integration asset freshness
