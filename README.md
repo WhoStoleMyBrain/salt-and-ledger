@@ -2,7 +2,7 @@
 
 A single-player maritime trading and economic strategy game intended for Unity 6. The long-term focus is building, optimizing, and automating trading networks within a simulated economy, inspired by Port Royale 2, Patrician 2, Antimatter Dimensions, and economic roguelikes.
 
-This repository contains **the Phase 0/0.5 foundation, Task 1.1 deterministic world, Task 1.2 finite trading/accounting prototype, Task 1.2b dynamic pricing experiments, and Task 1.3a manual two-port shipping**. It loads validated logs, planks, a sawmill, and one recipe; advances explicitly stepped worlds; trades at finite local markets; transports cargo with one ship; compares fixed and inventory-sensitive prices; and generates reference documentation from canonical definitions. The console demos and Unity host use the same simulation assembly. There is no graphical trading game yet.
+This repository contains **the Phase 0/0.5 foundation, Task 1.1 deterministic world, Task 1.2 finite trading/accounting prototype, Task 1.2b dynamic pricing experiments, Task 1.3a manual two-port shipping, and Task 1.3b configurable route automation**. It loads validated logs, planks, a sawmill, and one recipe; advances explicitly stepped worlds; trades at finite local markets; transports cargo manually or under player-selected rules; compares fixed and inventory-sensitive prices; and generates reference documentation from canonical definitions. The console demos and Unity host use the same simulation assembly. There is no graphical trading game yet.
 
 ## Prerequisites
 
@@ -56,7 +56,7 @@ The optional final argument sets initial logs from 0 through 2,147,483,647; the 
 
 The final world tick is **5**, with **0 logs and 3 planks**. The example reruns the same scenario and compares the complete transcript, then compares another run with reversed building input order. A mismatch fails explicitly. Different initial stock changes the outcomes while keeping the controls and schedule fixed.
 
-Each enabled building attempts one batch per abstract tick, ordered by ascending priority and ordinal instance ID. Controls affect the tick in which they are submitted. Shortage is an expected outcome; exceptional failure rolls back the entire tick, including controls and earlier batches. Immutable snapshots and structured results expose what happened without retaining unbounded history in the world. See [Mechanics](docs/MECHANICS.md) for exact semantics and [Architecture](docs/ARCHITECTURE.md) for the API. Tick duration, final price balance, wages, and configurable automation remain unresolved.
+Each enabled building attempts one batch per abstract tick, ordered by ascending priority and ordinal instance ID. Controls affect the tick in which they are submitted. Shortage is an expected outcome; exceptional failure rolls back the entire tick, including controls and earlier batches. Immutable snapshots and structured results expose what happened without retaining unbounded history in the world. See [Mechanics](docs/MECHANICS.md) for exact semantics and [Architecture](docs/ARCHITECTURE.md) for the API. Tick duration, final price balance, wages, and production-optimization policies remain unresolved.
 
 ## Run the finite market example
 
@@ -95,7 +95,19 @@ The handcrafted scenario connects Northport and Southhaven with a two-tick route
 
 Two equivalent runs buy 2 or 6 logs, sail to Southhaven, sell there, then carry 2 planks back to Northport. Both finish at tick 6 with empty cargo. Measured gross trading profits are **69** and **119**, respectively; starting trader cash is 100. The full load earns more here but less profit per log and leaves a different local market state. This is a controlled comparison, not a claim about optimal strategy or final balance.
 
-The demo prints per-tick accounts, local quotes, production, and voyage progress; rejects an oversized purchase; shows that trading while sailing fails without advancing time; and verifies exact results across repeated and reversed-port setup runs. Read [Manual shipping comparison](docs/SHIPPING_DEMO.md) for complete parameters and measured balances. Travel has no costs or risks, capacity counts items, market-owned production remains provisional, and no route automation or automatic replenishment is implemented.
+The demo prints per-tick accounts, local quotes, production, and voyage progress; rejects an oversized purchase; shows that trading while sailing fails without advancing time; and verifies exact results across repeated and reversed-port setup runs. Read [Manual shipping comparison](docs/SHIPPING_DEMO.md) for complete parameters and measured balances. Travel has no costs or risks, capacity counts items, market-owned production remains provisional, and no automatic replenishment is implemented.
+
+## Run configurable route automation
+
+```powershell
+dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --automation
+```
+
+Choose shipment targets/minimums, maximum marginal buy prices, minimum marginal sell prices, a cash reserve, and optional empty return. A stateless policy evaluates the committed maritime snapshot and submits the same manual commands, with at most one trade per tick and a safe optional departure. `MaritimeWorldState` still owns every account, cargo unit, voyage, and global tick. Automation executes the player's rules; it does not discover strategies or guarantee profit.
+
+The demo shares the manual starting fixture. A log buying limit of 10 carries six logs and realizes **119 gross profit in six ticks**; lowering it to 8 carries two and realizes **69**, also in six ticks. Both return with two planks and finish empty. Every committed state matches its equivalent manual itinerary. With destination cash set to zero, the ship instead retains six logs and stops after three unchanged waiting ticks, at tick 5; it reports the liquidity reason and no completed-interval profit. No impossible sale is repeatedly submitted.
+
+The runner prints decisions, exact prices, commands, transactions, cargo, local markets, and bounded stop reasons. It asserts repeated, reversed-port, and alternate-culture output. Four useful manual action batches become one policy configuration; both still need six host advances. See [Automation](docs/AUTOMATION.md) for exact rules, measurements, pausing/reconfiguration, safe execution, and limitations.
 
 ## Open the Unity smoke scene
 
@@ -121,6 +133,7 @@ dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/co
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --market
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --pricing --check
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --shipping
+dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --automation
 python -m unittest discover -s tests/python -v
 python tools/validate_data.py
 python tools/generate_docs.py --check
@@ -137,8 +150,8 @@ For an intentional NuGet dependency change, run `dotnet restore SaltAndLedger.sl
 
 | Path | Purpose |
 | --- | --- |
-| `src/SaltAndLedger.Simulation/` | Unity-independent content, atomic production/trading, finite accounts, exact pricing/previews, local and maritime world steps, capacity-limited cargo, and immutable results |
-| `samples/SaltAndLedger.Demo/` | Original production, repeatable world/market/shipping demos, and reproducible pricing experiments using canonical content |
+| `src/SaltAndLedger.Simulation/` | Unity-independent content, atomic production/trading, finite accounts, exact pricing/previews, local/maritime worlds, stateless route policies, bounded execution, and immutable results |
+| `samples/SaltAndLedger.Demo/` | Original production, repeatable world/market/shipping/automation demos, and reproducible pricing experiments using canonical content |
 | `tests/SaltAndLedger.Simulation.Tests/` | Standalone C# tests |
 | `unity/` | Existing Unity 6 project, Bootstrap smoke component, and integration tests |
 | `data/content.json` | Canonical example content |

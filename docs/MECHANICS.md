@@ -1,6 +1,6 @@
 # Maintained mechanics specification
 
-This page specifies implemented behavior through Task 1.3a that cannot be derived from content definitions alone. Update it with behavior changes. Generated reference pages describe only the canonical definitions and their relationships. Pricing formulas are implemented experimental hypotheses; accounting, deterministic execution, and atomicity are implementation contracts. The original single-location API remains available; the maritime rules below extend ownership and scheduling in a separate world type.
+This page specifies implemented behavior through Task 1.3b that cannot be derived from content definitions alone. Update it with behavior changes. Generated reference pages describe only the canonical definitions and their relationships. Pricing formulas are implemented experimental hypotheses; accounting, deterministic execution, and atomicity are implementation contracts. The original single-location API remains available; the maritime rules below extend ownership and scheduling in a separate world type.
 
 ## Inventory
 
@@ -282,12 +282,60 @@ Any exceptional failure preserves **all ports, all building controls, shared tra
 
 `MaritimeWorldSnapshot.Ports` is ordered by ordinal port ID. Each port exposes detached inventory, market cash, quote configurations, and immutable building controls. `TraderId` and `TraderCash` occur once; `Ship` exposes detached cargo, total `CargoUnits`, capacity, and location/voyage. Retained snapshots preserve historical quotes, cargo, and voyage state after later trades or sailing; movement events belong to the step result. Constructor collections and snapshots provide no mutation path into live state.
 
+## Configurable route policy
+
+`TradeRoutePolicy(originPortId, destinationPortId, outbound, returnLeg = null, cashReserve = 0, allowEmptyReturn = false)` is immutable runtime configuration. `RouteLeg(goodId, maxPurchaseQuantity, minShipmentQuantity, maxBuyPrice, minSellPrice)` selects one commodity, a total source-loading target, a departure minimum, and marginal price bounds. Both quantities are positive `int`, minimum cannot exceed target, both prices are positive `long`, and reserve is nonnegative `long`. IDs use the established runtime syntax. Ports must differ; an optional return commodity must differ from the outbound one. Without a return leg, empty return must be explicitly allowed. No relation is required between buy and sell price limits: the player may deliberately accept a loss.
+
+Evaluation resolves both ports and requires each configured commodity and its quote at both ports; unknown references throw `KeyNotFoundException`, including when disabled. Constructor errors remain exceptional. A valid configuration whose minimum exceeds this ship's capacity pauses with `MinimumExceedsCapacity`. Policies are authored runtime choices, not new canonical entities, and changing one does not mutate the world.
+
+### Stage, action, and retained cargo
+
+`RoutePolicyEvaluator.Evaluate(snapshot, policy, enabled = true)` is pure and stateless. It returns an immutable `AutomationDecision`: `Before` (the exact input snapshot), `Tick`, `Stage`, `Action`, `Reason`, optional `Trade`/`Departure` commands and successful hypothetical `Preview`, and `SelectedQuantity` (zero without a trade). Ship position is available through `Before.Ship`. No world account, inventory, clock, or mutable route phase is owned by the evaluator.
+
+The evaluation order is reference validation, disabled state, minimum/capacity compatibility, unexpected/mixed cargo, then physical stage. `Pause/Disabled`, `Pause/MinimumExceedsCapacity`, `Pause/UnexpectedCargo`, and `Pause/MixedCargo` use stage `Suspended` and no commands. Unexpected means a positive amount of a non-policy good; mixed means positive outbound and return cargo. These pauses require host intervention or enablement/configuration changes; the evaluator never discards goods to resolve them.
+
+| Committed state | Stage and next action |
+| --- | --- |
+| Sailing with compatible cargo | `InTransit`: `ContinueSailing/Sailing`, no commands |
+| At origin with return cargo | `ReturnSale`: sell the largest eligible amount |
+| At origin without return cargo | `OutboundLoading`: load outbound goods and depart when a useful shipment is ready |
+| At destination with outbound cargo | `OutboundSale`: sell the largest eligible amount |
+| At destination without outbound cargo | `ReturnLoading`: load return goods, or return empty only as configured |
+
+At most one trade and one optional departure are produced per evaluation. Sales never depart in the same tick; return loading waits until a subsequent snapshot has no outbound cargo. Sales can be partial and have no minimum shipment requirement. Unsold cargo remains aboard and prevents loading the other commodity or sailing away. Existing source cargo of the intended good counts toward the loading target: buy up to `maxPurchaseQuantity - carried`, bounded by stock and free capacity. If carried plus the largest feasible purchase meets the minimum, return `BuyAndDepart/PurchaseReady`. Do not buy subminimum increments. If no qualifying purchase is possible but existing cargo already meets the minimum, return `Depart/ShipmentReady`, including cargo already above the target.
+
+At the destination, `allowEmptyReturn` permits `Depart/EmptyReturnAllowed` only when cargo is entirely empty and either no return leg exists or its loading decision would wait. It does not override a pause, ignore unsold cargo, or authorize empty outbound departure. Enabling this choice can deliberately bypass waiting for return stock/prices/funds; it is not a prediction that waiting would be unprofitable.
+
+### Bounded quantity selection and wait reasons
+
+For purchases, the upper bound is the minimum of remaining loading target, source inventory, and free capacity. Purchase budget is `max(0, traderCash - cashReserve)`; reserve constrains new purchases without blocking sales or already-loaded departure. For sales, the bound is cargo of that good and `int.MaxValue - marketStock`, with market cash as the budget. The loading maximum/minimum do not cap sales.
+
+Select the largest feasible quantity by monotone binary search, with at most 31 probes for the public `int` range. Require the final marginal ask to be at most the buy limit, or the final marginal bid to be at least the sell limit. Existing curves make that final unit the worst price in the order. Fixed quotes obey the same test. Reuse the existing `PriceAtEdge` and shared exact total calculation; there is no per-unit probing or first-price-times-quantity approximation. Search probes compare exact `BigInteger` totals against the bounded budget before converting to a public total. Thus a huge unaffordable search probe can shrink normally without overflowing the public trade total. Once selected, the quantity must pass the existing `MaritimeWorldSnapshot.PreviewTrade` with `Traded` and the same exact complete amount.
+
+Receiver cash overflow and unexpected arithmetic/configuration failures are exceptional. They are not swallowed, treated as waits, or automatically retried with a smaller quantity. A full receiving market inventory is an ordinary `MarketInventoryFull` wait because no positive sale quantity exists. This selection contract changes no manual trade's overflow/rejection precedence.
+
+When source cargo is below the minimum and no qualifying purchase exists, reason precedence is `InsufficientInventory`, then `BuyPriceLimit`, then `CashReserve` if total trader cash could fund the needed minimum but the reserve prevents it, otherwise `InsufficientTraderFunds`. Reasons describe what prevents a useful shipment, not why every additional unit fails. At a sale with zero eligible quantity, precedence is `MarketInventoryFull`, then `SellPriceLimit`, then `InsufficientMarketFunds`. Waiting emits no trade or sailing command. A later evaluation reassesses current stock, cash, and prices; no outcome promises future recovery in a finite economy.
+
+### Safe execution and bounded host observation
+
+`TradeRouteAutomation.Execute(world, decision)` rejects a decision unless `ReferenceEquals(world.Snapshot(), decision.Before)`. It freshly previews any proposed trade and checks successful quantity/amount agreement, then submits only the decision's normal commands to `MaritimeWorldState.Step`. There is no intervening callback, unrelated manual command, or alternate economic execution path. `Advance(world, policy, enabled = true)` performs evaluation and execution consecutively, returning `AutomationStep { Decision, Result }`. One sequential host is required; this does not create a concurrent access guarantee.
+
+Buy-and-depart uses a successful preview of the authoritative starting state. A stale decision cannot let a rejected purchase accidentally initiate travel. The ordinary step still performs full validation, trade, departure, production, travel, and one commit; a later overflow rolls everything back. Manual behavior remains unchanged, including its permission to sail after an ordinary rejected trade. Evaluation/no-op decisions alone mutate nothing. Explicit execution of a wait or pause advances an ordinary empty tick; it does not freeze production or existing movement.
+
+The host owns enablement and which immutable policy to use next. It may disable automated calls, step manually, and replace policies between steps without changing current or historical state. Discard pending decisions on replacement: a decision intentionally retains its earlier chosen commands. No same-tick mixing of manual and automatic orders is supported by the execution wrapper.
+
+`AutomationRunner.Run(world, policy, maxTicks, maxNoProgressTicks, observer = null, enabled = true)` is an optional synchronous host helper; both limits must be positive `int`. It evaluates from each committed snapshot and executes one normal step. `Pause` stops before executing and reports `Disabled` or `Paused`. Otherwise, successful trades, movement events, or changed production inventory reset its consecutive no-progress count; tick changes alone do not. It stops with `NoProgress` when the idle limit is reached, otherwise `TickLimit` at the step bound. If both bounds are reached in one step, `NoProgress` takes precedence. The finite tick bound still applies when unrelated production keeps resetting the idle count.
+
+`AutomationRunResult` contains `StopReason`, `StepsExecuted`, `ConsecutiveNoProgressTicks`, `Before`, `After`, and nullable `LastDecision`. It retains no complete history and owns no continuing route stage. A stopped observation is not a world pause or proof of permanent deadlock. Restarting the helper reassesses the current world with fresh host counters. An optional observer runs after each committed step, must not mutate the world, and owns any retained diagnostics. Observer errors propagate after commit, and observed mutation is rejected after it has occurred; the callback is outside the world's atomicity contract. A multi-tick run is not one transaction.
+
+The [automation guide](AUTOMATION.md) records the executable full-load, restrictive-price, and liquidity-blocked comparisons. Equivalent manual and automated itineraries use the same six ticks and produce the same accounts and inventory; the automated route receives no hidden economic or movement advantage.
+
 ## Determinism and remaining scope
 
-The same validated content, initial world state, and per-tick ordered commands produce the same states and structured outcomes. Reversing equivalent input building collections does not change results. Callers advance several ticks by calling `Step` repeatedly; no batch-step helper is provided.
+The same validated content, initial world state, and per-tick ordered commands produce the same states and structured outcomes. Reversing equivalent input building collections does not change results. Callers advance several ticks by calling `Step` repeatedly; the optional bounded automation helper issues those same sequential calls without a separate clock.
 
 Equivalent quote, stock, content, and building collection order does not change outcomes. Trade sequence order deliberately does. Ordinal IDs and integer arithmetic avoid culture-dependent financial behavior; the market demo formats numbers invariantly.
 
 The maritime demo additionally compares repeated and reversed-port input runs, uses invariant numeric formatting, and asserts its documented transaction totals, balances, six-tick itinerary, and empty final cargo. Local production order is independent of port configuration insertion order. Remote quote inspection changes no state.
 
-Fixed, linear, and scarcity pricing are compared in [Pricing experiments](PRICING_EXPERIMENTS.md); manual two-port decisions are compared in [Manual shipping comparison](SHIPPING_DEMO.md). The dynamic formulas and scenario parameters remain provisional. There is no automatic replenishment, production duration, cooldown, rate per minute, operating cost, wage, energy, consumption, or configurable automation policy. Production and travel advance only because the host steps the world. Consumption phases remain unresolved. Deterministic step results are useful for comparison; they are not a save format, durable replay protocol, event bus, or persistent event-sourcing system.
+Fixed, linear, and scarcity pricing are compared in [Pricing experiments](PRICING_EXPERIMENTS.md); manual two-port decisions are compared in [Manual shipping comparison](SHIPPING_DEMO.md), with configured policies compared in [Automation](AUTOMATION.md). The dynamic formulas and scenario parameters remain provisional. There is no automatic replenishment, production duration, cooldown, rate per minute, operating cost, wage, energy, or consumption. Production and travel advance only because the host steps the world. Consumption phases remain unresolved. Deterministic step results are useful for comparison; they are not a save format, durable replay protocol, event bus, or persistent event-sourcing system.

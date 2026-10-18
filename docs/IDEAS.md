@@ -7,12 +7,12 @@ This document is a backlog of possibilities. It does not change the accepted [de
 | Hypothesis | Useful first experiment |
 | --- | --- |
 | Few interacting goods can create substantial depth | Compare decisions in a small fixed economy before introducing more chains |
-| Automation can reduce attention while preserving planning | Compare manual trading with a minimal configurable route policy |
+| Automation can reduce attention while preserving planning | Task 1.3b compares prescribed manual inputs and configured execution; next test whether players understand and recover from waits |
 | Trading and industry can each be viable specializations | Run the same fixed scenario with different initial capabilities and inspect advantages and failure modes |
 | Optional opportunities can favor a strategy without invalidating others | Offer a specialized opportunity alongside broadly achievable mandatory objectives |
 | Alternative starting capabilities can support replayability without stacking power | Compare sidegrade starting packages against the same challenge set |
 
-These gameplay hypotheses have not been established by the current prototypes. The separate [pricing experiments](PRICING_EXPERIMENTS.md) measure fixed/linear/scarcity behavior and accounting invariants; they do not establish strategic depth, enjoyable automation, or viable specializations. Record relevant gameplay evidence and revise a proposal before promoting it to an accepted decision.
+These gameplay hypotheses have not been established by the current prototypes. The separate [pricing experiments](PRICING_EXPERIMENTS.md) measure fixed/linear/scarcity behavior and accounting invariants; the [automation comparison](AUTOMATION.md) measures manual-equivalent execution, threshold choices, and bounded waits. Neither establishes strategic depth, enjoyable automation, or viable specializations. Record relevant gameplay evidence and revise a proposal before promoting it to an accepted decision.
 
 ## Intentionally deferred concepts
 
@@ -28,4 +28,4 @@ These gameplay hypotheses have not been established by the current prototypes. T
 
 ## Outside the current scope
 
-The current prototype implements finite local trading, production, experimental inventory-sensitive prices, and manual cargo transport between two handcrafted ports with one ship. It contains no general demand simulation, automatic replenishment, additional ships or traders, automated trade routes, procedural generation, roguelike progression, curses, modifiers, production switching, optimization policies, random events, competing merchants, piracy, combat, multiplayer, or elaborate Unity UI. Multiplayer is outside the accepted single-player direction and has no planned milestone.
+The current prototype implements finite local trading, production, experimental inventory-sensitive prices, and manual or configured automatic cargo transport between two handcrafted ports with one ship. It contains no general demand simulation, automatic replenishment, additional ships or traders, automatic route discovery or strategy optimization, procedural generation, roguelike progression, curses, modifiers, production switching, random events, competing merchants, piracy, combat, multiplayer, or elaborate Unity UI. Multiplayer is outside the accepted single-player direction and has no planned milestone.

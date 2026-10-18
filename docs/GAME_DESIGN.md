@@ -25,7 +25,7 @@ A system earns its complexity by creating decisions with consequences. Additiona
 - Production and trade automation should support configurable policies.
 - Automation should create opportunities for higher-level planning.
 
-Automation is part of the intended strategy experience. Its unlock structure, policy language, and user interface are unresolved. The current world supports simple enable/disable controls and repeats production when explicitly stepped; it contains no configurable automation policies.
+Automation replaces repetitive execution while leaving strategic choices with the player. Task 1.3b implements one configurable two-port route: the player selects commodities, shipment bounds, marginal price limits, a cash reserve, and optional empty return; the policy reliably buys, sells, waits, and sails through normal maritime commands. It does not discover profitable routes, predict future prices, or override finite constraints to force progress. The [automation comparison](AUTOMATION.md) measures equivalent manual outcomes and blocked behavior. Unlock structure and a graphical route editor remain unresolved, and these mechanical comparisons are not evidence of enjoyable gameplay.
 
 ## Strategic specialization
 
@@ -70,4 +70,4 @@ Phase 0 puts definitions in a canonical JSON file and produces both Markdown and
 
 ## Design status
 
-The principles above are accepted. The [economy questions](ECONOMY.md) and [experiment ideas](IDEAS.md) remain unresolved. The [roadmap](ROADMAP.md) is provisional and should change when prototypes show a better sequence. Abstract integer ticks, trades before production, stable production ordering, fixed local quotes, two inventory-sensitive pricing hypotheses, and manual two-port shipping are implemented. [Pricing experiments](PRICING_EXPERIMENTS.md) distinguishes measured behavior from the provisional model recommendation; [Manual shipping comparison](SHIPPING_DEMO.md) compares equivalent expeditions without unsold trader cargo. No final price balance, conversion of ticks to hours or days, map-generation algorithm, or progression system has been selected.
+The principles above are accepted. The [economy questions](ECONOMY.md) and [experiment ideas](IDEAS.md) remain unresolved. The [roadmap](ROADMAP.md) is provisional and should change when prototypes show a better sequence. Abstract integer ticks, trades before production, stable production ordering, fixed local quotes, two inventory-sensitive pricing hypotheses, manual two-port shipping, and configured route execution are implemented. [Pricing experiments](PRICING_EXPERIMENTS.md) distinguishes measured behavior from the provisional model recommendation; [Manual shipping comparison](SHIPPING_DEMO.md) compares equivalent expeditions without unsold trader cargo. No final price balance, conversion of ticks to hours or days, map-generation algorithm, or progression system has been selected.

@@ -1,6 +1,6 @@
 # Implemented architecture
 
-Phase 0 separates content, simulation, host presentation, and reference generation using a small set of concrete modules. Phase 0.5 connects the same simulation to a minimal Unity host. Task 1.1 adds an explicitly stepped world using the existing production operation. Task 1.2 adds finite market/trader accounts and atomic trades to those same steps. Task 1.2b adds exact inventory-sensitive pricing, shared trade preview/execution calculations, and reproducible headless experiments while retaining fixed prices. Task 1.3a introduces a focused maritime world owning two ports and one ship, reusing those economic calculations under one atomic clock. These layers introduce no speculative services or extension points for future systems.
+Phase 0 separates content, simulation, host presentation, and reference generation using a small set of concrete modules. Phase 0.5 connects the same simulation to a minimal Unity host. Task 1.1 adds an explicitly stepped world using the existing production operation. Task 1.2 adds finite market/trader accounts and atomic trades to those same steps. Task 1.2b adds exact inventory-sensitive pricing, shared trade preview/execution calculations, and reproducible headless experiments while retaining fixed prices. Task 1.3a introduces a focused maritime world owning two ports and one ship, reusing those economic calculations under one atomic clock. Task 1.3b adds immutable route policies and a stateless evaluator producing those same maritime commands, with safe execution and bounded host observation. These layers introduce no speculative services or extension points for future systems.
 
 ```text
 data/content.json + data/content.schema.json
@@ -19,7 +19,8 @@ data/content.json + data/content.schema.json
                             +-- MaritimeWorldState.Step --> immutable MaritimeStepResult
                             |       +-- two local markets, one trader account, one ship, one clock
                             |       +-- same trade calculator, pricing, and production operation
-                            |       +-- manual shipping comparison / headless and Unity tests
+                            |       +-- route policy --> snapshot decision --> normal commands
+                            |       +-- manual/automated shipping comparisons / headless and Unity tests
                             +-- original console demo / Unity Bootstrap smoke
 ```
 
@@ -27,8 +28,8 @@ data/content.json + data/content.schema.json
 
 | Module | Responsibility | Dependencies |
 | --- | --- | --- |
-| `src/SaltAndLedger.Simulation` | Content loading, immutable definitions, inventory, atomic production/trading, exact stock-sensitive prices, local and maritime world steps and results | `netstandard2.1`, C# 8, Newtonsoft.Json 13.0.3 |
-| `samples/SaltAndLedger.Demo` | Read content; demonstrate production/world/trading/shipping; compare pricing hypotheses and emit reproducible experiment reports | `net10.0`, simulation project |
+| `src/SaltAndLedger.Simulation` | Content loading, immutable definitions, inventory, atomic production/trading, exact stock-sensitive prices, local/maritime worlds, stateless route decisions, and bounded host execution | `netstandard2.1`, C# 8, Newtonsoft.Json 13.0.3 |
+| `samples/SaltAndLedger.Demo` | Read content; demonstrate production/world/trading/shipping/automation; compare pricing hypotheses and emit reproducible experiment reports | `net10.0`, simulation project |
 | `tests/SaltAndLedger.Simulation.Tests` | Headless tests of content, production, trading/accounting, pricing/preview invariants, scheduling, state ownership, determinism, and rollback | `net10.0`, simulation project, test dependencies |
 | `unity` | Bootstrap smoke scene/component, integration tests, and a player build entry point | Unity 6000.6.6f1, staged simulation DLL, Unity Newtonsoft package 3.2.2 |
 | `data` | Canonical content and Draft 2020-12 JSON Schema | No host or presentation dependency |
@@ -205,6 +206,27 @@ The shared internal `TradeCalculator` calculates price, stock/funds/capacity out
 
 `TradeAttempts` wrap the existing `TradeAttempt` with `PortId`; production results similarly identify the port. Departure, progress, and arrival records contain ship ID, origin, destination, and before/after remaining travel ticks. A one-tick route emits all three in that step. The world retains no event history. Detached earlier snapshots preserve their port balances, historical quotes, cargo, and voyage state.
 
+## Route automation over the maritime boundary
+
+[ADR 016](DECISIONS.md#adr-016-evaluate-route-policies-without-owning-economic-state) selects a stateless decision layer. Location and distinct outbound/return cargo identify the current stage, so there is no mutable route state requiring separate rollback. `MaritimeWorldState` still owns every inventory, account, building, voyage, and tick. No economic or movement implementation is duplicated in the policy or Unity host.
+
+| Type | Responsibility |
+| --- | --- |
+| `RouteLeg` / `TradeRoutePolicy` | Validate immutable commodity, shipment, marginal price, reserve, and empty-return choices |
+| `RoutePolicyEvaluator` | Read one committed snapshot; choose at most one normal trade and optional departure, or a structured wait/pause |
+| `AutomationDecision` | Retain the exact source snapshot, stage/action/reason, commands, selected quantity, and successful hypothetical preview |
+| `TradeRouteAutomation` | Reject stale decisions, freshly preview the trade, and exclusively submit those commands through normal `Step` |
+| `AutomationStep` | Pair one decision with its committed maritime result |
+| `AutomationRunner` / `AutomationRunResult` | Optional synchronous host observation with finite tick/idle bounds, stop reason, and no retained full history |
+
+The evaluator uses bounded binary search over existing monotone prices, stock, capacity, buyer cash, and reserve. It calls the same marginal edge function and exact sum as trading. A shared internal budget comparison permits large exact search probes without premature public-total conversion; the final selected trade passes the existing snapshot preview. Public receiver-balance overflow remains exceptional. [Mechanics](MECHANICS.md#configurable-route-policy) specifies minimum-shipment semantics, partial sales, cargo intervention, and reason precedence; the [automation guide](AUTOMATION.md) explains the player-facing choices and measured scenarios.
+
+`TradeRouteAutomation.Execute` requires identity with the current authoritative snapshot and permits no unrelated commands or callback between preview and step. This keeps a same-tick purchase/departure aligned without redesigning manual rejection behavior. A host must serialize access, discard old decisions when replacing policy, and choose manual or automated execution per step. Policy enablement is host-owned; explicit paused execution is an empty step, while the bounded runner stops before a pause. Neither pause nor configuration replacement modifies economic state.
+
+The runner counts committed trades, movement, and changed production as progress; it separately limits elapsed steps and consecutive no-progress ticks. It is a reusable headless host helper in the portable assembly, not a new authority or background scheduler. A reporting callback runs after commit and must not mutate the world. Its side effects and failures cannot be rolled back by an already committed step. Hosts decide what finite history, if any, to retain.
+
+The `--shipping` and `--automation` demos share the small `ShippingScenario` factory. The latter asserts equivalent manual/automatic states each tick, threshold-dependent outcomes, bounded liquidity waits, and repeated/reordered/culture-independent transcripts. It produces no canonical entries or generated report requiring another pipeline.
+
 ## Determinism and headless execution
 
 For a given validated catalog, initial world state, pricing configuration, and ordered commands per tick, the implemented world produces the same state and structured outcomes. A nonnegative 64-bit integer tick advances once per successful step. It represents abstract simulation time, with no hours, days, or real-time conversion. Exact integer pricing and checked public numeric bounds prevent tick, stock, cash, or transaction-total overflow from silently changing state.
@@ -235,6 +257,6 @@ Generated pages cannot define production time, prices, or behavior absent from t
 
 ## Boundaries and limitations
 
-Fixed quotes remain the accounting baseline; linear and scarcity curves are experimental stock-sensitive alternatives. The maritime prototype has exactly two handcrafted ports, one trader, one ship, and a fixed bidirectional connection. No automatic stock/cash replenishment, additional ships/traders, automated trade routes, world generation, objectives, modifiers, progression, random events, competing merchants, piracy, combat, multiplayer, automation policy, or elaborate UI exists here. Keep those in the provisional [roadmap](ROADMAP.md), not in unused foundation code. Travel is free of operating costs and risks; production remains publicly owned, cargo uses item counts, and perfect market information is a prototype assumption.
+Fixed quotes remain the accounting baseline; linear and scarcity curves are experimental stock-sensitive alternatives. The maritime prototype has exactly two handcrafted ports, one trader, one ship, and a fixed bidirectional connection with an optional configured policy. No automatic stock/cash replenishment, additional ships/traders, route discovery or optimization, world generation, objectives, modifiers, progression, random events, competing merchants, piracy, combat, multiplayer, or elaborate UI exists here. Keep those in the provisional [roadmap](ROADMAP.md), not in unused foundation code. Travel is free of operating costs and risks; production remains publicly owned, cargo uses item counts, and perfect market information is a prototype assumption. Stateless policy inference deliberately requires distinct directional commodities and pauses for mixed cargo; waiting cannot guarantee recovery in finite markets.
 
 Headless compilation and tests exercise the portable library and pipeline. Unity import, Editor behavior, Mono player execution, and IL2CPP player execution are separate verification points; follow [Unity integration](UNITY.md) and report which checks actually ran.

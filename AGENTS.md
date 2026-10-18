@@ -1,6 +1,6 @@
 # Repository guidance
 
-Salt & Ledger is a Unity 6 maritime economic strategy project. This repository implements the Phase 0/0.5 foundation, Task 1.1 deterministic world, Task 1.2 finite trading/accounting prototype, Task 1.2b inventory-sensitive pricing experiments, and Task 1.3a manual two-port shipping. Read `docs/ARCHITECTURE.md`, `docs/GAME_DESIGN.md`, and `docs/MECHANICS.md` before changing its boundaries or behavior.
+Salt & Ledger is a Unity 6 maritime economic strategy project. This repository implements the Phase 0/0.5 foundation, Task 1.1 deterministic world, Task 1.2 finite trading/accounting prototype, Task 1.2b inventory-sensitive pricing experiments, Task 1.3a manual two-port shipping, and Task 1.3b configurable route automation. Read `docs/ARCHITECTURE.md`, `docs/GAME_DESIGN.md`, and `docs/MECHANICS.md` before changing its boundaries or behavior.
 
 - Keep `src/SaltAndLedger.Simulation` independent of Unity, presentation, file-system policy, and documentation generation. Preserve `netstandard2.1` and C# 8 compatibility.
 - Prefer small concrete types and explicit state transitions. Do not add speculative service layers, plugin systems, or interfaces for deferred features.
@@ -10,6 +10,7 @@ Salt & Ledger is a Unity 6 maritime economic strategy project. This repository i
 - Use nonnegative `long` cash and positive `long` prices with checked public numeric bounds. Trading conserves goods and combined cash. The existing location inventory is market stock shared with production; trader stock stays separate. Preserve the fixed-price baseline and keep experimental pricing parameters in runtime configuration. Do not add automatic replenishment.
 - Preserve the single-location API. `MaritimeWorldState` owns exactly two independent ports, one trader cash account, one ship cargo inventory, and one global tick; never synchronize separate `WorldState` instances. Reuse the shared trade calculator and existing pricing/production operations. Cargo is the maritime trader's only goods inventory; all items occupy one capacity unit.
 - Maritime steps validate first, then apply controls, docked trades in declared order, departure, production by ordinal port ID and existing building order, and one travel advance before a single atomic commit. Departure consumes one travel tick; arrival allows trading on the next step. Remote previews are hypothetical, never execution permission. Capacity shortage is ordinary rejection; illegal ship/port actions are exceptional and roll back every port, account, control, ship state, and tick.
+- Keep route policies immutable and evaluation stateless over committed maritime snapshots. Issue existing commands through snapshot-bound execution with a fresh preview, one automated trade at most per tick, and no mixed manual commands. Reuse exact pricing for bounded quantity search; preserve unsold cargo, explicit wait/pause reasons, host-owned enablement, and finite runner limits. Never add hidden replenishment, a second clock, or autonomous strategy discovery to unblock a policy.
 - Price dynamic trades on reversible inventory edges with exact arithmetic and mathematical floor. Preserve same-edge `Ask >= Bid`, bounded positive prices, no profitable closed inventory cycles within one unchanged local pricing model without intervening production, and exact uninterrupted order-splitting totals. Cross-port transport profit is permitted. Preview and execution must share calculations; derive snapshot prices from stock, never a mutable price cache. Do not loop over requested units or distinct prices. Keep `UnitPrice` compatibility semantics explicit: dynamic bulk totals may differ from quantity times first marginal price.
 - Document non-data-derived behavior in `docs/MECHANICS.md`. Label design proposals as hypotheses or deferred ideas rather than accepted rules.
 - Do not hand-edit `docs/reference/` or `generated/encyclopedia.json`. Regenerate and commit those files with content changes.
@@ -31,6 +32,7 @@ dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --world
 dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --market
 dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --pricing --check
 dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --shipping
+dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --automation
 python -m pip install -r requirements.txt
 python tools/validate_data.py
 python tools/generate_docs.py

@@ -1,6 +1,6 @@
 # Architectural decisions
 
-These records describe accepted decisions through Task 1.3a. Unresolved game rules live in [Economy](ECONOMY.md); hypotheses and deferred concepts live in [Ideas](IDEAS.md). New evidence can supersede a decision explicitly.
+These records describe accepted decisions through Task 1.3b. Unresolved game rules live in [Economy](ECONOMY.md); hypotheses and deferred concepts live in [Ideas](IDEAS.md). New evidence can supersede a decision explicitly.
 
 ## ADR 001: Keep the simulation independent of Unity
 
@@ -139,3 +139,13 @@ Stage all ports, accounts, controls, and movement privately, then construct the 
 Validate all commands, check tick overflow, apply controls, execute trades at the starting dock in declared order, apply at most one departure, run production by ordinal port ID and then existing building order, and advance travel once before committing. The departure tick counts toward travel. Arrival permits trading on the following step. Remote quotes and hypothetical previews are allowed; actual trades require docking at their explicit port. Expected stock, funds, or cargo-capacity rejection is non-mutating; exceptional failure rolls back the entire maritime tick.
 
 The model deliberately supports one trader and one ship, one capacity unit per item, market-owned production, perfect market information, and travel without cost or risk. Those assumptions and the pricing formulas remain provisional. No automation, automatic replenishment, consumption, procedural world, or persistent event history is introduced.
+
+## ADR 016: Evaluate route policies without owning economic state
+
+**Status:** Selected before Task 1.3b implementation; accepted prototype automation contract.
+
+Keep route configuration immutable and route evaluation stateless. One outbound commodity and an optional distinct return commodity let the policy infer its stage from the committed ship location and cargo. `MaritimeWorldState` remains the sole owner of markets, cash, cargo, movement, and time. The evaluator produces at most one ordinary trade command plus an optional departure; it does not execute production or copy authoritative accounts into a second simulation.
+
+Select the largest feasible quantity by bounded binary search over stock, capacity, exact marginal price limits, buyer funds, and the configured trader reserve. Reuse the existing pricing summation with a `BigInteger` budget comparison for large search probes, then obtain the selected transaction through the existing snapshot preview. Public transaction totals and receiver balances retain checked numeric bounds; unexpected arithmetic failures remain exceptional. Minimum shipment sizes apply to the combined cargo departing its source, not to sales. Partial sales retain unsold cargo and prevent departure. Unexpected or mixed cargo requires intervention.
+
+Bind each immutable decision to its exact source snapshot. `TradeRouteAutomation.Execute` rejects a stale decision before stepping, freshly previews its trade, and submits only the decision's commands. One sequential host must not mix manual commands into that execution. This permits a successful purchase and departure in the same tick without changing manual rejection behavior or the existing atomic commit boundary. Pausing and replacing policies are host choices between steps; no persistent route stage or second clock exists. Waiting can remain indefinite in a finite economy, so a host runner must impose an explicit finite observation limit and report lack of progress without inventing replenishment.

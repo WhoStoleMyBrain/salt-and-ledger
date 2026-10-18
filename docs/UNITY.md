@@ -49,14 +49,14 @@ A missing staged asset or invalid outcome fails explicitly. No Inspector content
 
 Open **Window > General > Test Runner** and run:
 
-- **Edit Mode:** `SaltAndLedger.UnityHost.EditModeTests` (8 cases covering explicit production, deterministic world scheduling, finite trading with production, both dynamic pricing models, maritime transport, and the single UPM Newtonsoft provider, including a hash comparison of the loaded DLL against the pinned package binary). Dynamic local-market cases check a read-only quote, a bulk purchase across several prices, historical snapshot isolation, and a reversal with no cash profit. Maritime cases transport cargo over two ticks, reject an in-transit trade, arrive, sell using the destination's linear/scarcity prices, and feed local production.
+- **Edit Mode:** `SaltAndLedger.UnityHost.EditModeTests` (10 cases covering explicit production, deterministic world scheduling, finite trading with production, both dynamic pricing models, maritime transport, configurable automation, and the single UPM Newtonsoft provider, including a hash comparison of the loaded DLL against the pinned package binary). Dynamic local-market cases check a read-only quote, a bulk purchase across several prices, historical snapshot isolation, and a reversal with no cash profit. Maritime cases transport cargo over two ticks, reject an in-transit trade, arrive, sell using the destination's linear/scarcity prices, and feed local production. Automation cases evaluate full and restrictive route policies, reject a stale decision, and finish the six-tick expedition with the headless comparison's exact cargo, stock, and cash results.
 - **Play Mode:** `SaltAndLedger.UnityHost.PlayModeTests` (1 test that loads Bootstrap and checks the component's actual `Start()` result).
 
 For repeatable command-line tests, close the Editor instance using this project first, or use a separate complete checkout prepared with the same commands. Do not launch a second Editor against an already-open project. The PowerShell examples below run from the repository root; change the Editor path for your installation. Piping to `Out-Host` makes PowerShell wait for the GUI executable to finish.
 
 ### Official Unity Agent Plugin workflow
 
-Tasks 1.2, 1.2b, and 1.3a use the locally installed `unity@unity-agent-plugin` **`unity:unity-cli`** skill and supported `unity test`/`unity build` commands. These batch workflows do not require a running Editor or the live Pipeline connection. The primary economic verification remains the headless suite; the Unity trade tests check that the same staged assembly works in the Editor, including exact `System.Numerics.BigInteger` pricing calculations and the maritime world's movement/account ownership. No additional dependency DLL is staged. Bootstrap and its Play Mode/player checks retain their original production behavior.
+Tasks 1.2, 1.2b, 1.3a, and 1.3b use the locally installed `unity@unity-agent-plugin` **`unity:unity-cli`** skill and supported `unity test`/`unity build` commands. These batch workflows do not require a running Editor or the live Pipeline connection. The primary economic verification remains the headless suite; the Unity trade tests check that the same staged assembly works in the Editor, including exact `System.Numerics.BigInteger` pricing calculations, maritime movement/account ownership, and route-policy evaluation/execution. No additional dependency DLL is staged. Bootstrap and its Play Mode/player checks retain their original production behavior.
 
 With the plugin's Unity CLI installed, check its version and discover existing Editors before starting a batch run. If sandbox restrictions prevent network or process discovery, retry with the required access; do not interpret restricted discovery as proof that no Editor is open. These examples assume `unity` is on PATH (the local Windows installation used `%LOCALAPPDATA%/Unity/bin/unity.exe`):
 
@@ -81,7 +81,7 @@ if ($LASTEXITCODE -ne 0) { throw "Unity Play Mode failed: $LASTEXITCODE" }
 
 [xml]$editResults = Get-Content "$resultsDir/editmode.xml"
 [xml]$playResults = Get-Content "$resultsDir/playmode.xml"
-if ($editResults.'test-run'.result -ne 'Passed' -or [int]$editResults.'test-run'.passed -ne 8 -or
+if ($editResults.'test-run'.result -ne 'Passed' -or [int]$editResults.'test-run'.passed -ne 10 -or
     $playResults.'test-run'.result -ne 'Passed' -or [int]$playResults.'test-run'.passed -ne 1) {
     throw 'Unexpected Unity test outcome or test count; inspect XML and logs.'
 }
@@ -263,6 +263,35 @@ The new Edit Mode cases buy 2 logs at Northport for 6, carry them over the two-t
 Local reports use `.cache/task13a-editmode.xml` and `.cache/task13a-playmode.xml`, with corresponding logs. Build provenance uses `.cache/task13a-build-mono.provenance.json`; the player log uses `.cache/task13a-player-mono.log`. NUnit counts, individual cases, successful build provenance, player exit code, and exact completion message were inspected. A process guard initially matched the CLI's own `unity.exe`; checking the executable path distinguished it from the Editor before continuing through the supported workflow.
 
 Editor logs retain the verification directory-name warning and duplicate assembly hint-path warnings. The successful CLI build also reports licensing-client validation and entitlement-404 diagnostics in `editorErrors`. A read-only official `unity license status` call reported an active license and signed-in state. The specific entitlement-diagnostic cause remains unresolved; no package or license configuration was changed to suppress it. The player smoke remains production-only: maritime behavior is verified headlessly and in Edit Mode, not through player shipping gameplay. See [Manual shipping comparison](SHIPPING_DEMO.md) for economic measurements and limitations.
+
+### Task 1.3b automation verification
+
+Checked on Windows on **2026-10-18**, using .NET SDK **10.0.402**, Unity **6000.6.6f1**, and official Unity CLI **1.0.0-beta.13** from plugin **0.1.8-beta**. The CLI update check confirmed the current version. Unrestricted Pipeline discovery found no running Editor or Safe Mode instance; executable-path checks also guarded the verification-project refresh. Hash comparisons confirmed identical prepared simulation DLL and Edit Mode source in the isolated project.
+
+| Check | Result |
+| --- | --- |
+| Locked restore and Release solution build | Passed, zero build warnings/errors; no dependency changes |
+| Complete .NET suite | 310 passed: all 246 previous cases and 64 automation cases |
+| Original production, world, and market demos | Passed with their existing outcomes |
+| Manual `--shipping` demo | Passed; output matches the Task 1.3a transcript after extracting the shared scenario factory |
+| New `--automation` comparison | Passed; full/restrictive policies earn 119/69 over six ticks, with identical manual states at every tick; the liquidity-blocked route stops at tick 5 with all six logs retained |
+| Pricing experiment freshness | Passed: 165 observations and 1,883 invariant checks per run; repeated and `tr-TR` reports match the unchanged pricing JSON |
+| Python pipeline tests | 39 passed |
+| Canonical validation and generated-reference freshness | Passed; canonical content/schema and generated artifacts unchanged |
+| Authored documentation and strict MkDocs | Passed; policy semantics, examples, scope statements, and measured comparison reviewed against code and executable results |
+| Unity preparation and freshness | Passed; compiled-DLL/content staging and the single UPM Newtonsoft provider are retained |
+| Official CLI Edit Mode | 10 passed, including both new six-tick automation policy cases, stale-decision rejection, and unchanged historical snapshots |
+| Official CLI Play Mode | 1 passed; Bootstrap retains its original production result |
+| Official CLI Windows x64 Mono build and player execution | Passed; successful fresh-build provenance and hidden player exit 0, with the exact 0 logs / 3 planks Bootstrap smoke completion message |
+| IL2CPP, other platforms, visual rendering, automated trading inside a player, large-world profiling, and remote GitHub Actions | Not run |
+
+The two automation Edit Mode cases use the same scenario parameters and measured balances as the headless comparison. They evaluate the policy without mutation, apply its normal buy/depart commands, reject reuse of a stale decision, advance travel, sell at the destination, and complete the return through the bounded runner. The final expected trader balances are **219** and **169**, with empty cargo and the exact corresponding market stocks/cash. Unity contains only setup and assertions; all route decisions, quantity searches, accounting, and movement come from the staged library.
+
+Local NUnit artifacts use `.cache/task13b-editmode.xml` and `.cache/task13b-playmode.xml`, with corresponding logs. Build provenance uses `.cache/task13b-build-mono.provenance.json`; the player log uses `.cache/task13b-player-mono.log`. NUnit counts and individual cases, successful build provenance, player exit code, and the exact smoke completion message were inspected. Bootstrap remains a production-only player smoke; automation is covered headlessly and in Edit Mode, not through player route gameplay. [Automation](AUTOMATION.md) records the policy rules, complete measured comparison, and economic limits.
+
+An initial preparation call used the sandbox's default .NET cache and could not reach NuGet. Retrying with the repository-local caches then exposed the blocked NuGet vulnerability-metadata lookup as `NU1900`. A locked restore with required network access succeeded, followed by preparation and freshness verification. Package versions and audit checks were not changed to bypass the failure.
+
+The successful official Unity workflow still emitted the verification directory-name and duplicate assembly hint-path warnings. The build's `editorErrors` also lists licensing-client validation and entitlement-404 diagnostics. The official license-status check reported an active license and signed-in state; their specific entitlement cause remains unresolved. Play Mode logged an unavailable debugger listener on port 3380; a subsequent local check found no listener, so its cause remains unresolved and debugger attachment is unverified. These diagnostics did not prevent the inspected tests, build, or player smoke from passing. No package, licensing, or debugger configuration was changed to suppress them.
 
 ### Remaining player verification
 
