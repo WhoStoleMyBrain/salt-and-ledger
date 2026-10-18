@@ -2,7 +2,7 @@
 
 A single-player maritime trading and economic strategy game intended for Unity 6. The long-term focus is building, optimizing, and automating trading networks within a simulated economy, inspired by Port Royale 2, Patrician 2, Antimatter Dimensions, and economic roguelikes.
 
-This repository contains **the Phase 0/0.5 foundation, Task 1.1 deterministic world, Task 1.2 finite trading/accounting prototype, and Task 1.2b dynamic pricing experiments**. It loads validated logs, planks, a sawmill, and one recipe; advances an explicitly stepped world; transfers goods and cash between one market and one trader; compares fixed and inventory-sensitive prices; and generates reference documentation from canonical definitions. The console demos and Unity host use the same simulation assembly. There is no playable economic game yet.
+This repository contains **the Phase 0/0.5 foundation, Task 1.1 deterministic world, Task 1.2 finite trading/accounting prototype, Task 1.2b dynamic pricing experiments, and Task 1.3a manual two-port shipping**. It loads validated logs, planks, a sawmill, and one recipe; advances explicitly stepped worlds; trades at finite local markets; transports cargo with one ship; compares fixed and inventory-sensitive prices; and generates reference documentation from canonical definitions. The console demos and Unity host use the same simulation assembly. There is no graphical trading game yet.
 
 ## Prerequisites
 
@@ -85,6 +85,18 @@ Snapshot marginal quotes and read-only trade previews use execution's own calcul
 
 Read [Pricing experiments](docs/PRICING_EXPERIMENTS.md) for parameters, measured comparisons, limitations, and the provisional recommendation, and [Mechanics](docs/MECHANICS.md#inventory-sensitive-pricing-hypotheses) for exact formulas and boundaries. These curves are experiments; passing accounting tests does not establish balance or enjoyable gameplay.
 
+## Run the manual shipping comparison
+
+```powershell
+dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --shipping
+```
+
+The handcrafted scenario connects Northport and Southhaven with a two-tick route. One trader has one cash account and one ship with capacity 6; its cargo is the trader's only goods inventory. Each port has independent finite stock, cash, and linear pricing, and Southhaven owns one active sawmill. A single `MaritimeWorldState` owns both ports, the ship, trader, and global tick; it reuses the existing transaction, pricing, and production calculations.
+
+Two equivalent runs buy 2 or 6 logs, sail to Southhaven, sell there, then carry 2 planks back to Northport. Both finish at tick 6 with empty cargo. Measured gross trading profits are **69** and **119**, respectively; starting trader cash is 100. The full load earns more here but less profit per log and leaves a different local market state. This is a controlled comparison, not a claim about optimal strategy or final balance.
+
+The demo prints per-tick accounts, local quotes, production, and voyage progress; rejects an oversized purchase; shows that trading while sailing fails without advancing time; and verifies exact results across repeated and reversed-port setup runs. Read [Manual shipping comparison](docs/SHIPPING_DEMO.md) for complete parameters and measured balances. Travel has no costs or risks, capacity counts items, market-owned production remains provisional, and no route automation or automatic replenishment is implemented.
+
 ## Open the Unity smoke scene
 
 After installing the Python dependencies, run from the repository root:
@@ -108,6 +120,7 @@ dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/co
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --world
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --market
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --pricing --check
+dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --shipping
 python -m unittest discover -s tests/python -v
 python tools/validate_data.py
 python tools/generate_docs.py --check
@@ -124,8 +137,8 @@ For an intentional NuGet dependency change, run `dotnet restore SaltAndLedger.sl
 
 | Path | Purpose |
 | --- | --- |
-| `src/SaltAndLedger.Simulation/` | Unity-independent content, atomic production/trading, finite accounts, exact pricing/previews, deterministic world steps, and immutable results |
-| `samples/SaltAndLedger.Demo/` | Original production, repeatable world/market demos, and reproducible pricing experiments using canonical content |
+| `src/SaltAndLedger.Simulation/` | Unity-independent content, atomic production/trading, finite accounts, exact pricing/previews, local and maritime world steps, capacity-limited cargo, and immutable results |
+| `samples/SaltAndLedger.Demo/` | Original production, repeatable world/market/shipping demos, and reproducible pricing experiments using canonical content |
 | `tests/SaltAndLedger.Simulation.Tests/` | Standalone C# tests |
 | `unity/` | Existing Unity 6 project, Bootstrap smoke component, and integration tests |
 | `data/content.json` | Canonical example content |

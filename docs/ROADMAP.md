@@ -6,20 +6,20 @@ This sequence describes planned work, not completed features or a fixed delivery
 | --- | --- | --- |
 | 0 | Project foundation, small architecture, automated tests, canonical content, and documentation pipeline | Implemented |
 | 0.5 | .NET 10 toolchain and minimal Unity integration using the existing simulation | Implemented; verification scope in [Unity integration](UNITY.md) |
-| 1 | Deterministic simulation, markets, finite inventories, ships, basic trading, and trade automation | In progress; Tasks 1.1, 1.2, and 1.2b implemented |
+| 1 | Deterministic simulation, markets, finite inventories, ships, basic trading, and trade automation | In progress; Tasks 1.1, 1.2, 1.2b, and 1.3a implemented |
 | 2 | Fixed-map scenarios, objectives, time limits, and roguelike runs | Planned |
 | 3 | Constrained procedural world generation with economic viability checks | Planned |
 | 4 | Modifiers, curses, difficulty levels, and challenge combinations | Planned |
 | 5 | Lateral meta progression through starting packages, alternative production capabilities, and new economic problems | Planned |
 | 6+ | Advanced competitors, piracy, political systems, optional combat, and other features justified by gameplay testing | Deferred |
 
-Phase 0 includes logs, planks, a sawmill, one production conversion, validation, a console demo, headless tests, and generated reference output. Phase 0.5 exposes the same behavior through a Unity component and integration tests. Task 1.1 adds one fixed location, multiple runtime building instances, an abstract 64-bit tick, enable/disable commands, deterministic production scheduling, atomic world steps, and structured immutable results. Task 1.2 extends that world with one finite market, one trader, separate goods/cash accounts, and explicit trading. Task 1.2b adds exact stock-sensitive pricing, read-only trade previews, and reproducible pricing comparisons. All use the same canonical content and production operation; no ships or graphical market interface are implemented.
+Phase 0 includes logs, planks, a sawmill, one production conversion, validation, a console demo, headless tests, and generated reference output. Phase 0.5 exposes the same behavior through a Unity component and integration tests. Task 1.1 adds one fixed location, multiple runtime building instances, an abstract 64-bit tick, enable/disable commands, deterministic production scheduling, atomic world steps, and structured immutable results. Task 1.2 extends that world with one finite market, one trader, separate goods/cash accounts, and explicit trading. Task 1.2b adds exact stock-sensitive pricing, read-only trade previews, and reproducible pricing comparisons. Task 1.3a adds two ports, one shared trader account, and one manually sailed cargo ship. All reuse the same canonical content, transaction/pricing calculations, and production operation. No graphical trading interface is implemented.
 
 ## Task 1.1 scope and remaining questions
 
 The world example uses two sawmills and configurable initial stock. It advances five ticks, demonstrates controls and resource exhaustion, and compares repeated runs including reversed building input order. Tests cover scheduling, scarcity, state ownership, and failures; actual Unity verification and its limits are recorded in [Unity integration](UNITY.md).
 
-The implemented one-batch-per-tick schedule is provisional. Tick duration, allocation fairness, production costs, and future arrival/consumption phases remain open. Task 1.2 orders trades before production as an experimental rule. Fixed priority/ID ordering can starve later facilities, and per-tick copying has not been benchmarked at scale. No save/replay compatibility or concurrent access contract is promised.
+The implemented one-batch-per-tick schedule is provisional. Tick duration, allocation fairness, production costs, and future consumption phases remain open. Task 1.2 orders trades before production as an experimental rule; Task 1.3a places travel progress and arrival after production. Fixed priority/ID ordering can starve later facilities, and per-tick copying has not been benchmarked at scale. No save/replay compatibility or concurrent access contract is promised.
 
 ## Task 1.2: finite markets, trading, and accounting
 
@@ -27,7 +27,7 @@ Implemented: positive fixed bid/ask quotes, nonnegative 64-bit integer cash, sep
 
 The `--market` demo exposes goods/cash changes across four ticks, checks its documented final state, and compares repeated/reordered setups. Tests verify accounting, conservation, numeric boundaries, ordering, immutability, culture independence, and rollback. A Unity Edit Mode test exercises a sale feeding production and a later purchase using the staged DLL. [Unity integration](UNITY.md) records actual execution and limits; [Mechanics](MECHANICS.md) specifies the implemented rules.
 
-Task 1.2's fixed quotes remain an unchanged experimental baseline alongside the dynamic alternatives below. No stock/cash replenishment, ships, routes, procedural content, extra goods, consumption, or automation has been added.
+Task 1.2's fixed quotes remain an unchanged experimental baseline alongside the dynamic alternatives below. Its single-location demo remains unchanged by the later shipping prototype. Stock/cash replenishment, procedural content, extra goods, consumption, and automation remain deferred.
 
 ## Task 1.2b: dynamic market pricing experiments
 
@@ -37,16 +37,24 @@ The `--pricing` runner compares high/moderate/severe stock conditions, productio
 
 These implementations establish pricing correctness under the stated contracts, not final balance or enjoyable gameplay. Clamping and integer rounding can flatten responses; the scarcity knee can amplify late purchases; finite cash may prevent an otherwise attractive trade. Targets smaller than 8 do not expose a distinct scarcity branch. The relationship between price depth and the existing production conversion still needs calibration.
 
-## Recommended next task: price and production calibration
+## Task 1.3a: two ports, one ship, manual trading
 
-Run focused comparative scenarios using the existing goods, production conversion, and finite accounts. Vary reference values, targets, sensitivity, spread, and initial liquidity explicitly; observe whether the cost of logs, value of planks, production cadence, and cash concentration support understandable choices. Keep fixed and alternative curves available, and use the current report as the reproducible baseline. Compare decision consequences before selecting final defaults or adding economic systems.
+Implemented: one `MaritimeWorldState` owns two independent finite markets, a shared trader cash account, one ship with capacity-limited cargo, and one atomic global tick. Buy/sell commands require the starting dock. Manual departure uses one fixed bidirectional connection, with travel progressing once at the end of each tick, including departure. Arrival permits destination trading on the following step. Each port produces locally using the existing operation; both use existing fixed, linear, or scarcity pricing and the shared transaction calculator.
 
-This is proposed work, not implemented tuning or a permanent model choice. Do not add replenishment, consumption, transport, or automation merely to make prices move. See [Economy](ECONOMY.md) for the remaining modeling questions.
+The `--shipping` demo compares 2-log and 6-log outbound shipments followed by identical 2-plank returns. Both end after six successful ticks with empty cargo; realized gross profits are 69 and 119 under the documented parameters. The runner checks exact balances, capacity rejection, illegal transit trading, repeatability, and reversed port input order. [Manual shipping comparison](SHIPPING_DEMO.md) records parameters, timing, measurements, and limits. [Unity integration](UNITY.md) records the integration checks actually executed.
+
+Cargo uses one unit per item; the ship is the trader's sole warehouse. The ports are handcrafted, information is perfect, production is market-owned, and travel has no costs or risk. Only one trader and one ship are supported. Those are provisional scope choices, not final balance or gameplay claims.
+
+## Recommended Task 1.3b: basic trade-route automation
+
+Proposed next assignment: define a small explicit route policy for the existing ship and ports, with bounded buy/sell quantities and clear handling of stock, funds, capacity, and price limits. Have the policy issue the same validated manual commands through the same global step. Make stop/retry/wait behavior observable, deterministic, and testable. Compare equivalent manual and automated itineraries and preserve the existing timing, account conservation, and whole-tick rollback contracts.
+
+Keep this narrow: no additional ships/traders, warehouses, pathfinding, demand, replenishment, random risk, UI framework, or persistent event history merely to support automation. A policy must not trade remotely, bypass finite constraints, silently transfer cargo, or add an independent clock. This recommendation is not implemented; Task 1.3b requires a separate assignment.
 
 ## Other follow-up work
 
 1. **Verify the intended player backend and stripping configuration.** Run the Bootstrap smoke scene in an IL2CPP player if that is the intended shipping backend, recording platform and stripping level. Diagnose concrete compatibility failures before adding preservation rules.
-2. **Calibrate local prices and production.** Follow the focused task above; defer consumption/demand systems until their role is justified.
-3. **Plan transport and minimal trade automation.** Two fixed ports and one ship remain later Phase 1 work, after local transactions and the ordering of new economic phases are established.
+2. **Calibrate local prices and production.** Vary price depth, conversion margins, and starting liquidity in reproducible scenarios; defer consumption/demand systems until their role is justified.
+3. **Measure simulation cost before enlarging the world.** Snapshot copying and result allocation favor clear atomicity; current verification does not establish throughput for large maps or fleets.
 
 These follow-ups are proposals, not selected final economic rules. Keep random behavior out until there is a concrete requirement and an explicit reproducible seed strategy.

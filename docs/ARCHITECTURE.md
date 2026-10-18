@@ -1,6 +1,6 @@
 # Implemented architecture
 
-Phase 0 separates content, simulation, host presentation, and reference generation using a small set of concrete modules. Phase 0.5 connects the same simulation to a minimal Unity host. Task 1.1 adds an explicitly stepped world using the existing production operation. Task 1.2 adds finite market/trader accounts and atomic trades to those same steps. Task 1.2b adds exact inventory-sensitive pricing, shared trade preview/execution calculations, and reproducible headless experiments while retaining fixed prices. These layers introduce no speculative services or extension points for future systems.
+Phase 0 separates content, simulation, host presentation, and reference generation using a small set of concrete modules. Phase 0.5 connects the same simulation to a minimal Unity host. Task 1.1 adds an explicitly stepped world using the existing production operation. Task 1.2 adds finite market/trader accounts and atomic trades to those same steps. Task 1.2b adds exact inventory-sensitive pricing, shared trade preview/execution calculations, and reproducible headless experiments while retaining fixed prices. Task 1.3a introduces a focused maritime world owning two ports and one ship, reusing those economic calculations under one atomic clock. These layers introduce no speculative services or extension points for future systems.
 
 ```text
 data/content.json + data/content.schema.json
@@ -16,6 +16,10 @@ data/content.json + data/content.schema.json
                             |       +-- optional market/trader accounts and pricing configuration
                             |       +-- shared exact price / trade preview calculations
                             |       +-- console world/market/pricing runs / headless and Unity tests
+                            +-- MaritimeWorldState.Step --> immutable MaritimeStepResult
+                            |       +-- two local markets, one trader account, one ship, one clock
+                            |       +-- same trade calculator, pricing, and production operation
+                            |       +-- manual shipping comparison / headless and Unity tests
                             +-- original console demo / Unity Bootstrap smoke
 ```
 
@@ -23,8 +27,8 @@ data/content.json + data/content.schema.json
 
 | Module | Responsibility | Dependencies |
 | --- | --- | --- |
-| `src/SaltAndLedger.Simulation` | Content loading, immutable definitions, inventory, atomic production/trading, exact stock-sensitive prices, deterministic world steps and results | `netstandard2.1`, C# 8, Newtonsoft.Json 13.0.3 |
-| `samples/SaltAndLedger.Demo` | Read content; demonstrate production/world/trading; compare pricing hypotheses and emit reproducible experiment reports | `net10.0`, simulation project |
+| `src/SaltAndLedger.Simulation` | Content loading, immutable definitions, inventory, atomic production/trading, exact stock-sensitive prices, local and maritime world steps and results | `netstandard2.1`, C# 8, Newtonsoft.Json 13.0.3 |
+| `samples/SaltAndLedger.Demo` | Read content; demonstrate production/world/trading/shipping; compare pricing hypotheses and emit reproducible experiment reports | `net10.0`, simulation project |
 | `tests/SaltAndLedger.Simulation.Tests` | Headless tests of content, production, trading/accounting, pricing/preview invariants, scheduling, state ownership, determinism, and rollback | `net10.0`, simulation project, test dependencies |
 | `unity` | Bootstrap smoke scene/component, integration tests, and a player build entry point | Unity 6000.6.6f1, staged simulation DLL, Unity Newtonsoft package 3.2.2 |
 | `data` | Canonical content and Draft 2020-12 JSON Schema | No host or presentation dependency |
@@ -91,7 +95,7 @@ bool produced = Production.TryRunBatch(inventory, "sawmill", "saw_planks");
 // produced == true; logs == 0; planks == 1.
 ```
 
-### World runtime types
+### Single-location world runtime types
 
 Canonical `BuildingDefinition` and recipe data remain immutable shared catalog entries. `BuildingInstance` identifies one actual runtime facility through `Id`, `BuildingId`, `RecipeId`, `Priority`, and `ProductionEnabled`. Multiple instances reference the same definitions without copying content. All instance properties are read-only. A world configuration change replaces the instance value in its next snapshot; it cannot modify canonical definitions.
 
@@ -172,13 +176,42 @@ Current marginal quotes are derived from each snapshot's authoritative inventory
 
 This copies small runtime state per tick to make the failure contract understandable. It has allocation and copying costs that should be measured before adapting it for large worlds; no performance target is claimed. There is no transaction framework, event bus, retained event history, save format, or replay engine. Hosts may retain selected `StepResult` objects for their own diagnostics. The world itself retains only its current snapshot.
 
+## Maritime ownership and shared calculations
+
+`MaritimeWorldState` is a focused second world owner. It preserves the original `WorldState` constructor, commands, demos, and outcomes. It does **not** contain two local worlds or synchronize their clocks. [ADR 015](DECISIONS.md#adr-015-own-the-two-port-prototype-in-one-maritime-world) records the ownership choice selected before implementation.
+
+| Type | Responsibility |
+| --- | --- |
+| `MaritimeWorldState` | Own exactly two ports, one trader, one ship, and a single atomic global tick |
+| `PortConfiguration` | Copy one port's ID, initial stock/cash, quotes, and local buildings |
+| `ShipConfiguration` | Copy one ship's ID, positive capacity, initial dock, and optional cargo |
+| `MaritimeWorldSnapshot` | Expose ordered ports, shared trader ID/cash, ship, tick, and route duration; derive quotes and hypothetical previews for an explicit port |
+| `PortSnapshot` | Expose one port's independent market inventory, cash, pricing configurations, and building controls |
+| `ShipSnapshot` | Expose cargo and used capacity, docked port or voyage origin/destination, and remaining travel ticks |
+| `PortTradeCommand` | Select the intended docked port and the existing direction/good/quantity trade request |
+| `PortProductionCommand` | Change one building's enabled state within its explicit port |
+| `SailCommand` | Request departure to the other port; at most one per step |
+| `MaritimeStepResult` | Return the starting tick, complete next snapshot, port-qualified trade/production attempts, and ordered movement events |
+
+Construction takes the catalog, exactly two `PortConfiguration` values, trader ID and starting cash, one `ShipConfiguration`, a positive `travelTicks`, and an optional nonnegative initial tick. All setup collections are copied. Port IDs are unique; building IDs are unique within their port and are addressed together with that port ID. The ship's starting port must exist. Snapshots sort ports by ordinal ID and retain each port's established priority/instance-ID building order.
+
+The trader's cash exists once at world level. The ship's `Cargo` is the trader's sole maritime goods inventory. A port owns no trader inventory or cash copy: it contains only market stock, market cash, quotes, and local buildings. Every item occupies one cargo unit; checked aggregate capacity prevents separate goods from bypassing the limit. The route is one bidirectional connection with a common configured duration, not a graph or pathfinding system.
+
+The shared internal `TradeCalculator` calculates price, stock/funds/capacity outcomes, and all affected balances for both preview and execution. `TradingState` uses it for the old local world; the maritime step supplies the selected port and the one working cargo/cash account. It invokes the existing immutable `MarketQuote` and `InventoryPricing`; no port-specific pricing or accounting algorithm exists. Each local production attempt still calls `Production.TryRunBatch` on that port's inventory. The worlds share economic operations while retaining their explicit scheduling and ownership code.
+
+`Step(commands = null, trades = null, sailCommands = null)` fully validates all three sequences against the starting snapshot, checks tick overflow, and stages every port plus the ship and trader privately. It applies controls, executes trades at the starting dock in declared order, applies a valid departure, runs production by ordinal port ID and local building order, then advances travel once. It constructs all snapshots and results before the only current-state assignment. Any exception in either port rolls back every staged inventory, balance, control, movement, and the tick. Expected resource/capacity rejections still permit the rest of the tick to finish.
+
+`snapshot.GetMarketQuote(portId, goodId)` derives local prices from the selected port's stock. `snapshot.PreviewTrade(portId, command)` is deliberately available remotely, including while sailing: it hypothetically applies the current cargo, shared cash, capacity, and selected market's rules **as if docked there**. It cannot authorize execution, reserve stock, or predict arrival-time prices. Actual `PortTradeCommand` execution requires matching the ship's starting dock. Neither quote inspection nor preview mutates state.
+
+`TradeAttempts` wrap the existing `TradeAttempt` with `PortId`; production results similarly identify the port. Departure, progress, and arrival records contain ship ID, origin, destination, and before/after remaining travel ticks. A one-tick route emits all three in that step. The world retains no event history. Detached earlier snapshots preserve their port balances, historical quotes, cargo, and voyage state.
+
 ## Determinism and headless execution
 
 For a given validated catalog, initial world state, pricing configuration, and ordered commands per tick, the implemented world produces the same state and structured outcomes. A nonnegative 64-bit integer tick advances once per successful step. It represents abstract simulation time, with no hours, days, or real-time conversion. Exact integer pricing and checked public numeric bounds prevent tick, stock, cash, or transaction-total overflow from silently changing state.
 
 Production order is ascending priority then ordinal instance ID, independent of input collection order. Commands targeting the same instance deliberately use their declared order, with the last enabled-state command winning. Attempt order and changed-good order are explicit; callers do not need dictionary enumeration accidents to compare runs. Fixed production order can starve later buildings and makes no fairness guarantee.
 
-`Step` has no implicit loop; the world demo calls it five times, repeats the scenario, and compares results with both identical and reversed building input collections. The market demo uses four ticks and repeats with reversed quote/stock setup order. Several steps use ordinary sequential calls, not a separate batch API. The simulation uses no random values, wall-clock inputs, Unity frames, or background scheduling. Trading precedes production; future arrival and consumption phases remain unresolved, as do seed management, save formats, and durable replay compatibility. The current API assumes one caller; concurrent mutation is not supported.
+`Step` has no implicit loop; the world demo calls it five times, repeats the scenario, and compares results with both identical and reversed building input collections. The market demo uses four ticks and repeats with reversed quote/stock setup order. The shipping demo compares two six-tick manual round trips and verifies both repeated and reversed-port input transcripts. Several steps use ordinary sequential calls, not a separate batch API. The simulation uses no random values, wall-clock inputs, Unity frames, or background scheduling. Trading precedes production; maritime travel progresses after production, and arrival enables trading on the next step. Consumption phases, seed management, save formats, and durable replay compatibility remain unresolved. The current APIs assume one caller; concurrent mutation is not supported.
 
 The `--pricing` host compares fixed, linear, and scarcity modes through the real world API. It records model parameters, previews, outcomes, stock/price movement, and cash changes in a deterministic JSON report, with a read-only `--check` mode for freshness. This report is a host-owned experiment artifact under `docs/experiments/`; it is separate from canonical content generation and `generated/encyclopedia.json`. [Pricing experiments](PRICING_EXPERIMENTS.md) explains the scenarios and conclusions. The runner does not imply a large-world throughput target or a verified thousands-of-runs benchmark.
 
@@ -202,6 +235,6 @@ Generated pages cannot define production time, prices, or behavior absent from t
 
 ## Boundaries and limitations
 
-Fixed quotes remain the accounting baseline; linear and scarcity curves are experimental stock-sensitive alternatives. No automatic stock/cash replenishment, multiple ports, ships, trade routes, world generation, objectives, modifiers, progression, random events, competing merchants, piracy, combat, multiplayer, automation policy, or elaborate UI exists here. Keep those in the provisional [roadmap](ROADMAP.md), not in unused foundation code.
+Fixed quotes remain the accounting baseline; linear and scarcity curves are experimental stock-sensitive alternatives. The maritime prototype has exactly two handcrafted ports, one trader, one ship, and a fixed bidirectional connection. No automatic stock/cash replenishment, additional ships/traders, automated trade routes, world generation, objectives, modifiers, progression, random events, competing merchants, piracy, combat, multiplayer, automation policy, or elaborate UI exists here. Keep those in the provisional [roadmap](ROADMAP.md), not in unused foundation code. Travel is free of operating costs and risks; production remains publicly owned, cargo uses item counts, and perfect market information is a prototype assumption.
 
 Headless compilation and tests exercise the portable library and pipeline. Unity import, Editor behavior, Mono player execution, and IL2CPP player execution are separate verification points; follow [Unity integration](UNITY.md) and report which checks actually ran.

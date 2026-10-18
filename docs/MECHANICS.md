@@ -1,12 +1,12 @@
 # Maintained mechanics specification
 
-This page specifies implemented behavior through Task 1.2b that cannot be derived from content definitions alone. Update it with behavior changes. Generated reference pages describe only the canonical definitions and their relationships. Pricing formulas are implemented experimental hypotheses; accounting, deterministic execution, and atomicity are implementation contracts.
+This page specifies implemented behavior through Task 1.3a that cannot be derived from content definitions alone. Update it with behavior changes. Generated reference pages describe only the canonical definitions and their relationships. Pricing formulas are implemented experimental hypotheses; accounting, deterministic execution, and atomicity are implementation contracts. The original single-location API remains available; the maritime rules below extend ownership and scheduling in a separate world type.
 
 ## Inventory
 
 An inventory belongs to a validated content catalog. It contains one quantity for each known good; unspecified initial quantities default to zero. Quantities are nonnegative signed 32-bit integers, from 0 through 2,147,483,647 inclusive. Unknown goods and negative initial quantities are rejected.
 
-These limits define an exact, bounded sample state representation. They do not decide future cargo units, storage capacity, market depth, or production balance. Reads do not mutate stock. A snapshot is detached and cannot be used to modify the inventory.
+These limits define an exact, bounded sample state representation. Maritime cargo additionally has the total item-count capacity specified below; the per-good bounds do not settle market depth or production balance. Reads do not mutate stock. A snapshot is detached and cannot be used to modify the inventory.
 
 ## One production command
 
@@ -37,7 +37,7 @@ The console demo starts at 6 logs and 0 planks. Three commands succeed; a fourth
 
 The ratio is demonstration data. It does not imply physical conservation units, an economic price relationship, or a balanced production chain.
 
-## World state and time
+## Single-location world state and time
 
 `WorldState` owns one fixed location, one shared production inventory, a collection of building instances, an optional market/trader configuration, and a nonnegative signed 64-bit `Tick`. The default tick is 0. A successful `Step` advances it by exactly 1 with checked arithmetic; a step starting at 9,223,372,036,854,775,807 fails without mutation. An empty world or a world with no enabled buildings still advances when stepped.
 
@@ -47,7 +47,7 @@ A `BuildingInstance` has its own stable `Id`, a canonical `BuildingId`, a canoni
 
 The host supplies initial stock; unspecified goods start at zero. It may also supply a nonnegative initial tick. State is copied into the world. Callers cannot change its inventory or building flags through retained constructor inputs or snapshots. Building instances are immutable values; a configuration change replaces the relevant value inside the next world snapshot. There is no construction, demolition, runtime priority change, or recipe-switching command.
 
-## Finite market, ownership, and money
+## Single-location finite market, ownership, and money
 
 Supplying `market: new MarketConfiguration(...)` enables trading with one trader. The existing `WorldSnapshot.Inventory` is the market's stock: there is no second copy of those goods. Buildings consume and produce in that same stock. The trader has a separate inventory, stable runtime ID, and cash balance; production never touches the trader's inventory or either cash balance. Public-market ownership of production is a **prototype assumption**, not a permanent decision about player-owned factories.
 
@@ -111,7 +111,7 @@ The calculator uses `BigInteger` intermediates, at most two affine curve segment
 
 The pure `InventoryPricing.PriceAtEdge(direction, upperStock)` and `Quote(direction, marketStock, quantity)` methods expose the same curve calculation for experiments. They know no trader stock or cash. A pure `Quote` purchase beyond market stock throws `ArgumentOutOfRangeException`; a sale beyond maximum market stock throws `OverflowException`. Use the world's `PreviewTrade` to obtain normal stock/funds rejection outcomes rather than calling this lower-level price calculator directly.
 
-Reversing a purchase crosses the same edges at bids no greater than the asks paid. Any closed sequence returning market stock to its starting value crosses each edge equally often in both directions, so it cannot increase trader cash without an intervening economic change. Splitting a purchase or sale preserves its exact total when no other trade, production, or configuration change intervenes. Flooring each edge before summation and clamping both directions on that edge preserve these properties. These are accounting/no-arbitrage contracts for this local market, not claims about future transport, multiple markets, or balanced production.
+Reversing a purchase crosses the same edges at bids no greater than the asks paid. Any closed sequence returning market stock to its starting value crosses each edge equally often in both directions, so it cannot increase trader cash without an intervening economic change. Splitting a purchase or sale preserves its exact total when no other trade, production, or configuration change intervenes. Flooring each edge before summation and clamping both directions on that edge preserve these properties. These are accounting/no-arbitrage contracts for one local market. Transport between differently priced markets and intervening production can create profitable opportunities; these tests do not establish their balance.
 
 ## Read-only quotes and previews
 
@@ -218,10 +218,76 @@ Run `dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --mark
 
 The final tick is 4. Cash totals 27 throughout; three production batches transform the six initial combined logs into three combined planks. `MarketTests.DocumentedMarketScenarioMatchesEveryTick` verifies this table; the demo checks its final state and compares complete repeated/reordered-setup transcripts.
 
+## Maritime world, ports, and cargo
+
+`MaritimeWorldState` owns exactly two independently configured ports, one trader ID and cash balance, one ship, and one nonnegative `long` global tick. `PortConfiguration` supplies each port's runtime ID, initial market stock/cash, immutable fixed or dynamic pricing, and zero or more local buildings. Exactly two distinct port IDs are required. Building instance IDs are unique within each port; commands qualify a building by both port and instance ID. Runtime IDs use the existing ASCII syntax. Initial stock, cash, references, and recipe compatibility retain their established validation and numeric bounds.
+
+The trader's only goods inventory is `Ship.Cargo`. There is no separate warehouse, per-port cargo, or per-port trader cash. `ShipConfiguration` supplies a stable ID, positive `int` cargo capacity, known initial dock, and optional nonnegative initial cargo. Each item of every canonical good consumes **one capacity unit**. The total across goods must fit the configured capacity; initial cargo exceeding it is invalid. Aggregate arithmetic must not wrap around, including when separate goods individually fit their `int` limits.
+
+Docked ship snapshots have `DockedPortId` and no active voyage. Sailing snapshots instead have `OriginPortId`, `DestinationPortId`, and positive `RemainingTravelTicks`; the dock is absent. Arrival clears the active voyage and leaves zero remaining ticks. Cargo and trader cash remain unchanged by departure, ordinary travel, and arrival.
+
+Each port has its own market stock, cash, and pricing. Local production consumes and produces only in that port's inventory. Buying transfers goods from that market to ship cargo and shared trader cash to that port; selling reverses those transfers. Production never consumes ship cargo. Trades conserve each good across both ports and the ship, and conserve all three cash accounts. Production is the only implemented goods transformation and uses the canonical recipe; no operation creates or destroys cash.
+
+These ports are handcrafted runtime configuration, not generated canonical content. Market-owned production, item-count capacity, perfect information, one trader/ship, and travel without fees, upkeep, or risk are provisional assumptions. There is no automatic replenishment or consumption.
+
+### Maritime trades, previews, and errors
+
+`PortTradeCommand(portId, direction, goodId, quantity)` names its intended market explicitly. All trade commands in a step must target the ship's **starting dock**. A known remote port or any trade while sailing throws `InvalidOperationException`; an unknown port/good/quote throws `KeyNotFoundException`. Commands cannot trade at the departure destination or use an arrival from later in the same step. There are no partial fills or remote transfers.
+
+The shared transaction calculation retains existing seller-stock and funds outcomes and adds `TradeOutcome.InsufficientCargoCapacity` for a purchase exceeding remaining total cargo space. A rejected purchase changes no part of cargo, market stock, or cash, but other valid commands and the tick may continue. Selling uses the available ship goods and the selected port's cash. Earlier declared sales can free capacity or earn cash for a later purchase in the same step.
+
+For fixed pricing, the checked total is calculated first, preserving the baseline's overflow precedence. Seller stock is checked next, then purchase capacity, then buyer funds and checked receiving balances. Dynamic pricing checks seller stock and purchase capacity before calculating the exact inventory-edge total, then checks funds and receiving balances. Consequently a dynamic capacity rejection is unpriced, while a fixed rejection can retain its proposed total. Impossible dynamic sale stock beyond `int.MaxValue` remains exceptional. Receiver stock/cash or transaction overflow throws; the whole step rolls back. No per-unit loop or duplicate pricing formula is introduced.
+
+`MaritimeWorldSnapshot.GetMarketQuote(portId, goodId)` permits remote quote inspection from that snapshot's local stock. `PreviewTrade(portId, TradeCommand)` likewise permits hypothetical remote previews, even in transit. It calculates the economic outcome **as if the current ship were docked at that port**, using current cargo, free capacity, shared cash, and local accounts/prices; it does not check or change location. Its `Traded` or executed fields remain hypothetical, as in the single-location preview. Execution independently enforces the actual starting dock. A preview does not reserve inventory, advance time, guarantee arrival-time prices, or cover later production/tick failures.
+
+### Departure and arrival timing
+
+One positive integer `travelTicks` defines both directions of the sole connection. `SailCommand(destinationPortId)` requires a docked ship and the other known port. Sailing again while underway or selecting the current dock throws `InvalidOperationException`; an unknown destination throws `KeyNotFoundException`. More than one sailing command in a step throws `ArgumentException`. A docked ship with no departure stays docked.
+
+Trading operates at the starting dock, then departure is applied. Travel progresses exactly once at the end of each successful tick, **including the departure tick**. Arrival becomes effective in the committed snapshot when the remaining time reaches zero. Destination trading begins on the next call to `Step`.
+
+| Starting tick for a two-tick route | Commands | Committed ship state |
+| --- | --- | --- |
+| 0 | Buy at Northport and depart for Southhaven | Sailing, 1 travel tick remaining |
+| 1 | No trades or departure | Docked at Southhaven |
+| 2 | Sell at Southhaven | Sale can execute using Southhaven's current stock and prices |
+
+A one-tick route arrives at the end of the departure step and still cannot trade at its destination during that step. The attempted illegal trade in the [shipping demonstration](SHIPPING_DEMO.md) throws without consuming time, after which a valid empty step completes the journey.
+
+### One atomic maritime tick
+
+`Step(commands = null, trades = null, sailCommands = null)` has these phases:
+
+1. Fully enumerate and validate every production control, trade, and sailing command, including references and starting-position legality.
+2. Check tick overflow and prepare private working ports, buildings, cargo, shared cash, and ship state.
+3. Apply port-qualified production controls in declared order; the last control for an instance wins.
+4. Execute manual trades in declared order at the starting dock.
+5. Apply the valid departure if supplied.
+6. Run production by **ordinal port ID**, then ascending building priority and ordinal instance ID; each enabled instance attempts one batch.
+7. Advance travel once and resolve arrival.
+8. Construct detached immutable snapshots and all structured results.
+9. Commit the entire world with one state assignment.
+
+Sold logs may feed that port's sawmill in the same tick; output produced later cannot be bought until the next tick. All ports produce under the same clock, regardless of ship location. Remote ports do not have independent ticks or loops. Expected stock/funds/capacity rejection records an attempt and permits the tick to complete.
+
+Production controls are host-level scenario commands and may target either port, including while the ship is sailing. They do not represent player factory ownership or physical ship interaction. Trading and departure retain their separate location restrictions.
+
+Any exceptional failure preserves **all ports, all building controls, shared trader cash, ship cargo, dock/voyage state, and global tick**, including earlier staged operations. A later production overflow in the other port therefore cancels an earlier trade and departure. Failed command enumeration, invalid later commands, total/balance overflow, reentrancy, and tick overflow also leave the prior snapshot intact. The next valid call retries that tick. Calls require one sequential host; concurrent mutation is unsupported.
+
+### Maritime results and snapshots
+
+`MaritimeStepResult` reports the starting `Tick`, immutable `After` world snapshot, ordered `TradeAttempts` with `PortId` and the existing `TradeAttempt`, and ordered `ProductionAttempts` with `PortId` and the existing `ProductionAttempt`. Their price, executed quantity, cash, and inventory-change semantics are unchanged. Trader inventory changes in a maritime trade refer to ship cargo.
+
+`MovementEvents` contain ordered `Departure`, `Progress`, and `Arrival` records as applicable, identifying ship, origin, destination, and before/after remaining travel ticks. A new departure records the configured voyage; progress records its one decrement; an arrival records completion. A one-tick journey emits all three. A stationary docked tick emits none. These records describe only a committed step and are not retained as an unbounded history in the world.
+
+`MaritimeWorldSnapshot.Ports` is ordered by ordinal port ID. Each port exposes detached inventory, market cash, quote configurations, and immutable building controls. `TraderId` and `TraderCash` occur once; `Ship` exposes detached cargo, total `CargoUnits`, capacity, and location/voyage. Retained snapshots preserve historical quotes, cargo, and voyage state after later trades or sailing; movement events belong to the step result. Constructor collections and snapshots provide no mutation path into live state.
+
 ## Determinism and remaining scope
 
 The same validated content, initial world state, and per-tick ordered commands produce the same states and structured outcomes. Reversing equivalent input building collections does not change results. Callers advance several ticks by calling `Step` repeatedly; no batch-step helper is provided.
 
 Equivalent quote, stock, content, and building collection order does not change outcomes. Trade sequence order deliberately does. Ordinal IDs and integer arithmetic avoid culture-dependent financial behavior; the market demo formats numbers invariantly.
 
-Fixed, linear, and scarcity pricing are compared in [Pricing experiments](PRICING_EXPERIMENTS.md). The dynamic formulas and scenario parameters remain provisional. There is no automatic replenishment, production duration, cooldown, rate per minute, operating cost, wage, energy, transport, consumption, or configurable automation policy. Production repeats only because the host advances the world. Future arrival and consumption phases remain unresolved. Deterministic step results are useful for comparison; they are not a save format, durable replay protocol, event bus, or persistent event-sourcing system.
+The maritime demo additionally compares repeated and reversed-port input runs, uses invariant numeric formatting, and asserts its documented transaction totals, balances, six-tick itinerary, and empty final cargo. Local production order is independent of port configuration insertion order. Remote quote inspection changes no state.
+
+Fixed, linear, and scarcity pricing are compared in [Pricing experiments](PRICING_EXPERIMENTS.md); manual two-port decisions are compared in [Manual shipping comparison](SHIPPING_DEMO.md). The dynamic formulas and scenario parameters remain provisional. There is no automatic replenishment, production duration, cooldown, rate per minute, operating cost, wage, energy, consumption, or configurable automation policy. Production and travel advance only because the host steps the world. Consumption phases remain unresolved. Deterministic step results are useful for comparison; they are not a save format, durable replay protocol, event bus, or persistent event-sourcing system.

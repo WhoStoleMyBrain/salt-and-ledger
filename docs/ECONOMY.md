@@ -22,18 +22,20 @@ Task 1.2's fixed experimental bid/ask quotes remain available unchanged in runti
 
 Controls run first, trades in declared order second, and production third. Sold logs can feed production immediately; newly produced planks can be traded next tick. This ordering is provisional. Insufficient stock or cash rejects one complete trade and allows later commands to continue. Invalid requests and arithmetic overflow roll back the whole tick, including earlier trades, cash, controls, and production.
 
-There is no automatic stock or cash replenishment, external income, consumption schedule, labor, storage capacity, or transport. Sawmills stop when available logs are exhausted; finite liquidity can prevent trades even when stock exists. Tick-level copying makes failure handling simple for this small prototype; larger-world cost and throughput have not been benchmarked.
+Task 1.3a adds exactly two handcrafted local markets and one manually controlled ship under a single clock and trader account. Cargo capacity counts every item as one unit; the ship is the trader's only goods inventory. Trading requires docking at the intended port. Production and travel run on successful abstract ticks, so local inventory and quotes can change while cargo is underway. There are no per-port trader warehouses or hidden transfers.
+
+There is no automatic stock or cash replenishment, external income, consumption schedule, labor, or travel operating cost/risk. Sawmills stop when available logs are exhausted; finite liquidity can prevent trades even when stock exists. Tick-level copying makes failure handling simple for this small prototype; larger-world cost and throughput have not been benchmarked.
 
 ## Unresolved modeling choices
 
 | Question | What a prototype should establish |
 | --- | --- |
-| Meaning of time and additional phases | How abstract ticks map to economic time; whether trade-before-production remains useful when arrivals and consumption exist |
+| Meaning of time and additional phases | How abstract ticks map to economic time; whether trade-before-production and end-of-tick arrival remain useful when consumption exists |
 | Price formation | Whether the tested stock-sensitive curves create understandable decisions; how reference values, depth, and production should be calibrated before considering demand |
-| Liquidity and money flows | Whether a closed two-account baseline produces useful constraints; what future sources or sinks could keep scenarios viable |
+| Liquidity and money flows | Whether finite local market accounts and one shared trader account produce useful constraints; what future sources or sinks could keep scenarios viable |
 | Consumption | How demand evolves, what unmet demand means, and whether players can anticipate it |
 | Production cadence, allocation, and costs | Whether one batch per tick and fixed priority need replacement; how labor, operating expenses, and capacity add decisions |
-| Storage and transport | Which constraints create meaningful tradeoffs and how to present them clearly |
+| Storage and transport | Whether item-count cargo capacity and fixed travel ticks create understandable tradeoffs; whether additional constraints earn their complexity |
 | Market information | What is observable, how stale information is communicated, and whether discovery improves decisions |
 | Specialization | Whether trading and production each have useful advantages and vulnerabilities across scenarios |
 | Automation policies | Which configurable rules reduce attention costs while preserving strategic choice |
@@ -67,7 +69,19 @@ Read-only previews expose the exact proposed total and affordability/stock outco
 
 The recorded severe-scarcity case buys all 10 remaining logs for 1,020 under fixed pricing, 1,772 under linear pricing, and 3,632 under scarcity pricing. With trader cash of 2,000 the scarcity purchase is rejected while the other two succeed. This illustrates a real difference in liquidity pressure under the report's stated parameters; it is not a general balance target. **Use linear pricing as the provisional candidate for the next calibration task**, because it exposes stock/quantity pressure with one constant slope. Retain the scarcity alternative to test whether its stronger late-purchase penalties justify the knee and ceiling behavior. The [report](PRICING_EXPERIMENTS.md) supports that recommendation with the full comparison.
 
-The next experiment should calibrate price depth against the existing 2-logs-to-1-plank conversion and finite account balances. Keep the fixed baseline and both hypotheses available while comparing player-visible tradeoffs. Do not add replenishment, consumption, extra goods, ships, or multiple ports merely to make a pricing curve appear active; each introduces separate assumptions.
+Price depth still needs calibration against the existing 2-logs-to-1-plank conversion and finite account balances. Keep the fixed baseline and both hypotheses available while comparing player-visible tradeoffs. The transport prototype below adds explicitly requested logistical assumptions; it does not justify adding replenishment, consumption, or extra goods merely to make a pricing curve appear active.
+
+## Task 1.3a: manual maritime trading
+
+The [shipping comparison](SHIPPING_DEMO.md) uses linear pricing provisionally in both ports, with abundant Northport logs, a scarce Southhaven market, and a Southhaven sawmill. One trader starts with 100 cash; each public market starts with 1,000. One ship holds at most 6 items and takes two ticks each way. Two equivalent manual decisions transport 2 or 6 logs, sell them at Southhaven, and return with 2 planks. Each ends at tick 6, back at Northport with no cargo.
+
+The smaller expedition buys goods for 51 and sells them for 120, realizing gross profit **69**. The full-log expedition buys for 89 and sells for 208, realizing gross profit **119**. Both return legs contribute 29. The full load earns more total log profit but less per log: 15 versus 20. Those exact outcomes are executable scenario assertions, not independently maintained balance calculations. The documented parameters and per-tick output explain every cost, marginal price, stock change, and finite cash balance.
+
+Equal final empty cargo makes realized sale revenue minus purchase cost comparable to the trader's cash change. The markets finish in different states: the full log delivery supports two extra public-market planks. Those unsold market goods do not belong to the trader and are not counted as its profit. A comparison with unsold ship cargo would need an explicit valuation or matched liquidation, not just a comparison of cash balances.
+
+Local price differences allow transport profit without violating the same-market, same-edge no-profitable-cycle contract. The ship moves goods between different finite inventories at different configured prices, and production can change those inventories between transactions. Buying reduces source stock, selling deepens destination stock, and finite cargo/cash limit how much of an apparent opportunity can be taken. A visible remote quote is perfect **current** information; it is not a guaranteed arrival-time price. Idle time alone never changes a quote.
+
+This establishes a working manual trading loop, not a balanced economy or an optimal strategy. The map is handcrafted; only one trader and ship exist. Capacity uses equal item counts without weight, production belongs to the market, information is immediately visible, travel has no costs or risk, and there is no automatic replenishment, consumption, or competitor flow. These assumptions make the comparison inspectable and remain provisional. Proposed Task 1.3b can test explicit route policies against these same constraints without expanding the economic model.
 
 ## Hypotheses to test
 

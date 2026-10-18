@@ -1,6 +1,6 @@
 # Architectural decisions
 
-These records describe accepted decisions through Task 1.2. Unresolved game rules live in [Economy](ECONOMY.md); hypotheses and deferred concepts live in [Ideas](IDEAS.md). New evidence can supersede a decision explicitly.
+These records describe accepted decisions through Task 1.3a. Unresolved game rules live in [Economy](ECONOMY.md); hypotheses and deferred concepts live in [Ideas](IDEAS.md). New evidence can supersede a decision explicitly.
 
 ## ADR 001: Keep the simulation independent of Unity
 
@@ -127,3 +127,15 @@ Provide `WorldSnapshot.GetMarketQuote` for marginal prices and `PreviewTrade` fo
 Represent a priced request with quantity, first and last marginal prices, total, and a uniform-price flag. Retain `UnitPrice` as the first marginal price and `TotalAmount` as the proposed total for compatibility; never imply their product matches a dynamic total. Add explicit executed quantity/amount, both zero for rejection. Dynamic seller-stock shortage returns no price breakdown; legacy price/total aliases are zero when unpriced. Priced affordability rejections retain their proposed breakdown without transferring anything.
 
 Fixed trades keep their multiplication-first precedence. Dynamic trades check seller stock first, then market capacity for a sale, then compute the complete total and perform affordability/receiver checks. This prevents pricing nonexistent transitions beyond zero or maximum market stock. Numeric failure is exceptional and rolls back the whole tick. Marginal ask is absent at zero stock; marginal bid is absent at maximum stock. Other stock/account constraints are reported by the full preview. The phase order and single commit boundary from ADR 012 remain unchanged.
+
+## ADR 015: Own the two-port prototype in one maritime world
+
+**Status:** Selected before Task 1.3a implementation; accepted prototype ownership model.
+
+Introduce a focused `MaritimeWorldState` alongside the existing single-location API. Its one immutable current snapshot owns exactly two ports, one trader cash account, one ship with capacity-limited cargo, and one global tick. Each port owns independent market stock, cash, quote configurations, and local buildings. Cargo belongs only to the ship; there is no trader warehouse or account copy per port. Runtime configuration supplies the handcrafted ports and one bidirectional route's positive integer travel duration.
+
+Stage all ports, accounts, controls, and movement privately, then construct the complete result and next snapshot before one commit assignment. Never compose independent `WorldState` clocks. Reuse the shared internal trade calculator, existing `InventoryPricing`, and `Production.TryRunBatch`; retain the existing `WorldState` public API and behavior. This isolates the new ownership and movement rules without duplicating economic calculations or introducing a generic entity/service framework.
+
+Validate all commands, check tick overflow, apply controls, execute trades at the starting dock in declared order, apply at most one departure, run production by ordinal port ID and then existing building order, and advance travel once before committing. The departure tick counts toward travel. Arrival permits trading on the following step. Remote quotes and hypothetical previews are allowed; actual trades require docking at their explicit port. Expected stock, funds, or cargo-capacity rejection is non-mutating; exceptional failure rolls back the entire maritime tick.
+
+The model deliberately supports one trader and one ship, one capacity unit per item, market-owned production, perfect market information, and travel without cost or risk. Those assumptions and the pricing formulas remain provisional. No automation, automatic replenishment, consumption, procedural world, or persistent event history is introduced.
