@@ -16,7 +16,7 @@ The principles below are constraints for future design. Particular mechanisms th
 - Player actions should meaningfully affect the simulated economy.
 - Information and understandable rules should enable better decisions.
 
-A system earns its complexity by creating decisions with consequences. Additional content alone is not evidence of depth. Task 1.1 demonstrates finite inventory, shared-resource competition, and deterministic production over abstract ticks. Task 1.2 adds a finite market and trader, separate goods/cash accounts, and atomic trading at fixed experimental bid/ask quotes. Production currently belongs to the market as a prototype assumption. Neither the schedule nor prices settle balance; consumption, dynamic pricing, and factory ownership remain unresolved.
+A system earns its complexity by creating decisions with consequences. Additional content alone is not evidence of depth. Task 1.1 demonstrates finite inventory, shared-resource competition, and deterministic production over abstract ticks. Task 1.2 adds a finite market and trader, separate goods/cash accounts, and atomic trading at fixed experimental bid/ask quotes. Task 1.2b compares linear and piecewise scarcity prices against that baseline, including trade-size effects and finite liquidity. Production currently belongs to the market as a prototype assumption. The experiments do not settle balance or demonstrate enjoyable decisions; consumption, final price calibration, and factory ownership remain unresolved.
 
 ## Automation over micromanagement
 
@@ -70,4 +70,4 @@ Phase 0 puts definitions in a canonical JSON file and produces both Markdown and
 
 ## Design status
 
-The principles above are accepted. The [economy questions](ECONOMY.md) and [experiment ideas](IDEAS.md) remain unresolved. The [roadmap](ROADMAP.md) is provisional and should change when prototypes show a better sequence. Abstract integer ticks, trades before production, stable production ordering, and fixed local quotes are implemented. No dynamic price formula, conversion of ticks to hours or days, map-generation algorithm, or progression system has been selected.
+The principles above are accepted. The [economy questions](ECONOMY.md) and [experiment ideas](IDEAS.md) remain unresolved. The [roadmap](ROADMAP.md) is provisional and should change when prototypes show a better sequence. Abstract integer ticks, trades before production, stable production ordering, fixed local quotes, and two inventory-sensitive pricing hypotheses are implemented. [Pricing experiments](PRICING_EXPERIMENTS.md) distinguishes measured behavior from the provisional model recommendation. No final price balance, conversion of ticks to hours or days, map-generation algorithm, or progression system has been selected.

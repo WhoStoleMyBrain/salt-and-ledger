@@ -12,7 +12,7 @@ This document is a backlog of possibilities. It does not change the accepted [de
 | Optional opportunities can favor a strategy without invalidating others | Offer a specialized opportunity alongside broadly achievable mandatory objectives |
 | Alternative starting capabilities can support replayability without stacking power | Compare sidegrade starting packages against the same challenge set |
 
-No experiment result is claimed yet. Record evidence and revise the proposal before promoting an idea to an accepted decision.
+These gameplay hypotheses have not been established by the current prototypes. The separate [pricing experiments](PRICING_EXPERIMENTS.md) measure fixed/linear/scarcity behavior and accounting invariants; they do not establish strategic depth, enjoyable automation, or viable specializations. Record relevant gameplay evidence and revise a proposal before promoting it to an accepted decision.
 
 ## Intentionally deferred concepts
 
@@ -28,4 +28,4 @@ No experiment result is claimed yet. Record evidence and revise the proposal bef
 
 ## Outside the current scope
 
-Phase 0 implements no full market pricing, ships, trade routes, procedural generation, roguelike progression, curses, modifiers, production switching, optimization policies, random events, competing merchants, piracy, combat, multiplayer, or elaborate Unity UI. Multiplayer is outside the accepted single-player direction and has no planned milestone.
+The current prototype implements finite local trading, production, and experimental inventory-sensitive prices. It contains no general demand simulation, automatic replenishment, ships, trade routes, procedural generation, roguelike progression, curses, modifiers, production switching, optimization policies, random events, competing merchants, piracy, combat, multiplayer, or elaborate Unity UI. Multiplayer is outside the accepted single-player direction and has no planned milestone.

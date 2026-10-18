@@ -1,6 +1,6 @@
 # Maintained mechanics specification
 
-This page specifies implemented behavior through Task 1.2 that cannot be derived from content definitions alone. Update it with behavior changes. Generated reference pages describe only the canonical definitions and their relationships.
+This page specifies implemented behavior through Task 1.2b that cannot be derived from content definitions alone. Update it with behavior changes. Generated reference pages describe only the canonical definitions and their relationships. Pricing formulas are implemented experimental hypotheses; accounting, deterministic execution, and atomicity are implementation contracts.
 
 ## Inventory
 
@@ -51,7 +51,7 @@ The host supplies initial stock; unspecified goods start at zero. It may also su
 
 Supplying `market: new MarketConfiguration(...)` enables trading with one trader. The existing `WorldSnapshot.Inventory` is the market's stock: there is no second copy of those goods. Buildings consume and produce in that same stock. The trader has a separate inventory, stable runtime ID, and cash balance; production never touches the trader's inventory or either cash balance. Public-market ownership of production is a **prototype assumption**, not a permanent decision about player-owned factories.
 
-Both cash balances use `long`, from 0 through 9,223,372,036,854,775,807. One unit is the smallest indivisible currency unit. The currency name and scale are experimental. Prices and accounting use no binary floating point. Transaction multiplication, debits, credits, and reported deltas use checked integer arithmetic. Combined holdings need not fit in one `long`; each account and transaction must. The implementation does not add balances together to authorize transfers.
+Both cash balances use `long`, from 0 through 9,223,372,036,854,775,807. One unit is the smallest indivisible currency unit. The currency name and scale are experimental. Prices and accounting use no binary floating point. Executable transaction totals, debits, credits, and reported deltas obey checked integer bounds. Dynamic price calculations use wider exact integer intermediates before checking the public `long` total. Combined holdings need not fit in one `long`; each account and transaction must. The implementation does not add balances together to authorize transfers.
 
 `MarketQuote(goodId, bid, ask)` defines prices from the trader's perspective:
 
@@ -60,17 +60,78 @@ Both cash balances use `long`, from 0 through 9,223,372,036,854,775,807. One uni
 | `Buy` | Market to trader | Trader to market | `Ask` |
 | `Sell` | Trader to market | Market to trader | `Bid` |
 
-Require `Ask >= Bid > 0`. Quotes are unique by canonical good ID and immutable for the world's lifetime. A known good without a quote cannot be traded. An empty quote collection is permitted but makes every good untradeable. Prices live in runtime configuration, not canonical good definitions or the content schema. They are a **fixed experimental accounting baseline**: neither stock, production, transactions, nor elapsed ticks change them. An immediate same-quantity buy/sell round trip cannot increase trader cash when quotes are unchanged.
+Require `Ask >= Bid > 0`. This constructor retains the **fixed experimental accounting baseline**: neither stock, production, transactions, nor elapsed ticks change those unit prices. Its existing multiplication-first error precedence and the `--market` example remain unchanged.
+
+`MarketQuote(goodId, pricing)` instead selects immutable inventory-sensitive parameters. Quote configurations are unique by canonical good ID and immutable for the world's lifetime. A known good without a quote cannot be traded. An empty quote collection is permitted but makes every good untradeable. Fixed quotes and dynamic parameters live in runtime configuration, not canonical good definitions or the content schema. They may differ between goods and scenarios.
 
 Initial market stock uses the existing constructor argument; the configuration supplies initial market cash, trader ID, initial trader cash, and optional trader stock. Unspecified trader goods start at zero. Runtime trader IDs follow the same ASCII ID syntax. Configuration collections are copied and immutable; canonical references are resolved when constructing the world. No automatic stock or cash replenishment, external income, borrowing, fees, or consumption exists.
 
 Without market configuration, `Trading` is null. Existing constructor calls and production-control calls retain their behavior, and `TradeAttempts` is empty. Submitting a trade to such a world is an error.
 
+## Inventory-sensitive pricing hypotheses
+
+`InventoryPricing(model, referencePrice, targetStock, sensitivity, minPrice, maxPrice, spread)` supports `InventoryPricingModel.Linear` and `InventoryPricingModel.Scarcity`. Both work through the same world and trade API as fixed prices.
+
+| Parameter | Symbol | Contract and meaning |
+| --- | --- | --- |
+| `referencePrice` | `P` | Positive `long`; reference value at the target transition |
+| `targetStock` | `T` | Positive `int`; inventory scale, not replenishment or a stock guarantee |
+| `sensitivity` | `k` | Nonnegative `long`; size of the linear response to a target-sized stock change |
+| `minPrice`, `maxPrice` | `L`, `U` | Positive `long` bounds with `L <= P <= U` |
+| `spread` | `h` | Nonnegative `long` added to buying and subtracted from selling before each side is bounded |
+
+All parameter values are exact integers. Negative sensitivity/spread, nonpositive target/prices, reversed bounds, a reference outside the bounds, and an unknown model enum are invalid. Zero sensitivity makes a constant curve; zero spread is allowed and permits cost-neutral reversals. The parameters are experiments, not canonical good values or selected final balance.
+
+### Values belong to inventory transitions
+
+Define transition `n` as the edge between market stocks `n` and `n - 1`, for `1 <= n <= int.MaxValue`. Both directions use that same edge, avoiding a buy/sell mismatch caused by evaluating two different stock boundaries.
+
+The exact rational reference values are:
+
+```text
+K = max(1, floor(T / 4))
+Linear:   R(n) = P + k * (T - n) / T
+Scarcity: R(n) = P + k * (T - n) / T + 3 * k * max(K - n, 0) / K
+
+Ask(n) = clamp(floor(R(n)) + h, L, U)
+Bid(n) = clamp(floor(R(n)) - h, L, U)
+```
+
+The divisions in `R` are exact rational operations; sum the terms before taking the mathematical floor. Floor means rounding toward negative infinity, including when abundant stock makes the raw value negative. It is not C# truncation toward zero. `clamp(x, L, U)` limits the final side price to the inclusive bounds. This keeps every executable marginal price positive and representable as `long`, even when an intermediate reference value or spread operation exceeds that range.
+
+The scarcity model equals the linear model at and above `K`. Below `K`, its additional term increases the slope of the scarcity response. The unrounded curve is continuous at the knee; integer prices still form steps, and the slope change can make late purchases much more expensive. For targets below 8, `K == 1` and no executable edge lies below the knee, so both dynamic models coincide. The knee fraction and coefficient 3 are explicit provisional hypotheses, not independently tunable hidden state.
+
+The spread parameter is a per-side adjustment, not a promised observed bid/ask gap. Clamping each side can compress it, including to zero when both sides reach the same floor or ceiling. On the same edge `Ask(n) >= Bid(n) > 0`. Both side prices are nonincreasing as `n` increases. At a current stock `S`, the next purchase uses `Ask(S)`, while the next sale uses `Bid(S + 1)`; these are different adjacent edges.
+
+### Quantity totals and performance
+
+For a purchase of `Q` from market stock `S`, sum `Ask(n)` for edges `S, S - 1, ..., S - Q + 1`. For a sale, sum `Bid(n)` for edges `S + 1, S + 2, ..., S + Q`. Each unit is priced at its own transition; multiplying the initial marginal quote by `Q` is generally incorrect.
+
+The calculator uses `BigInteger` intermediates, at most two affine curve segments, analytic intersections with price bounds, and a logarithmic Euclidean floor-sum calculation. It does not iterate once per unit, per stock level, or per distinct price. Requested quantities can reach `int.MaxValue`; the complete total must still fit a positive `long`, and an unrepresentable total throws `OverflowException`. Mathematical intermediates crossing `long` bounds are permitted; public prices, totals, balances, and quantities remain bounded.
+
+The pure `InventoryPricing.PriceAtEdge(direction, upperStock)` and `Quote(direction, marketStock, quantity)` methods expose the same curve calculation for experiments. They know no trader stock or cash. A pure `Quote` purchase beyond market stock throws `ArgumentOutOfRangeException`; a sale beyond maximum market stock throws `OverflowException`. Use the world's `PreviewTrade` to obtain normal stock/funds rejection outcomes rather than calling this lower-level price calculator directly.
+
+Reversing a purchase crosses the same edges at bids no greater than the asks paid. Any closed sequence returning market stock to its starting value crosses each edge equally often in both directions, so it cannot increase trader cash without an intervening economic change. Splitting a purchase or sale preserves its exact total when no other trade, production, or configuration change intervenes. Flooring each edge before summation and clamping both directions on that edge preserve these properties. These are accounting/no-arbitrage contracts for this local market, not claims about future transport, multiple markets, or balanced production.
+
+## Read-only quotes and previews
+
+`WorldSnapshot.GetMarketQuote(goodId)` derives a `MarketPrice` from that snapshot's inventory and immutable configuration. It exposes `GoodId`, `MarketStock`, and nullable marginal `Bid` and `Ask`. At zero market stock, `Ask` is null; at `int.MaxValue` market stock, `Bid` is null. These nulls describe impossible market stock movements. A displayed marginal price does not promise that the trader has goods/cash, that the market can pay, or that the receiving account has capacity.
+
+`WorldSnapshot.PreviewTrade(command)` returns the same structured `TradeAttempt` calculation used by execution, without changing stock, balances, controls, or tick. It includes stock/funds rejection when appropriate and throws for invalid references, missing market configuration, or trade arithmetic failure just as execution does. In a preview, `Traded`, executed quantity/amount, and before/after balances describe what would happen, not a completed transfer. A successful preview matches a subsequent trade calculated against the same state. It evaluates one trade, not the complete tick: tick overflow or a later production failure can still abort `Step`. Earlier trades in a step can also change the state seen by a later trade, so a preview is not a reservation or a promise about a future step.
+
+`Trading.Quotes` holds configurations, not cached current prices. `MarketQuote.IsFixed` identifies the baseline; `Pricing` is null for fixed quotes. The legacy `MarketQuote.Bid` and `Ask` properties are available for fixed configurations only and throw `InvalidOperationException` for dynamic ones. Use the snapshot quote API for current marginal prices. Historical snapshots continue to derive historical prices after the live world moves on.
+
+Production consumes market logs and adds market planks. The committed snapshot derives prices from the resulting stock, so consuming logs can raise their quotes and producing planks can lower theirs, subject to rounding and bounds. Prices do not change solely because the tick advances. There is no separate price clock, asynchronous update, demand state, or mutable price cache.
+
 ## Trading commands and outcomes
 
 `TradeCommand(direction, goodId, quantity)` requests a positive `int` quantity. Commands are immediate all-or-nothing requests for one step, with no partial fills, reservations, persistent orders, or queues.
 
-After validating all command references, each trade computes `checked(quantity * unitPrice)` before checking shortages. An unrepresentable total is therefore an exception even if stock or cash would also be insufficient. Check the seller's stock first, then the buyer's cash. If both are insufficient, report the stock outcome. For a payable, fully stocked trade, calculate both resulting inventories and both cash balances, including receiver overflow checks, before applying any changes.
+After validating all command references, fixed-price trades retain the Task 1.2 order: compute `checked(quantity * unitPrice)`, check seller stock, check buyer cash, then check all resulting inventories and cash balances. A fixed total overflow therefore throws even if stock or cash would also be insufficient.
+
+Dynamic trades check the seller's stock before pricing. An insufficient-stock request returns the appropriate rejection with no price calculation (`Price == null`). A fully stocked sale that would exceed the market's `int.MaxValue` stock throws before pricing, since no corresponding inventory transition exists. Otherwise calculate the complete marginal total, check buyer cash, and check all remaining receiver/account limits before applying anything. This explicit precedence change avoids quoting nonexistent dynamic transitions. For both modes, seller stock takes precedence over buyer cash, and exact stock/affordability are sufficient.
+
+Each trade calculates both resulting inventories and both cash balances before applying any changes. Stock or cash insufficiency is a normal rejection; an unrepresentable total or receiver balance remains exceptional. A priced but unaffordable dynamic request retains its full proposed price breakdown even though it executes nothing.
 
 | `TradeOutcome` | Meaning |
 | --- | --- |
@@ -121,9 +182,9 @@ Command validation failures, command enumeration failures, invalid configuration
 | Null required argument or runtime ID | `ArgumentNullException` |
 | Malformed runtime ID, duplicate instance/quote, null collection member, or recipe/building mismatch | `ArgumentException` |
 | Unknown canonical reference, initial-stock good, command target, or missing quote | `KeyNotFoundException` |
-| Negative initial stock/cash/tick; nonpositive trade quantity/bid; ask below bid; invalid direction enum | `ArgumentOutOfRangeException` |
+| Negative initial stock/cash/tick; nonpositive trade quantity/bid; ask below bid; invalid direction/model enum; invalid dynamic bounds, target, sensitivity, or spread | `ArgumentOutOfRangeException` |
 | Stock, cash, transaction total, or tick overflow | `OverflowException` |
-| Trade without market configuration, or recursive `Step` | `InvalidOperationException` |
+| Trade/quote without market configuration, fixed `Bid`/`Ask` access on dynamic configuration, or recursive `Step` | `InvalidOperationException` |
 
 Runtime ID syntax is checked when constructing the corresponding instance or command. World construction resolves canonical references; `Step` resolves command targets. An exception thrown by a caller's command enumerable propagates without committing world state.
 
@@ -134,11 +195,13 @@ The world stages private inventories, cash, and building state for each step, th
 A completed `StepResult` contains:
 
 - `Tick`: the tick at which commands and production ran. The first default-world result has `Tick == 0`.
-- `After`: the immutable world snapshot after the step; the first result has `After.Tick == 1`. It includes location ID, market/production inventory, building state, and optional `Trading` state (`MarketCash`, `TraderId`, `TraderCash`, `TraderInventory`, and fixed `Quotes`).
-- `TradeAttempts`: attempts in declared execution order. Each includes `Direction`, `GoodId`, requested `Quantity`, `UnitPrice`, requested `TotalAmount`, and explicit `Outcome`. `MarketInventoryChange`, `TraderInventoryChange`, `MarketCashChange`, and `TraderCashChange` expose before, after, and signed delta balances. Rejected attempts report the requested price/total but have zero deltas, not a payment.
+- `After`: the immutable world snapshot after the step; the first result has `After.Tick == 1`. It includes location ID, market/production inventory, building state, and optional `Trading` state (`MarketCash`, `TraderId`, `TraderCash`, `TraderInventory`, and fixed/dynamic quote configurations). Current marginal quotes are derived from this snapshot, including production's stock changes.
+- `TradeAttempts`: attempts in declared execution order. Each includes `Direction`, `GoodId`, requested `Quantity`, explicit `Outcome`, and nullable `Price`. A price breakdown contains `Quantity`, `FirstMarginalPrice`, `LastMarginalPrice`, `TotalAmount`, and `IsUniform`. `ExecutedQuantity` and `ExecutedAmount` are zero on rejection and equal the completed request on success. `MarketInventoryChange`, `TraderInventoryChange`, `MarketCashChange`, and `TraderCashChange` expose before, after, and signed delta balances.
 - `ProductionAttempts`: attempts in actual production order. Each has building instance, building definition, and recipe identifiers, an outcome of `Produced` or `ResourceShortage`, and its inventory changes.
 
 Each production inventory change identifies the good and its `Before`, `After`, and signed `Delta` quantities for that attempt, ordered by ordinal good ID. Only changed balances are included in production change lists. A production shortage has no changes; a successful recipe with no net stock change still has a `Produced` outcome. A step may have no attempt records and still advance its tick.
+
+For compatibility, `TradeAttempt.UnitPrice` is the first marginal execution price, or zero when `Price` is null; `TotalAmount` is the proposed total, or zero when unpriced. A zero placeholder is not a valid executable price. Existing fixed-price attempts are uniformly priced and preserve their original values. For dynamic orders, do not infer `UnitPrice * Quantity == TotalAmount` unless `Price.IsUniform` is true. Rejected attempts have zero actual changes; their proposed total, when available, is not a payment.
 
 Snapshots, attempt lists, and change lists are read-only and detached from future state changes. Inventory entries and buildings have stable ordering in snapshots. Keeping an earlier result does not expose or mutate live world state. The world retains only its current snapshot, not an ever-growing event history; a host that wants diagnostic history must choose what to retain.
 
@@ -161,4 +224,4 @@ The same validated content, initial world state, and per-tick ordered commands p
 
 Equivalent quote, stock, content, and building collection order does not change outcomes. Trade sequence order deliberately does. Ordinal IDs and integer arithmetic avoid culture-dependent financial behavior; the market demo formats numbers invariantly.
 
-There is no dynamic price, automatic replenishment, production duration, cooldown, rate per minute, operating cost, wage, energy, transport, consumption, or configurable automation policy. Production repeats only because the host advances the world. Future arrival and consumption phases remain unresolved. Deterministic step results are useful for comparison; they are not a save format, durable replay protocol, event bus, or persistent event-sourcing system.
+Fixed, linear, and scarcity pricing are compared in [Pricing experiments](PRICING_EXPERIMENTS.md). The dynamic formulas and scenario parameters remain provisional. There is no automatic replenishment, production duration, cooldown, rate per minute, operating cost, wage, energy, transport, consumption, or configurable automation policy. Production repeats only because the host advances the world. Future arrival and consumption phases remain unresolved. Deterministic step results are useful for comparison; they are not a save format, durable replay protocol, event bus, or persistent event-sourcing system.

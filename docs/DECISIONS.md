@@ -88,13 +88,13 @@ Return `StepResult` with the starting tick, committed next snapshot, and ordered
 
 ## ADR 011: Validate finite accounting with fixed local quotes
 
-**Status:** Accepted for Task 1.2 as an experimental baseline.
+**Status:** Accepted for Task 1.2 as an experimental baseline; retained unchanged alongside ADR 013's dynamic alternatives.
 
 Use the existing location inventory as market stock and give one trader a separate inventory. Keep two nonnegative `long` cash balances and `long` unit prices, with checked transaction arithmetic and indivisible integer currency units. An immutable runtime `MarketConfiguration` supplies initial accounts and unique per-good quotes. The trader buys at ask and sells at bid, requiring `Ask >= Bid > 0` to prevent profitable immediate round trips at unchanged quotes. No global content prices or schema changes are needed.
 
 Calculate all four affected balances before applying a trade. Goods and cash are transferred, never implicitly created. Short stock or funds rejects the whole transaction; no partial fills, borrowing, fees, queues, or replenishment exist. Compute the checked requested total first, then check seller stock before buyer cash, giving stable rejection precedence. Receiver overflow remains exceptional.
 
-Market-owned production is a temporary ownership assumption and does not decide how player-owned factories work. Currency scale, starting balances, and prices are experimental. Fixed quotes isolate accounting correctness from future price formation; Task 1.2b should compare pricing hypotheses before adopting a dynamic model.
+Market-owned production is a temporary ownership assumption and does not decide how player-owned factories work. Currency scale, starting balances, and prices are experimental. Fixed quotes isolate accounting correctness from price formation; ADR 013 adds comparative pricing hypotheses without replacing this baseline.
 
 ## ADR 012: Execute trades before production within the atomic world step
 
@@ -104,4 +104,26 @@ Extend `Step` with optional ordered trade commands, preserving existing producti
 
 Sold logs can feed same-tick production, purchased logs cannot, and new production output is tradeable only next tick. Expected stock/funds rejections return explicit `TradeOutcome` values and allow later commands to proceed. Exceptions roll back both inventories, both cash balances, all controls, production, and clock together; no successful-looking partial result escapes. This is an experimental phase rule, not a finalized economic time model.
 
-`WorldSnapshot.Trading` is an optional immutable account snapshot; `Inventory` remains the sole market stock. `TradeAttempts` records ordered requests, quotes, outcomes, and before/after goods and cash. Rejected requests retain their quoted total with zero actual changes. No account service, message bus, persistent transaction history, or second simulation clock is introduced.
+`WorldSnapshot.Trading` is an optional immutable account snapshot; `Inventory` remains the sole market stock. `TradeAttempts` records ordered requests, quotes, outcomes, and before/after goods and cash. Fixed-price rejected requests retain their quoted total with zero actual changes; ADR 014 defines the added dynamic result and preview semantics. No account service, message bus, persistent transaction history, or second simulation clock is introduced.
+
+## ADR 013: Price inventory transitions with exact bounded arithmetic
+
+**Status:** Accepted execution contracts for Task 1.2b; linear/scarcity formulas and balancing parameters are provisional hypotheses.
+
+Keep fixed pricing intact and add two concrete `InventoryPricingModel` modes. Both integrate with existing world trades. Associate one reference value with each edge between consecutive market stock levels, and price purchases/sales using the same edge in opposite directions. Bulk totals sum all traversed marginal prices. Require positive bounded side prices, asks no lower than bids on the same edge, conservation of goods/cash, exact uninterrupted order-splitting totals, and no profitable closed inventory cycles without external changes. These requirements remain valid if future experiments replace a formula.
+
+Compare a linear response around a configured reference/target with a piecewise curve that adds a stronger scarcity response below one quarter of target. Apply mathematical floor to the exact rational reference, then add/subtract a per-side spread and clamp each side to configured bounds. The spread may compress at the bounds; zero spread is permitted. The exact formulas, derived knee, multiplier 3, and numerical parameters are experimental rather than permanent design rules. [Mechanics](MECHANICS.md) specifies the calculations; [Pricing experiments](PRICING_EXPERIMENTS.md) records their evidence and recommendation.
+
+Use `BigInteger` intermediates with a checked `long` final total. Sum at most two affine segments using analytic bound crossings and a logarithmic Euclidean floor sum. This handles very large quantities without loops over units or price bands and without binary floating-point arithmetic. It adds no package dependency, Unity state, general pricing interface, or policy framework. Tests compare exact small-state marginal sums and check large numeric boundaries; larger-world allocation and throughput remain separate measurement work.
+
+Prices are derived from current inventory and immutable runtime configuration. Production changes the next snapshot's quotes through its stock changes; an idle tick does not move them. No canonical content/schema change, separate price clock, demand simulation, or replenishment is required. Reference prices are scenario hypotheses, not global good values.
+
+## ADR 014: Share preview and execution and expose marginal totals
+
+**Status:** Accepted for Task 1.2b; extends ADR 011's result representation while preserving fixed-mode behavior.
+
+Provide `WorldSnapshot.GetMarketQuote` for marginal prices and `PreviewTrade` for a complete non-mutating proposed transaction. Execution and preview share the same trade calculation and exact price summation. A snapshot derives quotes from its own authoritative stock, including all committed trades and production; retained snapshots remain historical. Configuration `Bid`/`Ask` getters throw for dynamic quotes to prevent callers from treating a configuration as a current price. A preview is not a reservation, and an earlier command in the step may invalidate its assumptions.
+
+Represent a priced request with quantity, first and last marginal prices, total, and a uniform-price flag. Retain `UnitPrice` as the first marginal price and `TotalAmount` as the proposed total for compatibility; never imply their product matches a dynamic total. Add explicit executed quantity/amount, both zero for rejection. Dynamic seller-stock shortage returns no price breakdown; legacy price/total aliases are zero when unpriced. Priced affordability rejections retain their proposed breakdown without transferring anything.
+
+Fixed trades keep their multiplication-first precedence. Dynamic trades check seller stock first, then market capacity for a sale, then compute the complete total and perform affordability/receiver checks. This prevents pricing nonexistent transitions beyond zero or maximum market stock. Numeric failure is exceptional and rolls back the whole tick. Marginal ask is absent at zero stock; marginal bid is absent at maximum stock. Other stock/account constraints are reported by the full preview. The phase order and single commit boundary from ADR 012 remain unchanged.

@@ -2,7 +2,7 @@
 
 A single-player maritime trading and economic strategy game intended for Unity 6. The long-term focus is building, optimizing, and automating trading networks within a simulated economy, inspired by Port Royale 2, Patrician 2, Antimatter Dimensions, and economic roguelikes.
 
-This repository contains **the Phase 0/0.5 foundation, Task 1.1 deterministic world, and Task 1.2 finite trading/accounting prototype**. It loads validated logs, planks, a sawmill, and one recipe; advances an explicitly stepped world; transfers goods and cash between one market and one trader; and generates reference documentation from canonical definitions. The console demos and Unity host use the same simulation assembly. There is no playable economic game yet.
+This repository contains **the Phase 0/0.5 foundation, Task 1.1 deterministic world, Task 1.2 finite trading/accounting prototype, and Task 1.2b dynamic pricing experiments**. It loads validated logs, planks, a sawmill, and one recipe; advances an explicitly stepped world; transfers goods and cash between one market and one trader; compares fixed and inventory-sensitive prices; and generates reference documentation from canonical definitions. The console demos and Unity host use the same simulation assembly. There is no playable economic game yet.
 
 ## Prerequisites
 
@@ -56,7 +56,7 @@ The optional final argument sets initial logs from 0 through 2,147,483,647; the 
 
 The final world tick is **5**, with **0 logs and 3 planks**. The example reruns the same scenario and compares the complete transcript, then compares another run with reversed building input order. A mismatch fails explicitly. Different initial stock changes the outcomes while keeping the controls and schedule fixed.
 
-Each enabled building attempts one batch per abstract tick, ordered by ascending priority and ordinal instance ID. Controls affect the tick in which they are submitted. Shortage is an expected outcome; exceptional failure rolls back the entire tick, including controls and earlier batches. Immutable snapshots and structured results expose what happened without retaining unbounded history in the world. See [Mechanics](docs/MECHANICS.md) for exact semantics and [Architecture](docs/ARCHITECTURE.md) for the API. Tick duration, dynamic pricing, wages, and configurable automation remain unresolved.
+Each enabled building attempts one batch per abstract tick, ordered by ascending priority and ordinal instance ID. Controls affect the tick in which they are submitted. Shortage is an expected outcome; exceptional failure rolls back the entire tick, including controls and earlier batches. Immutable snapshots and structured results expose what happened without retaining unbounded history in the world. See [Mechanics](docs/MECHANICS.md) for exact semantics and [Architecture](docs/ARCHITECTURE.md) for the API. Tick duration, final price balance, wages, and configurable automation remain unresolved.
 
 ## Run the finite market example
 
@@ -69,6 +69,21 @@ One sawmill produces into the existing location inventory, now the market's stoc
 The market starts with 2 logs and 20 cash; the trader starts with 4 logs and 7 cash. Four ticks demonstrate purchases, sales, stock/funds rejections, and production using sold logs. Trades execute in declared order before production: sold logs can be consumed this tick; newly produced planks are tradeable next tick. The final state is market **0 logs, 1 plank, 25 cash** and trader **0 logs, 2 planks, 2 cash**, at tick **4**. Combined cash stays **27**. There is no automatic replenishment or income.
 
 Expected shortages reject one whole trade and allow later commands to continue. Invalid requests or overflow roll back the entire tick, including both inventories, cash, production, controls, and clock. The demo prints each transaction's before/after balances, checks its final state, and compares repeated/reordered setup runs. A headless test verifies the [documented per-tick example](docs/MECHANICS.md#executable-market-example).
+
+## Run the pricing experiments
+
+```powershell
+dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --pricing
+dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --pricing --check
+```
+
+The first command prints a comparison and writes `docs/experiments/pricing-results.json`; the second checks that the committed report matches a fresh run without rewriting it. Supply an optional final output path to generate or check a separate report. The pricing report is separate from canonical reference generation; do not edit its measurements by hand.
+
+The runner compares the fixed baseline with **linear** and **piecewise scarcity** pricing through the existing world API. Scenarios cover abundant stock, moderate/severe scarcity, sawmill production, repeated trades and order splitting, finite liquidity, and numeric limits. Every dynamic bulk total sums the inventory transitions it crosses, using exact integer arithmetic and a bounded summation algorithm. No per-unit execution loop, price clock, or artificial replenishment is introduced.
+
+Snapshot marginal quotes and read-only trade previews use execution's own calculation. Reports expose first/last marginal prices and the complete total; the first price multiplied by quantity is generally not a dynamic trade's cost. Reversing trades cannot create cash profit without another economic change, and splitting an uninterrupted order preserves its total. Fixed pricing and the original `--market` transcript remain unchanged.
+
+Read [Pricing experiments](docs/PRICING_EXPERIMENTS.md) for parameters, measured comparisons, limitations, and the provisional recommendation, and [Mechanics](docs/MECHANICS.md#inventory-sensitive-pricing-hypotheses) for exact formulas and boundaries. These curves are experiments; passing accounting tests does not establish balance or enjoyable gameplay.
 
 ## Open the Unity smoke scene
 
@@ -92,6 +107,7 @@ dotnet test SaltAndLedger.sln -c Release --no-build
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --world
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --market
+dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --pricing --check
 python -m unittest discover -s tests/python -v
 python tools/validate_data.py
 python tools/generate_docs.py --check
@@ -108,8 +124,8 @@ For an intentional NuGet dependency change, run `dotnet restore SaltAndLedger.sl
 
 | Path | Purpose |
 | --- | --- |
-| `src/SaltAndLedger.Simulation/` | Unity-independent content, atomic production/trading, finite accounts, deterministic world steps, and immutable results |
-| `samples/SaltAndLedger.Demo/` | Original production, repeatable world, and finite market examples using canonical content |
+| `src/SaltAndLedger.Simulation/` | Unity-independent content, atomic production/trading, finite accounts, exact pricing/previews, deterministic world steps, and immutable results |
+| `samples/SaltAndLedger.Demo/` | Original production, repeatable world/market demos, and reproducible pricing experiments using canonical content |
 | `tests/SaltAndLedger.Simulation.Tests/` | Standalone C# tests |
 | `unity/` | Existing Unity 6 project, Bootstrap smoke component, and integration tests |
 | `data/content.json` | Canonical example content |
@@ -117,6 +133,7 @@ For an intentional NuGet dependency change, run `dotnet restore SaltAndLedger.sl
 | `tools/` | Data validation, deterministic documentation generation, and Unity preparation |
 | `tests/python/` | Schema, semantic validation, generator, and Unity preparation checks |
 | `docs/` | Authored design, architecture, and mechanics specifications |
+| `docs/experiments/pricing-results.json` | Reproducible measurements emitted by the pricing runner; checked independently of canonical references |
 | `docs/reference/` | Generated Markdown reference pages; do not edit manually |
 | `generated/encyclopedia.json` | Generated structured reference for a future in-game encyclopedia |
 | `.github/workflows/` | Headless CI |

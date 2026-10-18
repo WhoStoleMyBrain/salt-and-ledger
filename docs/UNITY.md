@@ -49,14 +49,14 @@ A missing staged asset or invalid outcome fails explicitly. No Inspector content
 
 Open **Window > General > Test Runner** and run:
 
-- **Edit Mode:** `SaltAndLedger.UnityHost.EditModeTests` (4 tests covering explicit production, deterministic world scheduling, a sale feeding same-tick production followed by a next-tick purchase, and the single UPM Newtonsoft provider, including a hash comparison of the loaded DLL against the pinned package binary).
+- **Edit Mode:** `SaltAndLedger.UnityHost.EditModeTests` (6 cases covering explicit production, deterministic world scheduling, finite trading with production, both dynamic pricing models, and the single UPM Newtonsoft provider, including a hash comparison of the loaded DLL against the pinned package binary). Each dynamic case checks a read-only quote, a bulk purchase across several prices, historical snapshot isolation, and a reversal with no cash profit.
 - **Play Mode:** `SaltAndLedger.UnityHost.PlayModeTests` (1 test that loads Bootstrap and checks the component's actual `Start()` result).
 
 For repeatable command-line tests, close the Editor instance using this project first, or use a separate complete checkout prepared with the same commands. Do not launch a second Editor against an already-open project. The PowerShell examples below run from the repository root; change the Editor path for your installation. Piping to `Out-Host` makes PowerShell wait for the GUI executable to finish.
 
 ### Official Unity Agent Plugin workflow
 
-Task 1.2 uses the locally installed `unity@unity-agent-plugin` **`unity:unity-cli`** skill and supported `unity test`/`unity build` commands. These batch workflows do not require a running Editor or the live Pipeline connection. The primary economic verification remains the headless suite; the new Unity trade test checks that the same staged assembly works in the Editor. Bootstrap and its Play Mode/player checks retain their original production behavior.
+Tasks 1.2 and 1.2b use the locally installed `unity@unity-agent-plugin` **`unity:unity-cli`** skill and supported `unity test`/`unity build` commands. These batch workflows do not require a running Editor or the live Pipeline connection. The primary economic verification remains the headless suite; the Unity trade tests check that the same staged assembly works in the Editor, including exact `System.Numerics.BigInteger` pricing calculations. No additional dependency DLL is staged. Bootstrap and its Play Mode/player checks retain their original production behavior.
 
 With the plugin's Unity CLI installed, check its version and discover existing Editors before starting a batch run. If sandbox restrictions prevent network or process discovery, retry with the required access; do not interpret restricted discovery as proof that no Editor is open. These examples assume `unity` is on PATH (the local Windows installation used `%LOCALAPPDATA%/Unity/bin/unity.exe`):
 
@@ -81,7 +81,7 @@ if ($LASTEXITCODE -ne 0) { throw "Unity Play Mode failed: $LASTEXITCODE" }
 
 [xml]$editResults = Get-Content "$resultsDir/editmode.xml"
 [xml]$playResults = Get-Content "$resultsDir/playmode.xml"
-if ($editResults.'test-run'.result -ne 'Passed' -or [int]$editResults.'test-run'.passed -ne 4 -or
+if ($editResults.'test-run'.result -ne 'Passed' -or [int]$editResults.'test-run'.passed -ne 6 -or
     $playResults.'test-run'.result -ne 'Passed' -or [int]$playResults.'test-run'.passed -ne 1) {
     throw 'Unexpected Unity test outcome or test count; inspect XML and logs.'
 }
@@ -211,6 +211,34 @@ Tooling observations were investigated rather than bypassing the official workfl
 - The first sandboxed CLI update/discovery calls could not access the update host or reliably enumerate processes. Repeating with required access succeeded and confirmed CLI version and Editor state.
 - An initial `unity build --args=-nographics` invocation was rejected before launching the Editor because the CLI owns that flag. Removing the duplicate flag allowed the supported build workflow to start; the command examples above incorporate that correction.
 - Editor logs emitted `.cache is not a valid directory name` and licensing/package diagnostics. The Editor nevertheless opened the intended verification path, imported the updated assembly, and produced the expected passing test reports. The successful CLI build also reported licensing-client validation and entitlement-404 diagnostics in `editorErrors`. A read-only `unity license status` check confirmed an active license and signed-in state; the provenance manifest and player execution confirmed a successful build. The specific entitlement-diagnostic cause remains unresolved. No package or licensing configuration was changed to suppress it, and passing smoke tests do not validate unrelated package services.
+
+### Task 1.2b pricing verification
+
+Checked on Windows on **2026-10-18**, using .NET SDK **10.0.402** / runtime **10.0.13**, Unity **6000.6.6f1**, and official Unity CLI **1.0.0-beta.13** from plugin **0.1.8-beta**. The CLI update check reported the current version. Unrestricted discovery confirmed no running Editor before testing. The isolated verification project was refreshed from the authored project and prepared assets; hash comparisons confirmed identical simulation DLL and Edit Mode test source.
+
+| Check | Result |
+| --- | --- |
+| Locked restore and Release solution build | Passed, zero build warnings/errors; no dependency changes |
+| Complete .NET suite | 199 passed: 158 existing cases and 41 pricing/integration cases |
+| Original production, world, and fixed-market demos | Passed with their existing outcomes and repeatability checks |
+| Pricing experiments and report freshness | Passed: 165 observations and 1,883 invariant assertions per run; repeated and `tr-TR` reports match |
+| Stale experiment report rejection | Passed; `--check` rejects stale output without modifying it |
+| Python pipeline tests | 39 passed |
+| Canonical validation and generated-reference freshness | Passed; canonical content/schema and generated reference artifacts unchanged |
+| Authored documentation review and strict MkDocs build | Passed; formulas, example values, API/error semantics, experimental status, and roadmap checked against code and measured output |
+| Unity preparation and freshness | Passed; only the simulation DLL and canonical content staged, with no extra JSON assembly |
+| Official CLI Edit Mode | 6 passed, including linear and scarcity quote/execution/reversal cases and the pinned Newtonsoft check |
+| Official CLI Play Mode | 1 passed; Bootstrap retains its original production result |
+| Official CLI Windows x64 Mono build and player execution | Passed; fresh build and hidden headless player exit 0, with the exact 0 logs / 3 planks smoke completion message |
+| IL2CPP, other platforms, visual rendering, dynamic trades inside a player, large-world profiling, and remote GitHub Actions | Not run |
+
+Dynamic Edit Mode cases start with 3 market logs, trader cash 1,000, market cash 100, and parameters `P=10, T=10, k=10, L=1, U=100, h=1`. Buying all three costs 57 under linear pricing and 72 under scarcity pricing; the first marginal ask is 18 and the last is 20 or 35. Selling back leaves the trader with 994 and the market with 106. The historical snapshot still quotes 18. These assertions exercise `BigInteger` through Unity's staged `netstandard2.1` assembly; they do not duplicate its formulas in the host.
+
+Local NUnit reports use `.cache/task12b-editmode.xml` and `.cache/task12b-playmode.xml`, with corresponding logs. Build provenance is `.cache/task12b-build-mono.provenance.json`; the player log is `.cache/task12b-player-mono.log`. Individual test cases, nonzero counts, build outcome, and player completion were inspected. The command-line runs succeeded through the official workflow. Logs still include the verification directory-name warning, duplicate assembly hint-path warnings, and entitlement-404 diagnostics. The successful build also lists licensing-client validation and entitlement messages in `editorErrors`. A read-only official `unity license status` check reported an active license and signed-in state. Their specific entitlement cause remains unresolved; no package or license configuration was changed to suppress the messages.
+
+The player rebuild verifies packaging and the unchanged Bootstrap production path. Dynamic pricing is exercised headlessly and in Unity Edit Mode, not by the production-only player smoke. Maximum-quantity pricing tests establish a bounded calculation path, not large-world throughput or player-backend performance. The [pricing report](PRICING_EXPERIMENTS.md) records measurements and economic limitations separately from these integration results.
+
+### Remaining player verification
 
 For an intended IL2CPP target, install its Unity build support and native compiler prerequisites, select Bootstrap in the Build Profile, set **Scripting Backend: IL2CPP**, retain **API Compatibility Level: .NET Standard 2.1**, and select the intended managed stripping level. Build a development player, launch it with the smoke flag, and inspect its exit code and log as above. Record Editor version, operating system, target architecture, backend, stripping level, UPM version, and result. No blanket `link.xml` is supplied; investigate concrete stripping failures before adding preservation rules.
 

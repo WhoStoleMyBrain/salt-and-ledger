@@ -1,6 +1,6 @@
 # Implemented architecture
 
-Phase 0 separates content, simulation, host presentation, and reference generation using a small set of concrete modules. Phase 0.5 connects the same simulation to a minimal Unity host. Task 1.1 adds an explicitly stepped world using the existing production operation. Task 1.2 adds finite market/trader accounts and atomic trades to those same steps. These layers introduce no speculative services or extension points for future systems.
+Phase 0 separates content, simulation, host presentation, and reference generation using a small set of concrete modules. Phase 0.5 connects the same simulation to a minimal Unity host. Task 1.1 adds an explicitly stepped world using the existing production operation. Task 1.2 adds finite market/trader accounts and atomic trades to those same steps. Task 1.2b adds exact inventory-sensitive pricing, shared trade preview/execution calculations, and reproducible headless experiments while retaining fixed prices. These layers introduce no speculative services or extension points for future systems.
 
 ```text
 data/content.json + data/content.schema.json
@@ -13,8 +13,9 @@ data/content.json + data/content.schema.json
             +-- immutable ContentCatalog
                     +-- Inventory + Production.TryRunBatch
                             +-- WorldState.Step --> immutable StepResult
-                            |       +-- optional market/trader accounts and fixed quotes
-                            |       +-- console world/market demos / headless and Unity tests
+                            |       +-- optional market/trader accounts and pricing configuration
+                            |       +-- shared exact price / trade preview calculations
+                            |       +-- console world/market/pricing runs / headless and Unity tests
                             +-- original console demo / Unity Bootstrap smoke
 ```
 
@@ -22,9 +23,9 @@ data/content.json + data/content.schema.json
 
 | Module | Responsibility | Dependencies |
 | --- | --- | --- |
-| `src/SaltAndLedger.Simulation` | Content loading, immutable definitions, inventory, atomic production/trading, deterministic world steps and results | `netstandard2.1`, C# 8, Newtonsoft.Json 13.0.3 |
-| `samples/SaltAndLedger.Demo` | Read content and demonstrate explicit production, a fixed world, or finite trading with repeatable outcomes | `net10.0`, simulation project |
-| `tests/SaltAndLedger.Simulation.Tests` | Headless tests of content, production, trading/accounting, scheduling, state ownership, determinism, and rollback | `net10.0`, simulation project, test dependencies |
+| `src/SaltAndLedger.Simulation` | Content loading, immutable definitions, inventory, atomic production/trading, exact stock-sensitive prices, deterministic world steps and results | `netstandard2.1`, C# 8, Newtonsoft.Json 13.0.3 |
+| `samples/SaltAndLedger.Demo` | Read content; demonstrate production/world/trading; compare pricing hypotheses and emit reproducible experiment reports | `net10.0`, simulation project |
+| `tests/SaltAndLedger.Simulation.Tests` | Headless tests of content, production, trading/accounting, pricing/preview invariants, scheduling, state ownership, determinism, and rollback | `net10.0`, simulation project, test dependencies |
 | `unity` | Bootstrap smoke scene/component, integration tests, and a player build entry point | Unity 6000.6.6f1, staged simulation DLL, Unity Newtonsoft package 3.2.2 |
 | `data` | Canonical content and Draft 2020-12 JSON Schema | No host or presentation dependency |
 | `tools` | Validate authoring data; generate reference artifacts; prepare Unity runtime assets | Python, dependencies in `requirements.txt`; .NET 10 for Unity preparation |
@@ -97,17 +98,20 @@ Canonical `BuildingDefinition` and recipe data remain immutable shared catalog e
 | Type | Responsibility |
 | --- | --- |
 | `WorldState` | Validate one location and its instances, own the current immutable snapshot, and execute one atomic `Step` |
-| `WorldSnapshot` | Expose `Tick`, `LocationId`, detached market/production `Inventory`, read-only `Buildings`, and optional `Trading` |
+| `WorldSnapshot` | Expose detached world/accounts state; derive current marginal prices with `GetMarketQuote` and a read-only `PreviewTrade` |
 | `BuildingInstance` | Hold stable runtime identity, canonical references, priority, and enabled flag |
 | `SetProductionEnabledCommand` | Request one enabled-state change at the start of a step |
 | `StepResult` | Describe the starting `Tick`, committed `After` snapshot, ordered `TradeAttempts`, and ordered `ProductionAttempts` |
 | `ProductionAttempt` | Identify the instance, building definition, and recipe; report `Outcome` and `InventoryChanges` |
 | `InventoryChange` | Describe one changed good with `GoodId`, `Before`, `After`, and `Delta` |
-| `MarketConfiguration` | Copy initial market cash, trader ID/cash/inventory, and fixed quotes; resolve canonical goods when constructing a world |
-| `MarketQuote` | Immutable `GoodId`, `Bid`, and `Ask` prices in `long` units, with `Ask >= Bid > 0` |
+| `MarketConfiguration` | Copy initial market cash, trader ID/cash/inventory, and fixed/dynamic quote configurations; resolve canonical goods when constructing a world |
+| `MarketQuote` | Immutable per-good fixed `Bid`/`Ask` or `InventoryPricing` parameters; `IsFixed` distinguishes them |
+| `InventoryPricing` | Validated immutable `Linear` or `Scarcity` parameters; no clock, world reference, or mutable price state |
+| `MarketPrice` | Derived `GoodId`, `MarketStock`, and nullable next marginal `Bid`/`Ask` for one snapshot |
+| `TradePrice` | Exact proposed quantity, first/last marginal prices, total, and uniform-price flag |
 | `TradeCommand` | Request a `Buy` or `Sell` from the trader's perspective, with a canonical good and positive `int` quantity |
-| `TradingSnapshot` | Detached `MarketCash`, `TraderId`, `TraderCash`, `TraderInventory`, and fixed `Quotes` |
-| `TradeAttempt` | Requested quantity/price/total, explicit outcome, and both parties' goods/cash changes |
+| `TradingSnapshot` | Detached `MarketCash`, `TraderId`, `TraderCash`, `TraderInventory`, and immutable pricing configurations in `Quotes` |
+| `TradeAttempt` | Requested quantity, nullable marginal-price breakdown, actual executed quantity/amount, explicit outcome, and both parties' goods/cash changes |
 | `CashChange` | Immutable `long` before/after balances and checked signed delta |
 
 `WorldState(content, locationId, buildings, initialQuantities = null, initialTick = 0, market = null)` validates and copies setup state. Existing source calls retain their behavior; without a market, `Trading` is null. `Snapshot()` exposes its immutable current snapshot; `Tick` and `LocationId` are also available directly. Initial quantities have the existing inventory rules. Runtime IDs use the same ASCII syntax as definition IDs but a separate identity namespace; building instance IDs are unique within the world. Priorities are signed integers. The building list has a stable priority-then-ordinal-ID order, and snapshot inventories and quotes sort by ordinal good ID.
@@ -133,7 +137,7 @@ StepResult second = world.Step(new[]
 
 `Step(commands = null, trades = null)` consumes and validates both complete command sequences before applying controls. It checks tick overflow, prepares private working state, applies controls in declared order, executes trades in declared order, then calls `Production.TryRunBatch` once for each enabled instance in priority/ID order. Stock/funds shortages are recorded normally. Invalid commands, an enumeration error, or arithmetic overflow throw and leave the old snapshot intact. A reentrant `Step` is rejected with `InvalidOperationException`; callers must still serialize access, since the world is not thread-safe.
 
-The working inventories, cash, and flags are not exposed. Internal `TradingState` stages one trader inventory and two balances; it computes every affected balance before applying a transfer. The existing working location inventory is the market stock, shared with production. There is no redundant mutable market inventory or generic economic entity framework. Public-market production ownership is an experimental prototype assumption; player-owned factories remain undecided.
+The working inventories, cash, and flags are not exposed. Internal `TradingState` stages one trader inventory and two balances; the shared trade calculation computes a complete attempt and every affected balance before a transfer is applied. Snapshot previews invoke that same calculation without applying it. The existing working location inventory is the market stock, shared with production. There is no redundant mutable market inventory or generic economic entity framework. Public-market production ownership is an experimental prototype assumption; player-owned factories remain undecided.
 
 Only after the complete next snapshot and step result exist does one snapshot assignment commit the world. Therefore an exception after an earlier successful trade or batch rolls back goods, cash, controls, and clock together. Constructor input mutation and retained results cannot change the live world. No mutable `Inventory` is returned from the world API. The world does not retain the initial configuration: current account state and immutable quotes live in its current snapshot.
 
@@ -156,17 +160,27 @@ var purchase = tradingWorld.Step(trades: new[] { new TradeCommand(TradeDirection
 
 The Unity Edit Mode trade test exercises this example with the staged library. Quotes are scenario/runtime data; no canonical schema, good definition, or documentation-generation change is necessary. Detailed numeric bounds and rejection precedence live in [Mechanics](MECHANICS.md).
 
+### Pricing calculation and visibility
+
+`new MarketQuote(goodId, bid, ask)` remains the fixed-price path. `new MarketQuote(goodId, new InventoryPricing(...))` selects linear or piecewise scarcity pricing for that good. These are small concrete configuration modes, not a pricing plugin interface. Configurations are immutable and copied into the snapshot's ordered quote collection. Their legacy `Bid`/`Ask` getters throw for dynamic configurations; callers obtain state-dependent prices through `snapshot.GetMarketQuote(goodId)` instead of accidentally displaying an initial or cached price.
+
+The pure pricing calculation maps consecutive inventory transitions to bid/ask values. Buying and reversing that purchase traverse the same edges in opposite directions. Quantities are summed exactly rather than charged at the first marginal quote. Mathematical floor and final-side bounds are explicit; `BigInteger` is a .NET Standard API used only for intermediate arithmetic, with no new NuGet or Unity package. At most two affine segments, analytic bound crossings, and a logarithmic floor-sum algorithm keep work independent of the requested unit count. [Mechanics](MECHANICS.md#inventory-sensitive-pricing-hypotheses) specifies formulas, limits, and rejection precedence.
+
+`snapshot.PreviewTrade(command)` uses the same account checks, price summation, and result construction as execution. It does not advance time or mutate anything. Both paths expose first/last marginal prices, proposed total, and executed quantity/amount; in a preview these fields and the balance changes are hypothetical. A shortage that prevents dynamic pricing has no price breakdown. Fixed attempts keep their former `UnitPrice` and `TotalAmount` values. For dynamic attempts, `UnitPrice` is only a compatibility alias for the first marginal price, and its product with quantity need not equal the total.
+
+Current marginal quotes are derived from each snapshot's authoritative inventory. Production therefore affects the next completed snapshot's quotes without a separate update phase. Retained snapshots retain their own historical prices; cash and stock feasibility for a whole request belongs to `PreviewTrade`. The marginal quote omits ask at zero market stock and bid at maximum stock. It does not reserve goods or guarantee funds.
+
 This copies small runtime state per tick to make the failure contract understandable. It has allocation and copying costs that should be measured before adapting it for large worlds; no performance target is claimed. There is no transaction framework, event bus, retained event history, save format, or replay engine. Hosts may retain selected `StepResult` objects for their own diagnostics. The world itself retains only its current snapshot.
 
 ## Determinism and headless execution
 
-For a given validated catalog, initial world state, fixed quotes, and ordered commands per tick, the implemented world produces the same state and structured outcomes. A nonnegative 64-bit integer tick advances once per successful step. It represents abstract simulation time, with no hours, days, or real-time conversion. Checked integer arithmetic prevents tick, stock, cash, or transaction-total overflow from silently changing state.
+For a given validated catalog, initial world state, pricing configuration, and ordered commands per tick, the implemented world produces the same state and structured outcomes. A nonnegative 64-bit integer tick advances once per successful step. It represents abstract simulation time, with no hours, days, or real-time conversion. Exact integer pricing and checked public numeric bounds prevent tick, stock, cash, or transaction-total overflow from silently changing state.
 
 Production order is ascending priority then ordinal instance ID, independent of input collection order. Commands targeting the same instance deliberately use their declared order, with the last enabled-state command winning. Attempt order and changed-good order are explicit; callers do not need dictionary enumeration accidents to compare runs. Fixed production order can starve later buildings and makes no fairness guarantee.
 
 `Step` has no implicit loop; the world demo calls it five times, repeats the scenario, and compares results with both identical and reversed building input collections. The market demo uses four ticks and repeats with reversed quote/stock setup order. Several steps use ordinary sequential calls, not a separate batch API. The simulation uses no random values, wall-clock inputs, Unity frames, or background scheduling. Trading precedes production; future arrival and consumption phases remain unresolved, as do seed management, save formats, and durable replay compatibility. The current API assumes one caller; concurrent mutation is not supported.
 
-The separation makes future headless experiment batches possible. No balance runner, throughput target, or verified thousands-of-runs benchmark is claimed.
+The `--pricing` host compares fixed, linear, and scarcity modes through the real world API. It records model parameters, previews, outcomes, stock/price movement, and cash changes in a deterministic JSON report, with a read-only `--check` mode for freshness. This report is a host-owned experiment artifact under `docs/experiments/`; it is separate from canonical content generation and `generated/encyclopedia.json`. [Pricing experiments](PRICING_EXPERIMENTS.md) explains the scenarios and conclusions. The runner does not imply a large-world throughput target or a verified thousands-of-runs benchmark.
 
 ## Documentation pipeline
 
@@ -188,6 +202,6 @@ Generated pages cannot define production time, prices, or behavior absent from t
 
 ## Boundaries and limitations
 
-Fixed bid/ask quotes validate accounting only. No dynamic pricing, automatic stock/cash replenishment, multiple ports, ships, trade routes, world generation, objectives, modifiers, progression, random events, competing merchants, piracy, combat, multiplayer, automation policy, or elaborate UI exists here. Keep those in the provisional [roadmap](ROADMAP.md), not in unused foundation code.
+Fixed quotes remain the accounting baseline; linear and scarcity curves are experimental stock-sensitive alternatives. No automatic stock/cash replenishment, multiple ports, ships, trade routes, world generation, objectives, modifiers, progression, random events, competing merchants, piracy, combat, multiplayer, automation policy, or elaborate UI exists here. Keep those in the provisional [roadmap](ROADMAP.md), not in unused foundation code.
 
 Headless compilation and tests exercise the portable library and pipeline. Unity import, Editor behavior, Mono player execution, and IL2CPP player execution are separate verification points; follow [Unity integration](UNITY.md) and report which checks actually ran.
