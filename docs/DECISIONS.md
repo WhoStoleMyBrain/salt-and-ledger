@@ -1,6 +1,6 @@
 # Architectural decisions
 
-These records describe accepted foundation decisions as of 2026-10-17. Unresolved game rules live in [Economy](ECONOMY.md); hypotheses and deferred concepts live in [Ideas](IDEAS.md). New evidence can supersede a decision explicitly.
+These records describe accepted decisions through Task 1.1. Unresolved game rules live in [Economy](ECONOMY.md); hypotheses and deferred concepts live in [Ideas](IDEAS.md). New evidence can supersede a decision explicitly.
 
 ## ADR 001: Keep the simulation independent of Unity
 
@@ -28,7 +28,7 @@ Package and assembly compatibility still require the local verification in [Unit
 
 ## ADR 004: Keep production explicit, deterministic, and atomic
 
-**Status:** Accepted for the Phase 0 sample.
+**Status:** Accepted atomic production contract; the Phase 0 restriction to explicit calls without a clock or scheduler is superseded by ADR 009.
 
 One command executes one recipe batch against an inventory for a specified building. Quantities are bounded nonnegative integers, arithmetic is checked, and the entire result is validated before committing state. Missing inputs, a wrong building, or overflow must leave the inventory unchanged.
 
@@ -65,3 +65,23 @@ Keep the existing Unity project at `unity/`, pinned to Editor 6000.6.6f1. Use `t
 Unity owns the Newtonsoft assembly through pinned UPM package `com.unity.nuget.newtonsoft-json` 3.2.2 and `packages-lock.json`; the portable build retains NuGet 13.0.3. The inspected Unity upstream 13.0.2 DLL has the same strong-named assembly identity as the NuGet dependency. No NuGet JSON DLL is copied into Unity. Actual Editor and player checks, including their limits, are recorded in [Unity integration](UNITY.md).
 
 The Bootstrap smoke component only orchestrates the existing loader and production command. Focused Edit Mode and Play Mode tests and a Windows Mono player build entry point verify that boundary. CI validates preparation and freshness without requiring a Unity license. Other backends and content-delivery systems remain separate verification work.
+
+## ADR 009: Advance a small world through explicitly ordered integer ticks
+
+**Status:** Accepted for Task 1.1; extends ADR 004 without changing its one-batch production contract.
+
+Use one fixed runtime location with one inventory and explicit building instances that reference immutable canonical building and recipe definitions. A nonnegative signed 64-bit tick advances only when a host calls `WorldState.Step` successfully. A tick is an abstract economic step; no conversion to in-game hours, real seconds, or Unity frames is selected.
+
+Validate the complete command sequence, check tick overflow, apply enabled-state commands in declared order, select enabled instances, then attempt one batch per instance in ascending priority and ordinal instance-ID order. The last command for an instance wins. Every attempt calls the existing `Production.TryRunBatch`. Resource shortage is an expected result. Neither content nor collection insertion order controls scheduling.
+
+The one-batch scheduling rule is provisional production cadence, and fixed ordering may starve later instances. There is no fairness rotation, configurable automation, runtime priority change, or construction. New phases for markets, arrivals, and consumption need their own explicit ordering decision when implemented; no placeholder phase framework is added now.
+
+## ADR 010: Commit complete world snapshots and return per-step results
+
+**Status:** Accepted.
+
+Keep the current world state as one immutable snapshot. Each step stages inventory and building state privately, then constructs the full next snapshot and structured result before a single commit assignment. Invalid commands, enumeration errors, and arithmetic overflow leave the prior inventory, flags, and tick unchanged, including earlier staged production. This extends per-batch atomicity to the complete tick without a generalized transaction framework.
+
+Copying small state each tick favors a simple failure contract over unmeasured optimization. It has an allocation cost; measure representative workloads before changing the representation. Snapshots and instance values expose no mutation path, and the API supports one sequential caller, with reentrant steps rejected. Thread-safe simulation is not implemented.
+
+Return `StepResult` with the starting tick, committed next snapshot, and ordered per-building outcomes. Changes contain only net-changed goods, sorted by ordinal ID. A shortage has no inventory changes; a successful zero-net batch can also have no changes, so its outcome remains explicit. Snapshot buildings and inventory have stable ordering as well. Do not retain step history in the world; hosts decide which results to keep. This supports inspection and deterministic comparison without claiming a persistent replay protocol or save format.

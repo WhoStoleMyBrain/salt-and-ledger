@@ -4,7 +4,7 @@
 
 Salt & Ledger is a single-player maritime trading and economic strategy game intended for Unity 6, inspired by Port Royale 2, Patrician 2, Antimatter Dimensions, and economic roguelikes. The central gameplay is intelligent optimization and automation of trading networks operating within a simulated economy.
 
-City development, production chains, procedural worlds, roguelike scenarios, customizable difficulty, and lateral meta progression are long-term directions. Phase 0 establishes the smallest working technical foundation; it does not implement those systems.
+City development, production chains, procedural worlds, roguelike scenarios, customizable difficulty, and lateral meta progression are long-term directions. The foundation and first deterministic world prototype do not implement those systems.
 
 The principles below are constraints for future design. Particular mechanisms that satisfy them remain open until prototypes provide evidence.
 
@@ -16,7 +16,7 @@ The principles below are constraints for future design. Particular mechanisms th
 - Player actions should meaningfully affect the simulated economy.
 - Information and understandable rules should enable better decisions.
 
-A system earns its complexity by creating decisions with consequences. Additional content alone is not evidence of depth. Phase 0 demonstrates finite inventory and an explicit conversion; markets, money, production schedules, and consumption remain unimplemented.
+A system earns its complexity by creating decisions with consequences. Additional content alone is not evidence of depth. Task 1.1 demonstrates finite inventory, shared-resource competition, and deterministic production over abstract ticks. The one-batch-per-enabled-building rule is a prototype schedule, not settled balance. Markets, money, and consumption remain unimplemented.
 
 ## Automation over micromanagement
 
@@ -25,7 +25,7 @@ A system earns its complexity by creating decisions with consequences. Additiona
 - Production and trade automation should support configurable policies.
 - Automation should create opportunities for higher-level planning.
 
-Automation is part of the intended strategy experience. Its unlock structure, policy language, and user interface are unresolved. Phase 0 contains no automation policies.
+Automation is part of the intended strategy experience. Its unlock structure, policy language, and user interface are unresolved. The current world supports simple enable/disable controls and repeats production when explicitly stepped; it contains no configurable automation policies.
 
 ## Strategic specialization
 
@@ -47,7 +47,7 @@ Potential systems include:
 - New adversaries and world configurations.
 - New optional difficulty modifiers.
 
-These are design directions, not features implemented in Phase 0. Their exact form and unlock conditions are hypotheses to test.
+These are design directions, not implemented features. Their exact form and unlock conditions are hypotheses to test.
 
 ## Fair challenges
 
@@ -70,4 +70,4 @@ Phase 0 puts definitions in a canonical JSON file and produces both Markdown and
 
 ## Design status
 
-The principles above are accepted. The [economy questions](ECONOMY.md) and [experiment ideas](IDEAS.md) remain unresolved. The [roadmap](ROADMAP.md) is provisional and should change when prototypes show a better sequence. No price formula, tick duration, map-generation algorithm, or progression system has been selected by this foundation task.
+The principles above are accepted. The [economy questions](ECONOMY.md) and [experiment ideas](IDEAS.md) remain unresolved. The [roadmap](ROADMAP.md) is provisional and should change when prototypes show a better sequence. Abstract integer ticks and stable production ordering are implemented; no price formula, conversion of ticks to hours or days, map-generation algorithm, or progression system has been selected.

@@ -1,6 +1,6 @@
 # Implemented architecture
 
-Phase 0 separates content, simulation, host presentation, and reference generation using a small set of concrete modules. Phase 0.5 connects the same simulation to a minimal Unity host. Neither introduces services or extension points for future systems.
+Phase 0 separates content, simulation, host presentation, and reference generation using a small set of concrete modules. Phase 0.5 connects the same simulation to a minimal Unity host. Task 1.1 adds an explicitly stepped world using the existing production operation. These layers introduce no speculative services or extension points for future systems.
 
 ```text
 data/content.json + data/content.schema.json
@@ -12,17 +12,18 @@ data/content.json + data/content.schema.json
     +-- C# strict loading + semantic validation
             +-- immutable ContentCatalog
                     +-- Inventory + Production.TryRunBatch
-                            +-- console demo / headless tests
-                            +-- Unity Bootstrap smoke component
+                            +-- WorldState.Step --> immutable StepResult
+                            |       +-- console world demo / headless tests
+                            +-- original console demo / Unity Bootstrap smoke
 ```
 
 ## Modules and dependencies
 
 | Module | Responsibility | Dependencies |
 | --- | --- | --- |
-| `src/SaltAndLedger.Simulation` | Content loading, immutable definitions, inventory, one-batch production | `netstandard2.1`, C# 8, Newtonsoft.Json 13.0.3 |
-| `samples/SaltAndLedger.Demo` | Read a content file and demonstrate successful and rejected production | `net10.0`, simulation project |
-| `tests/SaltAndLedger.Simulation.Tests` | Headless tests of loading, content rules, inventory, and production | `net10.0`, simulation project, test dependencies |
+| `src/SaltAndLedger.Simulation` | Content loading, immutable definitions, inventory, atomic production, deterministic world steps and results | `netstandard2.1`, C# 8, Newtonsoft.Json 13.0.3 |
+| `samples/SaltAndLedger.Demo` | Read content and demonstrate explicit production or a fixed world with repeatable tick outcomes | `net10.0`, simulation project |
+| `tests/SaltAndLedger.Simulation.Tests` | Headless tests of content, production, scheduling, state ownership, determinism, and rollback | `net10.0`, simulation project, test dependencies |
 | `unity` | Bootstrap smoke scene/component, integration tests, and a player build entry point | Unity 6000.6.6f1, staged simulation DLL, Unity Newtonsoft package 3.2.2 |
 | `data` | Canonical content and Draft 2020-12 JSON Schema | No host or presentation dependency |
 | `tools` | Validate authoring data; generate reference artifacts; prepare Unity runtime assets | Python, dependencies in `requirements.txt`; .NET 10 for Unity preparation |
@@ -88,13 +89,56 @@ bool produced = Production.TryRunBatch(inventory, "sawmill", "saw_planks");
 // produced == true; logs == 0; planks == 1.
 ```
 
+### World runtime types
+
+Canonical `BuildingDefinition` and recipe data remain immutable shared catalog entries. `BuildingInstance` identifies one actual runtime facility through `Id`, `BuildingId`, `RecipeId`, `Priority`, and `ProductionEnabled`. Multiple instances reference the same definitions without copying content. All instance properties are read-only. A world configuration change replaces the instance value in its next snapshot; it cannot modify canonical definitions.
+
+| Type | Responsibility |
+| --- | --- |
+| `WorldState` | Validate one location and its instances, own the current immutable snapshot, and execute one atomic `Step` |
+| `WorldSnapshot` | Expose `Tick`, `LocationId`, detached read-only `Inventory`, and read-only `Buildings` |
+| `BuildingInstance` | Hold stable runtime identity, canonical references, priority, and enabled flag |
+| `SetProductionEnabledCommand` | Request one enabled-state change at the start of a step |
+| `StepResult` | Describe the starting `Tick`, committed `After` snapshot, and ordered `ProductionAttempts` |
+| `ProductionAttempt` | Identify the instance, building definition, and recipe; report `Outcome` and `InventoryChanges` |
+| `InventoryChange` | Describe one changed good with `GoodId`, `Before`, `After`, and `Delta` |
+
+`WorldState(content, locationId, buildings, initialQuantities = null, initialTick = 0)` validates and copies setup state. `Snapshot()` exposes its immutable current snapshot; `Tick` and `LocationId` are also available directly. Initial quantities have the existing inventory rules. Runtime IDs use the same ASCII syntax as definition IDs but a separate identity namespace; building instance IDs are unique within the world. Priorities are signed integers. The building list has a stable priority-then-ordinal-ID order, and snapshot inventory entries sort by ordinal good ID.
+
+```csharp
+var world = new WorldState(content, "home_port", new[]
+{
+    new BuildingInstance("sawmill_b", "sawmill", "saw_planks"),
+    new BuildingInstance("sawmill_a", "sawmill", "saw_planks")
+}, new Dictionary<string, int> { ["logs"] = 2 });
+
+StepResult first = world.Step();
+// first.Tick == 0; first.After.Tick == 1.
+// sawmill_a produces before sawmill_b encounters a resource shortage.
+StepResult second = world.Step(new[]
+{
+    new SetProductionEnabledCommand("sawmill_a", false)
+});
+// Only sawmill_b attempts production in this step; stock is still exhausted.
+```
+
+### Commit boundary and ownership
+
+`Step` consumes and validates the complete command sequence before applying controls. It checks tick overflow, prepares private working state, applies controls in declared order, then calls `Production.TryRunBatch` once for each enabled instance in priority/ID order. A shortage is recorded normally. Invalid commands, an enumeration error, or arithmetic overflow throw and leave the old snapshot intact. A reentrant `Step` is rejected with `InvalidOperationException`; callers must still serialize access, since the world is not thread-safe.
+
+The working inventory and flags are not exposed. Only after the complete next snapshot and step result exist does one snapshot assignment commit the world. Therefore an exception after an earlier successful batch rolls back that batch, the controls, and the clock together. Constructor input mutation and retained results cannot change the live world. No mutable `Inventory` is returned from the world API.
+
+This copies small runtime state per tick to make the failure contract understandable. It has allocation and copying costs that should be measured before adapting it for large worlds; no performance target is claimed. There is no transaction framework, event bus, retained event history, save format, or replay engine. Hosts may retain selected `StepResult` objects for their own diagnostics. The world itself retains only its current snapshot.
+
 ## Determinism and headless execution
 
-For a given validated catalog, initial inventory, and sequence of commands, the implemented production logic produces the same state and outcomes. It uses integer arithmetic, no random values, no wall clock, and no background scheduling. Checked arithmetic prevents overflow from silently changing stock.
+For a given validated catalog, initial world state, and ordered commands per tick, the implemented world produces the same state and structured outcomes. A nonnegative 64-bit integer tick advances once per successful step. It represents abstract simulation time, with no hours, days, or real-time conversion. Checked arithmetic prevents tick or stock overflow from silently changing state.
 
-This is determinism for the implemented command, not yet a world simulation or a promise of save/replay compatibility. Time stepping, event ordering, seed management, save formats, concurrency, and replay compatibility must be specified when those systems are introduced. The current API assumes sequential calls; concurrent mutation is not a supported execution model.
+Production order is ascending priority then ordinal instance ID, independent of input collection order. Commands targeting the same instance deliberately use their declared order, with the last enabled-state command winning. Attempt order and changed-good order are explicit; callers do not need dictionary enumeration accidents to compare runs. Fixed production order can starve later buildings and makes no fairness guarantee.
 
-The separation makes future headless experiment batches possible. No balance runner, performance target, or verified thousands-of-runs benchmark is claimed in Phase 0.
+`Step` has no implicit loop; the headless demo calls it five times, repeats the scenario, and compares results with both identical and reversed building input collections. Several steps use ordinary sequential calls, not a separate batch API. The simulation uses no random values, wall-clock inputs, Unity frames, or background scheduling. Trade, arrival, and consumption phases remain unresolved, as do seed management, save formats, and durable replay compatibility. The current API assumes one caller; concurrent mutation is not supported.
+
+The separation makes future headless experiment batches possible. No balance runner, throughput target, or verified thousands-of-runs benchmark is claimed.
 
 ## Documentation pipeline
 

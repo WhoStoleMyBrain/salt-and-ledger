@@ -49,7 +49,7 @@ A missing staged asset or invalid outcome fails explicitly. No Inspector content
 
 Open **Window > General > Test Runner** and run:
 
-- **Edit Mode:** `SaltAndLedger.UnityHost.EditModeTests` (2 tests covering production and the single UPM Newtonsoft provider, including a hash comparison of the loaded DLL against the pinned package binary).
+- **Edit Mode:** `SaltAndLedger.UnityHost.EditModeTests` (3 tests covering explicit production, deterministic world scheduling with shared stock, and the single UPM Newtonsoft provider, including a hash comparison of the loaded DLL against the pinned package binary).
 - **Play Mode:** `SaltAndLedger.UnityHost.PlayModeTests` (1 test that loads Bootstrap and checks the component's actual `Start()` result).
 
 For repeatable command-line tests, close the Editor instance using this project first, or use a separate complete checkout prepared with the same commands. Do not launch a second Editor against an already-open project. The PowerShell examples below run from the repository root; change the Editor path for your installation. Piping to `Out-Host` makes PowerShell wait for the GUI executable to finish.
@@ -108,6 +108,27 @@ Task 0.5 verification was run on Windows on 2026-10-17 with Unity 6000.6.6f1. Ed
 | Windows x64 Mono player build and execution | Passed; build and headless player exit code 0, with the expected smoke completion message |
 | IL2CPP and other player platforms | Not run |
 | GitHub Actions execution | Not run locally; workflow contains standalone/staging checks only |
+
+### Task 1.1 regression verification
+
+The revised assembly was checked again on Windows on 2026-10-17 using the same .NET and Unity versions. The new Edit Mode test constructs a world from the staged canonical content and confirms that two sawmill instances resolve scarce shared stock by instance ID. Bootstrap remains the original one-batch production smoke; no graphical world host was added.
+
+| Check | Result |
+| --- | --- |
+| Locked NuGet restore and Release solution build | Passed, zero build warnings/errors |
+| Standalone regression tests | 126 passed, including 36 world-simulation cases |
+| Original production demo | Passed, final 0 logs / 3 planks |
+| World demo and repeated/reordered-run comparison | Passed; default world reaches tick 5 with 0 logs / 3 planks |
+| World demo stock boundaries | Passed for 0, 2, 6, and 2,147,483,647 initial logs; invalid values rejected |
+| Python, canonical validation, and generated-reference freshness | 39 tests passed; validation and freshness passed |
+| Strict MkDocs build | Passed |
+| Unity preparation and freshness | Passed |
+| Unity Edit Mode | 3 passed, including the new world scheduling test |
+| Unity Play Mode | 1 passed; original Bootstrap behavior preserved |
+| Windows x64 Mono Bootstrap player | Rebuilt and passed; build/player exit code 0 and expected 0 logs / 3 planks completion message |
+| IL2CPP, other platforms, visual rendering, and remote GitHub Actions | Not run for this task |
+
+Task 1.1 test results and logs use the local `.cache/task11-*.xml` and `.cache/task11-*.log` filenames. The world API is exercised headlessly and in Edit Mode; the player smoke checks the existing Bootstrap integration, not a world-simulation UI or a shipping backend configuration.
 
 Editor/player verification uses an isolated copy under `.cache/unity-verification` so the already-open working project is not interrupted. This copy is a local test artifact, not a second source location. Both Editor test runs used batch mode, and the Mono player ran with `-batchmode -nographics`; visual rendering was not assessed. NUnit XML results and Editor/build/player logs are retained locally under `.cache/` and are not version controlled.
 
