@@ -8,19 +8,21 @@ title: "Menus, pause, and the encyclopedia"
 
 Inspect, pause, and begin another run without accidentally advancing the economy\.
 
-Start from the main menu, select a challenge and charter in New Run, or choose an unlimited sandbox\. Setup and reference browsing do not advance economic time\.
+Start from the main menu, choose New Run or unlimited Sandbox, then review the challenge, charter, Classic or seeded world preview, and Ascension 0 or 1\. Setup, seed editing and reference browsing do not advance economic time or reroll a started world\.
 
 Escape first closes the active trade or industry overlay\. From the encyclopedia it returns to the parent screen\. During ordinary gameplay it opens pause; from pause it resumes unless a confirmation is active\.
 
 Restart, abandonment, return to menu, and exit protect an active run with confirmation where progress would be discarded\. Exit closes the standalone game\. No hidden saved session or persistent Continue option is promised\.
 
-The encyclopedia is available from the main menu, run setup, and pause menu\. Browse a category, search names or descriptions, follow related entries, and use Back to return\. All recipe facts are generated from the same content the simulation loads and work offline\.
+The encyclopedia is available from the main menu, run setup, and pause menu\. Browse a category, search names or descriptions, follow related entries, and use Back to return\. All recipe facts are generated from the same content the simulation loads and work offline\. Settings offers four game\-wide text sizes without changing the world\.
 
 ## Related entries
 
 - [Challenges and run outcomes](../mechanics/help_challenges.md)
 - [Industrial shipping automation](../mechanics/help_industrial_routes.md)
 - [Production and scheduling](../mechanics/help_production.md)
+- [Text size and readable controls](../mechanics/help_readability.md)
+- [Seeded worlds and exact retries](../mechanics/help_seeded_worlds.md)
 - [Buying and selling](../mechanics/help_trading.md)
 
 [All player mechanics](../catalog-mechanics.md) · [All content](../index.md)

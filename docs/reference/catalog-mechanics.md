@@ -4,6 +4,7 @@
 
 These explanations are shared with the offline in-game encyclopedia. For exact developer contracts, see [Maintained mechanics](../MECHANICS.md).
 
+- [Ascension 1: Slow Foundations](mechanics/help_ascension.md) — New player\-owned factories need two complete economic days to become operational\.
 - [Cargo and storage capacity](mechanics/help_capacity.md) — Every physical item uses one unit of ship or private storage capacity\.
 - [Challenges and run outcomes](mechanics/help_challenges.md) — A challenge ends in victory, deadline defeat, or confirmed voluntary abandonment\.
 - [Starting company charters](mechanics/help_charters.md) — Choose one replacement starting package with understandable tradeoffs\.
@@ -17,6 +18,8 @@ These explanations are shared with the offline in-game encyclopedia. For exact d
 - [Marginal prices and execution averages](mechanics/help_prices.md) — The displayed next price and the cost of a whole order answer different questions\.
 - [Private procurement and local sales](mechanics/help_procurement.md) — Maintain chosen inputs and sell chosen surplus through ordinary local trades\.
 - [Production and scheduling](mechanics/help_production.md) — Complete canonical recipes run at explicitly scheduled economic days\.
+- [Text size and readable controls](mechanics/help_readability.md) — Choose one presentation scale for every ArchipelagoLab screen\.
 - [Results and scoring](mechanics/help_scoring.md) — Read the explicit score breakdown alongside the actual economy\.
+- [Seeded worlds and exact retries](mechanics/help_seeded_worlds.md) — Change geography while preserving the same four\-town economy\.
 - [Shipping and voyages](mechanics/help_shipping.md) — Goods travel aboard a real ship between directly connected towns\.
 - [Buying and selling](mechanics/help_trading.md) — Exchange goods with a town using the company's finite cash account\.

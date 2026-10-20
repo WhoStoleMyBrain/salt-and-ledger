@@ -12,7 +12,7 @@ A recipe lists its actual input and output quantities\. Transformation requires 
 
 A private factory consumes and produces only within its own storage\. A successful batch schedules the next opportunity one interval later\. Missing inputs, disabled production, or full output storage keep the batch due without accumulating catch\-up batches\.
 
-Daily ship actions occur before procurement and production\. Private procurement is followed by public production, private production, private sales, scheduled consumption, and voyage progress\. Fresh output therefore cannot be loaded by an earlier ship action in that same daily operation\.
+Daily ship actions occur before procurement and production\. Operational private procurement is followed by public production, private production, private sales, scheduled consumption, voyage progress and due construction completion\. Fresh output cannot be loaded by an earlier ship action in that same daily operation\. Pending factories skip their automatic phases even on completion day\.
 
 ## Related entries
 

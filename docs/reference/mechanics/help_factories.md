@@ -8,14 +8,15 @@ title: "Owning a factory"
 
 Invest cash in a fixed recipe and a finite private stockpile\.
 
-The active scenario lists available blueprints, eligible towns, construction payments, production intervals, and storage limits\. Construction pays the local market, creates empty private storage, and schedules the first batch later\. It does not grant materials or an immediate batch\.
+The active scenario lists blueprints, eligible towns, construction payments, intervals and storage limits\. Construction pays the local market once and creates empty owned storage\. Ascension 0 is immediately operational; Ascension 1 new player sites complete after two economic days\. The first batch is eligible one full production interval after completion, with inputs and capacity still required\.
 
-Input procurement and automatic sales are explicit policies\. Their drafts do nothing until applied\. Keep output sales disabled, or retain an appropriate reserve, when a ship should transport finished goods\.
+The industry summary shows status, next opportunity, missing inputs and local quotes, real expenditure and physical shipping waits\. A recommended setup prepares a visible policy draft; only Apply commits it\. Keep local output sales disabled, or retain an appropriate reserve, when a ship should transport finished goods\. Detailed rules remain available\.
 
-A charter may grant an initial facility or goods\. Those starter assets are recorded as grants, not purchases or construction payments made during the run\. Factory capital spending remains separate from material cost and sale margin\.
+A charter may grant an initial facility or goods\. Those starter assets are grants, not purchases or construction payments during the run\. Starter facilities are already operational at both ascensions and retain their initial schedule\. Capital spending remains separate from material cost and sale margin\.
 
 ## Related entries
 
+- [Ascension 1: Slow Foundations](../mechanics/help_ascension.md)
 - [Starting company charters](../mechanics/help_charters.md)
 - [Financial reports and the ledger](../mechanics/help_finances.md)
 - [Private procurement and local sales](../mechanics/help_procurement.md)

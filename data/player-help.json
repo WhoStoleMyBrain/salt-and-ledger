@@ -68,7 +68,7 @@
       "description": "Goods travel aboard a real ship between directly connected towns.",
       "paragraphs": [
         "Departing changes the ship's voyage immediately without spending a day. Advancing economic days progresses travel. After arrival is committed, manual dockside actions are available at the destination.",
-        "Duration follows the route's distance and the ship's configured speed. Map drawing and playback speed never alter travel or economic calculations. You cannot trade or transfer while sailing.",
+        "Duration follows the route's distance and the ship's configured speed. Classic uses authored distances; seeded geography derives all six direct distances from the generated integer positions. Distances are abstract chart units, not coastline-aware sailing paths. Map drawing and playback speed never alter travel or economic calculations. You cannot trade or transfer while sailing.",
         "There are currently no simulated fuel, wages, voyage fees, or transport losses. This means no modeled transport expenditure, not a claim that shipping has no real economic cost."
       ],
       "relatedIds": [
@@ -99,7 +99,7 @@
       "paragraphs": [
         "A recipe lists its actual input and output quantities. Transformation requires every input. Extraction has no tradeable inputs and creates its configured output. Canonical recipe pages describe quantities; the active scenario supplies intervals and limits.",
         "A private factory consumes and produces only within its own storage. A successful batch schedules the next opportunity one interval later. Missing inputs, disabled production, or full output storage keep the batch due without accumulating catch-up batches.",
-        "Daily ship actions occur before procurement and production. Private procurement is followed by public production, private production, private sales, scheduled consumption, and voyage progress. Fresh output therefore cannot be loaded by an earlier ship action in that same daily operation."
+        "Daily ship actions occur before procurement and production. Operational private procurement is followed by public production, private production, private sales, scheduled consumption, voyage progress and due construction completion. Fresh output cannot be loaded by an earlier ship action in that same daily operation. Pending factories skip their automatic phases even on completion day."
       ],
       "relatedIds": [
         "help_procurement",
@@ -112,15 +112,16 @@
       "name": "Owning a factory",
       "description": "Invest cash in a fixed recipe and a finite private stockpile.",
       "paragraphs": [
-        "The active scenario lists available blueprints, eligible towns, construction payments, production intervals, and storage limits. Construction pays the local market, creates empty private storage, and schedules the first batch later. It does not grant materials or an immediate batch.",
-        "Input procurement and automatic sales are explicit policies. Their drafts do nothing until applied. Keep output sales disabled, or retain an appropriate reserve, when a ship should transport finished goods.",
-        "A charter may grant an initial facility or goods. Those starter assets are recorded as grants, not purchases or construction payments made during the run. Factory capital spending remains separate from material cost and sale margin."
+        "The active scenario lists blueprints, eligible towns, construction payments, intervals and storage limits. Construction pays the local market once and creates empty owned storage. Ascension 0 is immediately operational; Ascension 1 new player sites complete after two economic days. The first batch is eligible one full production interval after completion, with inputs and capacity still required.",
+        "The industry summary shows status, next opportunity, missing inputs and local quotes, real expenditure and physical shipping waits. A recommended setup prepares a visible policy draft; only Apply commits it. Keep local output sales disabled, or retain an appropriate reserve, when a ship should transport finished goods. Detailed rules remain available.",
+        "A charter may grant an initial facility or goods. Those starter assets are grants, not purchases or construction payments during the run. Starter facilities are already operational at both ascensions and retain their initial schedule. Capital spending remains separate from material cost and sale margin."
       ],
       "relatedIds": [
         "help_production",
         "help_procurement",
         "help_finances",
-        "help_charters"
+        "help_charters",
+        "help_ascension"
       ]
     },
     {
@@ -130,7 +131,7 @@
       "paragraphs": [
         "For each recipe input, choose a target stock and maximum marginal buying price. A cash reserve protects company liquidity. Procurement buys only what the local town can supply and the company can afford within the policy.",
         "For outputs, choose a retained quantity and minimum marginal selling price. Surplus sales use the town's actual cash and the same exact pricing as manual trades. Each configured good gets at most one transaction in its daily policy phase.",
-        "Targets compete for shared cash and warehouse space. A price, liquidity, stock, or capacity wait is a real constraint. Policies never discover a substitute source or create resources to meet a target."
+        "Targets compete for shared cash and warehouse space. A price, liquidity, stock, or capacity wait is a real constraint. Policies never discover a substitute source or create resources to meet a target. Under-construction sites do not automatically procure or sell until the day after completion; explicitly managing their local stock remains possible."
       ],
       "relatedIds": [
         "help_prices",
@@ -197,7 +198,7 @@
       "paragraphs": [
         "Run setup shows the selected charter's company cash, ship, cargo, facilities, and supplied stock. Merchant liquidity, an industrial foothold, and independent trading flexibility offer different opportunities rather than stacking upgrades.",
         "Cash alone is not starting wealth. A granted factory or useful stock can support production while a larger hold changes shipping opportunities. Compare the whole package and the chosen objective before starting.",
-        "Starter assets are initialized explicitly and are not paid purchases during the run. A charter cannot be changed in an active run. Retry restores that run's original selected configuration; another choice begins a new run."
+        "Starter assets are initialized explicitly and are not paid purchases during the run. The Industrial Consortium's inherited bakery is already operational even at Ascension 1, while newly purchased sites wait two days. This makes the modifier affect charters differently. A charter cannot change in an active run. Retry Same World restores its complete original run identity and assets."
       ],
       "relatedIds": [
         "help_challenges",
@@ -228,9 +229,9 @@
       "name": "Results and scoring",
       "description": "Read the explicit score breakdown alongside the actual economy.",
       "paragraphs": [
-        "Results identify the challenge, charter, outcome, completed day, objective progress, cash, actual revenue, attributed cost and margin, capital spending, factories, produced goods, deliveries, and remaining holdings.",
+        "Results identify the challenge, charter, world mode, seed and generator version, ascension, outcome, completed day, objective progress, cash, actual revenue, attributed cost and margin, capital spending, factories, produced goods, deliveries, and remaining holdings.",
         "Score combines four capped components: up to 500 objective points in proportion to completed progress; 1,000 points for victory; 10 points per remaining deadline day on victory, capped at 600; and one solvency point per 10 cash, capped at 100. Fractional points round down. Enterprise Ambition uses the lower of its production and margin progress for objective points. Total score cannot exceed 2,200; repeated transaction count earns no separate points.",
-        "Compare results within the same challenge and starting charter. Packages have different endowments and capabilities; their scores are not a normalized universal leaderboard. Retry starts the same configuration, while New Run lets you choose another."
+        "Compare results only within the same challenge, starting charter, ascension and exact world identity. Different seeds are not equivalent leaderboard placements, and packages have different endowments. Retry Same World restores the original configuration; New World / Reroll changes the draft seed and previews it before a separate start."
       ],
       "relatedIds": [
         "help_challenges",
@@ -243,16 +244,70 @@
       "name": "Menus, pause, and the encyclopedia",
       "description": "Inspect, pause, and begin another run without accidentally advancing the economy.",
       "paragraphs": [
-        "Start from the main menu, select a challenge and charter in New Run, or choose an unlimited sandbox. Setup and reference browsing do not advance economic time.",
+        "Start from the main menu, choose New Run or unlimited Sandbox, then review the challenge, charter, Classic or seeded world preview, and Ascension 0 or 1. Setup, seed editing and reference browsing do not advance economic time or reroll a started world.",
         "Escape first closes the active trade or industry overlay. From the encyclopedia it returns to the parent screen. During ordinary gameplay it opens pause; from pause it resumes unless a confirmation is active.",
         "Restart, abandonment, return to menu, and exit protect an active run with confirmation where progress would be discarded. Exit closes the standalone game. No hidden saved session or persistent Continue option is promised.",
-        "The encyclopedia is available from the main menu, run setup, and pause menu. Browse a category, search names or descriptions, follow related entries, and use Back to return. All recipe facts are generated from the same content the simulation loads and work offline."
+        "The encyclopedia is available from the main menu, run setup, and pause menu. Browse a category, search names or descriptions, follow related entries, and use Back to return. All recipe facts are generated from the same content the simulation loads and work offline. Settings offers four game-wide text sizes without changing the world."
       ],
       "relatedIds": [
         "help_challenges",
         "help_trading",
         "help_production",
-        "help_industrial_routes"
+        "help_industrial_routes",
+        "help_seeded_worlds",
+        "help_readability"
+      ]
+    },
+    {
+      "id": "help_seeded_worlds",
+      "name": "Seeded worlds and exact retries",
+      "description": "Change geography while preserving the same four-town economy.",
+      "paragraphs": [
+        "Fixed / Classic Archipelago retains the original map positions and authored sea distances. Seeded Archipelago moves the existing four towns, preserving their IDs, industries, markets, NPCs, initial goods and cash, ship speeds, demand and challenge deadlines. No seed receives secret assistance.",
+        "Enter an ASCII integer from -2147483648 through 2147483647, with an optional leading plus or minus and no spaces or separators. Generator version 1 uses a fixed integer algorithm with bounded slot placement and jitter. Its six direct distances derive from the same coordinates shown in the preview and map. Ordinary speed-100 ships take three to seven days per direct voyage.",
+        "Record the seed and generator version together with challenge, charter and ascension. That complete identity determines the initial run under the current scenario definitions. Retry Same World restores it, including original funds, stock, cargo, policies, facilities and clocks, and clears the host journal. It does not preserve accumulated progress.",
+        "Randomize seed or New World / Reroll explicitly chooses a different draft seed in the host, previews it and waits for a separate start. Menus, encyclopedia and text settings cannot accidentally reroll. A valid navigable layout does not guarantee that any unchanged route policy will win."
+      ],
+      "relatedIds": [
+        "help_shipping",
+        "help_charters",
+        "help_challenges",
+        "help_ascension",
+        "help_scoring"
+      ]
+    },
+    {
+      "id": "help_ascension",
+      "name": "Ascension 1: Slow Foundations",
+      "description": "New player-owned factories need two complete economic days to become operational.",
+      "paragraphs": [
+        "Select Ascension 0: Normal or Ascension 1: Slow Foundations before starting. Difficulty belongs to this run; it is not an unlock, prestige reward, stacking curse or permanent bonus. Ascension 0 preserves instant construction and the Classic baseline.",
+        "At Ascension 1, ordering a new player facility pays its full cost immediately and creates an under-construction site without advancing the day. Two successful AdvanceDay operations complete it. The site skips automatic procurement, production and sales throughout both days, including completion day's automatic phases.",
+        "A two-day bakery ordered on day 0 completes after day 2's voyage phase and first becomes eligible to produce on day 4. Its own stock, enabled state and capacity must still permit the batch. Completion grants no free inputs, does not charge again, and is recorded as a zero-cash event.",
+        "Manual local warehouse buying/selling, storage and physically docked owned transfers remain legal during construction under the normal cash, stock and capacity rules. They cannot produce early. Already-built starter facilities, including the Industrial Consortium bakery, retain their original schedule and grant provenance; later purchases still wait. This narrow industrial penalty need not affect every strategy equally."
+      ],
+      "relatedIds": [
+        "help_factories",
+        "help_production",
+        "help_procurement",
+        "help_charters",
+        "help_seeded_worlds"
+      ]
+    },
+    {
+      "id": "help_readability",
+      "name": "Text size and readable controls",
+      "description": "Choose one presentation scale for every ArchipelagoLab screen.",
+      "paragraphs": [
+        "Settings offers Compact, Default, Large and Extra Large text throughout gameplay, map labels, trade, industry, automation, ledger, encyclopedia, setup, pause and results. Default body text is 17 pixels; Large and Extra Large use 21 and 25. Compact uses 14 for a deliberately denser presentation.",
+        "Panels wrap and scroll internally as text grows. Buttons, numeric fields, tables and hit targets adjust with the text rather than using a paint-only zoom. Scroll the contents of long panels to reach secondary details, while preserving the primary actions and close controls.",
+        "Changing text size is passive: it does not advance time, change revision, spend cash, alter rules or reroll a seed. The text preference is remembered locally through Unity PlayerPrefs for the application environment, across menus and fresh runs. Other presentation settings last for the session. This does not save an economic run or synchronize preferences between devices."
+      ],
+      "relatedIds": [
+        "help_navigation",
+        "help_trading",
+        "help_factories",
+        "help_seeded_worlds"
       ]
     }
   ]

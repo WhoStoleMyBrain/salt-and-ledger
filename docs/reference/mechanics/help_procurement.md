@@ -12,7 +12,7 @@ For each recipe input, choose a target stock and maximum marginal buying price\.
 
 For outputs, choose a retained quantity and minimum marginal selling price\. Surplus sales use the town's actual cash and the same exact pricing as manual trades\. Each configured good gets at most one transaction in its daily policy phase\.
 
-Targets compete for shared cash and warehouse space\. A price, liquidity, stock, or capacity wait is a real constraint\. Policies never discover a substitute source or create resources to meet a target\.
+Targets compete for shared cash and warehouse space\. A price, liquidity, stock, or capacity wait is a real constraint\. Policies never discover a substitute source or create resources to meet a target\. Under\-construction sites do not automatically procure or sell until the day after completion; explicitly managing their local stock remains possible\.
 
 ## Related entries
 

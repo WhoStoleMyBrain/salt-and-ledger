@@ -10,7 +10,7 @@ Goods travel aboard a real ship between directly connected towns\.
 
 Departing changes the ship's voyage immediately without spending a day\. Advancing economic days progresses travel\. After arrival is committed, manual dockside actions are available at the destination\.
 
-Duration follows the route's distance and the ship's configured speed\. Map drawing and playback speed never alter travel or economic calculations\. You cannot trade or transfer while sailing\.
+Duration follows the route's distance and the ship's configured speed\. Classic uses authored distances; seeded geography derives all six direct distances from the generated integer positions\. Distances are abstract chart units, not coastline\-aware sailing paths\. Map drawing and playback speed never alter travel or economic calculations\. You cannot trade or transfer while sailing\.
 
 There are currently no simulated fuel, wages, voyage fees, or transport losses\. This means no modeled transport expenditure, not a claim that shipping has no real economic cost\.
 

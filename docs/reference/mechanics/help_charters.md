@@ -12,7 +12,7 @@ Run setup shows the selected charter's company cash, ship, cargo, facilities, an
 
 Cash alone is not starting wealth\. A granted factory or useful stock can support production while a larger hold changes shipping opportunities\. Compare the whole package and the chosen objective before starting\.
 
-Starter assets are initialized explicitly and are not paid purchases during the run\. A charter cannot be changed in an active run\. Retry restores that run's original selected configuration; another choice begins a new run\.
+Starter assets are initialized explicitly and are not paid purchases during the run\. The Industrial Consortium's inherited bakery is already operational even at Ascension 1, while newly purchased sites wait two days\. This makes the modifier affect charters differently\. A charter cannot change in an active run\. Retry Same World restores its complete original run identity and assets\.
 
 ## Related entries
 

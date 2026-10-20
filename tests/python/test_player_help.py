@@ -18,7 +18,7 @@ class PlayerHelpTests(unittest.TestCase):
                     "help_shipping", "help_ownership", "help_production", "help_factories",
                     "help_procurement", "help_industrial_routes", "help_cost_basis",
                     "help_finances", "help_charters", "help_challenges", "help_scoring",
-                    "help_navigation"}
+                    "help_navigation", "help_seeded_worlds", "help_ascension", "help_readability"}
         outputs = render_outputs(self.content, self.help)
         reference = json.loads(outputs[ENCYCLOPEDIA_PATH])
         entries = {entry["id"]: entry for entry in reference["mechanics"]}
