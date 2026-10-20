@@ -1,6 +1,6 @@
 # Implemented architecture
 
-Phase 0 separates content, simulation, host presentation, and reference generation using concrete modules. Later milestones add atomic finite markets, exact stock-sensitive pricing, maritime ownership, stateless route policies, and the TradingLab UI. Task 1.5 adds a focused regional owner for multiple ships/ports, instant actions, economic days, scheduled sources/sinks, and a map-first ArchipelagoLab. Task 1.6 extends that owner with company cash, private facilities and storage, bounded procurement/sales policies, and an optional supply challenge. All worlds share pricing, transaction, and production operations. Older public APIs and tick semantics remain intact; no independent per-port worlds or speculative service framework are introduced.
+Phase 0 separates content, simulation, host presentation, and reference generation using concrete modules. Later milestones add atomic finite markets, exact stock-sensitive pricing, maritime ownership, stateless route policies, and the TradingLab UI. Task 1.5 adds a focused regional owner for multiple ships/ports, instant actions, economic days, scheduled sources/sinks, and a map-first ArchipelagoLab. Task 1.6 extends that owner with company cash, private facilities and storage, bounded procurement/sales policies, and an optional supply challenge. Task 1.7 adds FIFO material accounting, explicit industrial route stages, deterministic starting charters and three terminal challenge choices, plus a complete run host and offline reference. All worlds share pricing, transaction, and production operations. Older public APIs and tick semantics remain intact; no independent per-port worlds or speculative service framework are introduced.
 
 ```text
 data/content.json + data/content.schema.json
@@ -26,6 +26,8 @@ data/content.json + data/content.schema.json
                             |       +-- ports/company accounts/ship cargo, day and state revision
                             |       +-- shared transactions/production/policy evaluator
                             |       +-- private facilities/storage/policies and optional challenge
+                            |       +-- FIFO costs / committed events / industrial route stages
+                            |       +-- RunScenario --> charter initialization / terminal results
                             |       +-- EnterpriseScenario --> enterprise report / Unity ArchipelagoLab
                             |       +-- ArchipelagoScenario --> historical two-good report
                             +-- original console demo / Unity Bootstrap smoke
@@ -51,7 +53,7 @@ The simulation does not reference `UnityEngine`, access an Editor API, or decide
 
 `global.json` selects stable .NET 10 SDKs starting at 10.0.100 with `latestFeature` roll-forward within 10.0. This lets developers receive SDK servicing updates without adopting a later major runtime. The simulation's `netstandard2.1` and C# 8 targets remain unchanged. All three standalone projects have NuGet lock files, and CI restores with `--locked-mode`.
 
-`python tools/prepare_unity.py` validates canonical content, builds the existing simulation project in Release, and stages only `SaltAndLedger.Simulation.dll` and `data/content.json` under `unity/Assets/Generated/`, with stable generated metadata. The content becomes `Resources/CanonicalContent.json`. No simulation source is copied or compiled a second way. Preparation must be rerun after relevant changes; `--check` compares source, configuration, and output hashes without rebuilding. These local artifacts and their manifest are ignored by Git.
+`python tools/prepare_unity.py` validates canonical content, builds the existing simulation project in Release, and stages only `SaltAndLedger.Simulation.dll`, `data/content.json`, and the current generated encyclopedia under `unity/Assets/Generated/`, with stable generated metadata. The content becomes `Resources/CanonicalContent.json`; the reference becomes `Resources/Encyclopedia.json`. Preparation rejects stale or missing generated reference data before building. No simulation source is copied or compiled a second way. Preparation must be rerun after relevant changes; `--check` compares source, configuration, and output hashes without rebuilding. These local artifacts and their manifest are ignored by Git.
 
 Unity's versioned package manifest and lock file supply `com.unity.nuget.newtonsoft-json` 3.2.2. The NuGet build dependency remains Newtonsoft.Json 13.0.3. The inspected Unity package contains upstream 13.0.2, with the same strong-named assembly identity (`Newtonsoft.Json`, version `13.0.0.0`, public key token `30ad4fe6b2a6aeed`). Matching identity permits dependency resolution but does not establish behavior on every backend. Integration tests exercise the actual Unity package; [Unity integration](UNITY.md) records results and remaining platform checks. Do not stage the NuGet Newtonsoft DLL, demo, or headless test assemblies into Unity.
 
@@ -266,17 +268,19 @@ The generator validates the source before deriving output. It owns all of `docs/
 | `docs/reference/goods/{id}.md` | Good definition and consuming/producing recipe links |
 | `docs/reference/buildings/{id}.md` | Building definition and recipe links |
 | `docs/reference/recipes/{id}.md` | Building, inputs, outputs, and links to related definitions |
-| `generated/encyclopedia.json` | Sorted reference entities with IDs, source facts, wiki paths, and relationship IDs |
+| `docs/reference/mechanics/{id}.md` | Shared authored player explanations and validated related links |
+| `docs/reference/chains.md` | Canonical input/output relationships with recipe and building links |
+| `generated/encyclopedia.json` | Sorted canonical and mechanics entries, common presentation fields, typed relationships and wiki paths |
 
-The structured output declares `formatVersion: 1` and `sourceSchemaVersion: 1`. Each entity has a `wikiPath` relative to `docs/`; goods add `consumedByRecipeIds` and `producedByRecipeIds`, buildings add `recipeIds`, and recipes retain `buildingId`, `kind`, `inputs`, and `outputs`. The effective recipe kind is emitted even when its transformation default was omitted in source. Entity arrays sort by stable ID; recipe quantities sort by good ID. This is a reference artifact, not a saved game or a replacement runtime content format.
+The structured output declares `formatVersion: 2`, `sourceSchemaVersion: 1`, and `sourceHelpSchemaVersion: 1`. Each canonical or mechanics entry includes `paragraphs` and `relatedIds` for a common offline presentation. Shared authored mechanics come from schema-validated `data/player-help.json`; links resolve against globally unique canonical and help IDs. Each entity has a `wikiPath` relative to `docs/`; goods add `consumedByRecipeIds` and `producedByRecipeIds`, buildings add `recipeIds`, and recipes retain `buildingId`, `kind`, `inputs`, and `outputs`. The effective recipe kind is emitted even when its transformation default was omitted in source. Entity arrays sort by stable ID; recipe quantities sort by good ID. This is a reference artifact, not a saved game or a replacement runtime content format.
 
 `python tools/generate_docs.py` writes the expected artifacts and removes stale files within its owned reference directory. `python tools/generate_docs.py --check` is read-only and fails for missing, changed, or unexpected files in that directory or a stale encyclopedia artifact. Both generation and validation accept `--source` for an alternate content file, defaulting to `data/content.json`; generation still uses the standard repository output paths.
 
-Generated pages cannot define production time, prices, or behavior absent from the data. [Mechanics](MECHANICS.md) explicitly maintains those rules. Tests and freshness checks keep generated facts synchronized, while review keeps authored specifications aligned with behavior.
+Generated canonical pages cannot invent production time or prices absent from content. Generated player-help pages render their separate authored source. [Mechanics](MECHANICS.md) maintains the exact behavioral contracts; [Website](WEBSITE.md) describes shared generation, local use, and optional manual publication. Tests and freshness checks keep generated facts synchronized, while review keeps authored specifications aligned with behavior.
 
 ## Regional ownership and the map host
 
-`RegionalWorldState`, introduced in Task 1.5 and extended in Task 1.6, owns local markets, company cash, ship cargo, private factory stock, schedules, policies, voyages, optional challenge progress, day, and revision in one immutable current snapshot. It never composes separately ticking `WorldState` instances. Instant operations and one complete day use private staged state and a single final assignment; exceptions cannot partially commit an actor action or economic phase.
+`RegionalWorldState`, introduced in Task 1.5 and extended in Tasks 1.6/1.7, owns local markets, company cash, ship cargo, private factory stock, historical accounting, schedules, policies/stages, voyages, optional challenge progress, day, and revision in one immutable current snapshot. It never composes separately ticking `WorldState` instances. Instant operations and one complete day use private staged state and a single final assignment; exceptions cannot partially commit an actor action or economic phase.
 
 | Type | Responsibility |
 | --- | --- |
@@ -311,10 +315,51 @@ Daily private procurement precedes public/private production, and optional priva
 
 `EnterpriseScenario` is shared by the expanded ArchipelagoLab and `EnterpriseExperiments`. The historical `ArchipelagoScenario` uses `LegacyContent.Timber`, a projection retaining the original immutable canonical objects, so adding goods does not change old fixture/report semantics. The original full canonical loader still validates all six goods and their reference graph.
 
-The trading and industry overlays are partial presentation controllers over the same session. Exact proposals and maximum quantities come from snapshots, and trade submission binds the source snapshot. Decimal average price is display-only division. Full historical cost basis is deferred because mixed purchases, manufacture, and transfers need attribution; no presentation value is fed back into accounting.
+The trading and industry overlays are partial presentation controllers over the same session. Exact proposals and maximum quantities come from snapshots, and trade submission binds the source snapshot. Decimal average price is display-only division. Historical cost now comes from the authoritative FIFO accounting component described below. Neither a display average nor a current market quote is fed back into historical accounting.
+
+## Accounting inside the regional commit
+
+[ADR 024](DECISIONS.md#adr-024-attribute-material-cost-with-fifo-open-lots) extracts the focused `WorkingAccounting` component without moving authority out of `RegionalWorldState`. The world's private working copy contains both physical stores and accounting state. Successful trades, transfers, private batches, and construction call accounting hooks; failed/rejected actions cannot publish an accounting-only change. Snapshot/result construction precedes the same single current-state assignment.
+
+| Type | Responsibility |
+| --- | --- |
+| `InventoryCostLot` | Original quantity/cost, stable lot ID, current interval, origin, and provenance |
+| `GoodCostSnapshot` / `InventoryCostSnapshot` | Ordered open FIFO slices and held basis for a company-owned store |
+| `CompanyFinancialSnapshot` | Actual purchases, revenue, released/held basis, construction, margin, and physical quantity aggregates |
+| `AccountingSnapshot` | Immutable current company/store accounting and next lot identity |
+| `EconomicEvent` / `EconomicGoodsMovement` | One operation's committed ownership, cash, cost, and gross transformation evidence |
+| `WorkingAccounting` | Private mutable lot queues and aggregates, discarded on exceptional failure |
+
+Store IDs are `ship:<id>` and `facility:<id>`. FIFO follows arrival order within each store/good; transfers append preserved original intervals. Prefix-floor cost allocation uses exact wider intermediates and checked public totals. Production withdraws gross canonical inputs before allocating their material cost across ordinal output units. This handles multi-input, multi-output, and same-good input/output recipes without current-price estimates. Grants retain zero actual expenditure and explicit provenance; capital remains separate.
+
+The world retains only live lots and authoritative aggregates. `RegionalResult.EconomicEvents` returns the just-committed operation, stamped with its final day/revision. Hosts can build bounded financial history or a finite experiment journal, but cannot mutate the authoritative snapshot. No distributed event sourcing or replay promise is introduced. The [mechanics contract](MECHANICS.md#historical-inventory-costs-and-committed-events) defines exact allocation, reconciliation, and failure semantics.
+
+## Explicit industrial policy stages
+
+[ADR 025](DECISIONS.md#adr-025-store-industrial-route-direction-explicitly) adds `IndustrialRoutePolicy`, `IndustrialRouteLeg`, and a pure `IndustrialRouteEvaluator`. It does not replace the historical trade policy or its legacy timing. A regional ship stores either the existing market route or the industrial route, plus an explicit acquisition/delivery stage for each direction.
+
+Each decision identifies the exact snapshot, current/next stage, ordinary trade/transfer/departure commands, and a readable wait/pause reason. `RegionalDecision.IndustrialDetail` carries it through existing actor dispatch. The world freshly previews market transactions and invokes the existing physical/financial operations. Warehouse routes can carry the same good in both directions because stage is authoritative rather than inferred from cargo.
+
+Configuration, ownership validation, docking, finite capacity, retained cargo, numeric headroom, exact pricing, and the four-action bound remain explicit. Stage changes are part of the staged commit and roll back with accounting, cash, inventories, and voyages. A different industrial policy requires an empty ship at one of its ports; toggling or reapplying the same policy retains progress. No route discovery, arbitrary waypoint interpreter, or fleet optimizer is added.
+
+## Fixed runs and result ownership
+
+`RunScenario` is a small catalog of three `StartingCharter` values and three `RunChallenge` definitions over the same handcrafted `EnterpriseScenario`. It initializes cash, ship configuration/cargo, and optional `PrivateFacilityConfiguration` grants deterministically. The legacy enterprise factory and report remain available unchanged. The selected charter exists outside the changing world configuration and is supplied to terminal `RunResults`; it cannot be swapped as an economic operation.
+
+`ChallengeRules` extends the original net-delivery rule with two explicit cases: actual regional scheduled consumption and productive enterprise performance. Progress remains in the same world snapshot. Consumption is a world-level measure, while enterprise production/margin belongs to the configured company. Final-operation evaluation and terminal guards apply to all cases, including confirmed voluntary abandonment. No generic expression engine or future difficulty-modifier hierarchy is introduced.
+
+`RunResults` reads a terminal snapshot, its challenge, selected charter, and authoritative company financials. Its bounded deterministic objective/victory/time/solvency components do not value unsold goods or count sale turnover as unrestricted achievements. The [run guide](RUNS.md) defines selections and measured outcomes; [mechanics](MECHANICS.md#starting-charters-outcomes-and-scoring) specifies the exact score.
+
+The Unity host owns screen navigation, paused playback, selected configuration, bounded presentation journal, and confirmation intent. It constructs/replaces worlds on start/retry and reads terminal state to stop playback and present results. Scene UI does not calculate victory, scores, material costs, or logistics quantities. In-memory ownership is not a persistent save contract. Actual navigation and player verification are recorded separately in [Unity integration](UNITY.md).
+
+## Representative step measurements
+
+A local Release/.NET 10.0.13 measurement ran 30 warmed, 90-day industrial scenarios using `Stopwatch` and per-thread allocated-byte counters around world steps, excluding setup. Median time was **37.201 ms per 90 days** (**0.413 ms/day**); the 95th-percentile 90-day run was **87.035 ms**. Median allocation was **300,005 bytes/day**. The day-90 state had at most eight open lots during the run and at most six economic events in one operation; a 1,000-day observation ended with six open lots and eleven held units.
+
+These are machine observations, not CI performance thresholds or evidence of large-world scalability. They include immutable snapshots and staged copies, whose allocation is acceptable for this small low-frequency world but should remain visible as the simulation expands. Unsold repeated acquisitions can accumulate more open lots than this scenario; the design avoids accumulated event-history copies, not every possible inventory-growth cost. Reproduce meaningful scenarios before optimizing or widening scope.
 
 ## Boundaries and limitations
 
-Fixed quotes remain the accounting baseline; linear/scarcity formulas and authored regional values are experimental. The legacy maritime owner remains two-port/single-ship. The expanded regional sandbox has four towns, six goods, public and private industries, finite company accounts, deterministic merchants, direct routes, and an optional fixed challenge. It has no household finances, hidden cash replenishment, route discovery/optimization, procedural generation, meta progression, random events, piracy, combat, multiplayer, or save system. Travel has no operating costs/risk, cargo uses item counts, and market information is perfect. Stateless ship policy inference still requires distinct directional commodities and pauses for mixed cargo. Waiting cannot guarantee recovery in finite markets. [Commerce and industry](ENTERPRISE.md) describes the current player-facing boundaries.
+Fixed quotes remain the accounting baseline; linear/scarcity formulas and authored regional values are experimental. The legacy maritime owner remains two-port/single-ship. The expanded regional economy has four towns, six goods, public and private industries, finite company accounts, deterministic merchants, direct routes, explicit warehouse logistics and three fixed challenges with replacement starting charters. It has no household finances, hidden cash replenishment, route discovery/optimization, procedural generation, meta progression, random events, piracy, combat, multiplayer, or save system. Travel has no operating costs/risk, cargo uses item counts, and market information is perfect. The preserved public-market route policy still infers direction from distinct commodities. Industrial routes use explicit stages, permit the same commodity in both directions, and pause incompatible cargo without disposal. Waiting cannot guarantee recovery in finite markets. [Commerce and industry](ENTERPRISE.md) describes the current player-facing boundaries.
 
 Headless compilation and tests exercise the portable library and pipeline. Unity import, Editor behavior, Mono player execution, and IL2CPP player execution are separate verification points; follow [Unity integration](UNITY.md) and report which checks actually ran.

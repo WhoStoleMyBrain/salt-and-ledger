@@ -125,7 +125,55 @@ Ninety-day outcomes reveal different capital choices: merchant cash ends 1,029, 
 
 The optional charter requires 24 net bread supplied to Eastport by day 60 with at least 100 cash. The merchant and hybrid strategies succeed on days 29 and 46 respectively; waiting fails. Net sales subtract destination buybacks, so recirculating the same market goods does not generate supply credit. This objective measures additional market supply rather than household consumption. Consumption remains a physical sink without modeled payment.
 
-Full historical cost basis remains deferred: privately manufactured and transferred goods need attribution before a cargo acquisition-price display can be accurate. Exact proposed execution averages are supported independently of that accounting question. Finite liquidity, public/private competition, factory capacity, delayed production, and travel remain genuine constraints without hidden replenishment.
+Task 1.6 deferred full historical cost basis; Task 1.7 implements the attribution described below across private manufacturing and transfers. Exact proposed execution averages are supported independently of that accounting question. Finite liquidity, public/private competition, factory capacity, delayed production, and travel remain genuine constraints without hidden replenishment.
+
+## Task 1.7: complete runs and attributed results
+
+The [run experiment](experiments/run-results.json) crosses three fixed challenges with three replacement starting charters. Each active example succeeds, and every matched idle case fails at day 60. This demonstrates feasible strategies on the current authored economy; it is not proof that all policies work, that every package is equally difficult, or that the choices are balanced.
+
+### Starting endowments and opportunity costs
+
+The three packages all use the same map and configured ship speed. They differ in cash, hold size, location, and granted assets:
+
+| Charter | Liquid cash | Ship and location | Granted assets | Partial replacement estimate, excluding ship |
+| --- | ---: | --- | --- | ---: |
+| Merchant Company | 600 | 10-unit hold, Northport | None | 600 |
+| Industrial Consortium | 300 | 8-unit hold, Westhaven | Bakery; 2 Flour and 2 Logs in its warehouse | 645 |
+| Independent Traders | 480 | 12-unit hold, Northport | 4 Grain and 2 Logs aboard | 523 |
+
+The industrial estimate is 300 cash + the bakery's 300 construction quote + initial Westhaven replacement purchases of 2 Flour for 29 and 2 Logs for 16. The independent estimate is 480 cash + initial Northport replacement purchases of 4 Grain for 23 and 2 Logs for 20. These goods totals were obtained from successful authoritative trade previews. They are finite initial asking-price replacement estimates, not transactions performed during initialization, historical paid basis, liquidation values, or guaranteed future quotes.
+
+Ship prices and resale are unmodeled, so the table deliberately excludes ship valuation and cannot establish equal total wealth. The industrial package exchanges liquidity and hold capacity for an existing production foothold; its factory needs real replenishment after starter inputs run out. The merchant package can immediately fund flexible shipments or decide where to invest. The independent package offers a larger hold and useful starting goods, but less cash and initially occupied cargo space. These are lateral opportunities with real constraints rather than stacking income bonuses.
+
+### Measured challenge outcomes
+
+All three goals use day 60 and at least 100 company cash as their deadline/solvency conditions. Coastal Supply requires net 24 Bread into Eastport; Regional Relief requires 24 actual Bread consumed by scheduled demand across the region; Enterprise Ambition requires private production of 12 Bread and 200 realized gross margin.
+
+| Challenge | Charter / demonstrated strategy | Completion day | Cash | Attributed gross margin | Score |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Coastal Supply | Merchant / merchant shipping | 29 | 1,014 | 414 | 1,910 |
+| Coastal Supply | Industrial / factory shipping | 39 | 1,027 | 814 | 1,810 |
+| Coastal Supply | Independent / merchant shipping | 29 | 918 | 438 | 1,901 |
+| Regional Relief | Merchant / merchant shipping | 48 | 1,114 | 514 | 1,720 |
+| Regional Relief | Industrial / factory shipping | 56 | 1,210 | 1,022 | 1,640 |
+| Regional Relief | Independent / merchant shipping | 48 | 1,018 | 538 | 1,720 |
+| Enterprise Ambition | Merchant / constructed bakery | 15 | 475 | 286 | 1,997 |
+| Enterprise Ambition | Industrial / starter bakery | 15 | 515 | 337 | 2,001 |
+| Enterprise Ambition | Independent / constructed bakery | 21 | 423 | 310 | 1,932 |
+
+The merchant and industrial Coastal examples reach the same net-delivery goal through materially different physical chains. The industrial case still holds 87 material cost in remaining inventory at completion. Its 814 gross margin is therefore not `final cash - initial cash`; paid inventory remains tied up, and some starting materials were grants. The ambition cases likewise include remaining basis and, where a bakery was purchased, 300 capital expenditure. Detailed held goods, costs, construction, events, and player/automation inputs remain in the report.
+
+Idle Regional Relief satisfies only two Bread of scheduled consumption, so ambient NPC/public activity cannot win its 24-unit goal. Idle industrial ownership can manufacture four Bread from grants, but has no realized sales margin and cannot win Enterprise Ambition. Neither demand requests, unsold output, transfers, nor repeated target-market buying/reselling manufacture the required outcome.
+
+The exact score is documented in [Mechanics](MECHANICS.md#starting-charters-outcomes-and-scoring): at most 500 capped objective points, 1,000 victory points, up to 600 time points on success, and up to 100 solvency points. For the merchant Coastal result, `500 + 1000 + (60 - 29) * 10 + 100 = 1910`. The score is bounded and compares within the challenge/charter group. Different starter grants and capabilities make a universal cross-package profit or score ranking misleading.
+
+### What historical accounting establishes
+
+FIFO receipt queues retain actual paid or material cost through partial trades, physical transfers, and production. Released cost and still-held basis reconcile to purchases; construction stays separate. The [accounting contract](MECHANICS.md#historical-inventory-costs-and-committed-events) defines exact remainder allocation and auditable committed events. Starter grants retain their origin rather than receiving a fabricated current-price basis.
+
+This supports attributed gross margin and an honest held-cost display. It does not supply wages, fuel, transport fees, labor productivity costs, depreciation, taxes, or a realizable ship/factory valuation. A sale of a granted good can have positive gross margin against zero paid basis without proving a superior return on total starting wealth. Keep endowments, physical holdings, liquidity, capital, and margin visible together.
+
+Automation connects private warehouses to real shipping and ordinary markets, with measured manual-equivalent transitions and finite blocked cases in the [automation experiments](AUTOMATION.md). This reduces prescribed repetitive commands without improving prices, speed, or resource access. Actual player comprehension and enjoyable strategic choice still require observed playtesting.
 
 ## Hypotheses to test
 

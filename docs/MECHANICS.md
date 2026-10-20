@@ -1,6 +1,6 @@
 # Maintained mechanics specification
 
-This page specifies implemented behavior through Task 1.6 that cannot be derived from content definitions alone. Generated reference pages describe canonical definitions and relationships. Pricing formulas and scenario values are experimental hypotheses; accounting, determinism, and atomicity are implementation contracts. The single-location and two-port maritime rules remain unchanged. The [regional rules](#regional-world-and-instant-commands) add living-economy days, company/private ownership, a fixed challenge, and zero-time actions through a separate owner.
+This page specifies implemented behavior through Task 1.7 that cannot be derived from content definitions alone. Generated reference pages describe canonical definitions and relationships. Pricing formulas and scenario values are experimental hypotheses; accounting, determinism, and atomicity are implementation contracts. The single-location and two-port maritime rules remain unchanged. The [regional rules](#regional-world-and-instant-commands) add living-economy days, company/private ownership, a fixed challenge, and zero-time actions through a separate owner.
 
 ## Inventory
 
@@ -346,7 +346,7 @@ The host retains at most 40 recent activity entries derived from structured resu
 
 ## Regional world and instant commands
 
-Task 1.5 introduces `RegionalWorldState` without changing `WorldState.Step`, `MaritimeWorldState.Step`, or TradingLab. Task 1.6 extends it with company accounts and private facilities. It owns ordered ports, one finite cash account per company, capacity-limited ship cargo, public/private facilities, consumption schedules, undirected routes, optional challenge progress, one nonnegative `long Day`, and a checked nonnegative `long Revision`. Explicitly configured companies may own multiple ships; the legacy constructor still infers a distinct account per ship. Collections use ordinal IDs; input collection order has no economic effect. A region has at least two ports and one ship.
+Task 1.5 introduces `RegionalWorldState` without changing `WorldState.Step`, `MaritimeWorldState.Step`, or TradingLab. Task 1.6 extends it with company accounts and private facilities; Task 1.7 adds historical material costs, industrial route stages, and complete runs. It owns ordered ports, one finite cash account per company, capacity-limited ship cargo, public/private facilities, consumption schedules, undirected routes, optional challenge progress, one nonnegative `long Day`, and a checked nonnegative `long Revision`. Explicitly configured companies may own multiple ships; the legacy constructor still infers a distinct account per ship. Collections use ordinal IDs; input collection order has no economic effect. A region has at least two ports and one ship.
 
 `ExecuteTrade(shipId, portId, command)` and `Depart(shipId, destinationPortId)` execute instantaneously. They do not run any daily phases. Trades require the actual dock and use the same `TradeCalculator` as legacy execution and previews. Current `PreviewTrade` is hypothetical when inspecting a remote port; it grants no execution permission. An actor with enabled automation cannot receive manual trade/departure orders.
 
@@ -413,7 +413,7 @@ The new scene starts paused. Its main-thread host requests whole `AdvanceDay` op
 
 Opening dockside trade, submitting a manual trade/order, running explicit dockside automation, or requesting Next day pauses playback. Port/ship selection, inspection, draft edits, and ordinary panel changes spend no day. Valid policy application/enablement can change revision but not economic quantities or time. Reset constructs a fresh scenario, clears activity, and restores paused 1× playback; it is not an in-world rescue.
 
-Ship interpolation only draws movement between committed positions. Paused display settles at the current committed state. Actual market access, arrival timing, and dock counts always use snapshots. The UI keeps at most 60 recent structured activity entries. Cash changes and unsold cargo remain separate; the closed empty-cargo profit display requires completed player trading, empty ship cargo, and no private facilities. Private ownership instead exposes construction, actual purchases/sales, and remaining goods without claiming full attributed profit. The historical archipelago report additionally records intermediate closed intervals inside atomic policy chains.
+Ship interpolation only draws movement between committed positions. Paused display settles at the current committed state. Actual market access, arrival timing, and dock counts always use snapshots. The UI keeps at most 60 recent structured activity entries. Cash changes and unsold cargo remain separate; the closed empty-cargo profit display requires completed player trading, empty ship cargo, and no private facilities. Task 1.7 private ownership additionally exposes released and held historical material basis and realized gross margin, separately from construction and unmodeled operating costs. The historical archipelago report additionally records intermediate closed intervals inside atomic policy chains.
 
 ## Company accounts and private facilities
 
@@ -445,7 +445,97 @@ The optional configuration names owner, target market/good, positive required ne
 
 Evaluation occurs after the complete staged operation. Success requires net quantity and final cash thresholds at or before the deadline. Otherwise day at or beyond the deadline fails. The final daily transaction can succeed through automatic delivery before the failure check. No intermediate success is committed if a later phase throws or the final state misses a condition. Success/failure records completion day and rejects further economic mutation; reads remain valid and host reset creates a new world. Sandbox has no challenge or deadline.
 
-The [enterprise scenario](ENTERPRISE.md) defines the tested charter and provisional economic parameters. Supply delivered is not labeled household demand satisfied. Full historical acquisition cost and unsold-stock valuation are deferred; exact execution average is display-only division of exact total by executable quantity.
+The [enterprise scenario](ENTERPRISE.md) defines the tested charter and provisional economic parameters. Supply delivered is not labeled household demand satisfied. Task 1.7 adds historical acquisition/input-material cost below. Speculative liquidation values remain absent; exact execution average is still display-only division of exact total by executable quantity.
+
+## Historical inventory costs and committed events
+
+Task 1.7 adds accounting to the same staged regional operation. `AccountingSnapshot` contains company aggregates and the open cost lots of `ship:<id>` and `facility:<id>` stores. Public market goods do not carry a company acquisition basis; the price actually paid when buying them creates one. Accounting observes actual successful changes through the existing economic operations and does not authorize a different price or transfer.
+
+### FIFO and exact remainder allocation
+
+FIFO is **receipt order within each store and commodity**. A purchase appends a new lot with its executed quantity and exact paid total. A transfer removes source FIFO slices and appends those preserved slices to the destination's queue, after stock already there. It does not sort the destination by original acquisition ID. A partial sale or production input withdrawal consumes the earliest available slices at that store.
+
+For a lot with original quantity `Q`, original paid/material cost `C`, and the still-held interval `[s, s + q)`, its cost is:
+
+```text
+prefix(k) = floor(C * k / Q)
+sliceCost(s, q) = prefix(s + q) - prefix(s)
+```
+
+`C` is nonnegative. Exact `BigInteger` intermediates evaluate the products/divisions; public costs and cumulative expenditure are checked `long` values. Lot and inventory quantities retain checked bounds. Transfer slices keep the original `Q`, `C`, start offset, ID, origin, and provenance. They are never re-averaged with a new denominator. Dividing, moving, and later selling a lot therefore releases exactly its original cost across the complete quantity.
+
+Purchases, grants, and manufacture have distinct origins. A starter grant has zero **paid** basis and explicit charter/initial provenance; it is not claimed to have zero market value. Manufactured goods identify their recipe. A production event also records consumed slices, so the actual input provenance can be audited in the committed journal. Only still-open lots remain in current accounting state.
+
+### Transformations and capital
+
+A successful private batch consumes the recipe's **gross inputs**, even when a commodity also appears among the outputs. Their FIFO material costs are summed exactly. Output goods are sorted by ordinal good ID, then their units form one allocation interval. The batch's total input cost is apportioned across that complete output-unit interval with the same prefix-floor rule; each output good receives its contiguous portion. This deterministic rule assigns equal material cost per physical output unit before integer remainder allocation, not market-value weights.
+
+Outputs are appended as manufactured lots. Full input cost equals full output cost. Extraction has no modeled material expenditure and hence zero material basis, while retaining manufactured/recipe provenance. Neither rule invents labor, fuel, wage, fee, depreciation, or tax expenses.
+
+Construction transfers cash to the town and increments `ConstructionExpenditure`. It creates no inventory basis, sale revenue, or repeated per-unit capital charge. A granted starter facility is marked `IsStarterAsset` with provenance and produces no construction expenditure. Blueprint construction cost is a current replacement quote, not a resale or liquidation value.
+
+### Financial reconciliation and history
+
+For each company, every committed regional snapshot preserves:
+
+```text
+Cash = InitialCash + SalesRevenue - InventoryPurchases - ConstructionExpenditure
+InventoryPurchases = CostOfGoodsSold + HeldInventoryCost
+RealizedGrossMargin = SalesRevenue - CostOfGoodsSold
+HeldGoods = Granted + Purchased + Produced - Consumed - Sold
+```
+
+The physical formula applies independently to each commodity. Transfers cancel within the company. The material-cost equality includes transformation reallocations and excludes capital. The implementation checks the basis identity when constructing company financial snapshots; experiments additionally reconcile actual cash and physical stores. Combined market/company cash remains conserved. Ship cash projections must not be counted as additional accounts.
+
+`RegionalResult.EconomicEvents` returns the current operation's committed purchases, sales, physical transfers, private production, and construction. Events carry committed day/revision, company, source/destination owner/store, port, relevant good and quantity, actual cash total and signed company change, allocated cost, recipe/facility, and gross consumed/produced cost slices as appropriate. Initial grant provenance is retained in initial lots and facility configuration. A host can retain a bounded journal without becoming an authority.
+
+Rejected commands leave lots, aggregates, snapshot identity, and revision unchanged. Exceptional failure discards all staged accounting and all other world changes, including earlier actions in the same chain/day. Cost or aggregate overflow is exceptional, not permission to lose attribution. World snapshots retain current lots and aggregates, not an immutable copy of every past transaction. The amount of open-lot state can grow with unsold acquisitions; historical event count alone does not grow it.
+
+Gross margin excludes unmodeled operating costs and capital depreciation. Held basis is historical expenditure still attached to goods, not a current quote, predicted sale value, or realized profit. Financial reports must preserve those distinctions.
+
+## Industrial two-port routes
+
+`IndustrialRoutePolicy` is a separate immutable choice from the preserved `TradeRoutePolicy`. One ship has one active route mode. Each directional `IndustrialRouteLeg` names a canonical good, maximum/minimum shipment, market or owned-warehouse endpoints, optional matching facility IDs, source stock threshold, source warehouse reserve, maximum marginal buy price, minimum marginal sell price, and per-order expenditure cap. The policy supplies two connected ports, company cash reserve, optional return leg, and empty-return permission. A warehouse endpoint needs matching ownership and location; it does not require an unused public-market quote.
+
+The authoritative ship stores one of four stages: `AcquireOutbound`, `DeliverOutbound`, `AcquireReturn`, `DeliverReturn`. This permits the same commodity on both legs without inferring direction from cargo. New industrial configuration requires an empty ship docked at either endpoint. At origin it begins outbound acquisition; at destination it begins return acquisition. Reapplying the **same immutable policy instance** only changes enablement and preserves stage. Enabling/disabling also preserves stage and voyage. A different policy instance must satisfy the empty/docked reconfiguration rules.
+
+During acquisition, compatible cargo already meeting the departure minimum departs without requiring another purchase or loading toward the maximum. Otherwise the source must meet its threshold. Warehouse loading is bounded by stock after reserve, requested target, and free cargo capacity; it occurs only when the resulting shipment meets the minimum. Public buying uses shared exact bounded quantity search, price limits, reserve, expenditure cap, stock/capacity, payer funds, and receiver numeric headroom.
+
+Delivery sells the largest eligible market quantity or unloads what the owned warehouse can hold. A partial delivery retains both residual cargo and delivery stage. Completion advances the stage; it never treats a transfer as revenue. Incompatible cargo pauses intact. Wrong-stage location or voyage also pauses with an explanation. An empty return can bypass an unavailable return purchase/loading only when explicitly permitted and the whole cargo is empty. It cannot bypass unsold outbound cargo or permit an empty outbound shipment.
+
+The pure evaluator binds each decision to an exact snapshot. Execution checks freshness, stage, fresh market preview, actual dock, owner, stock, and capacity, then invokes ordinary trade, transfer, and departure operations. Public manual transfers still require automation disabled; the internal trusted automation path uses the same physical and accounting checks without that manual-control guard.
+
+The existing **four-action maximum** bounds each zero-time chain, including a stage-only transition. A chain stops on sailing, wait/pause, no progress, or its action limit. Each action reevaluates the staged snapshot. Daily actor ordering and later production/consumption/voyage phases remain unchanged. The entire chain or day has one commit; failure rolls back physical movement, accounts, historical basis, stage, day, and revision together. Automation gains no prices, transport speed, stock, money, or permissions unavailable to equivalent manual economic actions.
+
+## Starting charters, outcomes, and scoring
+
+`RunScenario` selects one replacement `StartingCharter` and an optional fixed challenge over `EnterpriseScenario`. Charter cash, ship, cargo, starter facilities and inventories are explicit deterministic constructor inputs. Starter facilities are validated against the same blueprint eligibility, owner, capacity, canonical recipe, and one-blueprint-per-owner/port rules. Their first batch is due at initial day plus interval. They are not simulated purchases or construction commands, and initialization grants no production batch.
+
+The selected package cannot change in a live world. Retry constructs a new world from the same selections; another charter requires another run. The legacy `EnterpriseScenario.Create` and original Coastal Supply constructor/default remain regression-compatible. All three new fixed challenges have deadline day **60** and require at least **100** company cash when succeeding:
+
+| Challenge | Primary objective | Additional condition |
+| --- | --- | --- |
+| Coastal Supply Charter | Signed net **24 Bread** sold into Eastport by the selected company | Destination buybacks subtract credit |
+| Regional Relief | **24 Bread** actually removed by successful scheduled consumption anywhere in the region | Regional performance, including public/NPC supply; sales/arrivals alone give no consumption credit |
+| Enterprise Ambition | **12 Bread** actually produced in the company's private facilities | At least **200 realized gross margin**, derived from attributed sales |
+
+Relief counts committed physical consumption of the configured good, not requested or unmet demand. Ambition reads the company's authoritative produced quantities and gross margin, so transfers and unsold output cannot manufacture its financial condition. All objectives evaluate after a complete operation with final cash and day. Success at/before the deadline takes precedence; otherwise reaching the deadline fails. Existing terminal guards freeze every economic command.
+
+`AbandonChallenge` is an explicit zero-time changed commit recording `Abandoned` and the current day, retaining all accounting and holdings. It is distinct from failure or victory and is rejected for sandbox. Host confirmation protects deliberate loss of active progress; no persistent save, restore, or meta unlock is implied.
+
+`RunResults` accepts only a terminal challenge snapshot and the selected charter. Score components are:
+
+```text
+fraction(x, target) = floor(500 * clamp(x, 0, target) / target)
+Objective = fraction(objective quantity, required quantity)
+  Enterprise Ambition uses min(Objective, fraction(realized margin, required margin))
+Victory = 1000 on success; otherwise 0
+Time = 10 * min(60, max(0, deadline - completed day)) on success; otherwise 0
+Solvency = min(100, floor(company cash / 10))
+Total = Objective + Victory + Time + Solvency
+```
+
+Intermediate score arithmetic is exact. Total score is bounded by **2,200**; trade count and gross sale turnover receive no separate points. Partial objective and solvency scores remain visible on failure/abandonment, without a victory or time bonus. Results compare within `challenge ID / charter ID`: differing starter assets are not normalized into a universal competitive ranking. See [Economy](ECONOMY.md#task-17-complete-runs-and-attributed-results) for measured examples and endowment caveats.
 
 ## Determinism and remaining scope
 

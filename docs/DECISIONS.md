@@ -1,6 +1,6 @@
 # Architectural decisions
 
-These records describe accepted decisions through Task 1.6. Unresolved game rules live in [Economy](ECONOMY.md); hypotheses and deferred concepts live in [Ideas](IDEAS.md). New evidence can supersede a decision explicitly.
+These records describe accepted decisions through Task 1.7. Unresolved game rules live in [Economy](ECONOMY.md); hypotheses and deferred concepts live in [Ideas](IDEAS.md). New evidence can supersede a decision explicitly.
 
 ## ADR 001: Keep the simulation independent of Unity
 
@@ -40,7 +40,7 @@ This gives tests a small meaningful state transition. It intentionally adds no t
 
 Python produces Markdown under `docs/reference/` and structured data in `generated/encyclopedia.json` from validated content. Cross-references connect related entities. MkDocs builds the external documentation site. Generated artifacts are committed so their changes can be reviewed with source data; `--check` detects stale output without rewriting it.
 
-The generator describes only source facts. Authored [Mechanics](MECHANICS.md) specifies command behavior that cannot be inferred from content. There is no in-game encyclopedia UI yet.
+The generator describes only source facts. Authored [Mechanics](MECHANICS.md) specifies command behavior that cannot be inferred from content. Task 1.7 extends this boundary to an offline consumer and shared authored help in ADR 027.
 
 ## ADR 006: Verify the foundation without the Unity Editor
 
@@ -60,7 +60,7 @@ The demo and headless tests target `net10.0`; the reusable library keeps `netsta
 
 **Status:** Accepted; supersedes ADR 001's Phase 0 decision to omit a Unity project and implements ADR 003's host-owned JSON dependency.
 
-Keep the existing Unity project at `unity/`, pinned to Editor 6000.6.6f1. Use `tools/prepare_unity.py` to validate content, rebuild the standalone simulation, and stage its single DLL plus canonical JSON with stable asset metadata. Ignore staged outputs and check their source/output hashes with `--check`. This avoids duplicated simulation source, machine-specific links, and hand-maintained content copies. It requires an explicit preparation step after simulation or content edits.
+Keep the existing Unity project at `unity/`, pinned to Editor 6000.6.6f1. Use `tools/prepare_unity.py` to validate content, rebuild the standalone simulation, and stage its single DLL plus canonical JSON with stable asset metadata. Ignore staged outputs and check their source/output hashes with `--check`. This avoids duplicated simulation source, machine-specific links, and hand-maintained content copies. It requires an explicit preparation step after simulation or content edits. ADR 027 extends staging to the generated offline encyclopedia without adding another JSON dependency.
 
 Unity owns the Newtonsoft assembly through pinned UPM package `com.unity.nuget.newtonsoft-json` 3.2.2 and `packages-lock.json`; the portable build retains NuGet 13.0.3. The inspected Unity upstream 13.0.2 DLL has the same strong-named assembly identity as the NuGet dependency. No NuGet JSON DLL is copied into Unity. Actual Editor and player checks, including their limits, are recorded in [Unity integration](UNITY.md).
 
@@ -210,8 +210,48 @@ Evaluate only after a complete atomic operation. The deadline's final daily phas
 
 ## ADR 023: Present exact trade proposals without inventing cost basis
 
-**Status:** Selected for Task 1.6.
+**Status:** Selected for Task 1.6; its historical-cost deferral is superseded by ADR 024.
 
 Replace the ArchipelagoLab trading foldout with a contextual modal over the existing map. Supported pointer events open local or remote views without sending economic commands. Modal opening pauses playback; stock, limits, maximum quantities, and execution use authoritative snapshots and commands, including stale-snapshot protection.
 
 Display exact total divided by executable quantity as the average execution price. Full historical acquisition cost needs attribution across mixed purchases, partial sales, manufacture, and transfers, so defer it explicitly. Report actual cash flows and private stock without labeling revenue or hypothetical liquidation as realized profit.
+
+## ADR 024: Attribute material cost with FIFO open lots
+
+**Status:** Selected for Task 1.7; supersedes ADR 023's historical-cost deferral.
+
+Add one focused accounting component inside the existing regional working copy. Purchases create FIFO lots using actual executed totals; source-store FIFO transfers preserve original cost intervals and append them to the destination's receipt queue. Partial disposal uses cumulative integer prefix-floor differences with exact wider intermediates. Thus repeated splitting neither manufactures nor loses historical expenditure.
+
+Private production withdraws gross recipe inputs and spreads their total material cost over actual output units in ordinal good order. This is deterministic equal-per-item allocation with exact remainders, not price-weighted valuation. Starter grants retain zero paid basis and explicit provenance. Construction remains separate capital expenditure. Released inventory basis supports realized gross margin; neither unmodeled wages/transport nor speculative liquidation becomes fabricated profit.
+
+Keep live lots and company aggregates in snapshots, and return only the current committed operation's economic events. Hosts own bounded UI history or finite experiment journals. This supports audit and terminal results without unbounded per-day history copies or a second economic authority. Accounting failures participate in the same whole-operation rollback. FIFO at each receipt store is chosen for transparent provenance; this milestone does not introduce tax accounting or a depreciation model.
+
+## ADR 025: Store industrial route direction explicitly
+
+**Status:** Selected for Task 1.7; extends regional automation while preserving ADR 016's historical policy.
+
+Use one immutable two-port industrial policy with market/private warehouse sources and destinations, optional return leg, finite shipment rules, thresholds/reserves, and exact marginal limits. Store outbound/return acquisition/delivery stage in the authoritative ship snapshot. Explicit stage avoids ambiguity for same-commodity return routes and partially delivered cargo.
+
+The pure evaluator emits ordinary economic commands bound to the current snapshot. The regional owner validates and executes them through existing trade, transfer, and departure paths, with a fresh preview and the same four-action limit. Stage and historical cost roll back with all other state. Unsold goods remain owned and physically aboard; a wait cannot grant stock, cash, speed, or remote permission.
+
+A new policy requires an empty ship docked at one endpoint. Toggling enablement or reapplying the same immutable policy retains stage. This focused state model replaces no working legacy API and introduces neither arbitrary scripting nor autonomous strategy discovery.
+
+## ADR 026: Configure fixed runs with lateral charters
+
+**Status:** Selected for Task 1.7; economic parameters remain provisional.
+
+Add three handcrafted challenge definitions and three replacement starting-company charters over the existing regional scenario. Initialize starter factories and inventories explicitly, with grant provenance and no fake purchases. Cash alone is not total endowment; ship capacity, location, factory access, and goods create different opportunities. Packages do not stack or unlock permanent numeric upgrades.
+
+Keep objective progress and terminal state in the regional owner. Preserve signed net supply; add actual scheduled regional consumption and company productive-margin goals as explicit cases. All outcomes evaluate after complete atomic operations, freeze economic mutation, and distinguish success, deadline failure, and deliberate abandonment.
+
+Terminal results use authoritative measurements and a bounded four-part score. Compare challenge/charter groups rather than promise fair global normalization. The host handles menu/setup/pause/results navigation and confirms discarding active progress. Retry creates the selected initial state again; no persistent saves, incidental recovery service, or future modifier framework is implied.
+
+## ADR 027: Share player help between the offline reference and website
+
+**Status:** Selected for Task 1.7; extends ADR 005 and ADR 008.
+
+Keep canonical recipe facts in `data/content.json`. Add a small schema-validated `data/player-help.json` for authored gameplay explanations whose references resolve against canonical and help IDs. Generate both external reference pages and encyclopedia format version 2 from these sources. Uniform presentation fields and typed canonical relationships support category navigation, search, cross-links, and future content without one-off screens.
+
+Preparation refuses missing/stale encyclopedia output and stages the bundled `Resources/Encyclopedia.json` alongside the existing DLL and canonical JSON. Hash inputs and outputs in a versioned staging manifest. Unity supplies JSON support once through its pinned UPM package; offline reference browsing needs no network service or runtime-generated explanations.
+
+Retain MkDocs as a static site, separate player navigation from development details, and inspect rendered desktop/mobile pages. Prepare a manual-only GitHub Pages workflow and explicit activation instructions, without silently publishing or changing repository settings. Local builds remain independent of publication.

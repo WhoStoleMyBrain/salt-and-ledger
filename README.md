@@ -2,24 +2,27 @@
 
 A single-player maritime trading and economic strategy game intended for Unity 6. The long-term focus is building, optimizing, and automating trading networks within a simulated economy, inspired by Port Royale 2, Patrician 2, Antimatter Dimensions, and economic roguelikes.
 
-This repository contains **the foundation through Task 1.6's commerce and industry milestone**: four finite town markets, six canonical goods, distributed production chains, three NPC merchants, private factories and storage, geographic shipping, production policies, and an optional supply challenge. The map-first Unity host and headless experiments share one portable simulation and the expanded `EnterpriseScenario`. Bootstrap, TradingLab, and historical two-good demonstrations remain compatibility fixtures.
+This repository contains **Task 1.7's complete run experience**: three starting charters and three challenges over four finite town markets, six canonical goods, private factories, automated warehouse shipping, and historical inventory-cost accounting. The Unity main menu, run setup, pause/results screens, ledger and offline encyclopedia surround the existing map and trading host. One portable simulation powers the game and reproducible experiments. Bootstrap, TradingLab, and historical scenarios remain compatibility fixtures.
 
 ## Play the living archipelago
 
-Prepare the staged library and canonical content with `python tools/prepare_unity.py`, open `unity/` in Unity **6000.6.6f1**, and open **`Assets/Scenes/ArchipelagoLab.unity`**. Press Play in the Editor. The sandbox starts paused on day 0.
+Run `python tools/generate_docs.py` and `python tools/prepare_unity.py` to stage the simulation, canonical content and encyclopedia. Open `unity/` in Unity **6000.6.6f1**, open **`Assets/Scenes/ArchipelagoLab.unity`**, and press Play. The title screen offers New Run, Sandbox and Encyclopedia. Review a challenge and one starting charter before starting; the world begins paused on day 0.
 
 Select Ledger and right-click a town, or use its visible Trade action, to open the centered trading overlay. Compare town stock and cargo, adjust quantity, and inspect exact totals and average execution prices. Local trades happen immediately; remote views explain the docking requirement. Opening trade pauses playback. **Next day**, **Play/Pause**, and **1×/3×/10×** control economic playback.
 
-Select a town to inspect public industry or construct a private sawmill, bakery, or furniture workshop. Configure local procurement and optional output sales, or retain goods for shipment. Ship/warehouse transfers require the same dock, preserve ownership, and move no cash. The optional **Coastal Supply Charter** asks for 24 net Bread supplied to Eastport by day 60 while retaining at least 100 company cash; the regular sandbox has no deadline.
+Select a town to construct or manage private industry. Procurement and industrial routes can connect a bakery's own stock to a ship and another town's market. Transfers require physical docking and preserve ownership and exact cost basis. The Ledger distinguishes liquid cash, purchases, sales revenue, released cost, realized gross margin and construction spending.
+
+The **Coastal Supply Charter** requires 24 net Bread supplied to Eastport, **Regional Relief** measures 24 Bread actually consumed across towns, and **Enterprise Ambition** requires private output plus attributed margin. Each has a day-60 deadline and a 100-cash solvency condition; sandbox has no deadline. Escape respects open overlays before opening the pause menu. Completed runs freeze, show an auditable score and allow retry or another setup. Runs are in memory only.
 
 ```text
-dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --enterprise
-dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --enterprise --check
+dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --runs
+dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --runs --check
+dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --industrial-logistics --check
 ```
 
-The new five-strategy report covers 90 sandbox days with per-operation cash and six-good physical-flow reconciliation. Separate challenge trials demonstrate a merchant solution on day 29 and a manufacturing/shipping solution on day 46; idle play fails on day 60. Construction, purchases, revenue, and unsold goods are reported separately. Read [Commerce and industry](docs/ENTERPRISE.md), [Playtest](docs/PLAYTEST.md), and the actual [Unity verification record](docs/UNITY.md).
+The complete-run report demonstrates all nine charter/challenge pairings and nine idle failures, with per-operation financial reconciliation. Merchant and industrial charters complete the main supply challenge on days 29 and 39 respectively. The industrial comparison runs a real repeating supply chain and checks exact manual equivalence. These are feasible authored strategies, not claims of optimal or final balance. Read [Runs and charters](docs/RUNS.md), [Player guide](docs/PLAYER_GUIDE.md), [Playtest](docs/PLAYTEST.md), and the actual [Unity verification record](docs/UNITY.md).
 
-The historical `--archipelago` and `--archipelago --check` commands retain Task 1.5's two-good, sixty-day comparison unchanged. [Living archipelago](docs/LIVING_ARCHIPELAGO.md) distinguishes that regression fixture from the current expanded world. These measured examples establish feasibility, not final balance or optimal strategies.
+Historical `--archipelago` and `--enterprise` reports remain unchanged and retain their original strategies and measurements. [Living archipelago](docs/LIVING_ARCHIPELAGO.md) and [Commerce and industry](docs/ENTERPRISE.md) distinguish those fixtures from the new run scenarios.
 
 ## Prerequisites
 
@@ -135,7 +138,7 @@ python tools/prepare_unity.py
 python tools/prepare_unity.py --check
 ```
 
-Preparation validates content, rebuilds the existing simulation with locked NuGet dependencies, and stages its DLL plus canonical JSON under ignored `unity/Assets/Generated/`. Open `unity/` through Unity Hub using **6000.6.6f1**, let packages resolve, open **`Assets/Scenes/TradingLab.unity`**, and enter Play mode.
+Preparation validates content and generated-reference freshness, rebuilds the existing simulation with locked NuGet dependencies, and stages its DLL plus canonical JSON and offline encyclopedia under ignored `unity/Assets/Generated/`. Open `unity/` through Unity Hub using **6000.6.6f1**, let packages resolve, open **`Assets/Scenes/TradingLab.unity`** for the historical two-port lab, and enter Play mode.
 
 Inspect Northport and Southhaven, preview exact bulk prices, buy and sell cargo, and sail the two-tick route. Time advances only through explicit actions. Enable the full or restrictive route policy to compare the documented six-tick expeditions; the zero-liquidity scenario shows why a ship can retain goods despite an attractive price. Pause, change a limit, or intervene manually without a hidden clock. Follow [Playtest](docs/PLAYTEST.md) for controls, complete itineraries, blocked-route diagnosis, and a recovery experiment.
 
@@ -157,6 +160,8 @@ dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/co
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --automation
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --archipelago --check
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --enterprise --check
+dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --industrial-logistics --check
+dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --runs --check
 python -m unittest discover -s tests/python -v
 python tools/validate_data.py
 python tools/generate_docs.py --check
@@ -179,6 +184,7 @@ For an intentional NuGet dependency change, run `dotnet restore SaltAndLedger.sl
 | `unity/` | Unity 6 ArchipelagoLab and TradingLab scenes/UI, Bootstrap smoke, and integration tests |
 | `data/content.json` | Canonical goods, buildings, and production recipes |
 | `data/content.schema.json` | JSON Schema for content format version 1 |
+| `data/player-help.json` | Validated authored mechanics shared by the offline encyclopedia and website |
 | `tools/` | Data validation, deterministic documentation generation, and Unity preparation |
 | `tests/python/` | Schema, semantic validation, generator, and Unity preparation checks |
 | `docs/` | Authored design, architecture, and mechanics specifications |
@@ -186,7 +192,9 @@ For an intentional NuGet dependency change, run `dotnet restore SaltAndLedger.sl
 | `docs/experiments/archipelago-results.json` | Five sixty-day strategies with daily state, physical flows, transactions, and accounting checks |
 | `docs/experiments/enterprise-results.json` | Five ninety-day enterprise strategies and separate charter trials, with company/private-stock accounting and six-good flow reconciliation |
 | `docs/reference/` | Generated Markdown reference pages; do not edit manually |
-| `generated/encyclopedia.json` | Generated structured reference for a future in-game encyclopedia |
+| `docs/experiments/industrial-logistics-results.json` | Private shipping, manual equivalence, restrictive policies, supply/liquidity and demand variants |
+| `docs/experiments/run-results.json` | All nine charter/challenge pairings, idle failures, exact accounting and scored results |
+| `generated/encyclopedia.json` | Versioned offline encyclopedia generated from canonical definitions and shared player help |
 | `.github/workflows/` | Headless CI |
 
 Start with the [documentation index](docs/index.md), [design principles](docs/GAME_DESIGN.md), and [implemented architecture](docs/ARCHITECTURE.md). The [roadmap](docs/ROADMAP.md) is provisional; [economy](docs/ECONOMY.md) and [ideas](docs/IDEAS.md) distinguish accepted direction from open hypotheses and deferred work. Contribution and agent guidance is in [AGENTS.md](AGENTS.md).

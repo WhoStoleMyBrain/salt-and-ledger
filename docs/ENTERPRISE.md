@@ -1,6 +1,6 @@
-# Commerce, industry, and the supply charter
+# Commerce and private industry
 
-Task 1.6 extends the existing ArchipelagoLab with a centered trading overlay, private factories, and an optional fixed challenge. `EnterpriseScenario` is the shared expanded configuration for Unity and the new headless experiment. The historical two-good `ArchipelagoScenario` and its sixty-day report remain regression fixtures.
+Task 1.6 established the centered trading overlay, private factories, and Coastal Supply Charter. Task 1.7 adds [selectable runs and starting companies](RUNS.md), attributed inventory costs, and [automatic private shipping](AUTOMATION.md#industrial-shipping-between-private-stock-and-markets) over the same regional economy. `EnterpriseScenario` remains the shared foundation; `RunScenario` initializes the selected charter and challenge explicitly. The historical two-good `ArchipelagoScenario`, its sixty-day report, and the Task 1.6 enterprise report below remain regression fixtures.
 
 Canonical names, descriptions, buildings, and recipe quantities come from the [generated reference](reference/index.md). The six goods are Logs, Planks, Grain, Flour, Bread, and Furniture. Farming is explicit extraction; milling, baking, and furniture production connect raw materials to finished goods. Baking and sawmilling compete for logs, while furniture production and local construction compete for planks. Scenario schedules, prices, construction costs, and demand are runtime configuration rather than duplicated canonical definitions.
 
@@ -13,7 +13,7 @@ The farm's canonical batch produces four grain, supplying two milling batches be
 | Southhaven | Sawmill every 2 days | Bread and furniture |
 | Eastport | Furniture workshop every 5 days | Bread, planks, furniture |
 
-The original timber and plank merchants remain, joined by one grain/flour merchant between Northport and Westhaven. That route physically carries grain to the mill and flour back toward the public bakery. No town contains every stage of either production chain. Initial stocks, finite accounts, ceilings, pricing parameters, routes, and all cadences are specified in `EnterpriseScenario.cs` and captured in the experiment's configuration and initial state. The company starts with 600 cash and Ledger with capacity 10; combined initial company/market cash is 25,800.
+The original timber and plank merchants remain, joined by one grain/flour merchant between Northport and Westhaven. That route physically carries grain to the mill and flour back toward the public bakery. No town contains every stage of either production chain. Initial stocks, finite accounts, ceilings, pricing parameters, routes, and all cadences are specified in `EnterpriseScenario.cs` and captured in the experiment's configuration and initial state. The original enterprise scenario and Merchant Company start with 600 company cash and Ledger with capacity 10; combined initial company/market cash is 25,800. Other starting charters replace those player assets explicitly rather than modifying the markets or stacking bonuses.
 
 ## Trade at a town
 
@@ -25,7 +25,7 @@ Trades execute the complete requested quantity or reject it. After a successful 
 
 Remote markets display current information and explain the docking restriction. A valid Sail Here action is a separate explicit departure command; the visible prices are not guaranteed at arrival. NPC inspection never grants player control. Escape, Close, or clicking the modal backdrop closes the overlay and keeps playback paused. Resume explicitly.
 
-Full historical acquisition cost basis is deferred. Mixed purchases, partial disposals, manufactured output, and transfers need explicit cost attribution. The current quote is not a purchase-history estimate, and privately produced goods are not assigned zero acquisition cost.
+Historical inventory basis now follows actual acquisition lots through mixed purchases, partial disposals, manufacturing, and transfers. A current quote remains an execution proposal, not a purchase-history estimate. Private manufactured goods receive their actual consumed input basis; starter grants retain their explicit provenance and zero company purchase expenditure. The financial panel distinguishes held basis, sale revenue, released basis, material gross margin, and construction capital.
 
 ## Invest in private industry
 
@@ -37,6 +37,8 @@ Select a town and open private industry management. Blueprints reference canonic
 4. Schedule the first batch for current day plus the blueprint interval.
 
 There are no construction material requirements or completion delays in this prototype. A company may build at most one instance of each blueprint per town. Construction is a capital allocation decision; it grants no free goods or immediate batch.
+
+The Industrial Consortium's starting bakery is a separate explicit charter grant. It is not recorded as a purchase or construction payment made during the run. Its initial inventory and first due date are initialized deterministically; all subsequent procurement, production, and transfers use the same ordinary rules.
 
 | Private choice | Cost | Interval | Storage | Output ceiling | Eligible towns |
 | --- | ---: | ---: | ---: | ---: | --- |
@@ -60,25 +62,27 @@ Manual warehouse trades likewise change ownership and transfer actual cash throu
 
 For physical transport, dock Ledger at the factory's town and disable its route automation. The warehouse interface shows ship cargo and private stock side by side. Transfer a specified quantity in either direction, subject to available stock and destination capacity. The ship, stockpile, and requested owner must agree. Transfers conserve goods and ownership, move no cash, and spend no day. Sailing or remotely located ships cannot withdraw or deliver stock.
 
-The current ship route policy trades with public markets; it does not load private warehouses automatically. Industrial shipping therefore uses explicit warehouse loading and normal voyages. Local factory procurement and sales continue without restocking clicks once configured. Broader warehouse route automation and recipe switching remain deferred.
+An industrial route can instead load the private warehouse automatically, sail to a connected town, and sell there under a configured marginal price floor. A useful return can buy or load inputs and unload them into owned storage. Source thresholds, warehouse reserves, shipment bounds, ownership, actual docking, capacity, and finite cash remain enforced. The ship retains an explicit directional stage, so same-good return legs are unambiguous. See [industrial shipping](AUTOMATION.md#industrial-shipping-between-private-stock-and-markets) for configuration, waits, replacement-policy restrictions, and exact manual equivalence.
 
 The daily phase order is ship policies, private procurement, public production, private production, private automatic sales, public consumption, and voyages. Challenge evaluation follows those phases. A single atomic commit publishes the entire day; an exception rolls back all prior staged activity.
 
 ## Read cash flows honestly
 
-Inspect each factory's construction cost, days since construction, batches, input consumption, output production, private stock, next deadline, and wait reason. Actual procurement expenditure and sale revenue are recorded separately. Revenue minus recorded input purchases is not full profit when supplied goods came through a ship or unsold inputs/output remain. Construction also uses company cash.
+Inspect each factory's construction cost or starter provenance, age, batches, input consumption, output production, private stock, next deadline, and wait reason. Actual procurement expenditure and sale revenue remain separate cash flows. The company's FIFO records attribute the historical basis of inputs arriving through either purchases or ship transfers to actual output. A sale releases only the basis of the quantity sold; remaining inventory retains its basis.
 
-Unsold stock has no fabricated realized value. Compare company cash, capital expenditure, purchases, sales, and remaining goods together. Consumption removes goods without household payments; cash is finite and no subsidies or resets replenish it. Construction payments and all trades conserve combined company and market cash.
+Realized material gross margin is completed sale revenue minus released inventory basis. It is not revenue minus every historical purchase, nor cash change after construction. Construction is separate capital expenditure; held basis is neither a realized sale nor a guaranteed market valuation. No wages, depreciation, operating costs, or invented transport fees enter those figures. Compare company cash, capital expenditure, revenue, released/held basis, and physical goods together.
+
+Consumption removes goods without household payments; cash is finite and no subsidies or in-run resets replenish it. Construction payments and trades conserve combined company and market cash. Starting a fresh run initializes another explicit scenario; it does not rescue an existing enterprise.
 
 ## The Coastal Supply Charter
 
-The optional challenge uses the same towns and clock as the unlimited sandbox: supply **24 net Bread to Eastport by day 60**, retaining **at least 100 company cash** when completing the objective. The interface reads these conditions and progress from authoritative configuration.
+This challenge remains selectable alongside Regional Relief and Enterprise Ambition. It uses the same towns and clock as the unlimited sandbox: supply **24 net Bread to Eastport by day 60**, retaining **at least 100 company cash** when completing the objective. The interface reads these conditions and progress from authoritative configuration.
 
 Credit comes from completed player-company sales of the target good into the destination market, whether sold from a ship or private warehouse. Purchases of that good from that destination subtract from a **signed** net delivery counter. Buying and reselling the same stock cannot create credit. NPC trades, transfers, public production, and cargo merely arriving nearby grant no credit. Delivery is not described as fulfilled household consumption.
 
 Success requires the configured net supply and cash threshold by the deadline. The final day's automatic phases may satisfy the objective before the end-of-day failure check. If they do not, the challenge fails at that daily commit; there is no extra manual trading window afterward. A terminal result stops economic commands. Reset creates a fresh world and clears progress; sandbox mode has no deadline.
 
-The reproducible experiment selects provisional balance values and demonstrates merchant and manufacturing/shipping approaches. This establishes feasibility under stated assumptions, not optimal play or complete balance.
+The historical experiment below selects provisional balance values and demonstrates merchant and manufacturing/shipping approaches. Task 1.7's [complete-run comparisons](RUNS.md#reproduce-complete-runs) add all three starting charters and challenges, explicit results, and auditable scoring. These establish feasibility under stated assumptions, not optimal play or complete balance.
 
 ## Reproduce the experiment
 
@@ -87,7 +91,7 @@ dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --enterpris
 dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --enterprise --check
 ```
 
-The report compares ninety-day sandbox strategies and separate bounded challenge trials. It records actual construction, purchases, production, sales, company cash, private/public inventories, shortages, consumption, and NPC activity. Its cash and physical-flow reconciliation includes every owner and private stockpile. `--check` recomputes without changing the report. Historical pricing and archipelago reports retain their separate freshness checks.
+This is the preserved **Task 1.6** experiment. It compares ninety-day sandbox strategies and separate bounded challenge trials using the original scenario and host scripts. It records actual construction, purchases, production, sales, company cash, private/public inventories, shortages, consumption, and NPC activity. Its cash and physical-flow reconciliation includes every owner and private stockpile. `--check` recomputes without changing the report. Historical pricing and archipelago reports retain their separate freshness checks.
 
 The [generated report](experiments/enterprise-results.json) produced these measurements:
 
@@ -101,6 +105,6 @@ The [generated report](experiments/enterprise-results.json) produced these measu
 
 Purchase and revenue totals include the player's actual ship and warehouse transactions. Final stocks differ and remain listed separately in the report; this is not a ranked profit comparison. The workshop's lower final cash exposes the opportunity cost of capital and limited input supply. Shipping privately made bread to Eastport earns more cash than the same food investment's local sales under these particular assumptions.
 
-In separate challenge runs, idle play fails at day 60. The merchant succeeds on day 29 with 24 net bread and 1,014 cash; the hybrid succeeds on day 46 with 28 net bread and 1,123 cash. The merchant configures a Northport–Eastport bread route with a 100 cash reserve. The hybrid builds a Westhaven bakery, configures local input procurement, retains output, and physically shuttles bread from its private stockpile to Eastport. These are deterministic feasibility examples, not a claim that every factory or policy succeeds.
+In these historical challenge runs, idle play fails at day 60. The merchant succeeds on day 29 with 24 net bread and 1,014 cash; the hybrid succeeds on day 46 with 28 net bread and 1,123 cash. The merchant configures a Northport–Eastport bread route with a 100 cash reserve. The hybrid builds a Westhaven bakery, configures local input procurement, retains output, and physically shuttles bread from its private stockpile to Eastport. These are deterministic feasibility examples, not a claim that every factory or policy succeeds. Task 1.7 uses separate industrial-logistics and complete-run reports, preserving these earlier measurements.
 
 See [Playtest](PLAYTEST.md) for controls and recovery checks, [Mechanics](MECHANICS.md) for precise contracts, and [Unity integration](UNITY.md) for actual verification evidence and remaining platform limitations.

@@ -1,6 +1,56 @@
 # Playtest guides
 
-Use [Living archipelago playtest](#living-archipelago-playtest) for the new four-town map. The following TradingLab guide preserves the original two-port regression comparisons and their tick-based transactions.
+Start with [Complete runs](#complete-runs) for the current title screen and run lifecycle. [Living archipelago playtest](#living-archipelago-playtest) covers the four-town map. Historical TradingLab and prior-milestone checkpoints below retain their original scenarios.
+
+## Complete runs
+
+Run `python tools/generate_docs.py`, `python tools/prepare_unity.py` and its `--check`. Open `Assets/Scenes/ArchipelagoLab.unity` in Unity 6000.6.6f1 and enter Play mode. The application opens at the Salt & Ledger title screen. These are repeatable verification instructions; the dated [Unity record](UNITY.md) distinguishes checks actually performed.
+
+1. Choose **New Run**. Review the challenge description, objective, deadline, cash and starter assets. Switch among all three charters and verify that descriptions replace each other. Choose **Merchant Company** and **The Coastal Supply Charter**, then **Begin voyage**. Expect day 0, 600 cash, an empty 10-unit Ledger at Northport, and no private factory.
+2. Open **Your trade route**, enable the existing Northport–Eastport Bread policy and start playback. Its defaults are documented in [Runs and charters](RUNS.md). Without extra economic actions it completes on day 29: net 24 Bread, cash 1,014, realized gross margin 414. Confirm the visible Victory screen and frozen day. Inspect score components, procurement, released/held basis, assets and automation usage.
+3. Select **Retry**. Expect the same challenge and charter, initial assets and a cleared journal. Use **Menu → Restart this run**, cancel once, then confirm; cancellation preserves state and confirmation recreates the selected start.
+4. Use **Menu → Return to Main Menu** and cancel once. Confirming discards the active run. Start another run with **Industrial Consortium**: day 0, 300 cash, an 8-unit Ledger at Westhaven, one granted bakery, two Flour and two Logs. Construction spending and paid inventory basis start at zero.
+5. Open **Industrial shipping**. Apply the bakery input-procurement preset, review the warehouse, Bread, shipment 8, reserve 0, Eastport, marginal sale floor 24 and empty return. Apply the shipping policy, then enable it. Return to the map and play. The measured default industrial strategy succeeds on day 39 with 1,027 cash and 814 realized gross margin. Bread must physically leave private storage, travel in cargo and sell at Eastport; no manual transfers are needed.
+6. Repeat a fresh challenge without player action, using 10× playback. At day 60 the Defeat screen must appear and stop time. Retry and deliberately **Abandon and inspect results** from the pause menu; confirmation produces a distinct abandonment result with the actual held goods and costs.
+7. Try **Regional Relief** and **Enterprise Ambition** from setup. Relief advances only when scheduled regional Bread demand consumes goods; a sale alone is insufficient. Ambition requires both private output and attributed gross margin. Every challenge/charter combination has a measured viable strategy; see the complete-run report.
+
+### Menus, reference and finance
+
+Check at **1366×768** and **1920×1080**, including pointer input, keyboard focus and scrolling:
+
+- Escape closes the trade or industry modal first. With no modal open it opens pause; a second Escape resumes. The Input System navigation-cancel path must behave the same way while a numeric field or dropdown has focus.
+- Open Encyclopedia from the title screen, setup, pause and results. Search for Bread, follow its recipe/building links, switch category, scroll a longer mechanics entry and use Back/Escape to return. Help works offline from the staged generated data.
+- Open **Ledger** and expand recent events. Compare actual purchases, sales revenue, released historical cost, held basis and construction expenditure. Transfers move no cash; production carries consumed material basis into output. The journal is capped at 200 entries while authoritative totals continue.
+- In Settings, test smooth movement and larger menu/reference text. Settings change presentation only and persist only in this application session.
+- Opening pause, help, finance or logistics stops economic playback. Confirmation must block underlying controls; Escape cancels confirmation without also closing another screen or restarting.
+- From results, test Retry, New Run, Main Menu and Encyclopedia without restarting the application. No Continue or saved-run promise is offered.
+- In a Windows development player, **Exit Game** must close the actual process. An active run requires confirmation; cancelling keeps it available. Editor Exit stops Play mode. Verify these separately.
+
+### Recorded Task 1.7 Editor views
+
+These are actual Unity Editor Game view captures from the Task 1.7 verification session, not mockups. Main menu, setup, encyclopedia, logistics and results were captured at both **1366×768** and **1920×1080**; the selections below show representative views. [Unity integration](UNITY.md#task-17-complete-run-verification) records the automated tests, live input, economic outcomes and remaining player checks separately.
+
+Pointer-driven setup and playback completed Coastal Supply with Merchant Company on **day 29**, with **1,014 cash**, **414 realized material gross margin** and **1,910 points**. A second run selected Industrial Consortium and applied procurement, shipping and enablement through the visible controls. It produced **30 Bread**, physically delivered **24**, and finished on **day 39** with **1,027 cash**, **814 material gross margin** and **1,810 points**, without repetitive manual transfers.
+
+The recorded navigation also exercised trade-modal Escape priority, pause, confirmation cancellation, resume, retry to day 0, confirmed abandonment, another setup, and encyclopedia search/related-entry Back. Editor Exit stopped Play mode. Standalone build/Exit verification is pending in the linked record; these Editor observations must not be described as player evidence.
+
+![Actual 1366×768 title screen with New Run, Sandbox, Encyclopedia, Settings and Exit Game.](images/task17-main-1366.png)
+
+![Actual 1920×1080 run setup showing challenge conditions and a selected company's starting assets and tradeoffs.](images/task17-setup-1920.png)
+
+![Actual 1920×1080 offline encyclopedia with category navigation, search and generated related-entry links.](images/task17-encyclopedia-1920.png)
+
+![Actual 1366×768 industrial route panel: private Westhaven bakery, eight Bread per shipment, Eastport market, sale floor 24 and an explicit source-stock wait.](images/task17-logistics-1366.png)
+
+![Actual 1920×1080 industrial victory on day 39, showing score components, separate financial measurements, held stock, starter facility provenance and physical production and deliveries.](images/task17-results-1920.png)
+
+### Industrial blockage and recovery
+
+For a fresh industrial sandbox, configure procurement and a shipping floor of 1,000 before enabling the route. The ship eventually reaches the destination and waits with its Bread intact. Read the explicit reason and compare local bids and liquidity. Pause automation; manual selling or warehouse handling is available only at the actual dock. Replacing the policy requires an empty ship at one of its route ports; enabling/disabling the same policy preserves its stage. Do not expect lower limits to create market cash or missing stock.
+
+Open advanced settings to configure a useful return purchase or private return load. Inspect minimum shipment, source threshold, warehouse reserve, purchase ceiling, expenditure cap and company reserve separately. A warehouse destination must belong to the same company and be at the destination town. Same-good outward/return legs use explicit stages; incompatible extra cargo pauses the policy without disposal.
+
+## Historical TradingLab
 
 TradingLab lets you operate the existing finite two-port economy. It is a small experiment in understanding prices, cargo, travel, and route rules. There is one ship, two goods, and no background clock, replenishment, save system, or win condition.
 
@@ -104,7 +154,7 @@ These actual Game view captures accompany the checks in [Unity integration](UNIT
 
 ## Commerce and industry playtest
 
-Prepare with `python tools/prepare_unity.py`, open `Assets/Scenes/ArchipelagoLab.unity`, and enter Play mode. The expanded sandbox starts paused on day 0 with company cash 600, Ledger at Northport with empty capacity 10, six goods, and three independently funded NPC merchants. The older two-port TradingLab instructions above remain separate.
+Prepare with `python tools/prepare_unity.py`, open `Assets/Scenes/ArchipelagoLab.unity`, and enter Play mode. Choose Sandbox and Merchant Company from setup. The expanded sandbox starts paused on day 0 with company cash 600, Ledger at Northport with empty capacity 10, six goods, and three independently funded NPC merchants. The older two-port TradingLab instructions above remain separate.
 
 ### Trade without moving time
 
@@ -128,15 +178,15 @@ Average execution price describes this proposed transaction. The interface does 
 6. Try to load while the ship is elsewhere or sailing, and try to exceed available stock or capacity. Transfers must be blocked/rejected without goods or cash changes. Remote factory management may buy/sell locally, but cannot load the distant ship.
 7. Raise an input limit enough to permit purchase, then lower it to create a visible price wait. Test a cash reserve and a high output sell floor. Applying policy changes must not produce or trade immediately; policies act during day advances. A limit edit creates no liquidity or stock.
 
-Factory output can also block on capacity or lack of local buyers. Disabling/re-enabling preserves its production deadline. Ship route automation does not yet automatically collect private warehouse output; loading for the tested industrial strategy is explicit.
+Factory output can also block on capacity or lack of local buyers. Disabling/re-enabling preserves its production deadline. Task 1.7's Industrial shipping panel can collect private output automatically; the steps above deliberately exercise manual transfers as a physical-ownership check.
 
 ### Try the charter and recover the session
 
-**Start supply charter** starts a fresh world with a goal of 24 net bread supplied to Eastport by day 60, retaining 100 cash. Progress must increase only after actual player-company sales into that market; buying bread back subtracts credit. Cargo aboard a nearby ship, NPC sales and warehouse transfers must not count.
+Choose **New Run → The Coastal Supply Charter** for a fresh goal of 24 net Bread supplied to Eastport by day 60, retaining 100 cash. Progress increases only after actual player-company sales into that market; buying Bread back subtracts credit. Cargo aboard a nearby ship, NPC sales and warehouse transfers do not count.
 
-Two reproducible approaches are described in [Commerce and industry](ENTERPRISE.md): a configured Northport–Eastport bread route, or a Westhaven bakery with local procurement and explicit bread shipping. The tested scripts demonstrate feasibility, not a requirement to copy their exact actions.
+Two current approaches are described in [Runs and charters](RUNS.md): a configured Northport–Eastport Bread route, or a Westhaven bakery with procurement and automated private shipping. [Commerce and industry](ENTERPRISE.md) retains the older manual industrial experiment. The scripts demonstrate feasibility, not a requirement to copy their exact actions.
 
-Wait without supplying anything to observe failure at day 60. At a terminal result, economic controls must stop and the result remain visible. Reset restarts the selected mode at day 0 with initial stock/cash and no facilities/progress. **New sandbox** restores unlimited play. Test pause, explicit next day, 1×/3×/10× speeds, and modal opening during playback; no clock should run through an open trade modal.
+Wait without supplying anything to observe failure at day 60. At a terminal result, economic controls stop and results remain visible. Retry restores the selected charter's initial assets, including any granted facility, with no accumulated progress. Sandbox restores unlimited play. Test pause, explicit next day, 1×/3×/10× speeds and modal opening during playback; no clock should run through an open trade modal.
 
 At 1366×768 and 1920×1080, verify the full trade controls are accessible without scrolling the entire modal. Inspect text clipping, goods-row targeting, button contrast, focus, backdrop interception, error visibility, policy scrolling and physical-transfer controls. The [Unity verification record](UNITY.md) distinguishes actual interaction, automated tests and player startup.
 
@@ -248,3 +298,5 @@ These actual Editor Game view captures use the verified runtime resolutions and 
 ![ArchipelagoLab at 1366×768 on day 7: four towns, all three ships, and Southhaven's scheduled sawmill and recent merchant activity.](images/archipelago-1366.png)
 
 ![ArchipelagoLab at 1920×1080 on day 7: Northport's lumber extraction, unmet plank demand, current prices, and actual NPC purchases.](images/archipelago-1920.png)
+
+Task 1.7's final verification also passed **29 Play Mode tests** and the Windows development player's real Exit flow: settings and reference navigation, run setup, Escape pause, Exit cancellation, and confirmed application shutdown were exercised through the official runtime input tools. Full visible merchant and industrial victories were verified in the Editor. See the [complete verification record](UNITY.md#task-17-complete-run-verification) for exact evidence and remaining platform/graphics limitations.
