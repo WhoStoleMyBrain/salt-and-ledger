@@ -37,7 +37,9 @@ namespace SaltAndLedger.Simulation
         InsufficientTraderFunds,
         CashReserve,
         InsufficientMarketFunds,
-        MarketInventoryFull
+        MarketInventoryFull,
+        PurchaseExpenditureLimit,
+        SourceStockThreshold
     }
 
     /// <summary>A non-mutating policy evaluation tied to one exact immutable committed snapshot.</summary>

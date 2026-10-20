@@ -7,10 +7,12 @@ namespace SaltAndLedger.Simulation
     public static class RoutePolicyEvaluator
     {
         public static AutomationDecision Evaluate(MaritimeWorldSnapshot snapshot, TradeRoutePolicy policy,
-            bool enabled = true)
+            bool enabled = true, int minimumOriginStock = 0, int minimumReturnStock = 0)
         {
             if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
             if (policy == null) throw new ArgumentNullException(nameof(policy));
+            if (minimumOriginStock < 0 || minimumReturnStock < 0)
+                throw new ArgumentOutOfRangeException(nameof(minimumOriginStock));
             ValidateReferences(snapshot, policy);
             if (!enabled) return Pause(snapshot, AutomationReason.Disabled);
             if (policy.Outbound.MinShipmentQuantity > snapshot.Ship.CargoCapacity ||
@@ -35,7 +37,7 @@ namespace SaltAndLedger.Simulation
                 if (returnCargo > 0)
                     return Sell(snapshot, policy.ReturnLeg!, policy.OriginPortId, AutomationStage.ReturnSale);
                 return Load(snapshot, policy, policy.Outbound, policy.OriginPortId,
-                    policy.DestinationPortId, AutomationStage.OutboundLoading);
+                    policy.DestinationPortId, AutomationStage.OutboundLoading, minimumOriginStock);
             }
 
             if (outboundCargo > 0)
@@ -43,7 +45,7 @@ namespace SaltAndLedger.Simulation
             if (policy.ReturnLeg != null)
             {
                 var loading = Load(snapshot, policy, policy.ReturnLeg, policy.DestinationPortId,
-                    policy.OriginPortId, AutomationStage.ReturnLoading);
+                    policy.OriginPortId, AutomationStage.ReturnLoading, minimumReturnStock);
                 if (loading.Action != AutomationAction.Wait || !policy.AllowEmptyReturn || snapshot.Ship.CargoUnits != 0)
                     return loading;
             }
@@ -52,13 +54,20 @@ namespace SaltAndLedger.Simulation
         }
 
         private static AutomationDecision Load(MaritimeWorldSnapshot snapshot, TradeRoutePolicy policy,
-            RouteLeg leg, string portId, string destinationPortId, AutomationStage stage)
+            RouteLeg leg, string portId, string destinationPortId, AutomationStage stage, int minimumStock)
         {
             var port = snapshot.Ports[portId];
             var carried = snapshot.Ship.Cargo[leg.GoodId];
+            // A threshold forbids loading, so do not preview an otherwise disallowed top-up.
+            if (port.Inventory[leg.GoodId] < minimumStock)
+                return carried >= leg.MinShipmentQuantity
+                    ? new AutomationDecision(snapshot, stage, AutomationAction.Depart,
+                        AutomationReason.ShipmentReady, departure: new SailCommand(destinationPortId))
+                    : new AutomationDecision(snapshot, stage, AutomationAction.Wait, AutomationReason.SourceStockThreshold);
             var upper = Math.Min(Math.Max(0, leg.MaxPurchaseQuantity - carried),
                 Math.Min(port.Inventory[leg.GoodId], snapshot.Ship.CargoCapacity - snapshot.Ship.CargoUnits));
             var budget = snapshot.TraderCash > policy.CashReserve ? snapshot.TraderCash - policy.CashReserve : 0;
+            budget = Math.Min(budget, leg.MaxPurchaseExpenditure);
             var quantity = SelectQuantity(port.Quotes[leg.GoodId], TradeDirection.Buy,
                 port.Inventory[leg.GoodId], upper, leg.MaxBuyPrice, budget);
             if (quantity > 0 && checked(carried + quantity) >= leg.MinShipmentQuantity)
@@ -131,6 +140,9 @@ namespace SaltAndLedger.Simulation
             var quote = port.Quotes[leg.GoodId];
             if (!MeetsPriceLimit(quote, TradeDirection.Buy, stock, needed, leg.MaxBuyPrice))
                 return AutomationReason.BuyPriceLimit;
+            if (leg.MaxPurchaseExpenditure < traderCash &&
+                !quote.FitsBudget(TradeDirection.Buy, stock, needed, leg.MaxPurchaseExpenditure))
+                return AutomationReason.PurchaseExpenditureLimit;
             return quote.FitsBudget(TradeDirection.Buy, stock, needed, traderCash) && budget < traderCash ?
                 AutomationReason.CashReserve : AutomationReason.InsufficientTraderFunds;
         }

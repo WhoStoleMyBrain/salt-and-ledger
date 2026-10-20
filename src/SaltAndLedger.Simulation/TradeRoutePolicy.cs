@@ -10,9 +10,10 @@ namespace SaltAndLedger.Simulation
         public int MinShipmentQuantity { get; }
         public long MaxBuyPrice { get; }
         public long MinSellPrice { get; }
+        public long MaxPurchaseExpenditure { get; }
 
         public RouteLeg(string goodId, int maxPurchaseQuantity, int minShipmentQuantity,
-            long maxBuyPrice, long minSellPrice)
+            long maxBuyPrice, long minSellPrice, long maxPurchaseExpenditure = long.MaxValue)
         {
             RuntimeIdentifier.Validate(goodId, nameof(goodId));
             if (maxPurchaseQuantity <= 0) throw new ArgumentOutOfRangeException(nameof(maxPurchaseQuantity));
@@ -20,11 +21,13 @@ namespace SaltAndLedger.Simulation
                 throw new ArgumentOutOfRangeException(nameof(minShipmentQuantity));
             if (maxBuyPrice <= 0) throw new ArgumentOutOfRangeException(nameof(maxBuyPrice));
             if (minSellPrice <= 0) throw new ArgumentOutOfRangeException(nameof(minSellPrice));
+            if (maxPurchaseExpenditure <= 0) throw new ArgumentOutOfRangeException(nameof(maxPurchaseExpenditure));
             GoodId = goodId;
             MaxPurchaseQuantity = maxPurchaseQuantity;
             MinShipmentQuantity = minShipmentQuantity;
             MaxBuyPrice = maxBuyPrice;
             MinSellPrice = minSellPrice;
+            MaxPurchaseExpenditure = maxPurchaseExpenditure;
         }
     }
 
