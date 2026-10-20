@@ -10,10 +10,13 @@ var shippingMode = args.Length == 2 && args[1] == "--shipping";
 var automationMode = args.Length == 2 && args[1] == "--automation";
 var pricingMode = args.Length >= 2 && args[1] == "--pricing";
 var checkPricing = pricingMode && args.Length >= 3 && args[2] == "--check";
+var archipelagoMode = args.Length >= 2 && args[1] == "--archipelago";
+var checkArchipelago = archipelagoMode && args.Length >= 3 && args[2] == "--check";
 if (args.Length != 1 && !(worldMode && args.Length <= 3) && !marketMode && !shippingMode && !automationMode &&
-    !(pricingMode && args.Length <= (checkPricing ? 4 : 3)))
+    !(pricingMode && args.Length <= (checkPricing ? 4 : 3)) &&
+    !(archipelagoMode && args.Length <= (checkArchipelago ? 4 : 3)))
 {
-    Console.Error.WriteLine("Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--world [initialLogs] | --market | --pricing [--check] [output.json] | --shipping | --automation]");
+    Console.Error.WriteLine("Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--world [initialLogs] | --market | --pricing [--check] [output.json] | --shipping | --automation | --archipelago [--check] [output.json]]");
     return 1;
 }
 
@@ -37,9 +40,14 @@ try
         var outputIndex = checkPricing ? 3 : 2;
         return PricingExperiments.Run(content, args.Length > outputIndex ? args[outputIndex] : null, checkPricing);
     }
+    if (archipelagoMode)
+    {
+        var outputIndex = checkArchipelago ? 3 : 2;
+        return ArchipelagoExperiments.Run(content, args.Length > outputIndex ? args[outputIndex] : null, checkArchipelago);
+    }
 
     var inventory = new Inventory(content, new Dictionary<string, int> { ["logs"] = 6 });
-    Console.WriteLine($"Loaded schema {content.SchemaVersion}: {content.Goods.Count} goods, {content.Buildings.Count} building, {content.Recipes.Count} recipe.");
+    Console.WriteLine($"Loaded schema {content.SchemaVersion}: {content.Goods.Count} goods, {content.Buildings.Count} buildings, {content.Recipes.Count} recipes.");
     Console.WriteLine($"Initial: logs={inventory.GetQuantity("logs")}, planks={inventory.GetQuantity("planks")}");
     for (var batch = 1; batch <= 4; batch++)
     {

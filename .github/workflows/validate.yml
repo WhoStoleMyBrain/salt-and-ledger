@@ -55,6 +55,9 @@ jobs:
       - name: Run configurable route automation comparison
         # Checks marginal limits, bounded waiting, determinism, and manual-equivalent states.
         run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --automation
+      - name: Verify living archipelago experiments and report freshness
+        # Sixty-day strategies reconcile physical flows and cash; repeat, reversed setup, and culture must match.
+        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --archipelago --check
       - name: Prepare Unity integration assets
         run: python tools/prepare_unity.py
       - name: Check Unity integration asset freshness
