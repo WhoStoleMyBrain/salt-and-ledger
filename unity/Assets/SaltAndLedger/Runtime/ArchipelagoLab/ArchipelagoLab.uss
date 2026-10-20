@@ -1,0 +1,93 @@
+.archipelago-lab { flex-grow: 1; background-color: #101f29; color: #e5edf0; font-size: 13px; padding: 12px; }
+.top-bar, .main-layout, .row, .commodity-row, .voyage-bar, .map-footer { flex-direction: row; align-items: center; }
+.top-bar { margin-bottom: 10px; }
+.brand { font-size: 22px; -unity-font-style: bold; color: #f0ce8e; margin-right: 18px; }
+.day { font-size: 18px; -unity-font-style: bold; margin-right: 12px; }
+.top-summary { flex-grow: 1; color: #b6d7d6; margin-right: 12px; white-space: normal; }
+.playback-label { color: #b6d7d6; width: 75px; }
+.speed-picker { width: 96px; flex-shrink: 0; margin-right: 6px; }
+.speed-picker > .unity-base-field__label { display: none; }
+.speed-picker .unity-base-field__input { min-width: 0; }
+.speed-picker .unity-base-popup-field__text { min-width: 35px; -unity-text-align: middle-center; }
+.main-layout { flex-grow: 1; min-height: 0; align-items: stretch; }
+.map-side { flex-grow: 1; min-width: 0; margin-right: 12px; }
+.map-title { font-size: 12px; color: #91bfc4; margin-bottom: 5px; letter-spacing: 1px; }
+.map-frame { flex-grow: 1; min-height: 220px; background-color: #153a48; border-radius: 8px; border-width: 1px; border-color: #43616a; overflow: hidden; }
+.archipelago-map { flex-grow: 1; position: relative; }
+.map-hint { font-size: 12px; color: #bfd4d7; white-space: normal; padding: 6px 8px; background-color: #17323f; }
+.map-footer { justify-content: space-between; padding: 6px 8px; background-color: #17323f; }
+.map-legend { font-size: 11px; color: #afc5ca; white-space: normal; flex-grow: 1; flex-shrink: 1; min-width: 0; margin-right: 10px; }
+.fleet-picker { width: 190px; flex-shrink: 0; margin-right: 6px; }
+.fleet-picker > .unity-base-field__label { display: none; }
+.fleet-picker .unity-base-field__input { min-width: 0; }
+.map-footer .unity-button { min-height: 27px; padding: 3px 9px; margin-top: 0; }
+.archipelago-map > .port-marker { position: absolute; width: 132px; height: 48px; min-height: 0; padding: 4px; margin: 0; background-color: #243a31; border-color: #8c9e6f; border-width: 1px; border-radius: 5px; color: #f0ebd3; font-size: 13px; white-space: normal; -unity-font-style: bold; }
+.archipelago-map > .port-marker:hover { background-color: #3b5543; border-color: #e5ce8a; }
+.archipelago-map > .ship-marker { position: absolute; width: 44px; height: 32px; min-height: 0; padding: 2px; margin: 0; border-radius: 14px; border-width: 2px; font-size: 13px; -unity-font-style: bold; }
+.archipelago-map > .player-marker { background-color: #d9bb71; border-color: #f8dda0; color: #182a30; }
+.archipelago-map > .player-marker:hover { background-color: #ffe0a0; }
+.archipelago-map > .npc-marker { background-color: #4f919d; border-color: #98d2d8; color: #071f2c; }
+.archipelago-map > .npc-marker:hover { background-color: #8ec6cb; }
+.archipelago-map > .selected-marker { border-color: #fff2b5; border-width: 3px; }
+.route-distance { position: absolute; width: 70px; height: 18px; font-size: 10px; color: #b5cccd; -unity-text-align: middle-center; background-color: #1b3e4a; border-radius: 4px; margin: 0; padding: 0; }
+.voyage-bar { margin-top: 8px; background-color: #1d3440; border-radius: 5px; padding: 6px 10px; }
+.voyage-copy { flex-grow: 1; white-space: normal; margin-right: 12px; font-size: 12px; }
+.voyage-bar .unity-button { min-width: 145px; max-width: 210px; }
+.latest-event { white-space: normal; font-size: 12px; color: #b4cbce; margin-top: 7px; min-height: 32px; }
+.activity-foldout { color: #b4cbce; margin-top: 2px; }
+.activity-scroll { max-height: 130px; background-color: #142b36; border-radius: 5px; }
+.activity-entry { white-space: normal; font-size: 12px; margin: 0; padding: 5px 8px; border-bottom-width: 1px; border-bottom-color: #27414b; }
+.context-panel { width: 360px; flex-shrink: 0; min-height: 0; background-color: #1a303b; border-radius: 7px; }
+.context-panel .unity-scroll-view__content-container { padding: 12px; }
+.context-panel .unity-scroll-view__content-viewport { min-width: 0; }
+.selection-title { font-size: 23px; -unity-font-style: bold; color: #f0ce8e; margin: 0 0 4px 0; padding: 0; white-space: normal; }
+.selection-subtitle { font-size: 12px; color: #b6cbca; white-space: normal; margin-bottom: 11px; }
+.summary { white-space: normal; font-size: 13px; margin: 5px 0; padding: 0; }
+.compact { white-space: normal; font-size: 12px; color: #bed2d4; }
+.section-label { font-size: 12px; color: #dfc494; -unity-font-style: bold; margin-top: 12px; margin-bottom: 6px; }
+.commodity-row { border-bottom-width: 1px; border-bottom-color: #36515a; padding: 7px 0; }
+.commodity-name { flex-grow: 1; margin-left: 0; }
+.commodity-cell { width: 55px; -unity-text-align: middle-right; margin-right: 0; }
+.commodity-header { color: #91b5bd; font-size: 10px; padding-bottom: 2px; }
+.context-panel .unity-foldout { margin: 9px 0 0 0; padding-top: 5px; border-top-width: 1px; border-top-color: #3a525b; }
+.unity-foldout__toggle { min-height: 29px; }
+.unity-foldout__text { white-space: normal; -unity-font-style: bold; }
+.unity-foldout__content { margin-left: 5px; }
+.help { white-space: normal; color: #adc6cc; font-size: 12px; margin: 6px 0; padding: 0; }
+.preview { white-space: normal; margin: 6px 0; padding: 7px; background-color: #122a35; border-radius: 4px; }
+.row { align-items: stretch; }
+.row > .field-block, .row > .unity-button { flex-grow: 1; flex-basis: 0; min-width: 0; }
+.row > .field-block { margin-right: 8px; }
+.field-caption { font-size: 11px; color: #b5cdd0; margin: 6px 0 2px 0; padding: 0; white-space: normal; }
+.policy-card { margin-top: 7px; padding: 8px; background-color: #142b36; border-radius: 5px; }
+.decision { white-space: normal; font-size: 12px; color: #c7d9d9; margin: 0; padding: 0; }
+.unity-base-field { min-height: 29px; margin: 3px 0; }
+.unity-base-field__label { min-width: 45px; color: #bdd1d3; font-size: 12px; }
+.unity-base-field__input { background-color: #102833; color: #eef3ed; border-width: 1px; border-color: #52717b; border-radius: 3px; padding: 4px 7px; min-height: 28px; }
+.unity-base-field__input:focus { border-color: #edca82; }
+.unity-base-popup-field__input { flex-direction: row; align-items: center; }
+.unity-base-popup-field__text { flex-grow: 1; }
+.unity-base-popup-field__arrow { width: 7px; height: 7px; border-radius: 3px; background-color: #92b3bc; margin-left: 7px; }
+.unity-base-text-field__input { -unity-text-align: middle-left; }
+.unity-button { color: #edf1ef; background-color: #2c5262; border-width: 1px; border-color: #628490; border-radius: 4px; margin: 4px 5px 0 0; min-height: 30px; padding: 5px 9px; white-space: normal; -unity-text-align: middle-center; }
+.unity-button:hover { background-color: #3e6a78; border-color: #9ec4ca; }
+.unity-button:focus { border-color: #f1d395; }
+.unity-button:disabled { background-color: #253b46; color: #8b9ea5; border-color: #3e555f; }
+.top-bar .unity-button { margin-top: 0; }
+.primary { background-color: #367367; border-color: #79aa8f; }
+.primary:hover { background-color: #478a79; }
+.trade-input .unity-base-field { flex-grow: 1; flex-basis: 0; margin-right: 8px; min-width: 0; }
+.switch .unity-base-field__label { flex-grow: 1; white-space: normal; }
+.switch .unity-toggle__input { flex-grow: 0; min-width: 28px; padding: 4px; }
+.unity-toggle__checkmark { width: 16px; height: 16px; border-radius: 3px; background-color: #16323e; border-width: 1px; border-color: #77979e; }
+.unity-toggle__input:checked .unity-toggle__checkmark { background-color: #91cfb4; border-color: #bce8d0; }
+.status { font-size: 12px; white-space: normal; padding: 7px 0 0 0; margin: 0; min-height: 24px; }
+.error { color: #ffb6a2; }
+.hidden { display: none; }
+.unity-scroller { background-color: #132b36; }
+.unity-scroller--vertical { width: 12px; min-width: 12px; max-width: 12px; }
+.unity-scroller .unity-base-field__input { border-width: 0; padding: 0; min-height: 0; min-width: 0; background-color: #132b36; }
+.unity-scroller .unity-base-slider__tracker { background-image: none; background-color: #132b36; border-width: 0; }
+.unity-scroller .unity-base-slider__dragger { background-image: none; background-color: #527481; border-width: 0; border-radius: 4px; }
+.unity-scroller .unity-base-slider__dragger-border { background-image: none; background-color: transparent; border-width: 0; }
+.unity-scroller .unity-button { min-height: 0; padding: 0; margin: 0; border-width: 0; }
