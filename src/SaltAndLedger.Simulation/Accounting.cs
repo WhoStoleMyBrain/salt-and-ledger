@@ -7,7 +7,7 @@ using System.Numerics;
 namespace SaltAndLedger.Simulation
 {
     public enum InventoryCostOrigin { StarterGrant, Purchased, Manufactured }
-    public enum EconomicEventKind { StarterGrant, Purchase, Sale, Transfer, Production, Construction }
+    public enum EconomicEventKind { StarterGrant, Purchase, Sale, Transfer, Production, Construction, ConstructionCompleted }
 
     /// <summary>
     /// An open interval of an original acquisition. Prefix-floor allocation keeps every integer
@@ -311,6 +311,14 @@ namespace SaltAndLedger.Simulation
             events.Add(Event(EconomicEventKind.Construction, ownerId, ownerId, "market:" + portId,
                 null, "facility:" + facilityId, portId, null, 0, cost, -cost, 0, null, facilityId,
                 "construction", Array.Empty<EconomicGoodsMovement>(), Array.Empty<EconomicGoodsMovement>()));
+        }
+        internal void CompleteConstruction(string ownerId, string facilityId, string portId)
+        {
+            if (stores["facility:" + facilityId].OwnerId != ownerId)
+                throw new InvalidOperationException("Construction completion needs its owned facility store.");
+            events.Add(Event(EconomicEventKind.ConstructionCompleted, ownerId, ownerId, ownerId,
+                "facility:" + facilityId, "facility:" + facilityId, portId, null, 0, 0, 0, 0, null, facilityId,
+                "construction_completed", Array.Empty<EconomicGoodsMovement>(), Array.Empty<EconomicGoodsMovement>()));
         }
         internal AccountingSnapshot Snapshot()
         {

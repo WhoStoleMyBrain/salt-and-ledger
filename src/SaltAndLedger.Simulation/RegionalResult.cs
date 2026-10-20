@@ -38,9 +38,17 @@ namespace SaltAndLedger.Simulation
         public string BlueprintId { get; }
         public ConstructionOutcome Outcome { get; }
         public long Cost { get; }
+        public long OrderedDay { get; }
+        public long? CompletionDay { get; }
+        public long? FirstProductionDay { get; }
         internal RegionalConstruction(string facilityId, string ownerId, string portId, string blueprintId,
-            ConstructionOutcome outcome, long cost)
-        { FacilityId = facilityId; OwnerId = ownerId; PortId = portId; BlueprintId = blueprintId; Outcome = outcome; Cost = cost; }
+            ConstructionOutcome outcome, long cost, long orderedDay = 0,
+            long? completionDay = null, long? firstProductionDay = null)
+        {
+            FacilityId = facilityId; OwnerId = ownerId; PortId = portId; BlueprintId = blueprintId;
+            Outcome = outcome; Cost = cost; OrderedDay = orderedDay;
+            CompletionDay = completionDay; FirstProductionDay = firstProductionDay;
+        }
     }
 
     public sealed class RegionalTransfer

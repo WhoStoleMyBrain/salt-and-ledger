@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace SaltAndLedger.Simulation
 {
-    public enum ScheduledProductionOutcome { NotDue, Disabled, Produced, InputShortage, OutputLimit, WarehouseCapacity }
+    public enum ScheduledProductionOutcome { NotDue, Disabled, Produced, InputShortage, OutputLimit, WarehouseCapacity, UnderConstruction }
 
     public sealed class ScheduledFacilitySnapshot
     {
@@ -105,6 +105,8 @@ namespace SaltAndLedger.Simulation
     {
         public long Day { get; }
         public long Revision { get; }
+        public RunDifficulty Difficulty { get; }
+        public RunIdentity? RunIdentity { get; }
         public IReadOnlyDictionary<string, RegionalPortSnapshot> Ports { get; }
         public IReadOnlyDictionary<string, RegionalShipSnapshot> Ships { get; }
         public IReadOnlyList<SeaRoute> Routes { get; }
@@ -117,10 +119,13 @@ namespace SaltAndLedger.Simulation
             IEnumerable<RegionalShipSnapshot> ships, IEnumerable<SeaRoute> routes,
             IEnumerable<CompanySnapshot> companies, IEnumerable<IndustryBlueprint> industryBlueprints,
             IEnumerable<PrivateFacilitySnapshot> privateFacilities, ChallengeSnapshot? challenge,
-            AccountingSnapshot accounting)
+            AccountingSnapshot accounting, RunDifficulty difficulty = RunDifficulty.Normal,
+            RunIdentity? runIdentity = null)
         {
             Day = day;
             Revision = revision;
+            Difficulty = difficulty;
+            RunIdentity = runIdentity;
             Ports = new ReadOnlyDictionary<string, RegionalPortSnapshot>(
                 new SortedDictionary<string, RegionalPortSnapshot>(ports.ToDictionary(p => p.Id), StringComparer.Ordinal));
             Ships = new ReadOnlyDictionary<string, RegionalShipSnapshot>(
@@ -155,6 +160,16 @@ namespace SaltAndLedger.Simulation
         {
             var port = Ports[portId];
             return port.Quotes[goodId].AtStock(port.Inventory[goodId]);
+        }
+
+        /// <summary>Dates only: eligibility, funds and site uniqueness are still checked when ordering.</summary>
+        public ConstructionSchedule PreviewConstructionSchedule(string ownerId, string blueprintId)
+        {
+            if (!Companies.ContainsKey(ownerId)) throw new KeyNotFoundException("Unknown company.");
+            var blueprint = IndustryBlueprints[blueprintId];
+            var delay = Difficulty == RunDifficulty.SlowFoundations &&
+                Ships.Values.Any(s => s.IsPlayer && s.OwnerId == ownerId) ? 2 : 0;
+            return new ConstructionSchedule(Day, delay, blueprint.IntervalDays);
         }
 
         /// <summary>Hypothetical remote preview; actual commands still require the matching dock.</summary>

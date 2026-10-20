@@ -29,14 +29,16 @@ namespace SaltAndLedger.Simulation
                 CharterDeadline, CharterMinimumCash) : null, null, reverseConfiguration);
 
         internal static RegionalWorldState CreateRun(ContentCatalog content, ChallengeConfiguration? challenge,
-            StartingCharter charter) => CreateCore(content, challenge, charter, false);
+            StartingCharter charter, RunIdentity? runIdentity = null, bool reverseConfiguration = false) =>
+            CreateCore(content, challenge, charter, reverseConfiguration, runIdentity);
 
         private static RegionalWorldState CreateCore(ContentCatalog content, ChallengeConfiguration? challenge,
-            StartingCharter? charter, bool reverseConfiguration)
+            StartingCharter? charter, bool reverseConfiguration, RunIdentity? runIdentity = null)
         {
+            var geography = runIdentity == null ? ArchipelagoGeography.Classic : RunScenario.PreviewGeography(runIdentity);
             var ports = new[]
             {
-                Port(North, "Northport", 340, 120, "Grain and timber exporter; public bakery", 5000,
+                Port(geography, North, "Northport", "Grain and timber exporter; public bakery", 5000,
                     Stock(14, 0, 16, 3, 8, 0),
                     Quotes(10, 28, 6, 20, 20, 60),
                     new[] { Facility("north_lumber_camp", "lumber_camp", "harvest_logs", 3, 22),
@@ -44,20 +46,20 @@ namespace SaltAndLedger.Simulation
                         Facility("north_bakery", "bakery", "bake_bread", 3, 18) },
                     new[] { Demand("north_construction", "planks", 1, 5),
                         Demand("north_households", "furniture", 1, 12) }),
-                Port(South, "Southhaven", 570, 550, "Sawmill; affordable planks; bread demand", 6000,
+                Port(geography, South, "Southhaven", "Sawmill; affordable planks; bread demand", 6000,
                     Stock(4, 5, 0, 0, 2, 0),
                     Quotes(20, 14, 12, 25, 36, 58),
                     new[] { Facility("south_sawmill", "sawmill", "saw_planks", 2, 16) },
                     new[] { Demand("south_food", "bread", 2, 5),
                         Demand("south_households", "furniture", 1, 12) }),
-                Port(East, "Eastport", 850, 250, "Furniture workshop; underserved bread market", 8000,
+                Port(geography, East, "Eastport", "Furniture workshop; underserved bread market", 8000,
                     Stock(0, 4, 0, 0, 0, 0),
                     Quotes(16, 30, 14, 28, 44, 68),
                     new[] { Facility("east_workshop", "furniture_workshop", "make_furniture", 5, 5) },
                     new[] { Demand("east_food", "bread", 2, 4),
                         Demand("east_construction", "planks", 1, 8),
                         Demand("east_households", "furniture", 1, 8) }),
-                Port(West, "Westhaven", 120, 400, "Mill and timber; private food industry opportunity", 5000,
+                Port(geography, West, "Westhaven", "Mill and timber; private food industry opportunity", 5000,
                     Stock(16, 1, 10, 8, 0, 0),
                     Quotes(9, 26, 11, 15, 34, 62),
                     new[] { Facility("west_lumber_camp", "lumber_camp", "harvest_logs", 3, 24),
@@ -65,12 +67,7 @@ namespace SaltAndLedger.Simulation
                     new[] { Demand("west_construction", "planks", 1, 6),
                         Demand("west_food", "bread", 2, 6) })
             };
-            var routes = new[]
-            {
-                new SeaRoute(North, West, 200), new SeaRoute(North, South, 300),
-                new SeaRoute(North, East, 400), new SeaRoute(South, East, 300),
-                new SeaRoute(South, West, 400), new SeaRoute(East, West, 600)
-            };
+            var routes = geography.Routes;
             var ships = new[]
             {
                 new RegionalShipConfiguration(new ShipConfiguration(ArchipelagoScenario.TimberShipId, 5, North),
@@ -91,7 +88,7 @@ namespace SaltAndLedger.Simulation
                     automationEnabled: true),
                 new RegionalShipConfiguration(new ShipConfiguration(PlayerShipId, charter?.CargoCapacity ?? 10,
                     charter?.StartingPortId ?? North, charter?.Cargo),
-                    PlayerOwnerId, "Ledger", 0, 100, priority: 10, isPlayer: true,
+                    PlayerOwnerId, "Ledger", 0, RunScenario.StartingShipSpeed, priority: 10, isPlayer: true,
                     policy: MerchantPolicy(), automationEnabled: false)
             };
             var companies = new[]
@@ -117,7 +114,8 @@ namespace SaltAndLedger.Simulation
                 companies: reverseConfiguration ? companies.Reverse() : companies,
                 industryBlueprints: reverseConfiguration ? blueprints.Reverse() : blueprints,
                 challenge: challenge, initialFacilities: charter?.Facilities,
-                initialGrantProvenance: charter?.Id ?? "initial_inventory");
+                initialGrantProvenance: charter?.Id ?? "initial_inventory",
+                difficulty: runIdentity?.Difficulty ?? RunDifficulty.Normal, runIdentity: runIdentity);
         }
 
         public static TradeRoutePolicy MerchantPolicy() =>
@@ -174,10 +172,11 @@ namespace SaltAndLedger.Simulation
         private static ConsumptionConfiguration Demand(string id, string good, int quantity, int interval) =>
             new ConsumptionConfiguration(id, good, quantity, interval);
 
-        private static RegionalPortConfiguration Port(string id, string name, int x, int y, string role,
+        private static RegionalPortConfiguration Port(ArchipelagoGeography geography, string id, string name, string role,
             long cash, Dictionary<string, int> stock, MarketQuote[] quotes,
             ScheduledFacilityConfiguration[] facilities, ConsumptionConfiguration[] demand) =>
             new RegionalPortConfiguration(new PortConfiguration(id, quotes, cash,
-                facilities.Select(f => f.Instance), stock), name, x, y, facilities, demand, role);
+                facilities.Select(f => f.Instance), stock), name, geography.Positions[id].X, geography.Positions[id].Y,
+                facilities, demand, role);
     }
 }

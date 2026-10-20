@@ -1,0 +1,67 @@
+using System;
+using System.Globalization;
+
+namespace SaltAndLedger.Simulation
+{
+    public enum RunWorldMode { Classic, Seeded }
+    public enum RunDifficulty { Normal = 0, SlowFoundations = 1 }
+
+    /// <summary>Immutable setup retained by snapshots, retries and result comparison groups.</summary>
+    public sealed class RunIdentity : IEquatable<RunIdentity>
+    {
+        public string? ChallengeId { get; }
+        public string CharterId { get; }
+        public RunWorldMode WorldMode { get; }
+        public int? Seed { get; }
+        public int GeneratorVersion { get; }
+        public RunDifficulty Difficulty { get; }
+        public int Ascension => (int)Difficulty;
+        public int ConstructionDelayDays => Difficulty == RunDifficulty.SlowFoundations ? 2 : 0;
+        public string ComparisonGroup => (ChallengeId ?? "sandbox") + "/" + CharterId + "/ascension" +
+            Ascension.ToString(CultureInfo.InvariantCulture) + "/" +
+            (WorldMode == RunWorldMode.Classic ? "classic" : "seeded-v" +
+                GeneratorVersion.ToString(CultureInfo.InvariantCulture) + "-seed" +
+                Seed!.Value.ToString(CultureInfo.InvariantCulture));
+
+        public RunIdentity(string? challengeId, string charterId, RunWorldMode worldMode = RunWorldMode.Classic,
+            int? seed = null, RunDifficulty difficulty = RunDifficulty.Normal, int? generatorVersion = null)
+        {
+            if (challengeId != null) RunScenario.GetChallenge(challengeId);
+            RunScenario.GetCharter(charterId);
+            if (worldMode != RunWorldMode.Classic && worldMode != RunWorldMode.Seeded)
+                throw new ArgumentOutOfRangeException(nameof(worldMode));
+            if (difficulty != RunDifficulty.Normal && difficulty != RunDifficulty.SlowFoundations)
+                throw new ArgumentOutOfRangeException(nameof(difficulty));
+            if ((worldMode == RunWorldMode.Seeded) != seed.HasValue)
+                throw new ArgumentException("Seeded worlds require a seed; Classic worlds have no seed.", nameof(seed));
+            var supportedVersion = worldMode == RunWorldMode.Classic ? 0 : SeededArchipelago.CurrentVersion;
+            if (generatorVersion.HasValue && generatorVersion.Value != supportedVersion)
+                throw new ArgumentOutOfRangeException(nameof(generatorVersion), "Unsupported map generator version.");
+            ChallengeId = challengeId;
+            CharterId = charterId;
+            WorldMode = worldMode;
+            Seed = seed;
+            GeneratorVersion = supportedVersion;
+            Difficulty = difficulty;
+        }
+
+        public bool Equals(RunIdentity? other) => other != null &&
+            ChallengeId == other.ChallengeId && CharterId == other.CharterId && WorldMode == other.WorldMode &&
+            Seed == other.Seed && GeneratorVersion == other.GeneratorVersion && Difficulty == other.Difficulty;
+
+        public override bool Equals(object? obj) => obj is RunIdentity other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            // Stable hashing is convenient for hosts, but the full comparison group remains the identity.
+            unchecked
+            {
+                uint hash = 2166136261;
+                foreach (var character in ComparisonGroup) hash = (hash ^ character) * 16777619;
+                return (int)hash;
+            }
+        }
+
+        public override string ToString() => ComparisonGroup;
+    }
+}

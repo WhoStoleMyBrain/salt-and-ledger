@@ -41,7 +41,7 @@ namespace SaltAndLedger.Simulation
         { Configuration = configuration; Description = description; Objective = objective; }
     }
 
-    /// <summary>Fixed handcrafted choices over the existing economy, with no stacking modifiers.</summary>
+    /// <summary>Authored economic choices with explicit opt-in geography and run difficulty.</summary>
     public static class RunScenario
     {
         public const string MerchantCharter = "merchant_company";
@@ -51,6 +51,7 @@ namespace SaltAndLedger.Simulation
         public const string CoastalChallenge = "coastal_supply_charter";
         public const string ReliefChallenge = "regional_relief";
         public const string AmbitionChallenge = "enterprise_ambition";
+        public const int StartingShipSpeed = 100;
 
         public static IReadOnlyList<StartingCharter> Charters { get; } = Array.AsReadOnly(new[]
         {
@@ -102,6 +103,22 @@ namespace SaltAndLedger.Simulation
             EnterpriseScenario.CreateRun(content, challengeId == null ? null : GetChallenge(challengeId).Configuration,
                 GetCharter(charterId));
 
+        public static RegionalWorldState Create(ContentCatalog content, RunIdentity identity,
+            bool reverseConfiguration = false)
+        {
+            if (identity == null) throw new ArgumentNullException(nameof(identity));
+            return EnterpriseScenario.CreateRun(content,
+                identity.ChallengeId == null ? null : GetChallenge(identity.ChallengeId).Configuration,
+                GetCharter(identity.CharterId), identity, reverseConfiguration);
+        }
+
+        public static ArchipelagoGeography PreviewGeography(RunIdentity identity)
+        {
+            if (identity == null) throw new ArgumentNullException(nameof(identity));
+            return identity.WorldMode == RunWorldMode.Classic ? ArchipelagoGeography.Classic :
+                SeededArchipelago.Generate(identity.Seed!.Value, identity.GeneratorVersion);
+        }
+
         public static IndustrialRoutePolicy BakeryShippingPolicy(string facilityId = StarterBakery,
             string sourcePortId = EnterpriseScenario.West, string destinationPortId = EnterpriseScenario.East,
             int quantity = 8, int reserve = 0, long sellFloor = 24) =>
@@ -112,11 +129,12 @@ namespace SaltAndLedger.Simulation
                     minimumSellPrice: sellFloor), cashReserve: 100, allowEmptyReturn: true);
     }
 
-    /// <summary>Bounded, reproducible result components; compare within the same challenge and charter.</summary>
+    /// <summary>Bounded result components; identity-aware runs compare only matching difficulty and world.</summary>
     public sealed class RunResults
     {
         public RegionalWorldSnapshot Snapshot { get; }
         public StartingCharter Charter { get; }
+        public RunIdentity? Identity { get; }
         public ChallengeSnapshot Challenge { get; }
         public CompanyFinancialSnapshot Finance { get; }
         public long Cash { get; }
@@ -125,12 +143,35 @@ namespace SaltAndLedger.Simulation
         public int TimeScore { get; }
         public int SolvencyScore { get; }
         public int TotalScore => ObjectiveScore + VictoryScore + TimeScore + SolvencyScore;
-        public string ComparisonGroup => Challenge.Configuration.Id + "/" + Charter.Id;
+        public string ComparisonGroup => Identity?.ComparisonGroup ?? Challenge.Configuration.Id + "/" + Charter.Id;
         public RunResults(RegionalWorldSnapshot snapshot, string charterId)
+            : this(snapshot, charterId, snapshot?.RunIdentity)
+        {
+            if (Snapshot.RunIdentity != null && Snapshot.RunIdentity.CharterId != charterId)
+                throw new ArgumentException("Result charter must match the authoritative run.", nameof(charterId));
+            if (Snapshot.RunIdentity == null && Snapshot.Difficulty != RunDifficulty.Normal)
+                throw new ArgumentException("Difficulty results require a complete run identity.", nameof(snapshot));
+        }
+
+        public RunResults(RegionalWorldSnapshot snapshot)
+            : this(snapshot, snapshot?.RunIdentity ?? throw new ArgumentException(
+                "Legacy snapshots require an explicit starting charter.", nameof(snapshot))) { }
+
+        public RunResults(RegionalWorldSnapshot snapshot, RunIdentity identity)
+            : this(snapshot, (identity ?? throw new ArgumentNullException(nameof(identity))).CharterId, identity)
+        {
+            if (!identity.Equals(snapshot.RunIdentity))
+                throw new ArgumentException("Result identity must match the authoritative run.", nameof(identity));
+        }
+
+        private RunResults(RegionalWorldSnapshot snapshot, string charterId, RunIdentity? identity)
         {
             Snapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
+            Identity = identity;
             Charter = RunScenario.GetCharter(charterId);
             Challenge = snapshot.Challenge ?? throw new ArgumentException("Sandbox runs have no scored objective.");
+            if (identity != null && identity.ChallengeId != Challenge.Configuration.Id)
+                throw new ArgumentException("Result challenge must match the authoritative run.", nameof(identity));
             if (Challenge.Status == ChallengeStatus.Active) throw new InvalidOperationException("Results require a completed run.");
             Finance = snapshot.Accounting.Companies[Challenge.Configuration.OwnerId];
             Cash = snapshot.Companies[Challenge.Configuration.OwnerId].Cash;

@@ -20,12 +20,18 @@ namespace SaltAndLedger.Simulation
             long initialDay = 0, long initialRevision = 0, IEnumerable<CompanyConfiguration>? companies = null,
             IEnumerable<IndustryBlueprint>? industryBlueprints = null, ChallengeConfiguration? challenge = null,
             IEnumerable<PrivateFacilityConfiguration>? initialFacilities = null,
-            string initialGrantProvenance = "initial_inventory")
+            string initialGrantProvenance = "initial_inventory", RunDifficulty difficulty = RunDifficulty.Normal,
+            RunIdentity? runIdentity = null)
         {
             this.content = content ?? throw new ArgumentNullException(nameof(content));
             if (ports == null) throw new ArgumentNullException(nameof(ports));
             if (routes == null) throw new ArgumentNullException(nameof(routes));
             if (ships == null) throw new ArgumentNullException(nameof(ships));
+            if (!Enum.IsDefined(typeof(RunDifficulty), difficulty)) throw new ArgumentOutOfRangeException(nameof(difficulty));
+            if (runIdentity != null && runIdentity.Difficulty != difficulty)
+                throw new ArgumentException("Run identity and world difficulty must agree.", nameof(runIdentity));
+            if (runIdentity != null && runIdentity.ChallengeId != challenge?.Id)
+                throw new ArgumentException("Run identity and world challenge must agree.", nameof(runIdentity));
             if (initialDay < 0 || initialRevision < 0) throw new ArgumentOutOfRangeException(nameof(initialDay));
             var locations = new List<RegionalPortSnapshot>();
             foreach (var port in ports)
@@ -125,7 +131,7 @@ namespace SaltAndLedger.Simulation
             }
             state = new RegionalWorldSnapshot(initialDay, initialRevision, locations, vessels, connections,
                 accounts.Values, blueprints, privateFacilities,
-                challenge == null ? null : ChallengeRules.Create(challenge), accounting.Snapshot());
+                challenge == null ? null : ChallengeRules.Create(challenge), accounting.Snapshot(), difficulty, runIdentity);
             foreach (var vessel in state.Ships.Values)
                 if (vessel.Policy != null) RegionalAutomation.ValidatePolicy(state, vessel.Id, vessel.Policy);
         }
@@ -158,7 +164,8 @@ namespace SaltAndLedger.Simulation
                 var facility = work.OwnedFacility(ownerId, facilityId);
                 if (facility.Enabled == enabled) return;
                 facility.Enabled = enabled;
-                if (!enabled) facility.LastOutcome = ScheduledProductionOutcome.Disabled;
+                if (!enabled && facility.ConstructionStatus == FacilityConstructionStatus.Operational)
+                    facility.LastOutcome = ScheduledProductionOutcome.Disabled;
                 work.Changed = true;
             });
 
@@ -307,6 +314,9 @@ namespace SaltAndLedger.Simulation
             work.SellPrivate();
             work.Consume(nextDay);
             work.AdvanceVoyages();
+            // A completion commits only after this day's automatic phases. Its full production
+            // interval begins now; local warehouse access never grants an early batch.
+            work.CompleteConstruction(nextDay);
             work.Day = nextDay;
             work.Changed = true;
         });
@@ -411,6 +421,8 @@ namespace SaltAndLedger.Simulation
             internal IndustryPolicy Policy { get; set; }
             internal bool Enabled { get; set; }
             internal long CreatedDay { get; }
+            internal FacilityConstructionStatus ConstructionStatus { get; set; }
+            internal long ConstructionCompletionDay { get; }
             internal bool IsStarterGrant { get; }
             internal string Provenance { get; }
             internal long NextProductionDay { get; set; }
@@ -429,6 +441,7 @@ namespace SaltAndLedger.Simulation
                 Id = before.Id; OwnerId = before.OwnerId; PortId = before.PortId; Blueprint = before.Blueprint;
                 Policy = before.Policy; Enabled = before.Enabled; CreatedDay = before.CreatedDay;
                 IsStarterGrant = before.IsStarterGrant; Provenance = before.Provenance;
+                ConstructionStatus = before.ConstructionStatus; ConstructionCompletionDay = before.ConstructionCompletionDay;
                 NextProductionDay = before.NextProductionDay; LastOutcome = before.LastOutcome;
                 Inventory = new Inventory(content, before.Inventory); StoredUnits = before.StoredUnits;
                 BatchesProduced = before.BatchesProduced; ProcurementCost = before.ProcurementCost; SalesRevenue = before.SalesRevenue;
@@ -436,10 +449,10 @@ namespace SaltAndLedger.Simulation
                 Consumed = before.ConsumedQuantities.ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal);
                 ProcurementWaitReason = before.ProcurementWaitReason; SalesWaitReason = before.SalesWaitReason;
             }
-            internal PrivateFacilitySnapshot Snapshot() => new PrivateFacilitySnapshot(Id, OwnerId, PortId, Blueprint,
+            internal PrivateFacilitySnapshot Snapshot(long day) => new PrivateFacilitySnapshot(Id, OwnerId, PortId, Blueprint,
                 Policy, Enabled, CreatedDay, NextProductionDay, LastOutcome, Inventory.Snapshot(), BatchesProduced,
                 ProcurementCost, SalesRevenue, Produced, Consumed, ProcurementWaitReason, SalesWaitReason,
-                IsStarterGrant, Provenance);
+                IsStarterGrant, Provenance, ConstructionStatus, ConstructionCompletionDay, day);
         }
 
         private sealed class WorkingWorld
@@ -480,7 +493,8 @@ namespace SaltAndLedger.Simulation
                 revision ?? before.Revision, Ports.Values.Select(p => p.Snapshot()),
                 Ships.Values.Select(s => s.Snapshot(Companies[s.Configuration.OwnerId].Cash)), before.Routes,
                 Companies.Values.Select(c => c.Snapshot()), before.IndustryBlueprints.Values,
-                PrivateFacilities.Values.Select(f => f.Snapshot()), Challenge, Accounting.Snapshot());
+                PrivateFacilities.Values.Select(f => f.Snapshot(Day)), Challenge, Accounting.Snapshot(),
+                before.Difficulty, before.RunIdentity);
 
             internal void EvaluateChallenge()
             {
@@ -544,23 +558,52 @@ namespace SaltAndLedger.Simulation
                 if (company.Cash < blueprint.ConstructionCost)
                 {
                     Construction.Add(new RegionalConstruction(facilityId, ownerId, portId, blueprintId,
-                        ConstructionOutcome.InsufficientFunds, 0));
+                        ConstructionOutcome.InsufficientFunds, 0, Day));
                     return;
                 }
                 var nextCash = checked(port.Cash + blueprint.ConstructionCost);
-                var due = checked(Day + blueprint.IntervalDays);
+                var schedule = before.PreviewConstructionSchedule(ownerId, blueprintId);
+                var completionDay = schedule.CompletionDay;
+                var due = schedule.FirstProductionDay;
+                var pending = schedule.DelayDays != 0;
                 var totals = content.Goods.ToDictionary(g => g.Id, _ => 0L, StringComparer.Ordinal);
                 var facility = new PrivateFacilitySnapshot(facilityId, ownerId, portId, blueprint, new IndustryPolicy(),
-                    true, Day, due, ScheduledProductionOutcome.NotDue, new Inventory(content).Snapshot(),
-                    0, 0, 0, totals, totals, IndustryWaitReason.Disabled, IndustryWaitReason.Disabled);
+                    true, Day, due, pending ? ScheduledProductionOutcome.UnderConstruction : ScheduledProductionOutcome.NotDue,
+                    new Inventory(content).Snapshot(), 0, 0, 0, totals, totals,
+                    pending ? IndustryWaitReason.UnderConstruction : IndustryWaitReason.Disabled,
+                    pending ? IndustryWaitReason.UnderConstruction : IndustryWaitReason.Disabled,
+                    constructionStatus: pending ? FacilityConstructionStatus.UnderConstruction : FacilityConstructionStatus.Operational,
+                    constructionCompletionDay: completionDay, snapshotDay: Day);
                 PrivateFacilities.Add(facilityId, new WorkingFacility(content, facility));
                 Accounting.RegisterStore("facility:" + facilityId, ownerId);
                 Accounting.Construct(ownerId, facilityId, portId, blueprint.ConstructionCost);
                 company.Cash -= blueprint.ConstructionCost;
                 port.Cash = nextCash;
                 Construction.Add(new RegionalConstruction(facilityId, ownerId, portId, blueprintId,
-                    ConstructionOutcome.Built, blueprint.ConstructionCost));
+                    pending ? ConstructionOutcome.Started : ConstructionOutcome.Built,
+                    blueprint.ConstructionCost, Day, completionDay, due));
                 Changed = true;
+            }
+
+            internal void CompleteConstruction(long nextDay)
+            {
+                foreach (var facility in OrderedFacilities())
+                {
+                    if (facility.ConstructionStatus != FacilityConstructionStatus.UnderConstruction ||
+                        nextDay < facility.ConstructionCompletionDay) continue;
+                    facility.NextProductionDay = checked(nextDay + facility.Blueprint.IntervalDays);
+                    facility.ConstructionStatus = FacilityConstructionStatus.Operational;
+                    facility.LastOutcome = facility.Enabled ? ScheduledProductionOutcome.NotDue : ScheduledProductionOutcome.Disabled;
+                    facility.ProcurementWaitReason = facility.Enabled && facility.Policy.ProcurementEnabled
+                        ? IndustryWaitReason.None : IndustryWaitReason.Disabled;
+                    facility.SalesWaitReason = facility.Enabled && facility.Policy.SalesEnabled
+                        ? IndustryWaitReason.None : IndustryWaitReason.Disabled;
+                    Accounting.CompleteConstruction(facility.OwnerId, facility.Id, facility.PortId);
+                    Construction.Add(new RegionalConstruction(facility.Id, facility.OwnerId, facility.PortId,
+                        facility.Blueprint.Id, ConstructionOutcome.Completed, 0, facility.CreatedDay,
+                        nextDay, facility.NextProductionDay));
+                    Changed = true;
+                }
             }
 
             internal void Transfer(string ownerId, string shipId, string facilityId, TransferDirection direction,
@@ -628,6 +671,8 @@ namespace SaltAndLedger.Simulation
             {
                 foreach (var facility in OrderedFacilities())
                 {
+                    if (facility.ConstructionStatus == FacilityConstructionStatus.UnderConstruction)
+                    { facility.ProcurementWaitReason = IndustryWaitReason.UnderConstruction; continue; }
                     facility.ProcurementWaitReason = IndustryWaitReason.Disabled;
                     if (!facility.Enabled || !facility.Policy.ProcurementEnabled) continue;
                     facility.ProcurementWaitReason = IndustryWaitReason.TargetSatisfied;
@@ -669,6 +714,8 @@ namespace SaltAndLedger.Simulation
             {
                 foreach (var facility in OrderedFacilities())
                 {
+                    if (facility.ConstructionStatus == FacilityConstructionStatus.UnderConstruction)
+                    { facility.SalesWaitReason = IndustryWaitReason.UnderConstruction; continue; }
                     facility.SalesWaitReason = IndustryWaitReason.Disabled;
                     if (!facility.Enabled || !facility.Policy.SalesEnabled) continue;
                     facility.SalesWaitReason = IndustryWaitReason.ReserveRetained;
@@ -705,6 +752,7 @@ namespace SaltAndLedger.Simulation
             {
                 foreach (var facility in OrderedFacilities())
                 {
+                    if (facility.ConstructionStatus == FacilityConstructionStatus.UnderConstruction) continue;
                     if (nextDay < facility.NextProductionDay) continue;
                     var recipe = content.GetRecipe(facility.Blueprint.RecipeId);
                     var starting = facility.Inventory.Snapshot();

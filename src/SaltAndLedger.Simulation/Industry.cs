@@ -112,11 +112,27 @@ namespace SaltAndLedger.Simulation
     {
         None, Disabled, TargetSatisfied, ReserveRetained, InsufficientMarketInventory,
         WarehouseFull, BuyPriceLimit, SellPriceLimit, CashReserve, InsufficientCompanyFunds,
-        InsufficientMarketFunds, MarketInventoryFull, CashAccountFull
+        InsufficientMarketFunds, MarketInventoryFull, CashAccountFull, UnderConstruction
     }
-    public enum ConstructionOutcome { Built, InsufficientFunds }
+    public enum ConstructionOutcome { Built, InsufficientFunds, Started, Completed }
+    public enum FacilityConstructionStatus { Operational, UnderConstruction }
     public enum TransferDirection { ShipToWarehouse, WarehouseToShip }
     public enum TransferOutcome { Transferred, InsufficientInventory, InsufficientCapacity }
+
+    /// <summary>Authoritative construction dates; a preview does not reserve cash or grant permission to build.</summary>
+    public sealed class ConstructionSchedule
+    {
+        public long OrderedDay { get; }
+        public int DelayDays { get; }
+        public long CompletionDay { get; }
+        public long FirstProductionDay { get; }
+        internal ConstructionSchedule(long orderedDay, int delayDays, int productionInterval)
+        {
+            OrderedDay = orderedDay; DelayDays = delayDays;
+            CompletionDay = checked(orderedDay + delayDays);
+            FirstProductionDay = checked(CompletionDay + productionInterval);
+        }
+    }
 
     public sealed class PrivateFacilitySnapshot
     {
@@ -127,6 +143,13 @@ namespace SaltAndLedger.Simulation
         public IndustryPolicy Policy { get; }
         public bool Enabled { get; }
         public long CreatedDay { get; }
+        public long OrderedDay => CreatedDay;
+        public FacilityConstructionStatus ConstructionStatus { get; }
+        public bool IsOperational => ConstructionStatus == FacilityConstructionStatus.Operational;
+        public long ConstructionCompletionDay { get; }
+        public long? ConstructionCompletedDay => IsOperational ? ConstructionCompletionDay : (long?)null;
+        public int ConstructionDaysRemaining { get; }
+        public long FirstProductionDay => checked(ConstructionCompletionDay + Blueprint.IntervalDays);
         public long NextProductionDay { get; }
         public ScheduledProductionOutcome LastOutcome { get; }
         public IReadOnlyDictionary<string, int> Inventory { get; }
@@ -148,7 +171,9 @@ namespace SaltAndLedger.Simulation
             long batchesProduced, long procurementCost, long salesRevenue,
             IReadOnlyDictionary<string, long> produced, IReadOnlyDictionary<string, long> consumed,
             IndustryWaitReason procurementWaitReason, IndustryWaitReason salesWaitReason,
-            bool isStarterGrant = false, string provenance = "constructed")
+            bool isStarterGrant = false, string provenance = "constructed",
+            FacilityConstructionStatus constructionStatus = FacilityConstructionStatus.Operational,
+            long? constructionCompletionDay = null, long? snapshotDay = null)
         {
             Id = id; OwnerId = ownerId; PortId = portId; Blueprint = blueprint; Policy = policy;
             Enabled = enabled; CreatedDay = createdDay; NextProductionDay = nextProductionDay; LastOutcome = lastOutcome;
@@ -165,6 +190,10 @@ namespace SaltAndLedger.Simulation
             ConsumedQuantities = new ReadOnlyDictionary<string, long>(consumedTotals);
             ProcurementWaitReason = procurementWaitReason; SalesWaitReason = salesWaitReason;
             IsStarterGrant = isStarterGrant; Provenance = provenance;
+            ConstructionStatus = constructionStatus;
+            ConstructionCompletionDay = constructionCompletionDay ?? createdDay;
+            ConstructionDaysRemaining = IsOperational ? 0 : checked((int)Math.Max(0,
+                ConstructionCompletionDay - (snapshotDay ?? createdDay)));
         }
     }
 
