@@ -1,12 +1,14 @@
 # The living archipelago
 
-Task 1.5 adds a four-town maritime sandbox in `Assets/Scenes/ArchipelagoLab.unity`. Towns extract resources, process logs, consume planks, and exchange real cargo through two independently funded merchants. The player's ship uses the same finite accounts, prices, capacity checks, and voyages. The older TradingLab and console comparisons retain their abstract-tick contracts.
+Task 1.5 established the four-town maritime sandbox. Task 1.6 extends the same `Assets/Scenes/ArchipelagoLab.unity` with the shared `EnterpriseScenario`: six goods, three NPC merchants, private factories and finite stockpiles, production policies, a contextual trading overlay, and an optional supply charter. Read [Commerce and industry](ENTERPRISE.md) for the current playable configuration and [Playtest](PLAYTEST.md) for current controls.
 
-These are deliberately small, provisional gameplay values. The scenario is reproducible and economically active; neither that fact nor its measured profits establishes final balance or enjoyable play.
+The new `--enterprise` report compares ninety sandbox days and separate charter trials. It reconciles private and public stock with extraction, transformation, and consumption, and counts company cash once even when that company owns several assets. The measured merchant charter succeeds on day 29; a Westhaven bakery with physical shipping succeeds on day 46. Initial combined cash is 25,800. These are provisional values and feasibility evidence, not final balance.
+
+**The remaining sections preserve the historical Task 1.5 fixture and its measurements.** `--archipelago` and `--archipelago --check` still use `ArchipelagoScenario`, two goods, two NPCs, and the original player account/capacity. `LegacyContent.Timber` projects the canonical definition objects without copying economic definitions. The sixty-day report remains byte-for-byte reproducible; it does not describe the current ArchipelagoLab starting economy.
 
 ## One shared scenario
 
-`src/SaltAndLedger.Simulation/ArchipelagoScenario.cs` is the authoritative runtime configuration used by both the console experiment and Unity. Canonical goods, facilities, recipes, names, and descriptions still come from `data/content.json`. UI labels read the scenario's schedules, limits, market configurations, and snapshots rather than maintaining another set of economic values.
+`src/SaltAndLedger.Simulation/ArchipelagoScenario.cs` remains the authoritative historical runtime configuration for the `--archipelago` experiment. It was also the Task 1.5 Unity configuration. The current host uses `EnterpriseScenario.cs`; both reference canonical goods, buildings, recipes, names, and descriptions from `data/content.json`. Neither scenario defines a second economic engine.
 
 | Town | Map position | Initial logs / planks | Initial market cash | Local production | Physical consumption |
 | --- | --- | ---: | ---: | --- | --- |
@@ -101,7 +103,7 @@ Policies select the largest feasible quantity using the existing exact bounded s
 
 NPC priorities precede the enabled player policy at daily boundaries. Instant player orders are separately committed before the next requested day; selecting a town never changes that precedence. This timing distinction is explicit player agency, not simultaneous execution or a hidden NPC advantage.
 
-## Player choices
+## Historical Task 1.5 player choices
 
 The map offers current information about all four towns and three ships. Select ports for stocks, quotes, liquidity, industries, demand, and recent deliveries. Select a ship marker or the **Inspect ship…** fleet list for its account, cargo, owner, voyage, and policy. The list keeps ships individually selectable when sailing markers coincide. NPC inspection grants no control.
 
@@ -111,7 +113,7 @@ Both route directions are editable: ports, commodity, target/minimum, worst marg
 
 The default player route is Northport → Southhaven, logs target 6/minimum 2/buy ≤14/sell ≥14/spend ≤100; return planks target 3/minimum 1/buy ≤24/sell ≥18/spend ≤72. Reserve is 20 and empty return is allowed. These are editable hypotheses, not an optimal strategy.
 
-The [playtest guide](PLAYTEST.md#living-archipelago-playtest) describes controls, instant trades, voyages, competition, and recovery checks, with [actual Editor captures at both desktop resolutions](PLAYTEST.md#recorded-archipelago-views). The existing TradingLab remains available for its historical six-tick comparisons.
+The [playtest guide](PLAYTEST.md) distinguishes the current enterprise controls from retained historical verification captures. Task 1.6 replaces the old trade foldout with a centered overlay and changes the default player route to Northport–Eastport bread. The existing TradingLab remains available for its historical six-tick comparisons.
 
 ## Reproducible sixty-day experiments
 
@@ -161,10 +163,10 @@ Player intervention changes those same markets. Aggressive trading reduces NPC s
 
 Inactivity counts a day with no trade, successful production, consumed goods, or voyage event. It does not treat a failed demand opportunity or a changing day number as useful activity. A one-day idle period is not proof of deadlock. The baseline records temporary source-threshold and sale-price waits; it does not deplete all cash within sixty days. The longer regression checks finite accounts over 600 days without claiming permanent sustainability.
 
-## Limits and next experiments
+## Historical limitations and current follow-up
 
 Consumption has no payment model, production has no costs, information is perfect, item cargo has no weight, and geography is handcrafted. Fixed NPC rules serve only selected towns and may retain stock because of a price floor even when another market needs it. Same-day manual action can precede the next scheduled merchant phase. All are visible prototype assumptions.
 
-Long-horizon finite liquidity, source thresholds, price floors, and unserved demand need further calibration. The map has no save/load, objectives, construction, route search, procedural generation, weather, combat, or multiplayer. The interface and sixty-day comparisons require observed human playtesting before claiming approachable decision making.
+Long-horizon finite liquidity, source thresholds, price floors, and unserved demand need further calibration. Task 1.6 now supplies private construction and one fixed objective, while save/load, route search, procedural generation, weather, combat, and multiplayer remain outside scope. The current interface and ninety-day enterprise comparisons require observed human playtesting before claiming approachable decision making.
 
-Recommended next milestone: observe players diagnose the difference between demand, distribution, price constraints, and liquidity; then adjust only demonstrated presentation problems and run explicit longer-horizon liquidity/route-policy experiments. Keep the existing source/sink and no-subsidy accounting visible. Actual Editor, player, test, screenshot, and tooling evidence is recorded in [Unity integration](UNITY.md).
+Recommended next milestone: observe players choose between trading and industrial investment, distinguish private stock from public markets, and diagnose demand, distribution, price constraints, and liquidity. Adjust demonstrated presentation problems and run longer-horizon industry/logistics experiments while keeping source/sink and no-subsidy accounting visible. Actual Editor, player, test, screenshot, and tooling evidence is recorded in [Unity integration](UNITY.md).

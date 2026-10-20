@@ -2,20 +2,24 @@
 
 A single-player maritime trading and economic strategy game intended for Unity 6. The long-term focus is building, optimizing, and automating trading networks within a simulated economy, inspired by Port Royale 2, Patrician 2, Antimatter Dimensions, and economic roguelikes.
 
-This repository contains **the foundation through Task 1.5's living archipelago**: four finite town markets, renewable lumber, scheduled sawmills and consumption, two independent NPC merchants, instant dockside trading, geographic voyages, and a map-first Unity sandbox. Logs and planks remain the only commodities. The console experiments and Unity UI share one portable simulation and scenario factory. Bootstrap, TradingLab, and the older demos retain their tested behavior.
+This repository contains **the foundation through Task 1.6's commerce and industry milestone**: four finite town markets, six canonical goods, distributed production chains, three NPC merchants, private factories and storage, geographic shipping, production policies, and an optional supply challenge. The map-first Unity host and headless experiments share one portable simulation and the expanded `EnterpriseScenario`. Bootstrap, TradingLab, and historical two-good demonstrations remain compatibility fixtures.
 
 ## Play the living archipelago
 
 Prepare the staged library and canonical content with `python tools/prepare_unity.py`, open `unity/` in Unity **6000.6.6f1**, and open **`Assets/Scenes/ArchipelagoLab.unity`**. Press Play in the Editor. The sandbox starts paused on day 0.
 
-Select ports to inspect stocks, prices, industries, and demand; select ships to inspect actual cargo and voyages. Opening dockside trading pauses playback, and buying or selling spends no day. Select Ledger, select another town, and confirm its distance/duration to sail. **Next day**, **Play/Pause**, and **1×/3×/10×** control economic playback. Both route directions are editable under **Your trade route**.
+Select Ledger and right-click a town, or use its visible Trade action, to open the centered trading overlay. Compare town stock and cargo, adjust quantity, and inspect exact totals and average execution prices. Local trades happen immediately; remote views explain the docking requirement. Opening trade pauses playback. **Next day**, **Play/Pause**, and **1×/3×/10×** control economic playback.
+
+Select a town to inspect public industry or construct a private sawmill, bakery, or furniture workshop. Configure local procurement and optional output sales, or retain goods for shipment. Ship/warehouse transfers require the same dock, preserve ownership, and move no cash. The optional **Coastal Supply Charter** asks for 24 net Bread supplied to Eastport by day 60 while retaining at least 100 company cash; the regular sandbox has no deadline.
 
 ```text
-dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --archipelago
-dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --archipelago --check
+dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --enterprise
+dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --enterprise --check
 ```
 
-The reproducible five-strategy report covers sixty days with per-operation cash and physical-flow reconciliation. The idle baseline completes **16 NPC shipments** without replenishing cash. Player strategies change local supply, unmet consumption, and merchant activity; unsold cargo is reported separately from realized profit. Read [Living archipelago](docs/LIVING_ARCHIPELAGO.md), [Playtest](docs/PLAYTEST.md#living-archipelago-playtest), and the actual [Unity verification record](docs/UNITY.md). This is an experimental sandbox, not a claim of final economic balance.
+The new five-strategy report covers 90 sandbox days with per-operation cash and six-good physical-flow reconciliation. Separate challenge trials demonstrate a merchant solution on day 29 and a manufacturing/shipping solution on day 46; idle play fails on day 60. Construction, purchases, revenue, and unsold goods are reported separately. Read [Commerce and industry](docs/ENTERPRISE.md), [Playtest](docs/PLAYTEST.md), and the actual [Unity verification record](docs/UNITY.md).
+
+The historical `--archipelago` and `--archipelago --check` commands retain Task 1.5's two-good, sixty-day comparison unchanged. [Living archipelago](docs/LIVING_ARCHIPELAGO.md) distinguishes that regression fixture from the current expanded world. These measured examples establish feasibility, not final balance or optimal strategies.
 
 ## Prerequisites
 
@@ -48,7 +52,7 @@ python tools/generate_docs.py
 python -m mkdocs serve
 ```
 
-The original sample demonstrates the recipe `saw_planks`: one command consumes **2 logs and produces 1 plank** in a sawmill. Starting with 6 logs, the demo completes three batches, rejects a fourth for insufficient inputs, and ends with 0 logs and 3 planks. These quantities are proof-of-concept data, not a balance decision. The explicit one-batch command remains usable without a world or clock.
+The original sample demonstrates the recipe `saw_planks`: one command consumes **2 logs and produces 1 plank** in a sawmill. Starting with 6 logs, the demo completes three batches, rejects a fourth for insufficient inputs, and ends with 0 logs and 3 planks. The catalog now contains six goods, six buildings, and six recipes. The explicit one-batch command remains usable without a world or clock. Legacy mode demonstrations use a two-good projection referencing the same canonical objects, preserving their transcripts and report fixtures without duplicating definitions.
 
 ## Run the deterministic world example
 
@@ -152,6 +156,7 @@ dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/co
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --shipping
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --automation
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --archipelago --check
+dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --enterprise --check
 python -m unittest discover -s tests/python -v
 python tools/validate_data.py
 python tools/generate_docs.py --check
@@ -168,17 +173,18 @@ For an intentional NuGet dependency change, run `dotnet restore SaltAndLedger.sl
 
 | Path | Purpose |
 | --- | --- |
-| `src/SaltAndLedger.Simulation/` | Unity-independent shared economic operations, legacy/regional worlds, schedules, routes, and canonical archipelago setup |
-| `samples/SaltAndLedger.Demo/` | Legacy demonstrations plus reproducible pricing and living-archipelago reports |
+| `src/SaltAndLedger.Simulation/` | Unity-independent economic operations, legacy/regional worlds, company ownership, private industry, challenge rules, schedules, routes, and shared scenarios |
+| `samples/SaltAndLedger.Demo/` | Legacy demonstrations plus reproducible pricing, living-archipelago, and enterprise reports |
 | `tests/SaltAndLedger.Simulation.Tests/` | Standalone C# tests |
 | `unity/` | Unity 6 ArchipelagoLab and TradingLab scenes/UI, Bootstrap smoke, and integration tests |
-| `data/content.json` | Canonical example content |
+| `data/content.json` | Canonical goods, buildings, and production recipes |
 | `data/content.schema.json` | JSON Schema for content format version 1 |
 | `tools/` | Data validation, deterministic documentation generation, and Unity preparation |
 | `tests/python/` | Schema, semantic validation, generator, and Unity preparation checks |
 | `docs/` | Authored design, architecture, and mechanics specifications |
 | `docs/experiments/pricing-results.json` | Reproducible measurements emitted by the pricing runner; checked independently of canonical references |
 | `docs/experiments/archipelago-results.json` | Five sixty-day strategies with daily state, physical flows, transactions, and accounting checks |
+| `docs/experiments/enterprise-results.json` | Five ninety-day enterprise strategies and separate charter trials, with company/private-stock accounting and six-good flow reconciliation |
 | `docs/reference/` | Generated Markdown reference pages; do not edit manually |
 | `generated/encyclopedia.json` | Generated structured reference for a future in-game encyclopedia |
 | `.github/workflows/` | Headless CI |

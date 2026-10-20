@@ -6,8 +6,8 @@ This sequence describes planned work, not completed features or a fixed delivery
 | --- | --- | --- |
 | 0 | Project foundation, small architecture, automated tests, canonical content, and documentation pipeline | Implemented |
 | 0.5 | .NET 10 toolchain and minimal Unity integration using the existing simulation | Implemented; verification scope in [Unity integration](UNITY.md) |
-| 1 | Deterministic simulation, finite markets, shipping, trade automation, and a living economy slice | Tasks 1.1 through 1.5 implemented; fixed four-port map and independent merchants are playable |
-| 2 | Scenario objectives, time limits, and possible roguelike runs | Planned; the first fixed map was brought forward into Task 1.5 |
+| 1 | Deterministic simulation, finite markets, shipping, automation, private industry, and a living economy slice | Tasks 1.1 through 1.6 implemented; six goods, four towns, private factories, and merchant/industrial strategies |
+| 2 | Scenario objectives, time limits, and possible roguelike runs | One fixed supply charter implemented in Task 1.6; roguelike runs remain planned |
 | 3 | Constrained procedural world generation with economic viability checks | Planned |
 | 4 | Modifiers, curses, difficulty levels, and challenge combinations | Planned |
 | 5 | Lateral meta progression through starting packages, alternative production capabilities, and new economic problems | Planned |
@@ -65,16 +65,26 @@ Implemented: one regional owner with instant revisioned trade/departure, daily a
 
 The [sixty-day report](LIVING_ARCHIPELAGO.md#reproducible-sixty-day-experiments) demonstrates recurring NPC shipments and materially different player strategies under one starting world. It also reveals unmet demand at unserved towns, price-floor waits, idle production ceilings, and competition that reduces NPC deliveries. These are measured limitations, not reasons for hidden subsidies or a claim that the economy is balanced. [Unity integration](UNITY.md) records actual tests, visuals, and player checks.
 
+## Task 1.6: commerce, industry, and economic challenge
+
+Implemented: a centered contextual trading overlay with authoritative exact totals and average execution prices; six canonical goods and interconnected food/timber chains; company accounts; private facilities with finite storage; real construction payments; local procurement and surplus-sale policies; and physical ship/warehouse transfers. `EnterpriseScenario` supplies the current ArchipelagoLab and the new deterministic report. `LegacyContent.Timber` reuses canonical definition objects to preserve older demonstrations and the unchanged Task 1.5 report.
+
+The optional Coastal Supply Charter requires 24 net Bread supplied to Eastport by day 60 with at least 100 company cash. Completed owner transactions determine progress; target-market buybacks subtract credit. The same authoritative clock controls production, voyages, and the deadline. Merchant and manufacturing/shipping trials succeed on days 29 and 46 respectively; idle play fails at day 60. The unlimited sandbox remains available.
+
+Five ninety-day experiments reconcile all company/market cash and six-good physical flows, recording capital, purchases, actual revenue, private output, and held goods separately. They show different outcomes rather than equalizing strategies: workshop investment leaves cash 356, local food production 705, and manufacturing/shipping 1,637 from an initial 600. These are cash observations with different unsold assets, not ranked profitability claims. See [Commerce and industry](ENTERPRISE.md) for assumptions, rules, and the report; [Unity integration](UNITY.md) records actual verification scope.
+
+Full historical acquisition cost basis remains deferred because purchased and manufactured goods can mix through transfers and partial sales. Current market quotes are never used as fabricated acquisition history. Scenario balance, long-horizon liquidity, and human usability remain open.
+
 ## Recommended next milestone: observed playtesting
 
-Proposed next assignment: observe players using the living map without source-code explanations. Ask them to supply an underserved town, interpret a bulk quote, follow an NPC shipment, diagnose a source-threshold or sale-price wait, and configure a return route. Record whether the map makes physical distribution, time, ownership, and liquidity understandable. Compare attention required by manual and automatic operation without treating button counts as a measurement of enjoyment.
+Proposed next assignment: observe players attempting the supply charter without source-code explanations. Ask them to interpret a bulk trade's average execution price, choose between a shipment and a factory, configure procurement, distinguish a warehouse transfer from a sale, and diagnose a blocked industry or route. Record whether ownership, physical distribution, capital costs, and the deadline are understandable. Compare attention required by merchant and industrial approaches without treating button counts as a measurement of enjoyment.
 
-Pair observed confusion with focused presentation fixes, then extend deterministic liquidity and route-policy observations beyond sixty days. Do not add procedural maps, extra commodities, warehouses, household finance, random risk, or unrelated systems merely to keep activity running. Human playtesting and resulting revisions are a proposed assignment, not completed user-research evidence.
+Pair observed confusion with focused presentation fixes, then extend deterministic liquidity and industry-policy observations beyond ninety days. Investigate input shortages, output price floors, unsold goods, and construction opportunity costs before changing balance. Do not add procedural maps, extra commodities, household finance, random risk, or unrelated systems merely to keep activity running. Human playtesting and resulting revisions are a proposed assignment, not completed user-research evidence.
 
 ## Other follow-up work
 
 1. **Verify the intended player backend and stripping configuration.** Run the Bootstrap smoke scene in an IL2CPP player if that is the intended shipping backend, recording platform and stripping level. Diagnose concrete compatibility failures before adding preservation rules.
-2. **Calibrate the living network.** Vary existing source thresholds, production/consumption schedules, sale floors, and finite initial liquidity. Distinguish temporary stock shortage, distribution failure, policy blockage, and liquidity exhaustion without introducing hidden money.
+2. **Calibrate the enterprise network.** Vary existing construction costs, procurement limits, source thresholds, production/consumption schedules, sale floors, and finite initial liquidity. Keep merchant and industrial challenge feasibility checks. Distinguish temporary stock shortage, distribution failure, policy blockage, and liquidity exhaustion without introducing hidden money.
 3. **Measure simulation cost before enlarging the world.** Snapshot copying and result allocation favor clear atomicity; current verification does not establish throughput for large maps or fleets.
 
 These follow-ups are proposals, not selected final economic rules. Keep random behavior out until there is a concrete requirement and an explicit reproducible seed strategy.

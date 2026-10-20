@@ -1,6 +1,6 @@
 # Maintained mechanics specification
 
-This page specifies implemented behavior through Task 1.5 that cannot be derived from content definitions alone. Generated reference pages describe canonical definitions and relationships. Pricing formulas and scenario values are experimental hypotheses; accounting, determinism, and atomicity are implementation contracts. The single-location and two-port maritime rules remain unchanged. The [regional rules](#regional-world-and-instant-commands) add living-economy days and zero-time actions through a separate owner.
+This page specifies implemented behavior through Task 1.6 that cannot be derived from content definitions alone. Generated reference pages describe canonical definitions and relationships. Pricing formulas and scenario values are experimental hypotheses; accounting, determinism, and atomicity are implementation contracts. The single-location and two-port maritime rules remain unchanged. The [regional rules](#regional-world-and-instant-commands) add living-economy days, company/private ownership, a fixed challenge, and zero-time actions through a separate owner.
 
 ## Inventory
 
@@ -346,7 +346,7 @@ The host retains at most 40 recent activity entries derived from structured resu
 
 ## Regional world and instant commands
 
-Task 1.5 introduces `RegionalWorldState` without changing `WorldState.Step`, `MaritimeWorldState.Step`, or TradingLab. It owns ordered ports, one finite account per ship/owner, capacity-limited cargo, facilities, consumption schedules, undirected routes, one nonnegative `long Day`, and a checked nonnegative `long Revision`. Each owner ID is unique and owns one ship. Ports and ships are keyed and exposed in ordinal ID order; input collection order has no economic effect. A region has at least two ports and one ship.
+Task 1.5 introduces `RegionalWorldState` without changing `WorldState.Step`, `MaritimeWorldState.Step`, or TradingLab. Task 1.6 extends it with company accounts and private facilities. It owns ordered ports, one finite cash account per company, capacity-limited ship cargo, public/private facilities, consumption schedules, undirected routes, optional challenge progress, one nonnegative `long Day`, and a checked nonnegative `long Revision`. Explicitly configured companies may own multiple ships; the legacy constructor still infers a distinct account per ship. Collections use ordinal IDs; input collection order has no economic effect. A region has at least two ports and one ship.
 
 `ExecuteTrade(shipId, portId, command)` and `Depart(shipId, destinationPortId)` execute instantaneously. They do not run any daily phases. Trades require the actual dock and use the same `TradeCalculator` as legacy execution and previews. Current `PreviewTrade` is hypothetical when inspecting a remote port; it grants no execution permission. An actor with enabled automation cannot receive manual trade/departure orders.
 
@@ -360,12 +360,16 @@ Task 1.5 introduces `RegionalWorldState` without changing `WorldState.Step`, `Ma
 
 1. Check day/revision bounds.
 2. Run enabled actors by ascending `Priority`, then ordinal ship ID, using at most four policy actions per actor.
-3. Process due facilities by ordinal port ID, ascending facility priority, then ordinal facility ID.
-4. Process due consumption by ordinal port ID and rule ID.
-5. Progress every voyage once, by ordinal ship ID, and resolve arrivals.
-6. Construct structured results and the immutable snapshot, then commit `Day + 1` and `Revision + 1`.
+3. Procure private factory inputs by ordinal port ID, facility ID, and input good ID.
+4. Process due public facilities by ordinal port ID, ascending facility priority, then ordinal facility ID.
+5. Process due private facilities by ordinal port ID and facility ID.
+6. Sell configured private output surplus by ordinal port ID, facility ID, and good ID.
+7. Process due consumption by ordinal port ID and rule ID.
+8. Progress every voyage once, by ordinal ship ID, and resolve arrivals.
+9. Evaluate the optional challenge against the completing day and final company cash.
+10. Construct structured results and the immutable snapshot, then commit `Day + 1` and `Revision + 1`.
 
-Every actor observes earlier actors' staged transactions. NPC priorities 0 and 1 precede the default player's 10. A player instant command committed before this day naturally precedes the scheduled actors. UI selection and rendering order never alter precedence.
+Every actor observes earlier actors' staged transactions. Historical NPC priorities 0 and 1, and the expanded scenario's grain merchant priority 2, precede the player's 10. A player instant command committed before this day naturally precedes the scheduled actors. UI selection and rendering order never alter precedence. Worlds without private facilities or a challenge retain the historical phase outcomes.
 
 Production and consumption evaluate the completing day number. The first three-day extraction opportunity is the day-3 commit. Sold inputs from the actor phase can be processed that day. Produced output can satisfy consumption later in that day; it becomes externally tradeable after commit. Daily automation cannot buy output that has not yet been produced.
 
@@ -409,7 +413,39 @@ The new scene starts paused. Its main-thread host requests whole `AdvanceDay` op
 
 Opening dockside trade, submitting a manual trade/order, running explicit dockside automation, or requesting Next day pauses playback. Port/ship selection, inspection, draft edits, and ordinary panel changes spend no day. Valid policy application/enablement can change revision but not economic quantities or time. Reset constructs a fresh scenario, clears activity, and restores paused 1× playback; it is not an in-world rescue.
 
-Ship interpolation only draws movement between committed positions. Paused display settles at the current committed state. Actual market access, arrival timing, and dock counts always use snapshots. The UI keeps at most 60 recent structured activity entries. Cash changes and unsold cargo remain separate; closed empty-cargo profit is reported only when the accounting interval permits it. The headless report additionally records intermediate closed intervals inside atomic policy chains.
+Ship interpolation only draws movement between committed positions. Paused display settles at the current committed state. Actual market access, arrival timing, and dock counts always use snapshots. The UI keeps at most 60 recent structured activity entries. Cash changes and unsold cargo remain separate; the closed empty-cargo profit display requires completed player trading, empty ship cargo, and no private facilities. Private ownership instead exposes construction, actual purchases/sales, and remaining goods without claiming full attributed profit. The historical archipelago report additionally records intermediate closed intervals inside atomic policy chains.
+
+## Company accounts and private facilities
+
+`RegionalWorldSnapshot.Companies` owns one nonnegative checked `long` balance per company. Ships reference OwnerId; their Cash snapshot property projects this balance. Never sum ship Cash to reconcile a company with multiple ships. Explicit `CompanyConfiguration` requires zero InitialCash in each ship configuration; the legacy constructor infers one distinct company per ship from its existing initial balance.
+
+`IndustryBlueprint` defines positive construction cost, interval and finite warehouse capacity, eligible ports, optional output ceiling, and canonical building/recipe IDs. A recipe must belong to that building. Private facility inventories use the same canonical goods and integer bounds as market/cargo inventories, but have distinct ownership and total item capacity.
+
+`ConstructFacility` validates references, eligibility, unique facility ID and one-blueprint-per-owner/port. Insufficient company cash is an ordinary unchanged `InsufficientFunds` result. Success pays the entire cost to the local market, creates empty enabled storage, and sets first production to current day plus interval. It spends no day and produces nothing. Recipient balance or deadline overflow throws and rolls back construction completely.
+
+Private production consumes only the facility's inputs and creates only its outputs. Missing inputs, final output ceiling or final total capacity prevent the whole batch. Success reuses the canonical atomic production operation and advances the deadline from completion. Blocked and disabled facilities remain due; enablement never creates a batch or resets the deadline. Checked lifetime batch/physical/purchase/sale counters are observations, not retained transaction history; counter overflow also rolls back the operation.
+
+`ConfigureFacility` accepts immutable procurement/sales settings, nonnegative company reserve, unique input target/max-marginal-price rules, and unique output reserve/min-marginal-price rules. Rules must match the fixed recipe, with stock settings within warehouse capacity. No recipe switching exists. Enabled production and policies run without repeated manual action. Each daily policy phase attempts at most one selected transaction per configured good, in ordinal order. Input targets are separate ceilings, not reserved allocations of cash or storage; an earlier good/facility can use resources a later one needs.
+
+`MaximumTradeQuantity` and `MaximumWarehouseTradeQuantity` return the largest currently executable quantity using bounded binary search over the existing exact price sums. Bounds include seller stock, destination stock/cargo headroom, payer funds and receiver cash headroom. Factory purchases add target quantity, worst marginal buy limit and company reserve; sales add retained output and worst marginal sell limit. Search probes compare exact totals before converting to public `long`. These helpers may choose a smaller executable order near numeric account limits; manual commands preserve their existing overflow exceptions, and legacy route selection remains unchanged.
+
+Policy waits distinguish unavailable local stock, price limits, reserve/funds, full storage/market stock, and receiving cash-account limits. No phase creates stock or money to recover. A completed partial target purchase may leave more target stock to acquire on a future day; each selected transaction itself remains all-or-nothing.
+
+### Local warehouse trades and physical transfers
+
+`ExecuteWarehouseTrade(ownerId, facilityId, command, expectedSnapshot)` uses the same TradeCalculator and local public market as ship trading. Goods and cash really change ownership; company balance and market liquidity are finite. Its preview and maximum helper enforce ownership. Explicit management can trade while the owner's ship is elsewhere because the goods never leave that town. Purchased-stock expenditure records every warehouse purchase, not an attributed cost of consumed recipe inputs.
+
+`TransferGoods` requires the named owner to own both ship and facility, the ship to be docked at that facility's port, and ship automation to be disabled. Quantity must be positive and direction/good valid. Insufficient source stock or destination capacity is an ordinary unchanged result; wrong owner, remote/sailing ship, invalid reference, or numeric failure throws with full rollback. Success moves the exact quantity, no cash, and no day. It increments revision once.
+
+Ship and warehouse trade execution optionally accepts the exact source snapshot. A different snapshot is stale even on the same day and is rejected before execution. The UI uses this form. Snapshot previews remain read-only and hypothetical for remote ships; maximum ship quantity likewise grants no docking permission.
+
+### Fixed supply challenge
+
+The optional configuration names owner, target market/good, positive required net quantity, a future deadline day, and nonnegative minimum cash. Completed target-owner sales into the target market add executed quantity; its purchases subtract it. Both ship and warehouse trades share the same signed counter. Only the displayed delivered quantity is clamped at zero, so purchasing then reselling cannot mint credit. NPC trades, production, consumption, physical transfers, and arrival grant no credit.
+
+Evaluation occurs after the complete staged operation. Success requires net quantity and final cash thresholds at or before the deadline. Otherwise day at or beyond the deadline fails. The final daily transaction can succeed through automatic delivery before the failure check. No intermediate success is committed if a later phase throws or the final state misses a condition. Success/failure records completion day and rejects further economic mutation; reads remain valid and host reset creates a new world. Sandbox has no challenge or deadline.
+
+The [enterprise scenario](ENTERPRISE.md) defines the tested charter and provisional economic parameters. Supply delivered is not labeled household demand satisfied. Full historical acquisition cost and unsold-stock valuation are deferred; exact execution average is display-only division of exact total by executable quantity.
 
 ## Determinism and remaining scope
 

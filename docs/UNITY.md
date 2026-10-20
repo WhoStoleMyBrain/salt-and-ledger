@@ -34,9 +34,9 @@ Unity's [package manual](https://docs.unity3d.com/Packages/com.unity.nuget.newto
 
 ## Open the living archipelago
 
-After preparation/import, open **`Assets/Scenes/ArchipelagoLab.unity`** and enter Play mode. It loads canonical content and calls the shared `ArchipelagoScenario` factory. The scene starts paused on day 0, with Ledger at Northport, cash 200, and empty capacity-8 cargo. Both NPC policies are enabled and act when days advance.
+After preparation/import, open **`Assets/Scenes/ArchipelagoLab.unity`** and enter Play mode. It loads canonical content and calls the shared `EnterpriseScenario` factory. The scene starts paused on day 0, with Ledger at Northport, company cash 600, empty capacity 10 cargo, six goods and three enabled NPC merchants. The historical `ArchipelagoScenario` remains a two-good regression fixture.
 
-Follow [Living archipelago playtest](PLAYTEST.md#living-archipelago-playtest): inspect ports/ships, make instantaneous trades, select Ledger then a destination and confirm sailing, advance complete days, watch NPC markers and dock counts, edit both policy legs, and test pause/speed/reset. Inspect actual Game views at **1366×768** and **1920×1080**. The map should remain primary while context detail scrolls; exact prices, cargo ownership, schedules, and waits must be readable.
+Follow [Commerce and industry playtest](PLAYTEST.md#commerce-and-industry-playtest): right-click towns for local/remote trading, inspect exact totals and averages, perform repeated same-day trades, build a private factory, configure procurement/sales, transfer stock at the actual dock, and try the optional supply charter. Also inspect NPCs, voyages, both route-policy legs and pause/speed/reset. Inspect actual Game views at **1366×768** and **1920×1080**; the main trade controls must remain accessible without scrolling the whole modal, and the backdrop must block map input.
 
 Authored scene, runtime scripts, map/UXML/USS, Panel Settings, theme, Editor build helper, tests, and `.meta` files are versioned. Generated DLL/JSON, Editor caches, test logs, and player builds remain ignored. No additional Newtonsoft assembly is introduced. TradingLab and Bootstrap remain independent regressions.
 
@@ -146,7 +146,7 @@ $archipelagoPlayer = Join-Path $unityProject 'Builds/ArchipelagoLab/Windows/Salt
     -logFile "$resultsDir/player-archipelago-mono.log" | Out-Host
 ```
 
-The window stays open for interaction. A successful initialization logs `Salt & Ledger Archipelago Lab ready: day 0, four ports, three ships.` Repeat the [map playtest](PLAYTEST.md#living-archipelago-playtest), then repeat at 1920×1080. A build/startup success does not establish player input or every renderer/backend. The Editor menu **Salt & Ledger > Build Windows Mono Archipelago Lab** invokes the same method. Record the exact backend, target, startup marker, interactions, and warnings exercised; do not infer IL2CPP compatibility from Mono.
+The window stays open for interaction. A successful initialization logs `Salt & Ledger Archipelago Lab ready: day 0, 4 ports, 4 ships.` Repeat the [commerce/industry playtest](PLAYTEST.md#commerce-and-industry-playtest), then repeat at 1920×1080. A build/startup success does not establish player input or every renderer/backend. The Editor menu **Salt & Ledger > Build Windows Mono Archipelago Lab** invokes the same method. Record the exact backend, target, startup marker, interactions, and warnings exercised; do not infer IL2CPP compatibility from Mono.
 
 ### TradingLab development player
 
@@ -433,6 +433,52 @@ The player log retains AMDUnityPlugin/NVUnityPlugin architecture-load errors, a 
 SHA-256 comparisons confirmed that all **72** authored Runtime/Tests/Editor/Scenes and prepared Generated files matched between the repository and isolated verification project; the local comparison is `.cache/task15-unity-hashes.json`. Edit Mode uses `.cache/task15-editmode.xml`; final Play Mode uses `.cache/task15-playmode-final.xml`, each with its corresponding log. Initial geometry diagnostics remain in `.cache/task15-playmode.xml` and `.cache/task15-map-diagnostic.xml`. Build/launch evidence uses `.cache/task15-build-mono.log`, `.cache/task15-build-mono.provenance.json`, `.cache/task15-player-launch.json`, and `.cache/task15-player-mono.log`. The verified executable is under `.cache/unity-verification/Builds/ArchipelagoLab/Windows/SaltAndLedger.ArchipelagoLab.exe`; a normal checkout build uses `unity/Builds/ArchipelagoLab/Windows/`.
 
 Selected captures are `docs/images/archipelago-1366.png` and `docs/images/archipelago-1920.png`; additional local captures are backed up under `.cache/task15-screenshots`. Temporary captures were removed through the official AssetDatabase after workspace-path verification. The root Editor was stopped, its original background setting restored, and session autotick disabled; source/metadata hygiene and absence of unexpected ProjectSettings changes were checked.
+
+### Task 1.6 commerce and industry verification
+
+Checked on Windows on **2026-10-20**, using Unity **6000.6.6f1**, official Unity CLI **1.0.0-beta.13**, and the installed Unity Agent Plugin. The `unity:ui`, `unity:ui-uitk`, and `unity:unity-cli` skills guided the supported UI Toolkit and Editor workflow. Earlier milestone records above remain historical evidence for their original scenarios.
+
+| Check | Result |
+| --- | --- |
+| Locked restore and Release build | Passed; zero build warnings/errors |
+| Complete .NET suite | 436 passed |
+| Python pipeline suite | 43 passed |
+| Eight demo modes | Production, world, market, pricing, shipping, automation, historical archipelago, and enterprise passed |
+| Three deterministic report checks | Pricing, historical archipelago, and enterprise reports fresh; historical measurements preserved |
+| Canonical validation and generated references | Passed: 6 goods, 6 buildings, 6 recipes, and 20 generated reference outputs |
+| Unity preparation and freshness | Passed; the existing portable DLL and canonical content were staged with a single UPM Newtonsoft provider |
+| Official CLI Edit Mode | 45 passed |
+| Official CLI Play Mode | 19 passed, including focused-control Escape handling and legacy scene regressions |
+| Actual Editor trading interaction | Local/remote/NPC/sailing views, all six goods, quantity changes, repeated same-day trades, totals/averages, and cargo/cash changes verified through supported native input |
+| Actual Editor industry interaction | Paid construction, local warehouse trading, ownership-preserving transfers, scheduled private production, remote-management restrictions, and policy application verified |
+| Actual Editor challenge and playback | Visible progress, accelerated automatic completion, terminal stop, charter reset, and fresh sandbox reset verified |
+| Actual Game view sizes | 1366×768 and 1920×1080 runtime dimensions and advancing frames verified before captures; main trading controls visible without scrolling the entire overlay |
+| Windows x64 Mono development player | Build passed with exit 0; official CLI launch produced a responding native window and the exact four-port/four-ship ready marker, without managed exceptions |
+| Standalone-player input flows, IL2CPP, other platforms, remote GitHub Actions, independent human balance/usability study | Not run |
+
+The six-good trading sequence used the actual visible controls. Two Northport logs cost **20**, the next two cost **22**, and selling one paid **9**. All three transactions remained on **day 0**, ending at **revision 3**, company cash **567**, and cargo **3**. The next maximum-buy proposal selected **7 logs**, exact total **89**, and displayed average **12.71**. This demonstrated authoritative price updates between same-day transactions rather than a fixed initial quote multiplied by quantity.
+
+Right-clicking towns opened the correct local or remote market for the selected ship. NPC inspection and sailing views did not grant trading permission. The visible Trade action, Close, Escape, and modal backdrop were exercised; opening or closing paused playback without adding an economic command or allowing an underlying map action. All six commodity rows and the numeric/shortcut quantity controls were selected through the live interface.
+
+In a separate Northport bakery sequence, construction paid **300** to the town market and one flour purchased into the private warehouse cost **24**. A log moved from the ship into private storage without cash or day change. Advancing to **day 2** produced **2 private bread** while the public market still held **8 bread**, demonstrating distinct ownership. Loading one private bread onto the ship moved no cash or time; selling the other locally paid **17**. The observed result was company cash **273**, day **2**, revision **8**. Applying a restrictive procurement price cap also produced a visible policy wait.
+
+The 1920×1080 interaction additionally constructed a Westhaven bakery remotely, transferring **300** from company cash **567** to leave **267**. Physical ship/warehouse transfer controls remained disabled because Ledger was docked at Northport. Applying the suggested factory policy and advancing two days produced one private batch through real local purchases and sales: procurement expenditure **70**, sale revenue **85**, cash **282**, and retained private inputs of **2 flour and 2 logs**. The two produced bread had been sold normally. This verified automatic local management without remote cargo movement or repeated restocking controls.
+
+The charter was exercised through the live scene. On **day 5**, its display showed **8 net bread delivered** and company cash **776**. Playback at **10×** then completed the configured merchant route on **day 29**, with **24 net bread** and cash **1,014**. Success stopped further economic advancement. Reset retained the selected charter mode and cleared its progress; starting a new sandbox removed the objective and deadline.
+
+The [1366 trading capture](images/enterprise-trade-1366.png) and [1920 trading capture](images/enterprise-trade-1920.png) show the same day-0 economic state at both target sizes. Actual `Screen.width`/`Screen.height` and subsequent frame advancement were checked before capture. Visual inspection found all main trade controls readable and accessible. The [1366 industry capture](images/enterprise-industry-1366.png) shows separate ship/private inventories; the [1920 industry capture](images/enterprise-industry-1920.png) shows applied policies and remote transfer restrictions. Independent industry scrolling was exercised. The [challenge capture](images/enterprise-challenge-1366.png) records the live objective display. These are actual Editor rendering observations, separate from automated geometry assertions or a standalone-player usability test.
+
+The supported tooling exposed issues that were investigated rather than counted as successful input. Restricted Editor discovery initially produced a false negative; authorized escalation found the running Editor. A final recompile took several minutes and completed with **zero compiler errors**. Some pointer events were ignored while a batch Editor held focus; the live Game view was refocused and advancing frames were awaited before repeating and verifying the action.
+
+Native Escape initially failed because the active Input System delivered UI Toolkit navigation cancellation rather than the expected key event. The overlay now handles `NavigationCancelEvent` as well as key input, including when a quantity or policy control has focus. Actual Editor Escape and a focused-control Play Mode regression passed afterward. A script/domain reload during Play mode still requires restarting the scene's host session; there is no persistent save system, so a reload is not a continuation guarantee.
+
+The Windows x64 Mono development build contains ArchipelagoLab alone. Its build log confirmed the output at `.cache/unity-verification/Builds/ArchipelagoLab/Windows/SaltAndLedger.ArchipelagoLab.exe`, and `unity build run --path` launched that exact file. The responding native window logged `Salt & Ledger Archipelago Lab ready: day 0, 4 ports, 4 ships.` No managed-exception matches were found. Standalone input flows were not repeated; all interactive assertions and screenshots above are Editor evidence. The player retained a D3D12 information-queue diagnostic (`0x80004002`) and unused/stripped URP post-processing shader warnings. Licensing-client validation/entitlement diagnostics remained in the successful build log. These optional graphics/service paths were not certified or altered.
+
+The custom build method chooses its own project-relative destination. A relative CLI `--output-path` initially recorded a different working-directory path in provenance; the actual build-log destination and executable were verified before explicit-path launch. Follow the documented custom build invocation above without an unrelated `--output-path`. Build and player logs are retained as `.cache/task16-build-mono.log` and `.cache/task16-player-mono.log`.
+
+SHA-256 comparison found **83 matching files and zero mismatches** across authored host assets, tests, scenes, prepared DLL/content, and package configuration in the working and isolated verification projects (`.cache/task16-unity-hashes.json`). Final live Editor inspection reported no compilation failure, zero Console errors, and zero warnings. Play mode was stopped, temporary capture assets removed through AssetDatabase after copying evidence, and the original background setting and session ticking restored.
+
+Local final NUnit evidence is retained in `.cache/task16-editmode-final.xml` and `.cache/task16-playmode-final.xml`. Interactive screenshots are versioned under `docs/images/`; generated DLL/content, raw logs, test reports, and player build artifacts remain local ignored outputs. [Commerce and industry](ENTERPRISE.md) contains the measured headless economic comparison, and [Playtest](PLAYTEST.md#commerce-and-industry-playtest) provides the reproducible interaction checks.
 
 ### Remaining player verification
 

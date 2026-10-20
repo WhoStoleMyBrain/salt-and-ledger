@@ -1,6 +1,6 @@
 # Implemented architecture
 
-Phase 0 separates content, simulation, host presentation, and reference generation using concrete modules. Later milestones add atomic finite markets, exact stock-sensitive pricing, maritime ownership, stateless route policies, and the TradingLab UI. Task 1.5 adds a focused regional owner for multiple ships/ports, instant actions, economic days, scheduled sources/sinks, and a map-first ArchipelagoLab. All worlds share pricing, transaction, and production operations. Older public APIs and tick semantics remain intact; no independent per-port worlds or speculative service framework are introduced.
+Phase 0 separates content, simulation, host presentation, and reference generation using concrete modules. Later milestones add atomic finite markets, exact stock-sensitive pricing, maritime ownership, stateless route policies, and the TradingLab UI. Task 1.5 adds a focused regional owner for multiple ships/ports, instant actions, economic days, scheduled sources/sinks, and a map-first ArchipelagoLab. Task 1.6 extends that owner with company cash, private facilities and storage, bounded procurement/sales policies, and an optional supply challenge. All worlds share pricing, transaction, and production operations. Older public APIs and tick semantics remain intact; no independent per-port worlds or speculative service framework are introduced.
 
 ```text
 data/content.json + data/content.schema.json
@@ -23,9 +23,11 @@ data/content.json + data/content.schema.json
                             |       +-- manual/automated shipping comparisons / headless and Unity tests
                             |       +-- Unity TradingLab session --> UI Toolkit controller / UXML / USS
                             +-- RegionalWorldState --> instant commits / atomic AdvanceDay
-                            |       +-- multiple ports/ship accounts, day and state revision
+                            |       +-- ports/company accounts/ship cargo, day and state revision
                             |       +-- shared transactions/production/policy evaluator
-                            |       +-- ArchipelagoScenario --> headless report / Unity ArchipelagoLab
+                            |       +-- private facilities/storage/policies and optional challenge
+                            |       +-- EnterpriseScenario --> enterprise report / Unity ArchipelagoLab
+                            |       +-- ArchipelagoScenario --> historical two-good report
                             +-- original console demo / Unity Bootstrap smoke
 ```
 
@@ -33,7 +35,7 @@ data/content.json + data/content.schema.json
 
 | Module | Responsibility | Dependencies |
 | --- | --- | --- |
-| `src/SaltAndLedger.Simulation` | Canonical content, shared economic calculations, legacy/local/regional owners, schedules, physical flows, stateless policies, and shared archipelago configuration | `netstandard2.1`, C# 8, Newtonsoft.Json 13.0.3 |
+| `src/SaltAndLedger.Simulation` | Canonical content, shared economic calculations, legacy/local/regional owners, company accounts, private industry, challenge rules, schedules, physical flows, policies, and shared scenarios | `netstandard2.1`, C# 8, Newtonsoft.Json 13.0.3 |
 | `samples/SaltAndLedger.Demo` | Read content; demonstrate production/world/trading/shipping/automation; compare pricing hypotheses and emit reproducible experiment reports | `net10.0`, simulation project |
 | `tests/SaltAndLedger.Simulation.Tests` | Headless tests of content, production, trading/accounting, pricing/preview invariants, scheduling, state ownership, determinism, and rollback | `net10.0`, simulation project, test dependencies |
 | `unity` | Map-first ArchipelagoLab, legacy TradingLab, Bootstrap smoke, UI Toolkit hosts, integration tests, and separate build entry points | Unity 6000.6.6f1, staged simulation DLL, Unity Newtonsoft package 3.2.2 |
@@ -147,7 +149,7 @@ StepResult second = world.Step(new[]
 
 `Step(commands = null, trades = null)` consumes and validates both complete command sequences before applying controls. It checks tick overflow, prepares private working state, applies controls in declared order, executes trades in declared order, then calls `Production.TryRunBatch` once for each enabled instance in priority/ID order. Stock/funds shortages are recorded normally. Invalid commands, an enumeration error, or arithmetic overflow throw and leave the old snapshot intact. A reentrant `Step` is rejected with `InvalidOperationException`; callers must still serialize access, since the world is not thread-safe.
 
-The working inventories, cash, and flags are not exposed. Internal `TradingState` stages one trader inventory and two balances; the shared trade calculation computes a complete attempt and every affected balance before a transfer is applied. Snapshot previews invoke that same calculation without applying it. The existing working location inventory is the market stock, shared with production. There is no redundant mutable market inventory or generic economic entity framework. Public-market production ownership is an experimental prototype assumption; player-owned factories remain undecided.
+The working inventories, cash, and flags are not exposed. Internal `TradingState` stages one trader inventory and two balances; the shared trade calculation computes a complete attempt and every affected balance before a transfer is applied. Snapshot previews invoke that same calculation without applying it. The existing working location inventory is the market stock, shared with production. There is no redundant mutable market inventory or generic economic entity framework. Public-market production remains the legacy prototype's ownership model; Task 1.6 adds private factories within the separate regional owner below.
 
 Only after the complete next snapshot and step result exist does one snapshot assignment commit the world. Therefore an exception after an earlier successful trade or batch rolls back goods, cash, controls, and clock together. Constructor input mutation and retained results cannot change the live world. No mutable `Inventory` is returned from the world API. The world does not retain the initial configuration: current account state and immutable quotes live in its current snapshot.
 
@@ -250,7 +252,7 @@ For a given validated catalog, initial world state, pricing configuration, and o
 
 Production order is ascending priority then ordinal instance ID, independent of input collection order. Commands targeting the same instance deliberately use their declared order, with the last enabled-state command winning. Attempt order and changed-good order are explicit; callers do not need dictionary enumeration accidents to compare runs. Fixed production order can starve later buildings and makes no fairness guarantee.
 
-`Step` has no implicit loop; the world demo calls it five times, repeats the scenario, and compares results with both identical and reversed building input collections. The market demo uses four ticks and repeats with reversed quote/stock setup order. The shipping demo compares two six-tick manual round trips and verifies both repeated and reversed-port input transcripts. Several steps use ordinary sequential calls, not a separate batch API. The simulation uses no random values, wall-clock inputs, Unity frames, or background scheduling. Trading precedes production; maritime travel progresses after production, and arrival enables trading on the next step. Consumption phases, seed management, save formats, and durable replay compatibility remain unresolved. The current APIs assume one caller; concurrent mutation is not supported.
+`Step` has no implicit loop; the world demo calls it five times, repeats the scenario, and compares results with both identical and reversed building input collections. The market demo uses four ticks and repeats with reversed quote/stock setup order. The shipping demo compares two six-tick manual round trips and verifies both repeated and reversed-port input transcripts. Several steps use ordinary sequential calls, not a separate batch API. The simulation uses no random values, wall-clock inputs, Unity frames, or background scheduling. Trading precedes production; maritime travel progresses after production, and arrival enables trading on the next step. These legacy steps have no consumption phase; the regional owner specifies its physical sink phase below. Seed management, save formats, and durable replay compatibility remain unresolved. The current APIs assume one caller; concurrent mutation is not supported.
 
 The `--pricing` host compares fixed, linear, and scarcity modes through the real world API. It records model parameters, previews, outcomes, stock/price movement, and cash changes in a deterministic JSON report, with a read-only `--check` mode for freshness. This report is a host-owned experiment artifact under `docs/experiments/`; it is separate from canonical content generation and `generated/encyclopedia.json`. [Pricing experiments](PRICING_EXPERIMENTS.md) explains the scenarios and conclusions. The runner does not imply a large-world throughput target or a verified thousands-of-runs benchmark.
 
@@ -274,27 +276,45 @@ Generated pages cannot define production time, prices, or behavior absent from t
 
 ## Regional ownership and the map host
 
-`RegionalWorldState` is the compatibility boundary for Task 1.5. It owns all local markets, per-ship trader accounts/cargo, schedules, policies, voyages, day, and revision in one immutable current snapshot. It never composes separately ticking `WorldState` instances. Instant operations and one complete day use private staged state and a single final assignment; exceptions cannot partially commit an actor action or economic phase.
+`RegionalWorldState`, introduced in Task 1.5 and extended in Task 1.6, owns local markets, company cash, ship cargo, private factory stock, schedules, policies, voyages, optional challenge progress, day, and revision in one immutable current snapshot. It never composes separately ticking `WorldState` instances. Instant operations and one complete day use private staged state and a single final assignment; exceptions cannot partially commit an actor action or economic phase.
 
 | Type | Responsibility |
 | --- | --- |
 | `RegionalPortConfiguration` / `RegionalShipConfiguration` | Immutable authored ownership, positions, priorities, policies, starting finite accounts, facilities, and demand |
 | `SeaRoute` | Undirected integer distance and integer duration calculation for a ship speed |
 | `ScheduledFacilityConfiguration` / `ConsumptionConfiguration` | Canonical references and explicit runtime cadence/output ceilings or physical demand |
-| `RegionalWorldSnapshot` | Ordered ports and ships, current day/revision, quotes/previews, voyage durations, and derived dock counts |
-| `RegionalResult` | Structured trades, production, consumption, movements, decisions, and before/after snapshots for one committed operation |
+| `RegionalWorldSnapshot` | Ordered ports, companies, ships, private facilities, current day/revision, challenge progress, quotes/previews, voyage durations, and derived dock counts |
+| `RegionalResult` | Structured ship/warehouse trades, public/private production, construction, transfers, consumption, movements, decisions, and before/after snapshots for one committed operation |
 | `RegionalAutomation` | Adapt an actor's two selected ports/account/cargo into the existing stateless route evaluator |
-| `ArchipelagoScenario` | Shared four-port factory and player policy used by the demo and Unity |
+| `ArchipelagoScenario` | Historical two-good four-port configuration and player policy used by the preserved regional experiment |
 | `ArchipelagoExperiments` | Console-only sixty-day strategies, deterministic JSON, flow/accounting assertions, and freshness checking |
+| `EnterpriseScenario` | Shared six-good configuration, company capital, private blueprints/policy presets, and optional charter used by the current host and experiment |
+| `EnterpriseExperiments` | Console-only ninety-day enterprise strategies and terminal challenge trials, deterministic JSON, complete cash/physical-flow assertions, and freshness checking |
 | `ArchipelagoLabSession` | Main-thread host selection, playback, command submission, and bounded recent activity |
 | `ArchipelagoLabController` / `ArchipelagoMap` | UI Toolkit controls, context rendering, map selection, and presentation-only interpolation |
 
 The regional trade path calls the shared `TradeCalculator`; scheduled batches call `Production.TryRunBatch`; actor decisions call the existing policy evaluator through a detached two-port view. The view introduces no second economic owner or duplicate pricing/accounting algorithm. `RouteLeg` gains an optional per-purchase expenditure cap whose default preserves legacy behavior. Region-specific threshold gating and bounded same-day reevaluation wrap ordinary decisions.
 
-`ArchipelagoLab.unity` is separate from TradingLab and Bootstrap. Its UXML/USS provides a dominant maritime map, a selected-object context panel, collapsible trade/route/industry detail, and a bounded event display. Ports/ships/schedules/pricing read from shared definitions and snapshots. Frames schedule whole-day requests through one host; floating-point interpolation draws committed movement without changing simulation position or timing. The [mechanics specification](MECHANICS.md#regional-world-and-instant-commands) defines ordering, scheduling, revision, rollback, and playback precisely.
+`ArchipelagoLab.unity` is separate from TradingLab and Bootstrap. Its UXML/USS provides a dominant maritime map, selected-object context, contextual trade and private-industry modals, collapsible route/public-industry detail, and a bounded event display. Ports/ships/schedules/pricing read from shared definitions and snapshots. Frames schedule whole-day requests through one host; floating-point interpolation draws committed movement without changing simulation position or timing. The [mechanics specification](MECHANICS.md#regional-world-and-instant-commands) defines ordering, scheduling, revision, rollback, and playback precisely.
+
+## Company ownership, private industry, and challenge
+
+Task 1.6 extends the existing regional owner. `CompanyConfiguration`/`CompanySnapshot` identify one cash account per owner; ships and private facilities refer to that ID. Working ships no longer own mutable cash. `RegionalShipSnapshot.Cash` projects the company balance for API compatibility. Legacy constructor calls infer distinct company accounts from existing ship configuration; explicit accounts require zero ship InitialCash and may own multiple ships. Accounting sums companies once.
+
+`IndustryBlueprint` references canonical building/recipe definitions and runtime construction cost, cadence, eligible ports, finite capacity, and optional output ceiling. Each `PrivateFacilitySnapshot` has separate owned inventory, controls, immutable policy, schedule, cumulative physical production, purchased-stock expenditure, and actual sale revenue. Construction, warehouse trades, private production, and transfers have structured result collections alongside the unchanged public/ship collections.
+
+The world stages these additions in the same private working copy and commits once. Construction transfers company cash to the local market and schedules the first batch without producing goods. Transfers enforce ownership, docking, stock, and capacity. Local warehouse trades reuse TradeCalculator; factory batches reuse Production.TryRunBatch. `TradeQuantityCalculator` uses bounded binary search over the existing exact quote sums for UI maximums and factory policy quantities, including receiver cash/stock headroom. It does not alter legacy route selection semantics or manual overflow behavior.
+
+Daily private procurement precedes public/private production, and optional private sales precede consumption. Policies never own state or execute unbounded zero-time chains. Explicit local facility management is allowed while the ship is elsewhere; physical transfers remain dock-bound. [Mechanics](MECHANICS.md) specifies the complete phase order and failure rules.
+
+`ChallengeConfiguration`, `ChallengeSnapshot`, and internal `ChallengeRules` add one optional net-delivery objective to the same staged state. Only completed eligible ship/warehouse market trades update the signed counter. Evaluation occurs after the whole operation, including final company cash and day; terminal states reject economic mutation. No separate clock, external delivery ledger, or Unity-side victory calculation exists.
+
+`EnterpriseScenario` is shared by the expanded ArchipelagoLab and `EnterpriseExperiments`. The historical `ArchipelagoScenario` uses `LegacyContent.Timber`, a projection retaining the original immutable canonical objects, so adding goods does not change old fixture/report semantics. The original full canonical loader still validates all six goods and their reference graph.
+
+The trading and industry overlays are partial presentation controllers over the same session. Exact proposals and maximum quantities come from snapshots, and trade submission binds the source snapshot. Decimal average price is display-only division. Full historical cost basis is deferred because mixed purchases, manufacture, and transfers need attribution; no presentation value is fed back into accounting.
 
 ## Boundaries and limitations
 
-Fixed quotes remain the accounting baseline; linear/scarcity formulas and authored regional values are experimental. The legacy maritime owner remains two-port/single-ship. The regional sandbox supports the requested four towns, one player, two deterministic merchants, direct routes, scheduled extraction/processing, and physical consumption. It has no household finances, hidden cash replenishment, route discovery/optimization, procedural generation, objectives, progression, random events, piracy, combat, multiplayer, or save system. Travel has no operating costs/risk; production is market-owned, cargo uses item counts, and market information is perfect. Stateless policy inference still requires distinct directional commodities and pauses for mixed cargo. Waiting cannot guarantee recovery in finite markets.
+Fixed quotes remain the accounting baseline; linear/scarcity formulas and authored regional values are experimental. The legacy maritime owner remains two-port/single-ship. The expanded regional sandbox has four towns, six goods, public and private industries, finite company accounts, deterministic merchants, direct routes, and an optional fixed challenge. It has no household finances, hidden cash replenishment, route discovery/optimization, procedural generation, meta progression, random events, piracy, combat, multiplayer, or save system. Travel has no operating costs/risk, cargo uses item counts, and market information is perfect. Stateless ship policy inference still requires distinct directional commodities and pauses for mixed cargo. Waiting cannot guarantee recovery in finite markets. [Commerce and industry](ENTERPRISE.md) describes the current player-facing boundaries.
 
 Headless compilation and tests exercise the portable library and pipeline. Unity import, Editor behavior, Mono player execution, and IL2CPP player execution are separate verification points; follow [Unity integration](UNITY.md) and report which checks actually ran.

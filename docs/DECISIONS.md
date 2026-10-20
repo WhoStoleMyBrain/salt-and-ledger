@@ -1,6 +1,6 @@
 # Architectural decisions
 
-These records describe accepted decisions through Task 1.5. Unresolved game rules live in [Economy](ECONOMY.md); hypotheses and deferred concepts live in [Ideas](IDEAS.md). New evidence can supersede a decision explicitly.
+These records describe accepted decisions through Task 1.6. Unresolved game rules live in [Economy](ECONOMY.md); hypotheses and deferred concepts live in [Ideas](IDEAS.md). New evidence can supersede a decision explicitly.
 
 ## ADR 001: Keep the simulation independent of Unity
 
@@ -191,3 +191,27 @@ Add a separate UI Toolkit ArchipelagoLab scene with a dominant authored maritime
 A main-thread host uses real elapsed time only to request whole economic days at selectable playback speeds. Bound catch-up, clear the accumulator on pause/reset/speed changes, and pause before manual trading/orders. Interpolate visual markers between authoritative states; rendering never determines travel duration or market access. Policy edits and inspection remain passive; explicit bounded dockside execution can sell, reload, and depart without adding artificial days.
 
 Preserve exact previews, readable waits, finite accounts, and separate cash/cargo reporting. Verify scene/control behavior, actual graphical interaction, and player startup independently, recording what was actually exercised. A functioning map and reproducible long-run report do not establish human usability or economic balance.
+
+## ADR 021: Give companies cash and factories finite private stock
+
+**Status:** Selected for Task 1.6; scenario balance remains provisional.
+
+Extend RegionalWorldState's existing atomic owner with explicit company accounts and canonical-recipe factories. Cash has one mutable company owner; ship snapshots project it for compatibility. Each factory has one finite private stockpile, avoiding ambiguous shared-stock attribution without introducing warehouse networks or fleet management. Public markets, ship cargo, and private goods remain distinct.
+
+Instant cash-only construction pays the local market, starts with empty storage, and schedules the first batch one full interval later. Same-owner ship transfers require the actual dock and conserve goods without cash or time. Local private trades reuse TradeCalculator, while batches reuse Production.TryRunBatch. Daily procurement and optional sales use bounded exact quantity search, marginal limits, and reserves. No facility owns a second clock or economic calculator.
+
+## ADR 022: Evaluate a fixed challenge from net actual deliveries
+
+**Status:** Selected for Task 1.6; thresholds are provisional experiment configuration.
+
+Attach one optional immutable challenge configuration and staged progress snapshot to the regional owner. Count successful company sales into the target market and subtract purchases from it, preserving a signed counter so buybacks cannot create repeated delivery credit. Transfers and nearby cargo do not count; delivered supply does not imply actual consumption. A cash threshold accompanies the primary supply objective.
+
+Evaluate only after a complete atomic operation. The deadline's final daily phases may succeed before failure is declared; terminal states reject further economic mutation. Sandbox mode retains unlimited days. Use reproducible merchant and industrial trials to choose thresholds. Procedural goals, adaptive difficulty, and meta progression remain deferred.
+
+## ADR 023: Present exact trade proposals without inventing cost basis
+
+**Status:** Selected for Task 1.6.
+
+Replace the ArchipelagoLab trading foldout with a contextual modal over the existing map. Supported pointer events open local or remote views without sending economic commands. Modal opening pauses playback; stock, limits, maximum quantities, and execution use authoritative snapshots and commands, including stale-snapshot protection.
+
+Display exact total divided by executable quantity as the average execution price. Full historical acquisition cost needs attribution across mixed purchases, partial sales, manufacture, and transfers, so defer it explicitly. Report actual cash flows and private stock without labeling revenue or hypothetical liquidation as realized profit.

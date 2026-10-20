@@ -4,7 +4,7 @@
 
 The economy should support meaningful decisions through interacting finite systems. Markets have finite inventory, production, consumption, and liquidity. Player actions must affect availability and opportunities. Rules and information should let players reason about those effects.
 
-Trading and industrial production should each offer viable specializations with opportunity costs. Production and trade should eventually support configurable automation so the player can move from individual transactions to higher-level planning. Content breadth is justified only when it adds decisions.
+Trading and industrial production should each offer viable specializations with opportunity costs. Implemented route and private-production policies support the move from individual transactions to higher-level planning; their effect on player attention still needs observed playtesting. Content breadth is justified only when it adds decisions.
 
 The simulation must support deterministic execution and eventually many headless runs for balance investigation. Determinism makes experiments reproducible; it does not by itself establish economic validity, good balance, or player enjoyment.
 
@@ -30,12 +30,12 @@ These legacy fixtures have no extraction, cash replenishment, external income, c
 
 | Question | What a prototype should establish |
 | --- | --- |
-| Meaning of time and additional phases | Whether the new regional day scale and automation → production → consumption → arrival order create understandable decisions; legacy ticks remain abstract |
+| Meaning of time and additional phases | Whether regional days and the explicit ship/procurement/production/sales/consumption/arrival phases create understandable decisions; legacy ticks remain abstract |
 | Price formation | Whether the tested stock-sensitive curves create understandable decisions; how reference values, depth, and production should be calibrated before considering demand |
-| Liquidity and money flows | Whether finite local market accounts and one shared trader account produce useful constraints; what future sources or sinks could keep scenarios viable |
+| Liquidity and money flows | Whether finite local markets and company accounts shared by ships/factories produce useful constraints; what future sources or sinks could keep scenarios viable |
 | Consumption | Whether physical scheduled sinks and visible unmet demand provide useful pressure before adding household finances |
-| Production cadence, allocation, and costs | Whether one batch per tick and fixed priority need replacement; how labor, operating expenses, and capacity add decisions |
-| Storage and transport | Whether item-count cargo capacity and fixed travel ticks create understandable tradeoffs; whether additional constraints earn their complexity |
+| Production cadence, allocation, and costs | Whether current regional intervals, input competition, construction costs, and fixed ordering create useful tradeoffs; whether labor or additional operating expenses earn their complexity |
+| Storage and transport | Whether finite private storage, item-count cargo capacity, and geographic voyage durations create understandable tradeoffs; whether additional constraints earn their complexity |
 | Market information | What is observable, how stale information is communicated, and whether discovery improves decisions |
 | Specialization | Whether trading and production each have useful advantages and vulnerabilities across scenarios |
 | Automation policies | Which configurable rules reduce attention costs while preserving strategic choice |
@@ -116,6 +116,16 @@ The aggressive player route finishes with cash 552 and three unsold planks, and 
 Closed empty-cargo intervals realize 412 and 485 for the aggressive/switching strategies, respectively. Their remaining cargo positions stay open; final cash changes are not a valuation of the held goods. The report separately records purchase costs, sale revenue, physical deliveries, account balances, sailing days, and input counts. These comparisons are outcomes for one configured world, not a ranking of universally optimal strategies.
 
 The new demand is only physical consumption: it models neither households paying shops nor wages replenishing buyers. Market cash can drain over a sufficiently long run, and thresholds/price floors can strand cargo even while another town has demand. The baseline's sixty-day activity and a 600-day finite-accounting regression establish neither perpetual sustainability nor appropriate economic scale. Next investigations should measure liquidity distribution over longer horizons and observe whether players understand source, price, and delivery constraints before introducing a monetary system.
+
+## Task 1.6: capital, ownership, and supply
+
+The [enterprise experiment](ENTERPRISE.md#reproduce-the-experiment) adds four canonical goods and connected production, one grain/flour merchant, paid private construction, finite factory stock, and local procurement/sales. Companies now own cash independently of ships. Construction transfers cash to the local market; private production retains ownership until actual sale. Physical ship transfers move no cash. Combined initial cash 25,800 is conserved per operation across all accounts.
+
+Ninety-day outcomes reveal different capital choices: merchant cash ends 1,029, a workshop 356 after 360 capital, local food production 705 after 300 capital, and manufacturing/shipping 1,637 after 300 capital. The report retains unsold goods, actual purchases, production, and sale revenue separately. These are cash comparisons under authored assumptions, not precise investment profitability rankings or evidence that manufacturing is always superior.
+
+The optional charter requires 24 net bread supplied to Eastport by day 60 with at least 100 cash. The merchant and hybrid strategies succeed on days 29 and 46 respectively; waiting fails. Net sales subtract destination buybacks, so recirculating the same market goods does not generate supply credit. This objective measures additional market supply rather than household consumption. Consumption remains a physical sink without modeled payment.
+
+Full historical cost basis remains deferred: privately manufactured and transferred goods need attribution before a cargo acquisition-price display can be accurate. Exact proposed execution averages are supported independently of that accounting question. Finite liquidity, public/private competition, factory capacity, delayed production, and travel remain genuine constraints without hidden replenishment.
 
 ## Hypotheses to test
 

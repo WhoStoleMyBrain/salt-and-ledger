@@ -2,7 +2,7 @@
 
 Salt & Ledger is a planned single-player maritime trading and economic strategy game for Unity 6. Its central activity is intelligent optimization and automation of trading networks within a simulated economy.
 
-The repository implements the foundation through Task 1.5's living archipelago: a Unity-independent C# simulation, canonical content, .NET 10 experiments/tests, generated reference documentation, and a map-first Unity UI Toolkit sandbox. Four towns extract logs, process and consume planks, and share finite markets with the player and two NPC merchants. Instant trading and departure are separate from economic days; geographic routes and bounded policies move physical cargo. The new regional owner reuses the established transaction, pricing, and production operations. Bootstrap, the two-port TradingLab, and their abstract-tick demos remain regression tools. An encyclopedia UI remains deferred.
+The repository implements the foundation through Task 1.6's economic enterprise: a Unity-independent C# simulation, six canonical goods, .NET 10 experiments/tests, generated reference documentation, and a map-first Unity UI Toolkit sandbox. Four towns share finite markets with the player and three NPC merchants. Companies can invest in private factories, configure local procurement/sales, and transport owned stock through geographic voyages. A contextual trading overlay displays exact totals and averages; an optional fixed supply charter offers a deadline. The regional owner reuses the established transaction, pricing, production and atomicity contracts. Bootstrap, TradingLab, historical scenarios and older demos remain regression tools. An encyclopedia UI remains deferred.
 
 ## Read the project
 
@@ -15,6 +15,7 @@ The repository implements the foundation through Task 1.5's living archipelago: 
 - [Manual shipping comparison](SHIPPING_DEMO.md): reproducible two-port expeditions, travel timing, cargo decisions, and realized gross profit.
 - [Automation](AUTOMATION.md): configurable route rules, bounded waiting, player control, and manual-equivalent measured expeditions.
 - [Living archipelago](LIVING_ARCHIPELAGO.md): towns, sources/sinks, NPC shipping, daily time, geography, and measured sixty-day strategies.
+- [Commerce and industry](ENTERPRISE.md): contextual trading, private production, storage transfers, the supply charter, and measured ninety-day strategies.
 - [Playtest guides](PLAYTEST.md): ArchipelagoLab and legacy TradingLab controls, expeditions, blocked-route diagnosis, and policy recovery.
 - [Roadmap](ROADMAP.md): provisional development sequence.
 - [Decisions](DECISIONS.md): accepted foundation decisions and their tradeoffs.

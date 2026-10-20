@@ -102,7 +102,76 @@ These actual Game view captures accompany the checks in [Unity integration](UNIT
 
 ![TradingLab at 1920×1080: the completed full expedition and expanded market pricing parameters.](images/tradinglab-1920.png)
 
+## Commerce and industry playtest
+
+Prepare with `python tools/prepare_unity.py`, open `Assets/Scenes/ArchipelagoLab.unity`, and enter Play mode. The expanded sandbox starts paused on day 0 with company cash 600, Ledger at Northport with empty capacity 10, six goods, and three independently funded NPC merchants. The older two-port TradingLab instructions above remain separate.
+
+### Trade without moving time
+
+1. Select **your ship**, then right-click Northport. Verify the local trading overlay names Northport and Ledger. Opening pauses playback without sailing or trading.
+2. Inspect all six commodity rows: canonical names, town stock, ship stock, marginal sell/buy prices. Select Logs, then adjust quantity using numeric input and the 1/5/maximum controls. Read exact total, average, first/last marginal prices, resulting cash/cargo, and any rejection.
+3. Buy a small executable quantity. Stock, cash, cargo and prices must update immediately while the day remains unchanged. Buy again, then use **Sell now** to sell part of the cargo without closing the overlay. Check that the new preview uses the new inventory edges.
+4. Enter an unaffordable or over-capacity quantity. The full order must be unavailable/rejected; no hidden partial fill, cash movement or day advance. Maximum must choose an executable quantity or explain that none exists.
+5. Close with Escape. Reopen using **Trade / inspect market**. Close with the clear close button and again by clicking the backdrop. Opening/closing must not activate the map beneath; keyboard focus must return sensibly and playback remain paused.
+6. Select Ledger and right-click Eastport. Verify remote information and the docking explanation. Buy/sell execution must be disabled. **Sail Here** is a separate explicit action, available only for a legal departure; opening the remote overlay itself must not sail.
+7. Depart, reopen a market while sailing and verify it remains read-only. Advance the actual voyage days; trading becomes legal immediately after the arrival commit. Inspect an NPC and verify that its cargo/account are visible without granting trading control.
+
+Average execution price describes this proposed transaction. The interface does not invent a historical acquisition price for cargo. A remote quote is current information, not a guaranteed arrival quote.
+
+### Invest, produce, and transport
+
+1. Reset to a new sandbox. Select Westhaven and open **Your industries**. Review eligible canonical facilities, construction cost, batch inputs/outputs, interval and capacity.
+2. Construct a bakery. Company cash decreases by 300 and Westhaven market cash increases by 300 on the same day. Private storage starts empty; no free batch appears. Inspect the next due day.
+3. Configure procurement of flour and logs, preserving 100 cash; retain output for shipping or enable local sales deliberately. Apply the settings once. Advance days and inspect actual purchases, recurring private batches, input consumption, output stock, deadlines and waits.
+4. Confirm bread belongs to private storage rather than the public market. Local sales should move that stock into the town market and pay company cash using the exact preview. Purchased-stock expenditure, capital cost, revenue and unsold goods must remain distinct.
+5. Sail Ledger to Westhaven. With ship automation disabled, load a small quantity from the bakery. Verify side-by-side stock and capacities, unchanged cash/day, and equal physical quantity moved. Transfer some back and repeat the comparison.
+6. Try to load while the ship is elsewhere or sailing, and try to exceed available stock or capacity. Transfers must be blocked/rejected without goods or cash changes. Remote factory management may buy/sell locally, but cannot load the distant ship.
+7. Raise an input limit enough to permit purchase, then lower it to create a visible price wait. Test a cash reserve and a high output sell floor. Applying policy changes must not produce or trade immediately; policies act during day advances. A limit edit creates no liquidity or stock.
+
+Factory output can also block on capacity or lack of local buyers. Disabling/re-enabling preserves its production deadline. Ship route automation does not yet automatically collect private warehouse output; loading for the tested industrial strategy is explicit.
+
+### Try the charter and recover the session
+
+**Start supply charter** starts a fresh world with a goal of 24 net bread supplied to Eastport by day 60, retaining 100 cash. Progress must increase only after actual player-company sales into that market; buying bread back subtracts credit. Cargo aboard a nearby ship, NPC sales and warehouse transfers must not count.
+
+Two reproducible approaches are described in [Commerce and industry](ENTERPRISE.md): a configured Northport–Eastport bread route, or a Westhaven bakery with local procurement and explicit bread shipping. The tested scripts demonstrate feasibility, not a requirement to copy their exact actions.
+
+Wait without supplying anything to observe failure at day 60. At a terminal result, economic controls must stop and the result remain visible. Reset restarts the selected mode at day 0 with initial stock/cash and no facilities/progress. **New sandbox** restores unlimited play. Test pause, explicit next day, 1×/3×/10× speeds, and modal opening during playback; no clock should run through an open trade modal.
+
+At 1366×768 and 1920×1080, verify the full trade controls are accessible without scrolling the entire modal. Inspect text clipping, goods-row targeting, button contrast, focus, backdrop interception, error visibility, policy scrolling and physical-transfer controls. The [Unity verification record](UNITY.md) distinguishes actual interaction, automated tests and player startup.
+
+### Recorded commerce and industry checks
+
+The following checks were performed through actual Unity Editor controls using the official Unity Agent Plugin. They are separate from the historical Task 1.5 records below. See [Unity integration](UNITY.md) for the complete test/build record, including the 45 Edit Mode and 19 Play Mode cases and player verification limits.
+
+| Observed flow | Authoritative checkpoint |
+| --- | --- |
+| Northport, day 0: buy 2 Logs for 20, buy 2 more for 22, sell 1 for 9 | Cash 567, cargo 3 Logs, day 0, revision 3. Each order refreshed stock, prices and previews immediately. |
+| Select maximum purchase after those orders | Quantity 7, exact total 89, displayed average 12.71 per unit. This is the executable purchase preview, not a historical cost basis. |
+| Open/close and permissions | Right-click opened local, remote and NPC inspection views. All six goods were selectable. Escape closed both trading and industry overlays; close buttons, the backdrop and visible Trade alternative worked. Opening/closing issued no voyage or trade. Markets remained read-only while sailing. |
+| Northport bakery, fresh sandbox | Buy 2 Logs for 20, construct Bakery for 300: company cash 280. Buy 1 Flour into private storage for 24 and transfer 1 owned Log from the ship: cash 256, private stock 1 Flour and 1 Log, still day 0. |
+| Advance that bakery to day 2 | Private production yielded 2 Bread while the town still held 8 public Bread. Load 1 private Bread onto the ship without a cash change; sell the other locally for 17: cash 273, day 2, revision 8. |
+| Apply operating policy | A later daily phase bought 3 Logs for an actual total of 41. The Flour price exceeded the configured buying limit, so the facility visibly waited for inputs on day 4. Applying a policy did not bypass the price limit or guarantee production. |
+| Remote industry management at 1920×1080 | With Ledger still at Northport and cash 567 after the trade check, construct a Westhaven Bakery for 300: cash 267. Both ship-transfer directions remained disabled. Apply the recommended operating policy once and advance two days: one batch, actual purchases 70, actual sales 85, cash 282, and private stock 2 Flour plus 2 Logs. No repetitive toggling was needed. |
+| Default merchant route in a fresh charter | Day 5: 8 net Bread supplied, cash 776. At 10× playback, success committed on day 29 with 24 net Bread and cash 1014; playback stopped. Reset restored day 0 and cash 600 with charter mode retained; New sandbox cleared the objective. |
+
+The Northport bakery sequence above deliberately uses manual local procurement to make ownership visible. The Westhaven walkthrough and the shared operating preset demonstrate the alternative of configuring recurring local purchases. The factory's actual spending, revenue and retained goods remain separate; these checkpoints do not assert a fully attributed industrial profit.
+
+Both trade captures below were taken at the actual indicated Game view resolutions and visually inspected. All six rows, quantity and maximum controls, buy/sell actions, close control and status message fit without scrolling the entire modal. The industry views at both sizes were also exercised with independent policy scrolling.
+
+![Trading overlay at 1366×768: Northport, day 0, company cash 567, three Logs aboard, and a seven-Log purchase preview totaling 89 with average 12.71.](images/enterprise-trade-1366.png)
+
+![The same authoritative trade preview at 1920×1080, with all commodities and main order controls visible in the centered overlay.](images/enterprise-trade-1920.png)
+
+![Northport Bakery at 1366×768 on day 2: two privately produced Bread remain separate from eight public Bread; company cash is 256.](images/enterprise-industry-1366.png)
+
+![Westhaven Bakery at 1920×1080 after applying its operating policy: cash 282, two Flour and two Logs privately stored, reserve and price limits visible, and ship transfers disabled because Ledger is at Northport.](images/enterprise-industry-1920.png)
+
+![Completed supply charter at 1366×768: day 29, 24 of 24 net Bread delivered, company cash 1014, and playback paused at success.](images/enterprise-challenge-1366.png)
+
 ## Living archipelago playtest
+
+The following Task 1.5 procedures and screenshots are historical regression evidence for the two-good `ArchipelagoScenario` fixture. Current ArchipelagoLab uses the expanded scenario and the commerce/industry procedures above; its initial amounts, policies, UI and ship count differ. The old fixture remains available to headless/session tests.
 
 Run `python tools/prepare_unity.py` and its `--check`, open `unity/` in Unity **6000.6.6f1**, and open **`Assets/Scenes/ArchipelagoLab.unity`**. Enter Play mode. The world starts **paused, day 0**, with Ledger at Northport, cash 200, capacity 8, empty cargo, and player automation disabled. Two NPC merchants are already enabled but do not act until a day is advanced. Bootstrap and TradingLab remain separate scenes.
 
