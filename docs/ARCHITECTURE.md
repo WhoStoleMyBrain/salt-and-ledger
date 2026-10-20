@@ -1,6 +1,6 @@
 # Implemented architecture
 
-Phase 0 separates content, simulation, host presentation, and reference generation using a small set of concrete modules. Phase 0.5 connects the same simulation to a minimal Unity host. Task 1.1 adds an explicitly stepped world using the existing production operation. Task 1.2 adds finite market/trader accounts and atomic trades to those same steps. Task 1.2b adds exact inventory-sensitive pricing, shared trade preview/execution calculations, and reproducible headless experiments while retaining fixed prices. Task 1.3a introduces a focused maritime world owning two ports and one ship, reusing those economic calculations under one atomic clock. Task 1.3b adds immutable route policies and a stateless evaluator producing those same maritime commands, with safe execution and bounded host observation. Task 1.4 presents those systems in the Unity TradingLab scene with UI Toolkit and explicit user actions. These layers introduce no speculative services or extension points for future systems.
+Phase 0 separates content, simulation, host presentation, and reference generation using concrete modules. Later milestones add atomic finite markets, exact stock-sensitive pricing, maritime ownership, stateless route policies, and the TradingLab UI. Task 1.5 adds a focused regional owner for multiple ships/ports, instant actions, economic days, scheduled sources/sinks, and a map-first ArchipelagoLab. All worlds share pricing, transaction, and production operations. Older public APIs and tick semantics remain intact; no independent per-port worlds or speculative service framework are introduced.
 
 ```text
 data/content.json + data/content.schema.json
@@ -22,6 +22,10 @@ data/content.json + data/content.schema.json
                             |       +-- route policy --> snapshot decision --> normal commands
                             |       +-- manual/automated shipping comparisons / headless and Unity tests
                             |       +-- Unity TradingLab session --> UI Toolkit controller / UXML / USS
+                            +-- RegionalWorldState --> instant commits / atomic AdvanceDay
+                            |       +-- multiple ports/ship accounts, day and state revision
+                            |       +-- shared transactions/production/policy evaluator
+                            |       +-- ArchipelagoScenario --> headless report / Unity ArchipelagoLab
                             +-- original console demo / Unity Bootstrap smoke
 ```
 
@@ -29,10 +33,10 @@ data/content.json + data/content.schema.json
 
 | Module | Responsibility | Dependencies |
 | --- | --- | --- |
-| `src/SaltAndLedger.Simulation` | Content loading, immutable definitions, inventory, atomic production/trading, exact stock-sensitive prices, local/maritime worlds, stateless route decisions, and bounded host execution | `netstandard2.1`, C# 8, Newtonsoft.Json 13.0.3 |
+| `src/SaltAndLedger.Simulation` | Canonical content, shared economic calculations, legacy/local/regional owners, schedules, physical flows, stateless policies, and shared archipelago configuration | `netstandard2.1`, C# 8, Newtonsoft.Json 13.0.3 |
 | `samples/SaltAndLedger.Demo` | Read content; demonstrate production/world/trading/shipping/automation; compare pricing hypotheses and emit reproducible experiment reports | `net10.0`, simulation project |
 | `tests/SaltAndLedger.Simulation.Tests` | Headless tests of content, production, trading/accounting, pricing/preview invariants, scheduling, state ownership, determinism, and rollback | `net10.0`, simulation project, test dependencies |
-| `unity` | TradingLab scene and UI Toolkit presentation, Bootstrap smoke, integration tests, and separate player build entry points | Unity 6000.6.6f1, staged simulation DLL, Unity Newtonsoft package 3.2.2 |
+| `unity` | Map-first ArchipelagoLab, legacy TradingLab, Bootstrap smoke, UI Toolkit hosts, integration tests, and separate build entry points | Unity 6000.6.6f1, staged simulation DLL, Unity Newtonsoft package 3.2.2 |
 | `data` | Canonical content and Draft 2020-12 JSON Schema | No host or presentation dependency |
 | `tools` | Validate authoring data; generate reference artifacts; prepare Unity runtime assets | Python, dependencies in `requirements.txt`; .NET 10 for Unity preparation |
 | `tests/python` | Schema, semantic validator, and generation tests | Python test runner and pipeline dependencies |
@@ -57,12 +61,12 @@ The Bootstrap component loads the staged content, invokes the existing productio
 
 Python applies the JSON Schema and semantic checks. The C# loader implements the same accepted content contract without a runtime JSON Schema engine. Schema constraints alone are insufficient: reference integrity, global uniqueness, and strict JSON integer-token representation also require validation. For example, JSON Schema can consider `1.0` mathematically integral, but this content format rejects it and `1e0`; use `1`. Duplicate object keys and non-JSON numeric constants such as `NaN` or `Infinity` are rejected.
 
-Content versioning is explicit, with only version 1 supported. There is no migration framework. If the contract changes, update schema, both validators, fixtures, generated output, and the relevant specifications together.
+Content versioning is explicit, with only version 1 supported. Task 1.5 evolves it additively with optional recipe `kind`: omitted or `transformation` retains the original input-bearing contract; `extraction` requires empty inputs and positive outputs. Existing version-1 content remains accepted by the new reader. An older strict reader does not understand the new field, so stage the updated DLL and content together. There is no migration framework. Schema, both validators, fixtures, generated output, and specifications change together.
 
 Version 1 also enforces the following restrictions:
 
 - IDs match `[a-z][a-z0-9_]*` in full; names and descriptions are nonblank strings.
-- Goods, buildings, recipes, recipe inputs, and recipe outputs are nonempty arrays.
+- Goods, buildings, recipes, and recipe outputs are nonempty arrays. Transformation inputs are nonempty; extraction inputs must be empty.
 - Quantities are integer JSON tokens from 1 through 2,147,483,647. Inventory state can additionally contain zero.
 - A good appears at most once on each side of a recipe. A good may appear on both sides; no extra economic assumption forbids that relationship.
 - Unknown properties are rejected at every object level. References must target the correct entity kind, not merely an existing ID.
@@ -75,7 +79,7 @@ The public types live in `SaltAndLedger.Simulation`:
 
 - `ContentLoader.Load(string json)` returns an immutable `ContentCatalog` after validation.
 - `ContentCatalog` exposes read-only lists `Goods`, `Buildings`, and `Recipes`, with `GetGood(id)`, `GetBuilding(id)`, and `GetRecipe(id)` lookup methods.
-- Definitions expose `Id`, `Name`, and `Description`; recipes also expose `BuildingId`, `Inputs`, and `Outputs`. Each recipe quantity has `GoodId` and `Quantity`.
+- Definitions expose `Id`, `Name`, and `Description`; recipes also expose `BuildingId`, `Kind`, `Inputs`, and `Outputs`. Each recipe quantity has `GoodId` and `Quantity`.
 - `Inventory` is created for a catalog, optionally with initial quantities. `GetQuantity(id)` reads stock; `Snapshot()` returns a detached read-only view of all stock.
 - `Production.TryRunBatch(inventory, buildingId, recipeId)` performs one explicit production transition. It returns `true` on success and `false` when inputs are insufficient. Invalid IDs, an incompatible building, and arithmetic overflow are rejected without mutation.
 
@@ -262,14 +266,35 @@ The generator validates the source before deriving output. It owns all of `docs/
 | `docs/reference/recipes/{id}.md` | Building, inputs, outputs, and links to related definitions |
 | `generated/encyclopedia.json` | Sorted reference entities with IDs, source facts, wiki paths, and relationship IDs |
 
-The structured output declares `formatVersion: 1` and `sourceSchemaVersion: 1`. Each entity has a `wikiPath` relative to `docs/`; goods add `consumedByRecipeIds` and `producedByRecipeIds`, buildings add `recipeIds`, and recipes retain `buildingId`, `inputs`, and `outputs`. Entity arrays sort by stable ID; recipe quantities sort by good ID. This is a reference artifact, not a saved game or a replacement runtime content format.
+The structured output declares `formatVersion: 1` and `sourceSchemaVersion: 1`. Each entity has a `wikiPath` relative to `docs/`; goods add `consumedByRecipeIds` and `producedByRecipeIds`, buildings add `recipeIds`, and recipes retain `buildingId`, `kind`, `inputs`, and `outputs`. The effective recipe kind is emitted even when its transformation default was omitted in source. Entity arrays sort by stable ID; recipe quantities sort by good ID. This is a reference artifact, not a saved game or a replacement runtime content format.
 
 `python tools/generate_docs.py` writes the expected artifacts and removes stale files within its owned reference directory. `python tools/generate_docs.py --check` is read-only and fails for missing, changed, or unexpected files in that directory or a stale encyclopedia artifact. Both generation and validation accept `--source` for an alternate content file, defaulting to `data/content.json`; generation still uses the standard repository output paths.
 
 Generated pages cannot define production time, prices, or behavior absent from the data. [Mechanics](MECHANICS.md) explicitly maintains those rules. Tests and freshness checks keep generated facts synchronized, while review keeps authored specifications aligned with behavior.
 
+## Regional ownership and the map host
+
+`RegionalWorldState` is the compatibility boundary for Task 1.5. It owns all local markets, per-ship trader accounts/cargo, schedules, policies, voyages, day, and revision in one immutable current snapshot. It never composes separately ticking `WorldState` instances. Instant operations and one complete day use private staged state and a single final assignment; exceptions cannot partially commit an actor action or economic phase.
+
+| Type | Responsibility |
+| --- | --- |
+| `RegionalPortConfiguration` / `RegionalShipConfiguration` | Immutable authored ownership, positions, priorities, policies, starting finite accounts, facilities, and demand |
+| `SeaRoute` | Undirected integer distance and integer duration calculation for a ship speed |
+| `ScheduledFacilityConfiguration` / `ConsumptionConfiguration` | Canonical references and explicit runtime cadence/output ceilings or physical demand |
+| `RegionalWorldSnapshot` | Ordered ports and ships, current day/revision, quotes/previews, voyage durations, and derived dock counts |
+| `RegionalResult` | Structured trades, production, consumption, movements, decisions, and before/after snapshots for one committed operation |
+| `RegionalAutomation` | Adapt an actor's two selected ports/account/cargo into the existing stateless route evaluator |
+| `ArchipelagoScenario` | Shared four-port factory and player policy used by the demo and Unity |
+| `ArchipelagoExperiments` | Console-only sixty-day strategies, deterministic JSON, flow/accounting assertions, and freshness checking |
+| `ArchipelagoLabSession` | Main-thread host selection, playback, command submission, and bounded recent activity |
+| `ArchipelagoLabController` / `ArchipelagoMap` | UI Toolkit controls, context rendering, map selection, and presentation-only interpolation |
+
+The regional trade path calls the shared `TradeCalculator`; scheduled batches call `Production.TryRunBatch`; actor decisions call the existing policy evaluator through a detached two-port view. The view introduces no second economic owner or duplicate pricing/accounting algorithm. `RouteLeg` gains an optional per-purchase expenditure cap whose default preserves legacy behavior. Region-specific threshold gating and bounded same-day reevaluation wrap ordinary decisions.
+
+`ArchipelagoLab.unity` is separate from TradingLab and Bootstrap. Its UXML/USS provides a dominant maritime map, a selected-object context panel, collapsible trade/route/industry detail, and a bounded event display. Ports/ships/schedules/pricing read from shared definitions and snapshots. Frames schedule whole-day requests through one host; floating-point interpolation draws committed movement without changing simulation position or timing. The [mechanics specification](MECHANICS.md#regional-world-and-instant-commands) defines ordering, scheduling, revision, rollback, and playback precisely.
+
 ## Boundaries and limitations
 
-Fixed quotes remain the accounting baseline; linear and scarcity curves are experimental stock-sensitive alternatives. The maritime prototype has exactly two handcrafted ports, one trader, one ship, and a fixed bidirectional connection with an optional configured policy. No automatic stock/cash replenishment, additional ships/traders, route discovery or optimization, world generation, objectives, modifiers, progression, random events, competing merchants, piracy, combat, multiplayer, or elaborate UI exists here. Keep those in the provisional [roadmap](ROADMAP.md), not in unused foundation code. Travel is free of operating costs and risks; production remains publicly owned, cargo uses item counts, and perfect market information is a prototype assumption. Stateless policy inference deliberately requires distinct directional commodities and pauses for mixed cargo; waiting cannot guarantee recovery in finite markets.
+Fixed quotes remain the accounting baseline; linear/scarcity formulas and authored regional values are experimental. The legacy maritime owner remains two-port/single-ship. The regional sandbox supports the requested four towns, one player, two deterministic merchants, direct routes, scheduled extraction/processing, and physical consumption. It has no household finances, hidden cash replenishment, route discovery/optimization, procedural generation, objectives, progression, random events, piracy, combat, multiplayer, or save system. Travel has no operating costs/risk; production is market-owned, cargo uses item counts, and market information is perfect. Stateless policy inference still requires distinct directional commodities and pauses for mixed cargo. Waiting cannot guarantee recovery in finite markets.
 
 Headless compilation and tests exercise the portable library and pipeline. Unity import, Editor behavior, Mono player execution, and IL2CPP player execution are separate verification points; follow [Unity integration](UNITY.md) and report which checks actually ran.

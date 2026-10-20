@@ -2,7 +2,20 @@
 
 A single-player maritime trading and economic strategy game intended for Unity 6. The long-term focus is building, optimizing, and automating trading networks within a simulated economy, inspired by Port Royale 2, Patrician 2, Antimatter Dimensions, and economic roguelikes.
 
-This repository contains **the Phase 0/0.5 foundation through Task 1.4's playable Unity Trading Lab**: deterministic worlds, finite markets and accounting, dynamic pricing experiments, two-port shipping, and configurable route automation. It loads validated logs, planks, a sawmill, and one recipe; advances explicitly stepped worlds; trades at finite local markets; transports cargo manually or under player-selected rules; and generates reference documentation from canonical definitions. The console demos and Unity UI use the same simulation assembly. TradingLab is a small gameplay experiment, not a complete game.
+This repository contains **the foundation through Task 1.5's living archipelago**: four finite town markets, renewable lumber, scheduled sawmills and consumption, two independent NPC merchants, instant dockside trading, geographic voyages, and a map-first Unity sandbox. Logs and planks remain the only commodities. The console experiments and Unity UI share one portable simulation and scenario factory. Bootstrap, TradingLab, and the older demos retain their tested behavior.
+
+## Play the living archipelago
+
+Prepare the staged library and canonical content with `python tools/prepare_unity.py`, open `unity/` in Unity **6000.6.6f1**, and open **`Assets/Scenes/ArchipelagoLab.unity`**. Press Play in the Editor. The sandbox starts paused on day 0.
+
+Select ports to inspect stocks, prices, industries, and demand; select ships to inspect actual cargo and voyages. Opening dockside trading pauses playback, and buying or selling spends no day. Select Ledger, select another town, and confirm its distance/duration to sail. **Next day**, **Play/Pause**, and **1×/3×/10×** control economic playback. Both route directions are editable under **Your trade route**.
+
+```text
+dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --archipelago
+dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --archipelago --check
+```
+
+The reproducible five-strategy report covers sixty days with per-operation cash and physical-flow reconciliation. The idle baseline completes **16 NPC shipments** without replenishing cash. Player strategies change local supply, unmet consumption, and merchant activity; unsold cargo is reported separately from realized profit. Read [Living archipelago](docs/LIVING_ARCHIPELAGO.md), [Playtest](docs/PLAYTEST.md#living-archipelago-playtest), and the actual [Unity verification record](docs/UNITY.md). This is an experimental sandbox, not a claim of final economic balance.
 
 ## Prerequisites
 
@@ -56,7 +69,7 @@ The optional final argument sets initial logs from 0 through 2,147,483,647; the 
 
 The final world tick is **5**, with **0 logs and 3 planks**. The example reruns the same scenario and compares the complete transcript, then compares another run with reversed building input order. A mismatch fails explicitly. Different initial stock changes the outcomes while keeping the controls and schedule fixed.
 
-Each enabled building attempts one batch per abstract tick, ordered by ascending priority and ordinal instance ID. Controls affect the tick in which they are submitted. Shortage is an expected outcome; exceptional failure rolls back the entire tick, including controls and earlier batches. Immutable snapshots and structured results expose what happened without retaining unbounded history in the world. See [Mechanics](docs/MECHANICS.md) for exact semantics and [Architecture](docs/ARCHITECTURE.md) for the API. Tick duration, final price balance, wages, and production-optimization policies remain unresolved.
+Each enabled building in this legacy world attempts one batch per abstract tick, ordered by ascending priority and ordinal instance ID. Controls affect that tick. Shortage is an expected outcome; exceptional failure rolls back the entire tick. Immutable snapshots and structured results expose outcomes without unbounded history. See [Mechanics](docs/MECHANICS.md) and [Architecture](docs/ARCHITECTURE.md). These original ticks remain abstract; the separate regional owner uses daily schedules. Final balance, wages, and production-optimization policies remain unresolved.
 
 ## Run the finite market example
 
@@ -138,6 +151,7 @@ dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/co
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --pricing --check
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --shipping
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --automation
+dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --archipelago --check
 python -m unittest discover -s tests/python -v
 python tools/validate_data.py
 python tools/generate_docs.py --check
@@ -154,16 +168,17 @@ For an intentional NuGet dependency change, run `dotnet restore SaltAndLedger.sl
 
 | Path | Purpose |
 | --- | --- |
-| `src/SaltAndLedger.Simulation/` | Unity-independent content, atomic production/trading, finite accounts, exact pricing/previews, local/maritime worlds, stateless route policies, bounded execution, and immutable results |
-| `samples/SaltAndLedger.Demo/` | Original production, repeatable world/market/shipping/automation demos, and reproducible pricing experiments using canonical content |
+| `src/SaltAndLedger.Simulation/` | Unity-independent shared economic operations, legacy/regional worlds, schedules, routes, and canonical archipelago setup |
+| `samples/SaltAndLedger.Demo/` | Legacy demonstrations plus reproducible pricing and living-archipelago reports |
 | `tests/SaltAndLedger.Simulation.Tests/` | Standalone C# tests |
-| `unity/` | Unity 6 TradingLab scene/UI, original Bootstrap smoke, and integration tests |
+| `unity/` | Unity 6 ArchipelagoLab and TradingLab scenes/UI, Bootstrap smoke, and integration tests |
 | `data/content.json` | Canonical example content |
 | `data/content.schema.json` | JSON Schema for content format version 1 |
 | `tools/` | Data validation, deterministic documentation generation, and Unity preparation |
 | `tests/python/` | Schema, semantic validation, generator, and Unity preparation checks |
 | `docs/` | Authored design, architecture, and mechanics specifications |
 | `docs/experiments/pricing-results.json` | Reproducible measurements emitted by the pricing runner; checked independently of canonical references |
+| `docs/experiments/archipelago-results.json` | Five sixty-day strategies with daily state, physical flows, transactions, and accounting checks |
 | `docs/reference/` | Generated Markdown reference pages; do not edit manually |
 | `generated/encyclopedia.json` | Generated structured reference for a future in-game encyclopedia |
 | `.github/workflows/` | Headless CI |

@@ -2,7 +2,7 @@
 
 Salt & Ledger is a planned single-player maritime trading and economic strategy game for Unity 6. Its central activity is intelligent optimization and automation of trading networks within a simulated economy.
 
-The current repository contains the Phase 0/0.5 foundation through Task 1.4's playable Unity TradingLab: a Unity-independent C# simulation, validated sample content, .NET 10 demos and tests, generated reference documentation, and a UI Toolkit trading interface alongside the original smoke scene. Local and maritime worlds advance through abstract integer ticks with finite markets, experimental prices, atomic trades, and immutable results. The maritime world owns two independent ports, one trader account, and one capacity-limited ship under one global clock. Stateless policies issue the same maritime commands under player-selected quantity/price rules. The Unity host presents manual trading, configurable automation, explicit time, and blocked-route explanations using the existing simulation assembly. An encyclopedia UI remains deferred.
+The repository implements the foundation through Task 1.5's living archipelago: a Unity-independent C# simulation, canonical content, .NET 10 experiments/tests, generated reference documentation, and a map-first Unity UI Toolkit sandbox. Four towns extract logs, process and consume planks, and share finite markets with the player and two NPC merchants. Instant trading and departure are separate from economic days; geographic routes and bounded policies move physical cargo. The new regional owner reuses the established transaction, pricing, and production operations. Bootstrap, the two-port TradingLab, and their abstract-tick demos remain regression tools. An encyclopedia UI remains deferred.
 
 ## Read the project
 
@@ -14,7 +14,8 @@ The current repository contains the Phase 0/0.5 foundation through Task 1.4's pl
 - [Pricing experiments](PRICING_EXPERIMENTS.md): reproducible fixed/linear/scarcity comparisons, measured limitations, and a provisional recommendation.
 - [Manual shipping comparison](SHIPPING_DEMO.md): reproducible two-port expeditions, travel timing, cargo decisions, and realized gross profit.
 - [Automation](AUTOMATION.md): configurable route rules, bounded waiting, player control, and manual-equivalent measured expeditions.
-- [Trading Lab playtest](PLAYTEST.md): controls, manual and automated expeditions, blocked-route diagnosis, and policy recovery.
+- [Living archipelago](LIVING_ARCHIPELAGO.md): towns, sources/sinks, NPC shipping, daily time, geography, and measured sixty-day strategies.
+- [Playtest guides](PLAYTEST.md): ArchipelagoLab and legacy TradingLab controls, expeditions, blocked-route diagnosis, and policy recovery.
 - [Roadmap](ROADMAP.md): provisional development sequence.
 - [Decisions](DECISIONS.md): accepted foundation decisions and their tradeoffs.
 - [Ideas](IDEAS.md): experiments and intentionally deferred concepts.
@@ -24,4 +25,4 @@ The current repository contains the Phase 0/0.5 foundation through Task 1.4's pl
 
 `data/content.json` is the source for both runtime content and generated reference pages. `data/content.schema.json` describes its structure; semantic validators check relationships and additional constraints. The generator also emits `generated/encyclopedia.json` for a future in-game reference consumer.
 
-Generated reference pages describe only facts present in the data. Command semantics, abstract time, fixed/dynamic prices, monetary transactions, cargo, travel, policy evaluation, ordering, and error behavior are specified in [Mechanics](MECHANICS.md). Dynamic formulas remain experimental; replenishment, general demand simulation, and automatic strategy discovery are not implemented. Long-term design direction is not a claim that those mechanics exist today.
+Generated reference pages describe only canonical facts, including explicit extraction recipes. Command semantics, legacy abstract ticks and regional days, fixed/dynamic prices, transactions, schedules, cargo, travel, policies, ordering, and error behavior are specified in [Mechanics](MECHANICS.md). Dynamic formulas and scenario values remain experimental. Extraction is explicit, consumption is physical without household payments, and automatic strategy discovery remains deferred. Long-term design direction is not a claim that those mechanics exist today.

@@ -1,6 +1,6 @@
 # Maintained mechanics specification
 
-This page specifies implemented behavior through Task 1.3b that cannot be derived from content definitions alone. Update it with behavior changes. Generated reference pages describe only the canonical definitions and their relationships. Pricing formulas are implemented experimental hypotheses; accounting, deterministic execution, and atomicity are implementation contracts. The original single-location API remains available; the maritime rules below extend ownership and scheduling in a separate world type.
+This page specifies implemented behavior through Task 1.5 that cannot be derived from content definitions alone. Generated reference pages describe canonical definitions and relationships. Pricing formulas and scenario values are experimental hypotheses; accounting, determinism, and atomicity are implementation contracts. The single-location and two-port maritime rules remain unchanged. The [regional rules](#regional-world-and-instant-commands) add living-economy days and zero-time actions through a separate owner.
 
 ## Inventory
 
@@ -19,7 +19,7 @@ These limits define an exact, bounded sample state representation. Maritime carg
 
 Success returns `true`. Insufficient inputs return `false`. Unknown identifiers, a wrong building/recipe association, and output overflow are errors. Every rejected or failed command leaves the inventory unchanged; there is no partial consumption or partial output.
 
-A good may occur on both sides of a recipe. Input availability is checked against the starting inventory, so a command cannot use its own future output to meet an input requirement. The calculation then subtracts inputs before adding outputs and checks the final balance for overflow. A batch that consumes and restores the same quantity can therefore succeed at the maximum stock value.
+A good may occur on both sides of a transformation recipe. Input availability is checked against the starting inventory, so a command cannot use its own future output to meet an input requirement. The calculation then subtracts inputs before adding outputs and checks the final balance for overflow. A batch that consumes and restores the same quantity can therefore succeed at the maximum stock value. An explicitly declared extraction recipe has no inputs and creates its configured outputs through this same checked operation. Its scheduled rate and local output ceiling are regional configuration, not hidden behavior of this low-level command.
 
 The `buildingId` selects a canonical definition and validates recipe compatibility. This low-level command still requires no world or building instance and advances no clock. The world scheduler below calls this same command; it does not implement a second production algorithm. No inventory reservation, queue, or concurrent execution contract exists.
 
@@ -344,6 +344,73 @@ The route form edits only outbound log limits and the cash reserve. Applying a v
 
 The host retains at most 40 recent activity entries derived from structured results, with newest entries first. This bounded display does not add simulation history or persistence. Trader cash and its change since reset are shown separately from cargo. Realized gross trading profit is reported only when a completed empty-cargo comparison permits purchase costs and sale revenue to be compared; unsold cargo is shown without speculative valuation or a realized-loss label. No policy change creates liquidity, restocks a market, discards cargo, or otherwise repairs the world.
 
+## Regional world and instant commands
+
+Task 1.5 introduces `RegionalWorldState` without changing `WorldState.Step`, `MaritimeWorldState.Step`, or TradingLab. It owns ordered ports, one finite account per ship/owner, capacity-limited cargo, facilities, consumption schedules, undirected routes, one nonnegative `long Day`, and a checked nonnegative `long Revision`. Each owner ID is unique and owns one ship. Ports and ships are keyed and exposed in ordinal ID order; input collection order has no economic effect. A region has at least two ports and one ship.
+
+`ExecuteTrade(shipId, portId, command)` and `Depart(shipId, destinationPortId)` execute instantaneously. They do not run any daily phases. Trades require the actual dock and use the same `TradeCalculator` as legacy execution and previews. Current `PreviewTrade` is hypothetical when inspecting a remote port; it grants no execution permission. An actor with enabled automation cannot receive manual trade/departure orders.
+
+`ConfigureAutomation`, `SetAutomationEnabled`, and `SetProductionEnabled` are also zero-time operations. They replace configuration/control state without changing stocks, cash, travel progress, or day. Every operation stages state privately, constructs its result, and commits once. A changed operation increments revision by exactly one. A rejected stock/funds/capacity trade or unchanged enablement preserves the exact snapshot identity and revision. Exceptions, including revision overflow, preserve every prior field.
+
+`EvaluateAutomation` is pure. `ExecuteAutomation` requires the exact current source snapshot and freshly validates its selected trade. Any intervening same-day trade or configuration commit invalidates that decision. A numerical day match is insufficient. Single-threaded host serialization remains required; no lock-free or concurrent mutation contract exists.
+
+### Regional daily order
+
+`AdvanceDay()` stages one complete day, with no callbacks or intermediate public commits:
+
+1. Check day/revision bounds.
+2. Run enabled actors by ascending `Priority`, then ordinal ship ID, using at most four policy actions per actor.
+3. Process due facilities by ordinal port ID, ascending facility priority, then ordinal facility ID.
+4. Process due consumption by ordinal port ID and rule ID.
+5. Progress every voyage once, by ordinal ship ID, and resolve arrivals.
+6. Construct structured results and the immutable snapshot, then commit `Day + 1` and `Revision + 1`.
+
+Every actor observes earlier actors' staged transactions. NPC priorities 0 and 1 precede the default player's 10. A player instant command committed before this day naturally precedes the scheduled actors. UI selection and rendering order never alter precedence.
+
+Production and consumption evaluate the completing day number. The first three-day extraction opportunity is the day-3 commit. Sold inputs from the actor phase can be processed that day. Produced output can satisfy consumption later in that day; it becomes externally tradeable after commit. Daily automation cannot buy output that has not yet been produced.
+
+Exceptional failure rolls back all staged actor commands, cash, goods, schedules, controls, consumption counters, movement, day, and revision. Normal policy waits and ordinary trade shortages do not abort a day. The world retains no unbounded event history.
+
+### Scheduled production and physical demand
+
+`ScheduledFacilityConfiguration` references a normal canonical `BuildingInstance`, positive `IntervalDays`, optional nonnegative `OutputStockLimit`, and positive `FirstDueDay` (default interval). Its next due day, enablement, and last outcome live in the immutable snapshot. Facilities configured through a port must match its market building instances.
+
+Only a due, enabled facility attempts a batch. Missing inputs return `InputShortage`. A whole batch that would exceed an output good's local ceiling returns `OutputLimit`; the check accounts for any same-good input subtraction. It does not truncate output or consume inputs. Otherwise the existing `Production.TryRunBatch` performs its usual checked atomic transformation or extraction.
+
+Success schedules `NextDueDay = completingDay + IntervalDays`. Disabled, input-short, or output-limited facilities keep their deadline and retry on later daily advances. Reenabling preserves that deadline. There is no production during a toggle, no catch-up burst, and no reset that manufactures a free batch. Not-yet-due facilities retain their last completed outcome; the next due day explains their current schedule.
+
+`ConsumptionConfiguration` defines a stable rule ID, canonical good, positive quantity/interval, and first due day. A due rule removes the whole quantity only if available; otherwise it removes zero and records the full request as unmet. The next opportunity is completing day + interval even after shortage. `LastUnmetQuantity` and checked cumulative `TotalUnmetQuantity` expose the result; unmet demand is not an inventory debt. An initially overdue schedule likewise attempts only once, with no catch-up loop.
+
+Consumption pays no money. It models physical use only. Extraction is the explicit source, transformation consumes/produces canonical recipe quantities, and consumption is the explicit sink. Trades and cargo transport only transfer ownership/location. Reconcile goods using these flows; cash remains conserved because the scenario has no monetary source or sink.
+
+### Regional routes and arrival
+
+`SeaRoute` is a direct, undirected positive integer distance between distinct existing ports. Duplicate undirected pairs are invalid. Each ship has a positive integer speed; duration is integer ceiling of distance/speed, at least one day. Rendering coordinates do not enter this calculation. No pathfinding or automatic intermediate voyage exists.
+
+Departure changes docked state to a voyage with its complete duration still remaining. It consumes no day. Each subsequent `AdvanceDay` decrements remaining duration once. A three-day departure on day 0 arrives in the day-3 snapshot. Manual trading is legal immediately after that commit, still on day 3. Daily automation acts before arrival and therefore trades on the following daily actor phase unless the host explicitly requests a zero-time run after arrival.
+
+All ships share these rules. Each movement result identifies ship, origin, destination, event kind, and remaining days. Snapshot dock counts derive from actual docked ship states. No second scene-owned occupancy list controls economic access.
+
+### Regional policy execution
+
+Regional policies reuse `TradeRoutePolicy`, `RouteLeg`, and the existing evaluator through a two-port snapshot projection for the selected actor. The projection references the same authoritative market snapshots and that ship's cargo/account; it is not a second world or an independently advancing market. Distinct outbound/return commodities, retained mixed/unexpected cargo pauses, exact binary quantity search, and price/funds/capacity constraints remain as specified above.
+
+`RouteLeg.MaxPurchaseExpenditure` adds a positive per-order budget, default `long.MaxValue` for backward compatibility. Buying is bounded by both `cash - reserve` and this cap. `PurchaseExpenditureLimit` distinguishes a minimum shipment prevented by the cap. The cap does not reserve funds or accumulate spending across a voyage. Legacy policies using the default preserve their previous choices.
+
+Each regional ship optionally has source-stock thresholds for outbound/return loading. A threshold prevents loading before the source reaches the configured amount, but does not prevent an already sufficient cargo from departing. NPC thresholds apply the same ordinary evaluator afterward; they cannot override payment or capacity.
+
+`RunAutomation(shipId, maxActions)` accepts 1 through 4 actions. It privately reevaluates after each successful action and commits the complete zero-time chain once, incrementing revision once if changed. It stops on wait/pause, no trade or movement progress, sailing, or the action bound. A sale can therefore be followed by a return purchase/departure without arbitrary extra economic days. Partial unsold cargo is retained; a subsequent inability to sell ends the chain. A daily step uses this same bounded chain for each enabled actor and still commits only once for the entire day.
+
+Configuration and enablement live in the regional snapshot, so changing them invalidates pending decisions. Applying a policy never executes it automatically. Explicitly executing an idle decision leaves the day and revision untouched. This differs intentionally from the legacy wrapper whose empty execution advances an abstract tick.
+
+### ArchipelagoLab playback and observation
+
+The new scene starts paused. Its main-thread host requests whole `AdvanceDay` operations at 1×, 3×, or 10×; the base interval is 1.5 real seconds per day. At most four days can be submitted in one frame. Excess stalled-frame time is capped rather than retained as an unlimited backlog. Pause, reset, and speed changes clear the accumulator. The same starting state and ordered commands over the same number of days have the same economic outcome at every playback speed.
+
+Opening dockside trade, submitting a manual trade/order, running explicit dockside automation, or requesting Next day pauses playback. Port/ship selection, inspection, draft edits, and ordinary panel changes spend no day. Valid policy application/enablement can change revision but not economic quantities or time. Reset constructs a fresh scenario, clears activity, and restores paused 1× playback; it is not an in-world rescue.
+
+Ship interpolation only draws movement between committed positions. Paused display settles at the current committed state. Actual market access, arrival timing, and dock counts always use snapshots. The UI keeps at most 60 recent structured activity entries. Cash changes and unsold cargo remain separate; closed empty-cargo profit is reported only when the accounting interval permits it. The headless report additionally records intermediate closed intervals inside atomic policy chains.
+
 ## Determinism and remaining scope
 
 The same validated content, initial world state, and per-tick ordered commands produce the same states and structured outcomes. Reversing equivalent input building collections does not change results. Callers advance several ticks by calling `Step` repeatedly; the optional bounded automation helper issues those same sequential calls without a separate clock.
@@ -352,4 +419,4 @@ Equivalent quote, stock, content, and building collection order does not change 
 
 The maritime demo additionally compares repeated and reversed-port input runs, uses invariant numeric formatting, and asserts its documented transaction totals, balances, six-tick itinerary, and empty final cargo. Local production order is independent of port configuration insertion order. Remote quote inspection changes no state.
 
-Fixed, linear, and scarcity pricing are compared in [Pricing experiments](PRICING_EXPERIMENTS.md); manual two-port decisions are compared in [Manual shipping comparison](SHIPPING_DEMO.md), with configured policies compared in [Automation](AUTOMATION.md). The dynamic formulas and scenario parameters remain provisional. There is no automatic replenishment, production duration, cooldown, rate per minute, operating cost, wage, energy, or consumption. Production and travel advance only because the host steps the world. Consumption phases remain unresolved. Deterministic step results are useful for comparison; they are not a save format, durable replay protocol, event bus, or persistent event-sourcing system.
+Fixed, linear, and scarcity pricing are compared in [Pricing experiments](PRICING_EXPERIMENTS.md); legacy manual two-port decisions are compared in [Manual shipping comparison](SHIPPING_DEMO.md), with configured policies compared in [Automation](AUTOMATION.md). Those fixtures retain their original production/tick semantics and contain no extraction or consumption schedule. [Living archipelago](LIVING_ARCHIPELAGO.md) specifies the separate regional scenario and measured source/sink/logistics behavior. Dynamic formulas and scenario parameters remain provisional. Operating costs, wages, energy, household finances, save formats, durable replay, and persistent event sourcing remain unimplemented.

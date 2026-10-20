@@ -6,8 +6,8 @@ This sequence describes planned work, not completed features or a fixed delivery
 | --- | --- | --- |
 | 0 | Project foundation, small architecture, automated tests, canonical content, and documentation pipeline | Implemented |
 | 0.5 | .NET 10 toolchain and minimal Unity integration using the existing simulation | Implemented; verification scope in [Unity integration](UNITY.md) |
-| 1 | Deterministic simulation, markets, finite inventories, ships, basic trading, and trade automation | In progress; Tasks 1.1 through 1.4 implemented, including the playable TradingLab |
-| 2 | Fixed-map scenarios, objectives, time limits, and roguelike runs | Planned |
+| 1 | Deterministic simulation, finite markets, shipping, trade automation, and a living economy slice | Tasks 1.1 through 1.5 implemented; fixed four-port map and independent merchants are playable |
+| 2 | Scenario objectives, time limits, and possible roguelike runs | Planned; the first fixed map was brought forward into Task 1.5 |
 | 3 | Constrained procedural world generation with economic viability checks | Planned |
 | 4 | Modifiers, curses, difficulty levels, and challenge combinations | Planned |
 | 5 | Lateral meta progression through starting packages, alternative production capabilities, and new economic problems | Planned |
@@ -19,7 +19,7 @@ Phase 0 includes logs, planks, a sawmill, one production conversion, validation,
 
 The world example uses two sawmills and configurable initial stock. It advances five ticks, demonstrates controls and resource exhaustion, and compares repeated runs including reversed building input order. Tests cover scheduling, scarcity, state ownership, and failures; actual Unity verification and its limits are recorded in [Unity integration](UNITY.md).
 
-The implemented one-batch-per-tick schedule is provisional. Tick duration, allocation fairness, production costs, and future consumption phases remain open. Task 1.2 orders trades before production as an experimental rule; Task 1.3a places travel progress and arrival after production. Fixed priority/ID ordering can starve later facilities, and per-tick copying has not been benchmarked at scale. No save/replay compatibility or concurrent access contract is promised.
+The legacy one-batch-per-abstract-tick schedule remains intact. Task 1.5 adds a separate provisional daily cadence and explicit consumption phase rather than changing that API. Allocation fairness and production costs remain open. Fixed priority/ID ordering can starve later facilities, and snapshot copying has not been benchmarked at scale. No save/replay compatibility or concurrent access contract is promised.
 
 ## Task 1.2: finite markets, trading, and accounting
 
@@ -27,7 +27,7 @@ Implemented: positive fixed bid/ask quotes, nonnegative 64-bit integer cash, sep
 
 The `--market` demo exposes goods/cash changes across four ticks, checks its documented final state, and compares repeated/reordered setups. Tests verify accounting, conservation, numeric boundaries, ordering, immutability, culture independence, and rollback. A Unity Edit Mode test exercises a sale feeding production and a later purchase using the staged DLL. [Unity integration](UNITY.md) records actual execution and limits; [Mechanics](MECHANICS.md) specifies the implemented rules.
 
-Task 1.2's fixed quotes remain an unchanged experimental baseline alongside the dynamic alternatives below. Its single-location demo remains unchanged by the later shipping and automation prototypes. Stock/cash replenishment, procedural content, extra goods, and consumption remain deferred.
+Task 1.2's fixed quotes remain an unchanged experimental baseline alongside the dynamic alternatives below. Its single-location demo remains unchanged by later milestones and has no extraction or consumption schedule. Task 1.5 introduces those explicit physical flows only in the regional scenario; hidden stock/cash replenishment remains excluded.
 
 ## Task 1.2b: dynamic market pricing experiments
 
@@ -59,16 +59,22 @@ Implemented: a separate TradingLab scene with a two-port map, ship/cargo/cash st
 
 The [playtest guide](PLAYTEST.md) provides a manual expedition, automated comparisons, a price-limit recovery, and a liquidity-blocked diagnosis. [Unity integration](UNITY.md) records actual scene/control, visual, and player verification separately. This is a working host for experiments, not proof of usability, economic sustainability, final balance, or a complete game.
 
+## Task 1.5: living archipelago
+
+Implemented: one regional owner with instant revisioned trade/departure, daily atomic advancement, four finite towns, scheduled extraction/processing, physical consumption, three independently owned ships/accounts, integer geographic routes, and bounded same-day policies. The map-first ArchipelagoLab exposes port/ship selection, confirmed voyages, smooth presentation, pause/step/speed controls, exact trading, and fully editable outbound/return rules. Bootstrap, TradingLab, and legacy examples remain available.
+
+The [sixty-day report](LIVING_ARCHIPELAGO.md#reproducible-sixty-day-experiments) demonstrates recurring NPC shipments and materially different player strategies under one starting world. It also reveals unmet demand at unserved towns, price-floor waits, idle production ceilings, and competition that reduces NPC deliveries. These are measured limitations, not reasons for hidden subsidies or a claim that the economy is balanced. [Unity integration](UNITY.md) records actual tests, visuals, and player checks.
+
 ## Recommended next milestone: observed playtesting
 
-Proposed next assignment: observe a small set of players completing the TradingLab guide without source-code explanations. Record whether they distinguish marginal quotes from bulk totals, predict cargo/travel constraints, explain price versus liquidity waits, and recover by applying a feasible policy change. Collect concrete confusion points and fix presentation issues before adding economic systems. Compare attention required by manual and automated expeditions without treating prescribed button counts as a measurement of enjoyment.
+Proposed next assignment: observe players using the living map without source-code explanations. Ask them to supply an underserved town, interpret a bulk quote, follow an NPC shipment, diagnose a source-threshold or sale-price wait, and configure a return route. Record whether the map makes physical distribution, time, ownership, and liquidity understandable. Compare attention required by manual and automatic operation without treating button counts as a measurement of enjoyment.
 
-Keep this narrow: no additional ships/traders, warehouses, pathfinding, demand, replenishment, random risk, full route editor, or persistent event history merely to prolong a session. Human playtesting and resulting UI revisions are recommendations for a separate task, not completed user-research evidence.
+Pair observed confusion with focused presentation fixes, then extend deterministic liquidity and route-policy observations beyond sixty days. Do not add procedural maps, extra commodities, warehouses, household finance, random risk, or unrelated systems merely to keep activity running. Human playtesting and resulting revisions are a proposed assignment, not completed user-research evidence.
 
 ## Other follow-up work
 
 1. **Verify the intended player backend and stripping configuration.** Run the Bootstrap smoke scene in an IL2CPP player if that is the intended shipping backend, recording platform and stripping level. Diagnose concrete compatibility failures before adding preservation rules.
-2. **Calibrate local prices and production.** Vary price depth, conversion margins, and starting liquidity in reproducible scenarios; defer consumption/demand systems until their role is justified.
+2. **Calibrate the living network.** Vary existing source thresholds, production/consumption schedules, sale floors, and finite initial liquidity. Distinguish temporary stock shortage, distribution failure, policy blockage, and liquidity exhaustion without introducing hidden money.
 3. **Measure simulation cost before enlarging the world.** Snapshot copying and result allocation favor clear atomicity; current verification does not establish throughput for large maps or fleets.
 
 These follow-ups are proposals, not selected final economic rules. Keep random behavior out until there is a concrete requirement and an explicit reproducible seed strategy.

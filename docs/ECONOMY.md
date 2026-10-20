@@ -8,9 +8,9 @@ Trading and industrial production should each offer viable specializations with 
 
 The simulation must support deterministic execution and eventually many headless runs for balance investigation. Determinism makes experiments reproducible; it does not by itself establish economic validity, good balance, or player enjoyment.
 
-## Implemented world prototype
+## Legacy world prototypes
 
-The canonical content contains two goods, `logs` and `planks`, a `sawmill`, and recipe `saw_planks`. One successful explicit production command consumes 2 logs and produces 1 plank atomically. Inventory quantities are bounded nonnegative integers.
+The original fixture uses `logs`, `planks`, `sawmill`, and `saw_planks`. One successful production command consumes 2 logs and produces 1 plank atomically. Task 1.5 additionally defines `lumber_camp` and input-free `harvest_logs`; older fixtures do not acquire extraction or consumption automatically. Inventory quantities remain bounded nonnegative integers.
 
 Task 1.1 places two independently identified sawmill instances at one fixed location with shared configurable stock. Each enabled mill attempts one batch per abstract integer tick. A host advances the clock explicitly. Commands enable or disable production before that tick's attempts; production runs by ascending priority and ordinal instance ID. A shortage is an expected outcome. Exceptional failures roll back the entire tick, including commands and earlier batches. See [Mechanics](MECHANICS.md) for the exact contract.
 
@@ -24,16 +24,16 @@ Controls run first, trades in declared order second, and production third. Sold 
 
 Task 1.3a adds exactly two handcrafted local markets and one manually controlled ship under a single clock and trader account. Cargo capacity counts every item as one unit; the ship is the trader's only goods inventory. Trading requires docking at the intended port. Production and travel run on successful abstract ticks, so local inventory and quotes can change while cargo is underway. There are no per-port trader warehouses or hidden transfers.
 
-There is no automatic stock or cash replenishment, external income, consumption schedule, labor, or travel operating cost/risk. Sawmills stop when available logs are exhausted; finite liquidity can prevent trades even when stock exists. Tick-level copying makes failure handling simple for this small prototype; larger-world cost and throughput have not been benchmarked.
+These legacy fixtures have no extraction, cash replenishment, external income, consumption schedule, labor, or travel operating cost/risk. Sawmills stop when available logs are exhausted; finite liquidity can prevent trades even when stock exists. Snapshot copying makes failure handling simple for these small worlds; larger-world cost and throughput have not been benchmarked.
 
 ## Unresolved modeling choices
 
 | Question | What a prototype should establish |
 | --- | --- |
-| Meaning of time and additional phases | How abstract ticks map to economic time; whether trade-before-production and end-of-tick arrival remain useful when consumption exists |
+| Meaning of time and additional phases | Whether the new regional day scale and automation → production → consumption → arrival order create understandable decisions; legacy ticks remain abstract |
 | Price formation | Whether the tested stock-sensitive curves create understandable decisions; how reference values, depth, and production should be calibrated before considering demand |
 | Liquidity and money flows | Whether finite local market accounts and one shared trader account produce useful constraints; what future sources or sinks could keep scenarios viable |
-| Consumption | How demand evolves, what unmet demand means, and whether players can anticipate it |
+| Consumption | Whether physical scheduled sinks and visible unmet demand provide useful pressure before adding household finances |
 | Production cadence, allocation, and costs | Whether one batch per tick and fixed priority need replacement; how labor, operating expenses, and capacity add decisions |
 | Storage and transport | Whether item-count cargo capacity and fixed travel ticks create understandable tradeoffs; whether additional constraints earn their complexity |
 | Market information | What is observable, how stale information is communicated, and whether discovery improves decisions |
@@ -101,7 +101,21 @@ The player sees each market's current stock, liquidity, and marginal quotes alon
 
 Policy-limit recovery is deliberately distinct from economic recovery. Raising an overly restrictive buy ceiling changes what the next policy evaluation permits; it creates no cash or goods and consumes no tick. An illiquid destination remains unable to pay after a sale-limit edit. Reset constructs a new experiment world and is labeled accordingly. A bounded stop after unchanged ticks limits observation; it does not prove that all possible manual strategies are deadlocked.
 
-The next evidence should come from observing people use the lab: can they predict bulk cost, choose a shipment deliberately, diagnose price versus liquidity waits, and pause/reconfigure without expecting background time? A functional interface and deterministic tests establish none of those human outcomes by themselves. Keep the current closed economy inspectable before choosing replenishment, demand, objectives, or more content.
+The Task 1.4 recommendation was to observe whether people can predict bulk cost, diagnose price versus liquidity waits, and reconfigure deliberately. Task 1.5 now adds explicitly requested economic flows and geographic competition; that earlier human-understanding question remains unanswered by deterministic tests.
+
+## Task 1.5: a living regional experiment
+
+[Living archipelago](LIVING_ARCHIPELAGO.md) records the complete shared configuration and measured sixty-day comparisons. Northport and Westhaven create logs through canonical extraction. Southhaven converts logs on a two-day schedule. Three towns consume planks on explicit cadences without modeled payment. Two independent merchants purchase, carry, and sell goods under finite cash/capacity and price constraints. The player competes in the same inventories; no private NPC markets or hidden subsidies exist.
+
+The day scale applies only to the new regional owner. Dockside trades and sailing orders are instantaneous revisioned commits. Daily advancement runs bounded merchant/player policies, production, physical consumption, and travel under one atomic clock. Source/transformation/sink records replace a false global goods-conservation assumption, while cash remains exactly conserved. The starting cash total is 13,600 in all strategy comparisons.
+
+With no player intervention, the Timber Merchant completes nine shipments and the Plank Merchant seven over sixty days. Extraction creates 44 logs; processing uses 48 logs to make 24 planks; towns consume 16 planks and record 21 unmet units. Westhaven reaches its log ceiling, while Northport and Westhaven lack plank deliveries. This shows recurring production and shipping alongside distribution failures, not a fully balanced network.
+
+The aggressive player route finishes with cash 552 and three unsold planks, and reduces completed NPC shipments from 16 to 5 by competing for actual stock. Switching to Westhaven finishes with cash 672 and three logs still aboard, enables more extraction, and reduces unmet demand to 10. Manual West exports realize 45 with empty final cargo; extra logs lower Southhaven's bids and can make further sales unattractive to merchants with a sale floor. Restrictive automation spends no money because its buy limit never permits a useful shipment after scheduled competition.
+
+Closed empty-cargo intervals realize 412 and 485 for the aggressive/switching strategies, respectively. Their remaining cargo positions stay open; final cash changes are not a valuation of the held goods. The report separately records purchase costs, sale revenue, physical deliveries, account balances, sailing days, and input counts. These comparisons are outcomes for one configured world, not a ranking of universally optimal strategies.
+
+The new demand is only physical consumption: it models neither households paying shops nor wages replenishing buyers. Market cash can drain over a sufficiently long run, and thresholds/price floors can strand cargo even while another town has demand. The baseline's sixty-day activity and a 600-day finite-accounting regression establish neither perpetual sustainability nor appropriate economic scale. Next investigations should measure liquidity distribution over longer horizons and observe whether players understand source, price, and delivery constraints before introducing a monetary system.
 
 ## Hypotheses to test
 

@@ -2,6 +2,8 @@
 
 Automation repeats the transactions you configure. You still choose the route, commodities, shipment sizes, acceptable prices, and cash reserve. It does not search for the best strategy or promise a profitable destination. A route can wait indefinitely when finite markets cannot satisfy your rules.
 
+The first sections preserve the legacy two-port API and TradingLab comparison. [Regional automation](#regional-automation-in-archipelagolab) uses the same evaluator with explicit actors, expenditure caps, and bounded zero-time dockside actions.
+
 Run the controlled comparison from the repository root:
 
 ```text
@@ -127,6 +129,22 @@ The **No destination cash** scenario instead retains six logs at Southhaven beca
 
 ## Limits and next questions
 
-This first policy supports one ship, two ports, and distinct outbound/return goods. It cannot forecast destination prices, reserve future market liquidity, discover commodities, sell mixed cargo intelligently, or guarantee sustained profit. Numeric overflow remains an explicit error. Finite markets can permanently strand goods or cash; the policy does not repair the economy. There is no general route editor, background thread, extra canonical content, persistent policy stage, save format, or unlimited decision history.
+The legacy comparison supports one ship, two ports, and distinct outbound/return goods. It cannot forecast destination prices, reserve liquidity, discover commodities, sell mixed cargo intelligently, or guarantee sustained profit. Numeric overflow remains an explicit error. Finite markets can permanently strand goods or cash; the policy does not repair the economy. TradingLab has no general route editor or background clock. The new regional host below adds those explicitly requested presentation/scheduling capabilities while preserving the policy's economic limits.
 
-The verified arithmetic comparisons establish mechanical equivalence and a meaningful threshold choice. They do not establish enjoyable automation, a sustainable economy, or optimal strategy. Task 1.4 makes those comparisons and a limit-change recovery playable. The next proposed milestone is a small observed playtest: check whether players can predict a bulk price, diagnose a wait, and distinguish changing a rule from repairing an illiquid economy before adding economic systems. See the [roadmap](ROADMAP.md#recommended-next-milestone-observed-playtesting) and the actual [Unity verification scope](UNITY.md).
+The verified arithmetic comparisons establish mechanical equivalence and a meaningful threshold choice. They do not establish enjoyable automation, sustainability, or optimal strategy. Task 1.4 makes those comparisons and a limit-change recovery playable. Task 1.5 extends the world and presentation below; the need for observed playtesting remains. See the [roadmap](ROADMAP.md#recommended-next-milestone-observed-playtesting) and actual [Unity verification scope](UNITY.md).
+
+## Regional automation in ArchipelagoLab
+
+The new map exposes every configured leg: origin/destination port, outbound good, optional distinct return good, maximum purchase quantity, minimum shipment, worst acceptable marginal buy/sell prices, per-purchase expenditure cap, shared cash reserve, and empty-return permission. Blank UI spend caps mean `long.MaxValue`. Selecting None for return requires empty return. Drafts are passive; **Apply route** validates and replaces the immutable policy without buying, sailing, or advancing a day.
+
+`RouteLeg` accepts optional `maxPurchaseExpenditure`, defaulting to `long.MaxValue`. The available buying budget is the smaller of that cap and cash after reserve. The cap applies to one purchase, not cumulative voyage spending. Existing cargo counts toward the target as before. A minimum prevented by the cap reports `PurchaseExpenditureLimit`; limits still constrain the worst marginal unit rather than the first displayed quote or an average.
+
+The regional world stores each actor's policy and enablement in its committed snapshot. That configuration change increments revision, making old decisions stale within the same day. An enabled actor cannot also receive manual trade or sailing orders. Pausing automation spends no day and leaves existing voyages in place.
+
+At each daily boundary, enabled ships act in priority/ordinal-ID order. The two NPC priorities precede the player's default priority. The world stages up to four actions per actor, reevaluating after each change. Selling outbound cargo, purchasing return cargo, and departing can happen at one economic time, provided each operation succeeds. Unsold cargo remains aboard and blocks return loading. A wait, pause, sailing state, lack of progress, or action bound stops the chain. The entire daily transaction still commits once; an exception later in production or another actor rolls everything back.
+
+**Run dockside actions (up to 4)** pauses playback and explicitly executes the player's bounded chain now. It consumes no day, runs no production/consumption/travel, and commits one revision if anything changes. It does not secretly run NPC policies. **Next day** or playback instead resolves all scheduled actors and economic phases together. Arrival at a daily commit permits immediate manual trade or explicit dockside automation; automatic daily execution otherwise acts at the next boundary.
+
+The regional adapter projects the actor's selected ports, account, and cargo into the existing evaluator. It does not create independently ticking markets or duplicate price/accounting formulas. NPC source thresholds only gate loading before ordinary evaluation; the merchants obey the same stock, exact price, reserve/budget, cash, capacity, and movement checks.
+
+The [sixty-day comparison](LIVING_ARCHIPELAGO.md#reproducible-sixty-day-experiments) records player input counts, cash, closed profit, unsold cargo, shipment totals, and effects on NPC activity. Restrictive buying can remain inactive for all sixty days; aggressive buying can starve an NPC's source threshold; alternative-route supply can deepen destination stock and reduce bids. No policy discovers a strategy, predicts arrival-time prices, creates money, or guarantees recovery. The [playtest guide](PLAYTEST.md#living-archipelago-playtest) provides the map controls and diagnostic checks.

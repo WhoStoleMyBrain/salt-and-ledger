@@ -1,6 +1,6 @@
 # Architectural decisions
 
-These records describe accepted decisions through Task 1.4. Unresolved game rules live in [Economy](ECONOMY.md); hypotheses and deferred concepts live in [Ideas](IDEAS.md). New evidence can supersede a decision explicitly.
+These records describe accepted decisions through Task 1.5. Unresolved game rules live in [Economy](ECONOMY.md); hypotheses and deferred concepts live in [Ideas](IDEAS.md). New evidence can supersede a decision explicitly.
 
 ## ADR 001: Keep the simulation independent of Unity
 
@@ -161,3 +161,33 @@ User actions choose either manual maritime commands or snapshot-bound automation
 Render authoritative snapshots, exact preview totals, and structured step results. Keep only a bounded recent-activity list in the host. Report cash and cargo independently; label realized gross trading profit only for a completed accounting interval whose initial and final cargo are empty. Do not introduce cargo valuation, persistent event sourcing, a generalized UI framework, new economic rules, or hidden recovery funding. Reset constructs a new test world and is explicitly separate from an in-world action.
 
 The fixed scenarios make manual operation, configured automation, policy-limit recovery, and finite-liquidity blockage directly inspectable. Automated scene/control tests and interactive visual checks are separate evidence; record both actual results and limits in [Unity integration](UNITY.md). The [playtest guide](PLAYTEST.md) defines the player-facing checks without claiming that mechanical correctness establishes enjoyable gameplay.
+
+## ADR 018: Separate regional days from instantaneous revisioned commands
+
+**Status:** Accepted for Task 1.5. Adds a new compatibility boundary; ADR 009/012/015/016 retain their legacy tick semantics.
+
+Introduce one focused `RegionalWorldState` for multiple ports and explicitly owned ships/accounts. Reuse `TradeCalculator`, `InventoryPricing`, `Production.TryRunBatch`, and the route evaluator through an actor-specific two-port snapshot view. Never synchronize independent local worlds or copy economic calculations into a new economy. The shared `ArchipelagoScenario` supplies identical setup to Unity and headless experiments.
+
+Instant trade, departure, configuration, and enablement commit a checked revision only when state changes. A rejected/no-op action preserves snapshot identity. Bind decisions to the exact snapshot so successive same-day transactions cannot reuse stale proposals. Daily advancement stages actor actions, production, consumption, and voyage progress before one commit of day and revision. Any exceptional failure rolls back all fields and earlier staged actions.
+
+Departure spends no day; travel completes after the configured number of subsequent day advances, and committed arrival permits immediate dockside trading. Distances and speeds use integers independently of visual coordinates. This intentionally differs from the older departure-tick model without changing its tests or historical examples.
+
+## ADR 019: Model explicit goods sources and sinks with finite cash
+
+**Status:** Accepted execution contracts for Task 1.5; town schedules, ceilings, prices, and threshold values remain provisional.
+
+Evolve version-1 recipes additively with optional kind. Existing absent-kind recipes remain transformations with nonempty inputs; explicit extraction requires no inputs and creates only canonical outputs. Keep production arithmetic in the existing atomic batch operation. Per-facility intervals, deadlines, and output ceilings are runtime scenario configuration.
+
+Successful due production schedules its next opportunity from completion. Disabled/input-short/output-limited batches remain due without partial output or catch-up accumulation; toggles preserve deadlines. Physical consumption removes a complete scheduled quantity or records unmet demand, then schedules its next opportunity without carrying an inventory debt.
+
+Consumption has no household payment. No cash source, replenishment, subsidy, or hidden recovery exists. Record extraction, transformations, consumption, transfers, and physical transport separately; reconcile stock changes rather than claiming goods conservation across legitimate sources/sinks. All ordinary trades conserve cash. Deterministic NPC policies own real finite accounts/cargo and use the same transaction engine; stable priorities resolve competition.
+
+## ADR 020: Present the region through a map and serialized playback
+
+**Status:** Accepted for Task 1.5; preserves ADR 017's TradingLab and Bootstrap.
+
+Add a separate UI Toolkit ArchipelagoLab scene with a dominant authored maritime map, selected-object context, collapsible trading/policy/industry detail, and bounded activity. Read port positions, rates, limits, cargo, quotes, decisions, and occupancy from the shared scenario/snapshots. NPC ships can be inspected but not manually controlled through the UI.
+
+A main-thread host uses real elapsed time only to request whole economic days at selectable playback speeds. Bound catch-up, clear the accumulator on pause/reset/speed changes, and pause before manual trading/orders. Interpolate visual markers between authoritative states; rendering never determines travel duration or market access. Policy edits and inspection remain passive; explicit bounded dockside execution can sell, reload, and depart without adding artificial days.
+
+Preserve exact previews, readable waits, finite accounts, and separate cash/cargo reporting. Verify scene/control behavior, actual graphical interaction, and player startup independently, recording what was actually exercised. A functioning map and reproducible long-run report do not establish human usability or economic balance.

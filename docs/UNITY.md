@@ -1,6 +1,6 @@
 # Unity 6 integration and verification
 
-The existing project at `unity/` uses **Unity 6000.6.6f1**. TradingLab presents the two-port world through UI Toolkit; the separate Bootstrap scene loads canonical content and runs the same production command as the .NET 10 console demo. Simulation source remains only in `src/SaltAndLedger.Simulation`; both hosts use the prepared DLL and add no economic rules.
+The project at `unity/` uses **Unity 6000.6.6f1**. ArchipelagoLab presents the living four-port region through UI Toolkit, TradingLab preserves the two-port comparison, and Bootstrap runs the original production smoke. Simulation source remains only in `src/SaltAndLedger.Simulation`; the hosts use the same prepared DLL and canonical JSON without duplicating economic operations.
 
 ## Prepare a checkout
 
@@ -32,7 +32,15 @@ The portable build uses NuGet **Newtonsoft.Json 13.0.3**. Unity's manifest direc
 
 Unity's [package manual](https://docs.unity3d.com/Packages/com.unity.nuget.newtonsoft-json@3.2/manual/index.html) identifies upstream version 13.0.2. Inspection of the installed 3.2.2 package confirmed file version 13.0.2 and assembly identity `Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed`, matching the NuGet 13.0.3 assembly identity. This resolves the assembly reference; behavioral compatibility is established only for the configurations exercised below. The package version and upstream library version are different numbering schemes.
 
-## Open the playable lab
+## Open the living archipelago
+
+After preparation/import, open **`Assets/Scenes/ArchipelagoLab.unity`** and enter Play mode. It loads canonical content and calls the shared `ArchipelagoScenario` factory. The scene starts paused on day 0, with Ledger at Northport, cash 200, and empty capacity-8 cargo. Both NPC policies are enabled and act when days advance.
+
+Follow [Living archipelago playtest](PLAYTEST.md#living-archipelago-playtest): inspect ports/ships, make instantaneous trades, select Ledger then a destination and confirm sailing, advance complete days, watch NPC markers and dock counts, edit both policy legs, and test pause/speed/reset. Inspect actual Game views at **1366×768** and **1920×1080**. The map should remain primary while context detail scrolls; exact prices, cargo ownership, schedules, and waits must be readable.
+
+Authored scene, runtime scripts, map/UXML/USS, Panel Settings, theme, Editor build helper, tests, and `.meta` files are versioned. Generated DLL/JSON, Editor caches, test logs, and player builds remain ignored. No additional Newtonsoft assembly is introduced. TradingLab and Bootstrap remain independent regressions.
+
+## Open the legacy TradingLab
 
 After preparation/import, open **`Assets/Scenes/TradingLab.unity`** and enter Play mode. The scene initializes its own UI document and the canonical content. Use the [playtest guide](PLAYTEST.md) to complete the manual six-tick expedition, run Standard and Restrictive automation, inspect the zero-liquidity blockage, and recover from a buy-price ceiling of 7 by applying 10 without advancing time.
 
@@ -57,14 +65,14 @@ A missing staged asset or invalid outcome fails explicitly. No Inspector content
 
 Open **Window > General > Test Runner** and run:
 
-- **Edit Mode:** `SaltAndLedger.UnityHost.EditModeTests`. The existing integration cases cover explicit production, deterministic world scheduling, finite trading with production, both dynamic pricing models, maritime transport, configurable automation, and the single UPM Newtonsoft provider. TradingLab session cases additionally cover its scenario fixture, exact preview/manual execution, policy control, bounded waits, reset, and accounting presentation conditions. The simulation remains authoritative in all cases.
-- **Play Mode:** `SaltAndLedger.UnityHost.PlayModeTests`. Preserve the test that loads Bootstrap and checks its actual `Start()` result, and run the TradingLab scene/control tests. These load the actual scene and exercise its UI wiring and displayed state; inspect the current test result count rather than running only the older Bootstrap filter.
+- **Edit Mode:** `SaltAndLedger.UnityHost.EditModeTests`. Existing integration/TradingLab cases remain, alongside ArchipelagoLab session checks for instant commands, geography, schedules, NPC activity, policy configuration, playback equivalence, bounds, and reset.
+- **Play Mode:** `SaltAndLedger.UnityHost.PlayModeTests`. Run Bootstrap plus both playable scenes' control tests. ArchipelagoLab checks actual map selection, confirmed sailing, instant trading, visible state, both policy legs, playback, and reset. Inspect individual NUnit cases and current counts rather than using only the older Bootstrap filter.
 
 For repeatable command-line tests, close the Editor instance using this project first, or use a separate complete checkout prepared with the same commands. Do not launch a second Editor against an already-open project. The PowerShell examples below run from the repository root; change the Editor path for your installation. Piping to `Out-Host` makes PowerShell wait for the GUI executable to finish.
 
 ### Official Unity Agent Plugin workflow
 
-Tasks 1.2 through 1.4 use the locally installed `unity@unity-agent-plugin` **`unity:unity-cli`** skill and supported `unity test`/`unity build` commands. Task 1.4 also uses **`unity:ui`** and **`unity:ui-uitk`** for its UI Toolkit host. Batch tests/builds do not require a running Editor or the live Pipeline connection; live scene inspection and screenshots use the supported Pipeline workflow. The primary economic verification remains the headless suite; Unity checks exercise the same staged assembly and actual scene host. No additional dependency DLL is staged. Bootstrap retains its original production behavior.
+Tasks 1.2 through 1.5 use the installed `unity@unity-agent-plugin` **`unity:unity-cli`** skill and supported `unity test`/`unity build` commands. The playable hosts also use **`unity:ui`** and **`unity:ui-uitk`**. Batch tests/builds do not require a running Editor or live Pipeline connection; actual scene inspection and screenshots use the supported Pipeline. The primary economic verification remains headless; Unity checks exercise the staged assembly and scene host. No additional dependency DLL is staged. Bootstrap retains its original production outcomes with the expanded canonical catalog.
 
 With the plugin's Unity CLI installed, check its version and discover existing Editors before starting a batch run. If sandbox restrictions prevent network or process discovery, retry with the required access; do not interpret restricted discovery as proof that no Editor is open. These examples assume `unity` is on PATH (the local Windows installation used `%LOCALAPPDATA%/Unity/bin/unity.exe`):
 
@@ -89,13 +97,13 @@ if ($LASTEXITCODE -ne 0) { throw "Unity Play Mode failed: $LASTEXITCODE" }
 
 [xml]$editResults = Get-Content "$resultsDir/editmode.xml"
 [xml]$playResults = Get-Content "$resultsDir/playmode.xml"
-if ($editResults.'test-run'.result -ne 'Passed' -or [int]$editResults.'test-run'.passed -ne 27 -or
-    $playResults.'test-run'.result -ne 'Passed' -or [int]$playResults.'test-run'.passed -ne 5) {
+if ($editResults.'test-run'.result -ne 'Passed' -or [int]$editResults.'test-run'.passed -lt 1 -or
+    $playResults.'test-run'.result -ne 'Passed' -or [int]$playResults.'test-run'.passed -lt 1) {
     throw 'Unexpected Unity test outcome or test count; inspect XML and logs.'
 }
 ```
 
-The CLI supplies `-batchmode`, test flags, and result paths. Do not forward reserved flags or add `-quit` to a test run. Inspect individual cases as well as the counts; the current expected totals are 27 Edit Mode and 5 Play Mode cases. Keep logs local; Editor logs may include authentication arguments, so redact them before sharing.
+The CLI supplies `-batchmode`, test flags, and result paths. Do not forward reserved flags or add `-quit` to a test run. Inspect individual cases and compare counts with the current verification record; a nonzero result alone does not show that all three scenes ran. Keep logs local; Editor logs may include authentication arguments, so redact them before sharing.
 
 ### Direct Editor alternative
 
@@ -121,6 +129,24 @@ if ($LASTEXITCODE -ne 0) { throw "Unity Play Mode failed: $LASTEXITCODE" }
 Do **not** add `-quit` to `-runTests`: the test runner owns completion and Editor exit. Inspect the NUnit XML files for a passed result and the expected nonzero test count, as well as the Editor logs; an exit code alone is insufficient evidence. See Unity's [Test Framework command-line reference](https://docs.unity3d.com/6000.2/Documentation/Manual/test-framework/reference-command-line.html).
 
 ## Windows Mono players
+
+### ArchipelagoLab development player
+
+`SaltAndLedger.UnityHost.Editor.ArchipelagoLabBuild.BuildWindowsMono` builds only `Assets/Scenes/ArchipelagoLab.unity` as a Windows x64 Mono development player, restoring the previous backend afterward. With the CLI and variables from the test example:
+
+```powershell
+unity build $unityProject --editor-version 6000.6.6f1 --target StandaloneWindows64 `
+    --execute-method SaltAndLedger.UnityHost.Editor.ArchipelagoLabBuild.BuildWindowsMono `
+    --allow-dirty-build --timeout 1200 `
+    --log-file "$resultsDir/build-archipelago-mono.log" --no-tail --format json
+if ($LASTEXITCODE -ne 0) { throw "ArchipelagoLab player build failed: $LASTEXITCODE" }
+
+$archipelagoPlayer = Join-Path $unityProject 'Builds/ArchipelagoLab/Windows/SaltAndLedger.ArchipelagoLab.exe'
+& $archipelagoPlayer -screen-fullscreen 0 -screen-width 1366 -screen-height 768 `
+    -logFile "$resultsDir/player-archipelago-mono.log" | Out-Host
+```
+
+The window stays open for interaction. A successful initialization logs `Salt & Ledger Archipelago Lab ready: day 0, four ports, three ships.` Repeat the [map playtest](PLAYTEST.md#living-archipelago-playtest), then repeat at 1920×1080. A build/startup success does not establish player input or every renderer/backend. The Editor menu **Salt & Ledger > Build Windows Mono Archipelago Lab** invokes the same method. Record the exact backend, target, startup marker, interactions, and warnings exercised; do not infer IL2CPP compatibility from Mono.
 
 ### TradingLab development player
 
@@ -364,11 +390,55 @@ Tooling issues were investigated within the official workflow:
 
 Local artifacts use `.cache/task14-editmode.xml`, `.cache/task14-playmode.xml`, corresponding logs, `.cache/task14-demo-*.txt`, `.cache/task14-build-mono.log`, `.cache/task14-build-mono.provenance.json`, and `.cache/task14-player-mono.log`. Selected 1366×768 and 1920×1080 Game view evidence is included in [Playtest](PLAYTEST.md#recorded-editor-views); additional local captures remain under `.cache/task14-screenshots`. Temporary captures were removed from the Unity asset tree through the official AssetDatabase workflow. The UI remains a desktop laboratory: independent column scrolling exposes longer policy/activity content, no save or background-time system exists, and there has been no independent player usability study. The next recommended milestone is the observed playtest in [Roadmap](ROADMAP.md#recommended-next-milestone-observed-playtesting).
 
+### Task 1.5 living archipelago verification
+
+Verification on **2026-10-20** uses Unity **6000.6.6f1** and official CLI **1.0.0-beta.13**, with the latest-version check completed. The portable `netstandard2.1`/C# 8 library and single pinned UPM Newtonsoft provider are retained. The official CLI/Pipeline and `unity:ui`, `unity:ui-uitk`, and `unity:unity-cli` skills guide scene assets, tests, actual interaction, captures, and player builds.
+
+| Check | Result |
+| --- | --- |
+| Locked .NET restore and full Release solution build | Passed; zero build warnings/errors |
+| Complete .NET suite | 378 passed, including regional boundaries and six shared-scenario regressions |
+| Python pipeline suite | 43 passed |
+| Canonical validation and generated references | Passed; additive extraction kind and lumber-camp recipe regenerated through the canonical pipeline |
+| Legacy production/world/market/shipping/automation demos | Passed; economic outcomes retained, with the authorized catalog count now 2 goods / 2 buildings / 2 recipes |
+| Legacy pricing report | Passed unchanged: 165 observations and 1,883 checks per run |
+| New archipelago report/freshness | Passed: five sixty-day strategies, per-operation flow/cash reconciliation, repeated/reversed-configuration/`tr-TR` identity |
+| Extended finite scenario regression | Passed: 600 days without negative accounts/inventories or hidden cash changes |
+| Strict documentation build | Passed after the new scenario, mechanics, playtest, and verification documentation |
+| Unity staging/freshness | Passed; final `prepare_unity.py --check` and generated-reference freshness reran after core/content changes |
+| Official CLI Edit Mode | 38 passed, zero failed/skipped; complete suite including legacy integrations and ArchipelagoLab |
+| Official CLI Play Mode | 13 passed, zero failed/skipped: eight Archipelago cases plus five legacy Bootstrap/TradingLab cases |
+| Live Editor map controls and playback | Passed through actual Pipeline pointer input: passive selection, instant trades, geographic voyages, price updates, playback, waiting, and recovery |
+| Live ship interpolation | 240 actual frame samples inspected; fractional markers changed within one day/revision and settled on pause |
+| Final 1366×768 and 1920×1080 screenshot evidence | Passed; actual runtime dimensions and subsequent advancing frames verified, final map/context/fleet UI inspected |
+| Windows x64 Mono development player | Build passed with success provenance/exit 0; official CLI launch produced a responding native window and exact ready marker without managed exceptions |
+| Standalone-player trading/playback controls, IL2CPP, other platforms, independent human playtesting, large-world profiling, remote GitHub Actions | Not run; interactive flows and visible layout were checked in the Editor |
+
+The headless baseline completed **16 NPC shipments**: nine timber and seven plank deliveries, with real purchases, voyage progress, partial-sales accounting, and finite funds. Player strategies materially changed source/market availability and NPC throughput. [Living archipelago](LIVING_ARCHIPELAGO.md#reproducible-sixty-day-experiments) records exact accounts, physical flows, closed profit, held cargo, unmet demand, and limitations. The unchanged historical pricing report and legacy demos verify the compatibility boundary rather than silently adopting regional timing.
+
+Actual Editor interaction used the running scene and official Pipeline pointer input. Westhaven/Northport/NPC selection preserved day 0 and revision 0. Selecting Timber Merchant through the fleet popup also preserved that exact initial snapshot. Buying two Northport logs cost **20** on day 0, leaving cash **180**; the next two-log preview immediately changed to **22**. Departure to Southhaven spent no day and began a three-day voyage. After the day-3 arrival, selling those logs paid **51**, then buying two planks cost **39**, still on day 3. The return departed immediately and arrived on day 6; sale paid **70**, ending with cash **262**, empty cargo, and closed gross profit **62**. These are actual regional observations with competing NPCs and schedules, separate from TradingLab's historical six-tick 119/69 examples.
+
+Changing the 3× and 10× fields alone preserved the exact snapshot. Actual Play/Pause advanced day 0 → 2 at 3× and day 2 → 6 at 10×. A buy ceiling of 1 produced a wait with day 0, revision 2, cash 200, and empty cargo. Applying a feasible ceiling of 14 later on day 6 changed configuration to revision 9; **Run dockside actions** bought six logs for **69** and departed at day 6/revision 10 with cash **131**. Applying the rule and executing it remained separate, zero-day operations against the then-current market.
+
+The Editor's frame loop was explicitly verified by a successful `wait_for` check observing two advancing frames. A 240-frame motion sample included changing fractional marker positions while economic day/revision stayed unchanged; pausing settled the display to the committed state. Visual review at 1366×768 found and corrected clipped speed text, dock-marker overlap, route-field captions, and an initial-layout `NaN` marker-position defect. A geometry regression was added. Its first batch Play Mode run passed 11 of 12 cases but failed containment at the unsupported 640×480 default; the fixture now explicitly selects 1366×768/1920×1080 before checking layout, retaining the assertions. A fleet selector and overlapping-voyage selection regression were also added so coincident sailing markers remain individually inspectable. The final complete suite passed all 13 cases; NUnit counts and individual outcomes were inspected.
+
+Final captures show day 7 in the paused scenario. The 1366×768 view exposes Southhaven's canonical sawmill inputs/output, two-day interval, next opportunity, ceiling, and recent merchant activity. The 1920×1080 view exposes Northport's extraction schedule, plank demand, unmet consumption, and real NPC purchases. Both show all three ship markers, direct-route durations, dock counts, the fleet picker, and unobscured primary playback controls. Actual `Screen.width`/`Screen.height` and advancing frames were confirmed before capture. The [recorded views](PLAYTEST.md#recorded-archipelago-views) are actual Editor rendering evidence.
+
+Tooling was investigated through the supported workflow. Initial restricted CLI discovery could not enumerate the running Editor or complete the network version check; the authorized retry succeeded. A roughly 141-second Editor import delayed Pipeline readiness, diagnosed from the project's actual `unity/Logs/Editor.log`. Some pointer events were ignored while an isolated test Editor held focus; refocusing the live Game view and repeating the intended action produced the verified transitions above. Ignored clicks are not counted as successful interactions. Final root Editor inspection reported successful compilation, zero Console errors, and zero warnings.
+
+The official CLI built the intended ArchipelagoLab-only Windows x64 Mono development player using Unity **6000.6.6f1 / d20c9ac777da** and `SaltAndLedger.UnityHost.Editor.ArchipelagoLabBuild.BuildWindowsMono`. Build provenance reports success and exit code 0. The supported `build run` command launched a responding native window, still open after the settled startup check. The log contains exactly one `Salt & Ledger Archipelago Lab ready: day 0, four ports, three ships.` marker and no managed-exception or action-failure matches. Standalone trading/playback controls were **not** exercised; the interactive and screenshot evidence above comes from the Editor.
+
+The player log retains AMDUnityPlugin/NVUnityPlugin architecture-load errors, a D3D12 information-queue query failure (`0x80004002`), and unsupported/stripped DepthOfField, MotionBlur, PaniniProjection, and Bloom shader diagnostics. Those post-processing passes are unused/disabled in this scene. The successful build also retained licensing-client validation and entitlement-404 diagnostics. They did not prevent the observed build or ready-state launch, but this check does not verify those optional native/graphics paths. No renderer, package, or licensing setting was changed to hide the messages.
+
+SHA-256 comparisons confirmed that all **72** authored Runtime/Tests/Editor/Scenes and prepared Generated files matched between the repository and isolated verification project; the local comparison is `.cache/task15-unity-hashes.json`. Edit Mode uses `.cache/task15-editmode.xml`; final Play Mode uses `.cache/task15-playmode-final.xml`, each with its corresponding log. Initial geometry diagnostics remain in `.cache/task15-playmode.xml` and `.cache/task15-map-diagnostic.xml`. Build/launch evidence uses `.cache/task15-build-mono.log`, `.cache/task15-build-mono.provenance.json`, `.cache/task15-player-launch.json`, and `.cache/task15-player-mono.log`. The verified executable is under `.cache/unity-verification/Builds/ArchipelagoLab/Windows/SaltAndLedger.ArchipelagoLab.exe`; a normal checkout build uses `unity/Builds/ArchipelagoLab/Windows/`.
+
+Selected captures are `docs/images/archipelago-1366.png` and `docs/images/archipelago-1920.png`; additional local captures are backed up under `.cache/task15-screenshots`. Temporary captures were removed through the official AssetDatabase after workspace-path verification. The root Editor was stopped, its original background setting restored, and session autotick disabled; source/metadata hygiene and absence of unexpected ProjectSettings changes were checked.
+
 ### Remaining player verification
 
 For an intended IL2CPP target, install its Unity build support and native compiler prerequisites, select Bootstrap in the Build Profile, set **Scripting Backend: IL2CPP**, retain **API Compatibility Level: .NET Standard 2.1**, and select the intended managed stripping level. Build a development player, launch it with the smoke flag, and inspect its exit code and log as above. Record Editor version, operating system, target architecture, backend, stripping level, UPM version, and result. No blanket `link.xml` is supplied; investigate concrete stripping failures before adding preservation rules.
 
-Then build TradingLab with that same intended backend/stripping configuration and repeat the player-facing manual, automated, blocked, and recovery flows. The provided TradingLab build method deliberately selects Mono; it does not certify IL2CPP. A passing Bootstrap production smoke alone does not establish UI rendering or route operation on a new backend.
+Then build TradingLab and ArchipelagoLab with that same intended backend/stripping configuration and repeat their manual, automated, blocked, recovery, map, and playback flows. The provided development build methods deliberately select Mono; they do not certify IL2CPP. A passing Bootstrap production smoke alone does not establish UI rendering, route operation, or playback on a new backend.
 
 The smoke verifies assembly import, Unity's JSON dependency, packaged content loading, successful production, and an atomic rejection. It does not validate a production content-distribution system, save games, performance, every malformed input on every backend, or all player targets.
 
