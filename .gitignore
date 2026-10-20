@@ -12,6 +12,7 @@
 site/
 .vs/
 .idea/
+tasks/
 
 # Unity-generated folders
 **/[Ll]ibrary/
