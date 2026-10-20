@@ -58,6 +58,9 @@ jobs:
       - name: Verify living archipelago experiments and report freshness
         # Sixty-day strategies reconcile physical flows and cash; repeat, reversed setup, and culture must match.
         run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --archipelago --check
+      - name: Verify enterprise experiments and report freshness
+        # Ninety-day industry strategies plus deadline-bound challenge trials; exact cash/physical reconciliation.
+        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --enterprise --check
       - name: Prepare Unity integration assets
         run: python tools/prepare_unity.py
       - name: Check Unity integration asset freshness

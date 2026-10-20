@@ -4,6 +4,63 @@ using System.Linq;
 
 namespace SaltAndLedger.Simulation
 {
+    public sealed class RegionalWarehouseTrade
+    {
+        public string FacilityId { get; }
+        public string OwnerId { get; }
+        public string PortId { get; }
+        public TradeAttempt Trade { get; }
+        internal RegionalWarehouseTrade(string facilityId, string ownerId, string portId, TradeAttempt trade)
+        { FacilityId = facilityId; OwnerId = ownerId; PortId = portId; Trade = trade; }
+    }
+
+    public sealed class RegionalPrivateProduction
+    {
+        public string FacilityId { get; }
+        public string OwnerId { get; }
+        public string PortId { get; }
+        public string RecipeId { get; }
+        public ScheduledProductionOutcome Outcome { get; }
+        public IReadOnlyList<InventoryChange> Changes { get; }
+        internal RegionalPrivateProduction(string facilityId, string ownerId, string portId, string recipeId,
+            ScheduledProductionOutcome outcome, IEnumerable<InventoryChange> changes)
+        {
+            FacilityId = facilityId; OwnerId = ownerId; PortId = portId; RecipeId = recipeId; Outcome = outcome;
+            Changes = Array.AsReadOnly(changes.ToArray());
+        }
+    }
+
+    public sealed class RegionalConstruction
+    {
+        public string FacilityId { get; }
+        public string OwnerId { get; }
+        public string PortId { get; }
+        public string BlueprintId { get; }
+        public ConstructionOutcome Outcome { get; }
+        public long Cost { get; }
+        internal RegionalConstruction(string facilityId, string ownerId, string portId, string blueprintId,
+            ConstructionOutcome outcome, long cost)
+        { FacilityId = facilityId; OwnerId = ownerId; PortId = portId; BlueprintId = blueprintId; Outcome = outcome; Cost = cost; }
+    }
+
+    public sealed class RegionalTransfer
+    {
+        public string OwnerId { get; }
+        public string ShipId { get; }
+        public string FacilityId { get; }
+        public TransferDirection Direction { get; }
+        public string GoodId { get; }
+        public int RequestedQuantity { get; }
+        public int TransferredQuantity => Outcome == TransferOutcome.Transferred ? RequestedQuantity : 0;
+        public TransferOutcome Outcome { get; }
+        internal RegionalTransfer(string ownerId, string shipId, string facilityId, TransferDirection direction,
+            string goodId, int quantity, TransferOutcome outcome)
+        {
+            OwnerId = ownerId; ShipId = shipId; FacilityId = facilityId; Direction = direction;
+            GoodId = goodId; RequestedQuantity = quantity; Outcome = outcome;
+        }
+    }
+
     public sealed class RegionalTrade
     {
         public string ShipId { get; }
@@ -61,10 +118,16 @@ namespace SaltAndLedger.Simulation
         public IReadOnlyList<RegionalConsumption> Consumption { get; }
         public IReadOnlyList<RegionalMovement> Movements { get; }
         public IReadOnlyList<RegionalDecision> Decisions { get; }
+        public IReadOnlyList<RegionalWarehouseTrade> WarehouseTrades { get; }
+        public IReadOnlyList<RegionalPrivateProduction> PrivateProduction { get; }
+        public IReadOnlyList<RegionalConstruction> Construction { get; }
+        public IReadOnlyList<RegionalTransfer> Transfers { get; }
         internal RegionalResult(RegionalWorldSnapshot before, RegionalWorldSnapshot after,
             IEnumerable<RegionalTrade> trades, IEnumerable<RegionalProduction> production,
             IEnumerable<RegionalConsumption> consumption, IEnumerable<RegionalMovement> movements,
-            IEnumerable<RegionalDecision> decisions)
+            IEnumerable<RegionalDecision> decisions, IEnumerable<RegionalWarehouseTrade> warehouseTrades,
+            IEnumerable<RegionalPrivateProduction> privateProduction, IEnumerable<RegionalConstruction> construction,
+            IEnumerable<RegionalTransfer> transfers)
         {
             Before = before; After = after;
             Trades = Array.AsReadOnly(trades.ToArray());
@@ -72,6 +135,10 @@ namespace SaltAndLedger.Simulation
             Consumption = Array.AsReadOnly(consumption.ToArray());
             Movements = Array.AsReadOnly(movements.ToArray());
             Decisions = Array.AsReadOnly(decisions.ToArray());
+            WarehouseTrades = Array.AsReadOnly(warehouseTrades.ToArray());
+            PrivateProduction = Array.AsReadOnly(privateProduction.ToArray());
+            Construction = Array.AsReadOnly(construction.ToArray());
+            Transfers = Array.AsReadOnly(transfers.ToArray());
         }
     }
 }

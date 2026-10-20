@@ -72,7 +72,7 @@ public sealed class WorldStateTests
                 new Dictionary<string, int> { ["planks"] = 0, ["logs"] = 4 });
 
             EqualSnapshots(first.Snapshot(), second.Snapshot());
-            Assert.Equal(new[] { "logs", "planks" }, first.Snapshot().Inventory.Keys);
+            Assert.Equal(new[] { "bread", "flour", "furniture", "grain", "logs", "planks" }, first.Snapshot().Inventory.Keys);
             Assert.Equal(new[] { "first", "mill_a", "milla", "last" },
                 first.Snapshot().Buildings.Select(building => building.Id));
             for (var tick = 0; tick < 3; tick++)
@@ -471,7 +471,7 @@ public sealed class WorldStateTests
     public void InitialInventoryDefaultsToZeroAndRejectsInvalidBalances()
     {
         var empty = new WorldState(Canonical(), "test_port", new[] { Mill("mill_a") });
-        Assert.Equal(new[] { "logs", "planks" }, empty.Snapshot().Inventory.Keys);
+        Assert.Equal(new[] { "bread", "flour", "furniture", "grain", "logs", "planks" }, empty.Snapshot().Inventory.Keys);
         Assert.All(empty.Snapshot().Inventory.Values, quantity => Assert.Equal(0, quantity));
         Assert.Equal(ProductionOutcome.ResourceShortage, Assert.Single(empty.Step().ProductionAttempts).Outcome);
         Assert.Throws<ArgumentOutOfRangeException>(() => World(logs: -1));

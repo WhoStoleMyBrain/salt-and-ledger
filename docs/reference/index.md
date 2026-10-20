@@ -6,15 +6,27 @@ These pages describe the canonical definitions. Behavior is specified in the mai
 
 ## Goods
 
+- [Bread](goods/bread.md)
+- [Flour](goods/flour.md)
+- [Furniture](goods/furniture.md)
+- [Grain](goods/grain.md)
 - [Logs](goods/logs.md)
 - [Planks](goods/planks.md)
 
 ## Buildings
 
+- [Bakery](buildings/bakery.md)
+- [Farm](buildings/farm.md)
+- [Furniture Workshop](buildings/furniture_workshop.md)
 - [Lumber Camp](buildings/lumber_camp.md)
+- [Mill](buildings/mill.md)
 - [Sawmill](buildings/sawmill.md)
 
 ## Recipes
 
+- [Bake bread](recipes/bake_bread.md)
+- [Harvest grain](recipes/harvest_grain.md)
 - [Harvest logs](recipes/harvest_logs.md)
+- [Make furniture](recipes/make_furniture.md)
+- [Mill flour](recipes/mill_flour.md)
 - [Saw planks](recipes/saw_planks.md)

@@ -8,6 +8,7 @@ Unprocessed timber used by the sample sawmill recipe\.
 
 ## Used as input
 
+- [Bake bread](../recipes/bake_bread.md)
 - [Saw planks](../recipes/saw_planks.md)
 
 ## Produced as output

@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace SaltAndLedger.Simulation
 {
-    public enum ScheduledProductionOutcome { NotDue, Disabled, Produced, InputShortage, OutputLimit }
+    public enum ScheduledProductionOutcome { NotDue, Disabled, Produced, InputShortage, OutputLimit, WarehouseCapacity }
 
     public sealed class ScheduledFacilitySnapshot
     {
@@ -102,8 +102,14 @@ namespace SaltAndLedger.Simulation
         public IReadOnlyDictionary<string, RegionalPortSnapshot> Ports { get; }
         public IReadOnlyDictionary<string, RegionalShipSnapshot> Ships { get; }
         public IReadOnlyList<SeaRoute> Routes { get; }
+        public IReadOnlyDictionary<string, CompanySnapshot> Companies { get; }
+        public IReadOnlyDictionary<string, IndustryBlueprint> IndustryBlueprints { get; }
+        public IReadOnlyDictionary<string, PrivateFacilitySnapshot> PrivateFacilities { get; }
+        public ChallengeSnapshot? Challenge { get; }
         internal RegionalWorldSnapshot(long day, long revision, IEnumerable<RegionalPortSnapshot> ports,
-            IEnumerable<RegionalShipSnapshot> ships, IEnumerable<SeaRoute> routes)
+            IEnumerable<RegionalShipSnapshot> ships, IEnumerable<SeaRoute> routes,
+            IEnumerable<CompanySnapshot> companies, IEnumerable<IndustryBlueprint> industryBlueprints,
+            IEnumerable<PrivateFacilitySnapshot> privateFacilities, ChallengeSnapshot? challenge)
         {
             Day = day;
             Revision = revision;
@@ -112,6 +118,13 @@ namespace SaltAndLedger.Simulation
             Ships = new ReadOnlyDictionary<string, RegionalShipSnapshot>(
                 new SortedDictionary<string, RegionalShipSnapshot>(ships.ToDictionary(s => s.Id), StringComparer.Ordinal));
             Routes = Array.AsReadOnly(routes.OrderBy(r => r.Key, StringComparer.Ordinal).ToArray());
+            Companies = new ReadOnlyDictionary<string, CompanySnapshot>(
+                new SortedDictionary<string, CompanySnapshot>(companies.ToDictionary(c => c.Id), StringComparer.Ordinal));
+            IndustryBlueprints = new ReadOnlyDictionary<string, IndustryBlueprint>(
+                new SortedDictionary<string, IndustryBlueprint>(industryBlueprints.ToDictionary(b => b.Id), StringComparer.Ordinal));
+            PrivateFacilities = new ReadOnlyDictionary<string, PrivateFacilitySnapshot>(
+                new SortedDictionary<string, PrivateFacilitySnapshot>(privateFacilities.ToDictionary(f => f.Id), StringComparer.Ordinal));
+            Challenge = challenge;
         }
 
         public SeaRoute GetRoute(string from, string to)
@@ -149,6 +162,40 @@ namespace SaltAndLedger.Simulation
         {
             if (!Ports.ContainsKey(portId)) throw new KeyNotFoundException("Unknown port.");
             return Array.AsReadOnly(Ships.Values.Where(s => s.DockedPortId == portId).ToArray());
+        }
+
+        public TradeAttempt PreviewWarehouseTrade(string ownerId, string facilityId, TradeCommand command)
+        {
+            if (command == null) throw new ArgumentNullException(nameof(command));
+            var facility = OwnedFacility(ownerId, facilityId);
+            var port = Ports[facility.PortId];
+            return TradeCalculator.Preview(port.Quotes[command.GoodId], command, port.Inventory[command.GoodId],
+                facility.Inventory[command.GoodId], port.MarketCash, Companies[ownerId].Cash,
+                facility.Capacity - facility.StoredUnits);
+        }
+
+        public int MaximumTradeQuantity(string shipId, string portId, TradeDirection direction, string goodId)
+        {
+            var port = Ports[portId];
+            var ship = Ships[shipId];
+            return TradeQuantityCalculator.Maximum(port.Quotes[goodId], direction, port.Inventory[goodId],
+                ship.Cargo[goodId], port.MarketCash, ship.Cash, ship.CargoCapacity - ship.CargoUnits);
+        }
+
+        public int MaximumWarehouseTradeQuantity(string ownerId, string facilityId, TradeDirection direction, string goodId)
+        {
+            var facility = OwnedFacility(ownerId, facilityId);
+            var port = Ports[facility.PortId];
+            return TradeQuantityCalculator.Maximum(port.Quotes[goodId], direction, port.Inventory[goodId],
+                facility.Inventory[goodId], port.MarketCash, Companies[ownerId].Cash,
+                facility.Capacity - facility.StoredUnits);
+        }
+
+        private PrivateFacilitySnapshot OwnedFacility(string ownerId, string facilityId)
+        {
+            var facility = PrivateFacilities[facilityId];
+            if (facility.OwnerId != ownerId) throw new InvalidOperationException("The facility belongs to another company.");
+            return facility;
         }
     }
 }

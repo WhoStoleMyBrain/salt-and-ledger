@@ -17,6 +17,7 @@ namespace SaltAndLedger.Simulation
 
         public static RegionalWorldState Create(ContentCatalog content, bool reverseConfiguration = false)
         {
+            content = LegacyContent.Timber(content);
             var northCamp = new BuildingInstance("north_lumber_camp", "lumber_camp", "harvest_logs");
             var westCamp = new BuildingInstance("west_lumber_camp", "lumber_camp", "harvest_logs");
             var sawmill = new BuildingInstance("south_sawmill", "sawmill", "saw_planks");

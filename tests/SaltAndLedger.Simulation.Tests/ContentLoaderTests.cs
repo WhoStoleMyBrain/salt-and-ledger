@@ -25,9 +25,9 @@ public sealed class ContentLoaderTests
     {
         var catalog = ContentLoader.Load(CanonicalJson());
         Assert.Equal(1, catalog.SchemaVersion);
-        Assert.Equal(new[] { "logs", "planks" }, catalog.Goods.Select(good => good.Id));
-        Assert.Equal(new[] { "sawmill", "lumber_camp" }, catalog.Buildings.Select(building => building.Id));
-        Assert.Equal(new[] { "saw_planks", "harvest_logs" }, catalog.Recipes.Select(item => item.Id));
+        Assert.Equal(new[] { "logs", "planks", "grain", "flour", "bread", "furniture" }, catalog.Goods.Select(good => good.Id));
+        Assert.Equal(new[] { "sawmill", "lumber_camp", "farm", "mill", "bakery", "furniture_workshop" }, catalog.Buildings.Select(building => building.Id));
+        Assert.Equal(new[] { "saw_planks", "harvest_logs", "harvest_grain", "mill_flour", "bake_bread", "make_furniture" }, catalog.Recipes.Select(item => item.Id));
         Assert.Equal("Sawmill", catalog.GetBuilding("sawmill").Name);
         var recipe = catalog.GetRecipe("saw_planks");
         Assert.Same(catalog.GetRecipe("saw_planks"), recipe);
@@ -53,8 +53,9 @@ public sealed class ContentLoaderTests
     {
         var originalJson = Change(root =>
         {
-            ((JArray)root["buildings"]!).RemoveAt(1);
-            ((JArray)root["recipes"]!).RemoveAt(1);
+            root["goods"] = new JArray(root["goods"]!.Take(2));
+            root["buildings"] = new JArray(root["buildings"]!.Take(1));
+            root["recipes"] = new JArray(root["recipes"]!.Take(1));
         });
         var catalog = ContentLoader.Load(originalJson);
         Assert.Equal(1, catalog.SchemaVersion);

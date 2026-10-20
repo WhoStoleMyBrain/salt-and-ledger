@@ -14,7 +14,7 @@ public sealed class RegionalEconomyTests
     private const string South = "southhaven";
     private const string Ship = "test_ship";
 
-    private static ContentCatalog Content() => ContentLoader.Load(ContentLoaderTests.CanonicalJson());
+    private static ContentCatalog Content() => LegacyContent.Timber(ContentLoader.Load(ContentLoaderTests.CanonicalJson()));
 
     private static ScheduledFacilityConfiguration Camp(int interval = 3, int? limit = null,
         long? firstDue = null, bool enabled = true) =>

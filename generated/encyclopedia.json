@@ -3,11 +3,56 @@
   "sourceSchemaVersion": 1,
   "goods": [
     {
+      "id": "bread",
+      "name": "Bread",
+      "description": "Finished food baked from flour using logs as fuel.",
+      "wikiPath": "reference/goods/bread.md",
+      "consumedByRecipeIds": [],
+      "producedByRecipeIds": [
+        "bake_bread"
+      ]
+    },
+    {
+      "id": "flour",
+      "name": "Flour",
+      "description": "Milled grain used with timber fuel to bake bread.",
+      "wikiPath": "reference/goods/flour.md",
+      "consumedByRecipeIds": [
+        "bake_bread"
+      ],
+      "producedByRecipeIds": [
+        "mill_flour"
+      ]
+    },
+    {
+      "id": "furniture",
+      "name": "Furniture",
+      "description": "Finished household goods manufactured from sawn planks.",
+      "wikiPath": "reference/goods/furniture.md",
+      "consumedByRecipeIds": [],
+      "producedByRecipeIds": [
+        "make_furniture"
+      ]
+    },
+    {
+      "id": "grain",
+      "name": "Grain",
+      "description": "Harvested grain milled into flour for the food supply chain.",
+      "wikiPath": "reference/goods/grain.md",
+      "consumedByRecipeIds": [
+        "mill_flour"
+      ],
+      "producedByRecipeIds": [
+        "harvest_grain"
+      ]
+    },
+    {
       "id": "logs",
       "name": "Logs",
       "description": "Unprocessed timber used by the sample sawmill recipe.",
       "wikiPath": "reference/goods/logs.md",
       "consumedByRecipeIds": [
+        "bake_bread",
         "saw_planks"
       ],
       "producedByRecipeIds": [
@@ -19,7 +64,9 @@
       "name": "Planks",
       "description": "Sawn timber produced by the sample sawmill recipe.",
       "wikiPath": "reference/goods/planks.md",
-      "consumedByRecipeIds": [],
+      "consumedByRecipeIds": [
+        "make_furniture"
+      ],
       "producedByRecipeIds": [
         "saw_planks"
       ]
@@ -27,12 +74,48 @@
   ],
   "buildings": [
     {
+      "id": "bakery",
+      "name": "Bakery",
+      "description": "A building that bakes flour into bread using logs as fuel.",
+      "wikiPath": "reference/buildings/bakery.md",
+      "recipeIds": [
+        "bake_bread"
+      ]
+    },
+    {
+      "id": "farm",
+      "name": "Farm",
+      "description": "A resource-producing building that harvests grain without tradeable inputs.",
+      "wikiPath": "reference/buildings/farm.md",
+      "recipeIds": [
+        "harvest_grain"
+      ]
+    },
+    {
+      "id": "furniture_workshop",
+      "name": "Furniture Workshop",
+      "description": "A building that manufactures furniture from planks.",
+      "wikiPath": "reference/buildings/furniture_workshop.md",
+      "recipeIds": [
+        "make_furniture"
+      ]
+    },
+    {
       "id": "lumber_camp",
       "name": "Lumber Camp",
       "description": "A resource-producing building that extracts logs without tradeable inputs.",
       "wikiPath": "reference/buildings/lumber_camp.md",
       "recipeIds": [
         "harvest_logs"
+      ]
+    },
+    {
+      "id": "mill",
+      "name": "Mill",
+      "description": "A building that processes grain into flour.",
+      "wikiPath": "reference/buildings/mill.md",
+      "recipeIds": [
+        "mill_flour"
       ]
     },
     {
@@ -47,6 +130,45 @@
   ],
   "recipes": [
     {
+      "id": "bake_bread",
+      "name": "Bake bread",
+      "description": "Bake one flour into two bread, consuming one log as fuel.",
+      "wikiPath": "reference/recipes/bake_bread.md",
+      "buildingId": "bakery",
+      "kind": "transformation",
+      "inputs": [
+        {
+          "goodId": "flour",
+          "quantity": 1
+        },
+        {
+          "goodId": "logs",
+          "quantity": 1
+        }
+      ],
+      "outputs": [
+        {
+          "goodId": "bread",
+          "quantity": 2
+        }
+      ]
+    },
+    {
+      "id": "harvest_grain",
+      "name": "Harvest grain",
+      "description": "Harvest four grain in one extraction batch. Scheduling and stock limits belong to the scenario.",
+      "wikiPath": "reference/recipes/harvest_grain.md",
+      "buildingId": "farm",
+      "kind": "extraction",
+      "inputs": [],
+      "outputs": [
+        {
+          "goodId": "grain",
+          "quantity": 4
+        }
+      ]
+    },
+    {
       "id": "harvest_logs",
       "name": "Harvest logs",
       "description": "Create two logs in one resource-extraction batch. Scheduling and stock limits belong to the scenario.",
@@ -58,6 +180,46 @@
         {
           "goodId": "logs",
           "quantity": 2
+        }
+      ]
+    },
+    {
+      "id": "make_furniture",
+      "name": "Make furniture",
+      "description": "Manufacture one furniture from two planks.",
+      "wikiPath": "reference/recipes/make_furniture.md",
+      "buildingId": "furniture_workshop",
+      "kind": "transformation",
+      "inputs": [
+        {
+          "goodId": "planks",
+          "quantity": 2
+        }
+      ],
+      "outputs": [
+        {
+          "goodId": "furniture",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "id": "mill_flour",
+      "name": "Mill flour",
+      "description": "Mill two grain into one flour.",
+      "wikiPath": "reference/recipes/mill_flour.md",
+      "buildingId": "mill",
+      "kind": "transformation",
+      "inputs": [
+        {
+          "goodId": "grain",
+          "quantity": 2
+        }
+      ],
+      "outputs": [
+        {
+          "goodId": "flour",
+          "quantity": 1
         }
       ]
     },

@@ -24,7 +24,7 @@ class ReferenceGenerationTests(unittest.TestCase):
         goods = {item["id"]: item for item in encyclopedia["goods"]}
         buildings = {item["id"]: item for item in encyclopedia["buildings"]}
         recipes = {item["id"]: item for item in encyclopedia["recipes"]}
-        self.assertEqual(["saw_planks"], goods["logs"]["consumedByRecipeIds"])
+        self.assertEqual(["bake_bread", "saw_planks"], goods["logs"]["consumedByRecipeIds"])
         self.assertEqual(["harvest_logs"], goods["logs"]["producedByRecipeIds"])
         self.assertEqual(["saw_planks"], goods["planks"]["producedByRecipeIds"])
         self.assertEqual(["saw_planks"], buildings["sawmill"]["recipeIds"])
@@ -104,8 +104,8 @@ class ReferenceGenerationTests(unittest.TestCase):
         outputs = render_outputs(validate_content(self.content))
         encyclopedia = json.loads(outputs[ENCYCLOPEDIA_PATH])
         goods = {item["id"]: item for item in encyclopedia["goods"]}
-        self.assertEqual([], goods["logs"]["consumedByRecipeIds"])
-        self.assertEqual(["saw_planks"], goods["planks"]["consumedByRecipeIds"])
+        self.assertEqual(["bake_bread"], goods["logs"]["consumedByRecipeIds"])
+        self.assertEqual(["make_furniture", "saw_planks"], goods["planks"]["consumedByRecipeIds"])
         self.assertNotIn(b"../recipes/saw_planks.md", outputs[Path("docs/reference/goods/logs.md")])
 
     def test_authored_text_cannot_inject_markdown_or_html(self):
@@ -119,7 +119,7 @@ class ReferenceGenerationTests(unittest.TestCase):
         self.assertNotIn("[link](evil)", recipe)
         self.assertNotIn("\n# injected", outputs[Path("docs/reference/goods/logs.md")].decode())
         machine = json.loads(outputs[ENCYCLOPEDIA_PATH])
-        self.assertEqual(name, machine["goods"][0]["name"])
+        self.assertEqual(name, next(good for good in machine["goods"] if good["id"] == "logs")["name"])
 
     def test_check_reports_missing_changed_and_unexpected_files_without_writing(self):
         outputs = render_outputs(self.content)

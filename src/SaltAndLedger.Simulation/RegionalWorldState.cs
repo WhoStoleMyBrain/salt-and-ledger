@@ -17,7 +17,8 @@ namespace SaltAndLedger.Simulation
 
         public RegionalWorldState(ContentCatalog content, IEnumerable<RegionalPortConfiguration> ports,
             IEnumerable<SeaRoute> routes, IEnumerable<RegionalShipConfiguration> ships,
-            long initialDay = 0, long initialRevision = 0)
+            long initialDay = 0, long initialRevision = 0, IEnumerable<CompanyConfiguration>? companies = null,
+            IEnumerable<IndustryBlueprint>? industryBlueprints = null, ChallengeConfiguration? challenge = null)
         {
             this.content = content ?? throw new ArgumentNullException(nameof(content));
             if (ports == null) throw new ArgumentNullException(nameof(ports));
@@ -46,19 +47,48 @@ namespace SaltAndLedger.Simulation
                 if (!routeKeys.Add(route.Key)) throw new ArgumentException("Duplicate undirected sea route.");
             }
             var vessels = new List<RegionalShipSnapshot>();
-            var owners = new HashSet<string>(StringComparer.Ordinal);
+            var accounts = new SortedDictionary<string, CompanySnapshot>(StringComparer.Ordinal);
+            if (companies != null)
+                foreach (var company in companies)
+                {
+                    if (company == null) throw new ArgumentException("Companies cannot contain null.");
+                    accounts.Add(company.Id, new CompanySnapshot(company.Id, company.InitialCash));
+                }
             foreach (var ship in ships)
             {
                 if (ship == null) throw new ArgumentException("Ships cannot contain null.");
-                if (!owners.Add(ship.OwnerId)) throw new ArgumentException("Each trader owns exactly one ship in this region.");
+                if (companies == null)
+                    accounts.Add(ship.OwnerId, new CompanySnapshot(ship.OwnerId, ship.InitialCash));
+                else if (ship.InitialCash != 0)
+                    throw new ArgumentException("Explicit company accounts require zero ship InitialCash.");
+                if (!accounts.ContainsKey(ship.OwnerId)) throw new ArgumentException("Unknown ship owner.");
                 if (!locations.Any(p => p.Id == ship.Ship.InitialPortId)) throw new ArgumentException("Unknown initial dock.");
                 var cargo = new Inventory(content, ship.Ship.InitialCargo);
                 vessels.Add(new RegionalShipSnapshot(ship, new ShipSnapshot(ship.Ship.Id, ship.Ship.CargoCapacity,
-                    cargo.Snapshot(), ship.Ship.InitialPortId, null, null, 0), ship.InitialCash, ship.Policy,
+                    cargo.Snapshot(), ship.Ship.InitialPortId, null, null, 0), accounts[ship.OwnerId].Cash, ship.Policy,
                     ship.AutomationEnabled, 0));
             }
             if (vessels.Count == 0) throw new ArgumentException("A region needs at least one ship.");
-            state = new RegionalWorldSnapshot(initialDay, initialRevision, locations, vessels, connections);
+            var blueprints = (industryBlueprints ?? Array.Empty<IndustryBlueprint>()).ToArray();
+            foreach (var blueprint in blueprints)
+            {
+                if (blueprint == null) throw new ArgumentException("Blueprints cannot contain null.");
+                content.GetBuilding(blueprint.BuildingId);
+                var recipe = content.GetRecipe(blueprint.RecipeId);
+                if (recipe.BuildingId != blueprint.BuildingId) throw new ArgumentException("Blueprint recipe belongs to another building.");
+                if (blueprint.EligiblePortIds.Any(id => !locations.Any(p => p.Id == id)))
+                    throw new ArgumentException("Blueprint has an unknown eligible port.");
+            }
+            if (challenge != null)
+            {
+                if (!accounts.ContainsKey(challenge.OwnerId) || !locations.Any(p => p.Id == challenge.PortId))
+                    throw new ArgumentException("Unknown challenge owner or destination.");
+                content.GetGood(challenge.GoodId);
+                if (challenge.DeadlineDay <= initialDay) throw new ArgumentException("Challenge deadline must follow the starting day.");
+            }
+            state = new RegionalWorldSnapshot(initialDay, initialRevision, locations, vessels, connections,
+                accounts.Values, blueprints, Array.Empty<PrivateFacilitySnapshot>(),
+                challenge == null ? null : ChallengeRules.Create(challenge));
             foreach (var vessel in state.Ships.Values)
                 if (vessel.Policy != null) RegionalAutomation.ValidatePolicy(state, vessel.Id, vessel.Policy);
         }
@@ -66,12 +96,62 @@ namespace SaltAndLedger.Simulation
         public RegionalWorldSnapshot Snapshot() => state;
         public RegionalDecision EvaluateAutomation(string shipId) => RegionalAutomation.Evaluate(state, shipId);
 
-        public RegionalResult ExecuteTrade(string shipId, string portId, TradeCommand command) =>
+        public RegionalResult ExecuteTrade(string shipId, string portId, TradeCommand command,
+            RegionalWorldSnapshot? expectedSnapshot = null) =>
             Mutate(work =>
             {
+                EnsureCurrent(expectedSnapshot);
                 EnsureManual(work.Ships[shipId]);
                 work.Trade(shipId, portId, command);
             });
+
+        public RegionalResult ConstructFacility(string ownerId, string portId, string blueprintId, string facilityId) =>
+            Mutate(work => work.Construct(ownerId, portId, blueprintId, facilityId));
+
+        public RegionalResult SetFacilityEnabled(string ownerId, string facilityId, bool enabled) =>
+            Mutate(work =>
+            {
+                var facility = work.OwnedFacility(ownerId, facilityId);
+                if (facility.Enabled == enabled) return;
+                facility.Enabled = enabled;
+                if (!enabled) facility.LastOutcome = ScheduledProductionOutcome.Disabled;
+                work.Changed = true;
+            });
+
+        public RegionalResult ConfigureFacility(string ownerId, string facilityId, IndustryPolicy policy) =>
+            Mutate(work =>
+            {
+                if (policy == null) throw new ArgumentNullException(nameof(policy));
+                var facility = work.OwnedFacility(ownerId, facilityId);
+                var recipe = content.GetRecipe(facility.Blueprint.RecipeId);
+                if (policy.Inputs.Any(r => !recipe.Inputs.Any(i => i.GoodId == r.GoodId)) ||
+                    policy.Outputs.Any(r => !recipe.Outputs.Any(o => o.GoodId == r.GoodId)))
+                    throw new ArgumentException("Industry policy rules must match the fixed canonical recipe.");
+                if (policy.Inputs.Any(r => r.TargetQuantity > facility.Blueprint.WarehouseCapacity) ||
+                    policy.Outputs.Any(r => r.ReserveQuantity > facility.Blueprint.WarehouseCapacity))
+                    throw new ArgumentException("Policy stock levels cannot exceed warehouse capacity.");
+                if (ReferenceEquals(facility.Policy, policy)) return;
+                facility.Policy = policy;
+                work.Changed = true;
+            });
+
+        public RegionalResult TransferGoods(string ownerId, string shipId, string facilityId,
+            TransferDirection direction, string goodId, int quantity) =>
+            Mutate(work => work.Transfer(ownerId, shipId, facilityId, direction, goodId, quantity));
+
+        public RegionalResult ExecuteWarehouseTrade(string ownerId, string facilityId, TradeCommand command,
+            RegionalWorldSnapshot? expectedSnapshot = null) =>
+            Mutate(work =>
+            {
+                EnsureCurrent(expectedSnapshot);
+                work.WarehouseTrade(work.OwnedFacility(ownerId, facilityId), command);
+            });
+
+        private void EnsureCurrent(RegionalWorldSnapshot? expected)
+        {
+            if (expected != null && !ReferenceEquals(expected, state))
+                throw new InvalidOperationException("The preview is stale; refresh the current revision.");
+        }
 
         public RegionalResult Depart(string shipId, string destinationPortId) =>
             Mutate(work =>
@@ -143,7 +223,10 @@ namespace SaltAndLedger.Simulation
             foreach (var ship in work.Ships.Values.OrderBy(s => s.Configuration.Priority)
                 .ThenBy(s => s.Configuration.Ship.Id, StringComparer.Ordinal))
                 if (ship.AutomationEnabled) work.RunAutomation(ship.Configuration.Ship.Id, MaximumDocksideActions);
+            work.Procure();
             work.Produce(nextDay);
+            work.ProducePrivate(nextDay);
+            work.SellPrivate();
             work.Consume(nextDay);
             work.AdvanceVoyages();
             work.Day = nextDay;
@@ -158,15 +241,19 @@ namespace SaltAndLedger.Simulation
         private RegionalResult Mutate(Action<WorkingWorld> operation)
         {
             if (mutating) throw new InvalidOperationException("Regional commands cannot be entered recursively.");
+            if (state.Challenge != null && state.Challenge.Status != ChallengeStatus.Active)
+                throw new InvalidOperationException("The challenge has ended. Reset to begin another world.");
             mutating = true;
             try
             {
                 var before = state;
                 var work = new WorkingWorld(content, before);
                 operation(work);
+                work.EvaluateChallenge();
                 var after = work.Changed ? work.View(checked(before.Revision + 1)) : before;
                 var result = new RegionalResult(before, after, work.Trades, work.Production, work.Consumption,
-                    work.Movements, work.Decisions);
+                    work.Movements, work.Decisions, work.WarehouseTrades, work.PrivateProduction,
+                    work.Construction, work.Transfers);
                 state = after;
                 return result;
             }
@@ -199,7 +286,6 @@ namespace SaltAndLedger.Simulation
             internal RegionalShipConfiguration Configuration { get; }
             internal Inventory Cargo { get; }
             internal int CargoUnits { get; set; }
-            internal long Cash { get; set; }
             internal TradeRoutePolicy? Policy { get; set; }
             internal bool AutomationEnabled { get; set; }
             internal string? Dock { get; set; }
@@ -212,7 +298,6 @@ namespace SaltAndLedger.Simulation
                 Configuration = before.Configuration;
                 Cargo = new Inventory(content, before.Cargo);
                 CargoUnits = before.CargoUnits;
-                Cash = before.Cash;
                 Policy = before.Policy;
                 AutomationEnabled = before.AutomationEnabled;
                 Dock = before.DockedPortId;
@@ -221,9 +306,53 @@ namespace SaltAndLedger.Simulation
                 Remaining = before.RemainingTravelDays;
                 Duration = before.VoyageDurationDays;
             }
-            internal RegionalShipSnapshot Snapshot() => new RegionalShipSnapshot(Configuration,
+            internal RegionalShipSnapshot Snapshot(long cash) => new RegionalShipSnapshot(Configuration,
                 new ShipSnapshot(Configuration.Ship.Id, Configuration.Ship.CargoCapacity, Cargo.Snapshot(),
-                    Dock, Origin, Destination, Remaining), Cash, Policy, AutomationEnabled, Duration);
+                    Dock, Origin, Destination, Remaining), cash, Policy, AutomationEnabled, Duration);
+        }
+
+        private sealed class WorkingCompany
+        {
+            internal string Id { get; }
+            internal long Cash { get; set; }
+            internal WorkingCompany(CompanySnapshot before) { Id = before.Id; Cash = before.Cash; }
+            internal CompanySnapshot Snapshot() => new CompanySnapshot(Id, Cash);
+        }
+
+        private sealed class WorkingFacility
+        {
+            internal string Id { get; }
+            internal string OwnerId { get; }
+            internal string PortId { get; }
+            internal IndustryBlueprint Blueprint { get; }
+            internal IndustryPolicy Policy { get; set; }
+            internal bool Enabled { get; set; }
+            internal long CreatedDay { get; }
+            internal long NextProductionDay { get; set; }
+            internal ScheduledProductionOutcome LastOutcome { get; set; }
+            internal Inventory Inventory { get; }
+            internal int StoredUnits { get; set; }
+            internal long BatchesProduced { get; set; }
+            internal long ProcurementCost { get; set; }
+            internal long SalesRevenue { get; set; }
+            internal Dictionary<string, long> Produced { get; }
+            internal Dictionary<string, long> Consumed { get; }
+            internal IndustryWaitReason ProcurementWaitReason { get; set; }
+            internal IndustryWaitReason SalesWaitReason { get; set; }
+            internal WorkingFacility(ContentCatalog content, PrivateFacilitySnapshot before)
+            {
+                Id = before.Id; OwnerId = before.OwnerId; PortId = before.PortId; Blueprint = before.Blueprint;
+                Policy = before.Policy; Enabled = before.Enabled; CreatedDay = before.CreatedDay;
+                NextProductionDay = before.NextProductionDay; LastOutcome = before.LastOutcome;
+                Inventory = new Inventory(content, before.Inventory); StoredUnits = before.StoredUnits;
+                BatchesProduced = before.BatchesProduced; ProcurementCost = before.ProcurementCost; SalesRevenue = before.SalesRevenue;
+                Produced = before.ProducedQuantities.ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal);
+                Consumed = before.ConsumedQuantities.ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal);
+                ProcurementWaitReason = before.ProcurementWaitReason; SalesWaitReason = before.SalesWaitReason;
+            }
+            internal PrivateFacilitySnapshot Snapshot() => new PrivateFacilitySnapshot(Id, OwnerId, PortId, Blueprint,
+                Policy, Enabled, CreatedDay, NextProductionDay, LastOutcome, Inventory.Snapshot(), BatchesProduced,
+                ProcurementCost, SalesRevenue, Produced, Consumed, ProcurementWaitReason, SalesWaitReason);
         }
 
         private sealed class WorkingWorld
@@ -234,11 +363,18 @@ namespace SaltAndLedger.Simulation
             internal bool Changed { get; set; }
             internal SortedDictionary<string, WorkingPort> Ports { get; } = new SortedDictionary<string, WorkingPort>(StringComparer.Ordinal);
             internal SortedDictionary<string, WorkingShip> Ships { get; } = new SortedDictionary<string, WorkingShip>(StringComparer.Ordinal);
+            internal SortedDictionary<string, WorkingCompany> Companies { get; } = new SortedDictionary<string, WorkingCompany>(StringComparer.Ordinal);
+            internal SortedDictionary<string, WorkingFacility> PrivateFacilities { get; } = new SortedDictionary<string, WorkingFacility>(StringComparer.Ordinal);
+            internal ChallengeSnapshot? Challenge { get; set; }
             internal List<RegionalTrade> Trades { get; } = new List<RegionalTrade>();
             internal List<RegionalProduction> Production { get; } = new List<RegionalProduction>();
             internal List<RegionalConsumption> Consumption { get; } = new List<RegionalConsumption>();
             internal List<RegionalMovement> Movements { get; } = new List<RegionalMovement>();
             internal List<RegionalDecision> Decisions { get; } = new List<RegionalDecision>();
+            internal List<RegionalWarehouseTrade> WarehouseTrades { get; } = new List<RegionalWarehouseTrade>();
+            internal List<RegionalPrivateProduction> PrivateProduction { get; } = new List<RegionalPrivateProduction>();
+            internal List<RegionalConstruction> Construction { get; } = new List<RegionalConstruction>();
+            internal List<RegionalTransfer> Transfers { get; } = new List<RegionalTransfer>();
 
             internal WorkingWorld(ContentCatalog content, RegionalWorldSnapshot before)
             {
@@ -247,28 +383,262 @@ namespace SaltAndLedger.Simulation
                 Day = before.Day;
                 foreach (var port in before.Ports.Values) Ports.Add(port.Id, new WorkingPort(content, port));
                 foreach (var ship in before.Ships.Values) Ships.Add(ship.Id, new WorkingShip(content, ship));
+                foreach (var company in before.Companies.Values) Companies.Add(company.Id, new WorkingCompany(company));
+                foreach (var facility in before.PrivateFacilities.Values) PrivateFacilities.Add(facility.Id, new WorkingFacility(content, facility));
+                Challenge = before.Challenge;
             }
             internal RegionalWorldSnapshot View(long? revision = null) => new RegionalWorldSnapshot(Day,
                 revision ?? before.Revision, Ports.Values.Select(p => p.Snapshot()),
-                Ships.Values.Select(s => s.Snapshot()), before.Routes);
+                Ships.Values.Select(s => s.Snapshot(Companies[s.Configuration.OwnerId].Cash)), before.Routes,
+                Companies.Values.Select(c => c.Snapshot()), before.IndustryBlueprints.Values,
+                PrivateFacilities.Values.Select(f => f.Snapshot()), Challenge);
+
+            internal void EvaluateChallenge()
+            {
+                if (Challenge == null) return;
+                var after = ChallengeRules.Evaluate(Challenge, Day, Companies[Challenge.Configuration.OwnerId].Cash);
+                if (!ReferenceEquals(Challenge, after)) { Challenge = after; Changed = true; }
+            }
 
             internal TradeAttempt Trade(string shipId, string portId, TradeCommand command)
             {
                 if (command == null) throw new ArgumentNullException(nameof(command));
                 var ship = Ships[shipId];
                 var port = Ports[portId];
+                var company = Companies[ship.Configuration.OwnerId];
                 if (ship.Dock == null || ship.Dock != portId)
                     throw new InvalidOperationException("Trade requires the ship to be docked at the selected port.");
                 var attempt = TradeCalculator.Preview(port.Configuration.Market.Quotes[command.GoodId], command,
                     port.Inventory.GetQuantity(command.GoodId), ship.Cargo.GetQuantity(command.GoodId),
-                    port.Cash, ship.Cash, ship.Configuration.Ship.CargoCapacity - ship.CargoUnits);
+                    port.Cash, company.Cash, ship.Configuration.Ship.CargoCapacity - ship.CargoUnits);
                 TradeCalculator.Apply(attempt, port.Inventory, ship.Cargo);
                 ship.CargoUnits = checked(ship.CargoUnits + attempt.TraderInventoryChange.Delta);
                 port.Cash = attempt.MarketCashChange.After;
-                ship.Cash = attempt.TraderCashChange.After;
+                company.Cash = attempt.TraderCashChange.After;
                 Trades.Add(new RegionalTrade(shipId, ship.Configuration.OwnerId, portId, attempt));
+                if (Challenge != null) Challenge = ChallengeRules.ApplyTrade(Challenge, company.Id, portId, attempt);
                 if (attempt.Outcome == TradeOutcome.Traded) Changed = true;
                 return attempt;
+            }
+
+            internal WorkingFacility OwnedFacility(string ownerId, string facilityId)
+            {
+                var facility = PrivateFacilities[facilityId];
+                if (facility.OwnerId != ownerId) throw new InvalidOperationException("The facility belongs to another company.");
+                return facility;
+            }
+
+            internal void Construct(string ownerId, string portId, string blueprintId, string facilityId)
+            {
+                RuntimeIdentifier.Validate(facilityId, nameof(facilityId));
+                var company = Companies[ownerId];
+                var port = Ports[portId];
+                var blueprint = before.IndustryBlueprints[blueprintId];
+                if (!blueprint.EligiblePortIds.Contains(portId)) throw new InvalidOperationException("This industry cannot be built at this port.");
+                if (PrivateFacilities.ContainsKey(facilityId) ||
+                    Ports.Values.Any(p => p.Facilities.Any(f => f.Configuration.Instance.Id == facilityId)))
+                    throw new ArgumentException("A facility with this ID already exists.");
+                if (PrivateFacilities.Values.Any(f => f.OwnerId == ownerId && f.PortId == portId && f.Blueprint.Id == blueprintId))
+                    throw new InvalidOperationException("This company already owns that industry at this port.");
+                if (company.Cash < blueprint.ConstructionCost)
+                {
+                    Construction.Add(new RegionalConstruction(facilityId, ownerId, portId, blueprintId,
+                        ConstructionOutcome.InsufficientFunds, 0));
+                    return;
+                }
+                var nextCash = checked(port.Cash + blueprint.ConstructionCost);
+                var due = checked(Day + blueprint.IntervalDays);
+                var totals = content.Goods.ToDictionary(g => g.Id, _ => 0L, StringComparer.Ordinal);
+                var facility = new PrivateFacilitySnapshot(facilityId, ownerId, portId, blueprint, new IndustryPolicy(),
+                    true, Day, due, ScheduledProductionOutcome.NotDue, new Inventory(content).Snapshot(),
+                    0, 0, 0, totals, totals, IndustryWaitReason.Disabled, IndustryWaitReason.Disabled);
+                PrivateFacilities.Add(facilityId, new WorkingFacility(content, facility));
+                company.Cash -= blueprint.ConstructionCost;
+                port.Cash = nextCash;
+                Construction.Add(new RegionalConstruction(facilityId, ownerId, portId, blueprintId,
+                    ConstructionOutcome.Built, blueprint.ConstructionCost));
+                Changed = true;
+            }
+
+            internal void Transfer(string ownerId, string shipId, string facilityId, TransferDirection direction,
+                string goodId, int quantity)
+            {
+                if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity));
+                if (direction != TransferDirection.ShipToWarehouse && direction != TransferDirection.WarehouseToShip)
+                    throw new ArgumentOutOfRangeException(nameof(direction));
+                content.GetGood(goodId);
+                var facility = OwnedFacility(ownerId, facilityId);
+                var ship = Ships[shipId];
+                if (ship.Configuration.OwnerId != ownerId) throw new InvalidOperationException("The ship belongs to another company.");
+                EnsureManual(ship);
+                if (ship.Dock != facility.PortId) throw new InvalidOperationException("Transfer requires docking at the warehouse's port.");
+                var toWarehouse = direction == TransferDirection.ShipToWarehouse;
+                var source = toWarehouse ? ship.Cargo : facility.Inventory;
+                var destination = toWarehouse ? facility.Inventory : ship.Cargo;
+                var free = toWarehouse ? facility.Blueprint.WarehouseCapacity - facility.StoredUnits
+                    : ship.Configuration.Ship.CargoCapacity - ship.CargoUnits;
+                var outcome = source.GetQuantity(goodId) < quantity ? TransferOutcome.InsufficientInventory :
+                    free < quantity ? TransferOutcome.InsufficientCapacity : TransferOutcome.Transferred;
+                if (outcome == TransferOutcome.Transferred)
+                {
+                    var nextSource = checked(source.GetQuantity(goodId) - quantity);
+                    var nextDestination = checked(destination.GetQuantity(goodId) + quantity);
+                    source.Commit(new Dictionary<string, int> { [goodId] = nextSource });
+                    destination.Commit(new Dictionary<string, int> { [goodId] = nextDestination });
+                    facility.StoredUnits = checked(facility.StoredUnits + (toWarehouse ? quantity : -quantity));
+                    ship.CargoUnits = checked(ship.CargoUnits + (toWarehouse ? -quantity : quantity));
+                    Changed = true;
+                }
+                Transfers.Add(new RegionalTransfer(ownerId, shipId, facilityId, direction, goodId, quantity, outcome));
+            }
+
+            internal TradeAttempt WarehouseTrade(WorkingFacility facility, TradeCommand command)
+            {
+                if (command == null) throw new ArgumentNullException(nameof(command));
+                var port = Ports[facility.PortId];
+                var company = Companies[facility.OwnerId];
+                var attempt = TradeCalculator.Preview(port.Configuration.Market.Quotes[command.GoodId], command,
+                    port.Inventory.GetQuantity(command.GoodId), facility.Inventory.GetQuantity(command.GoodId),
+                    port.Cash, company.Cash, facility.Blueprint.WarehouseCapacity - facility.StoredUnits);
+                TradeCalculator.Apply(attempt, port.Inventory, facility.Inventory);
+                facility.StoredUnits = checked(facility.StoredUnits + attempt.TraderInventoryChange.Delta);
+                port.Cash = attempt.MarketCashChange.After;
+                company.Cash = attempt.TraderCashChange.After;
+                WarehouseTrades.Add(new RegionalWarehouseTrade(facility.Id, facility.OwnerId, facility.PortId, attempt));
+                if (attempt.Outcome == TradeOutcome.Traded)
+                {
+                    if (command.Direction == TradeDirection.Buy)
+                        facility.ProcurementCost = checked(facility.ProcurementCost + attempt.ExecutedAmount);
+                    else facility.SalesRevenue = checked(facility.SalesRevenue + attempt.ExecutedAmount);
+                    Changed = true;
+                }
+                if (Challenge != null) Challenge = ChallengeRules.ApplyTrade(Challenge, facility.OwnerId, facility.PortId, attempt);
+                return attempt;
+            }
+
+            private IEnumerable<WorkingFacility> OrderedFacilities() =>
+                PrivateFacilities.Values.OrderBy(f => f.PortId, StringComparer.Ordinal).ThenBy(f => f.Id, StringComparer.Ordinal);
+
+            internal void Procure()
+            {
+                foreach (var facility in OrderedFacilities())
+                {
+                    facility.ProcurementWaitReason = IndustryWaitReason.Disabled;
+                    if (!facility.Enabled || !facility.Policy.ProcurementEnabled) continue;
+                    facility.ProcurementWaitReason = IndustryWaitReason.TargetSatisfied;
+                    foreach (var rule in facility.Policy.Inputs)
+                    {
+                        var wanted = Math.Max(0, rule.TargetQuantity - facility.Inventory.GetQuantity(rule.GoodId));
+                        if (wanted == 0) continue;
+                        var port = Ports[facility.PortId];
+                        var company = Companies[facility.OwnerId];
+                        var quote = port.Configuration.Market.Quotes[rule.GoodId];
+                        var marketStock = port.Inventory.GetQuantity(rule.GoodId);
+                        var free = facility.Blueprint.WarehouseCapacity - facility.StoredUnits;
+                        var quantity = TradeQuantityCalculator.Maximum(quote, TradeDirection.Buy, marketStock,
+                            facility.Inventory.GetQuantity(rule.GoodId), port.Cash, company.Cash, free, wanted,
+                            rule.MaxBuyPrice, facility.Policy.CashReserve);
+                        if (quantity > 0)
+                        {
+                            WarehouseTrade(facility, new TradeCommand(TradeDirection.Buy, rule.GoodId, quantity));
+                            if (facility.ProcurementWaitReason == IndustryWaitReason.TargetSatisfied)
+                                facility.ProcurementWaitReason = IndustryWaitReason.None;
+                        }
+                        else if (facility.ProcurementWaitReason == IndustryWaitReason.TargetSatisfied ||
+                            facility.ProcurementWaitReason == IndustryWaitReason.None)
+                        {
+                            facility.ProcurementWaitReason = marketStock == 0 ? IndustryWaitReason.InsufficientMarketInventory :
+                                free == 0 ? IndustryWaitReason.WarehouseFull :
+                                !TradeQuantityCalculator.MeetsPrice(quote, TradeDirection.Buy, marketStock, 1, rule.MaxBuyPrice)
+                                    ? IndustryWaitReason.BuyPriceLimit :
+                                !quote.FitsBudget(TradeDirection.Buy, marketStock, 1, long.MaxValue - port.Cash)
+                                    ? IndustryWaitReason.CashAccountFull :
+                                quote.FitsBudget(TradeDirection.Buy, marketStock, 1, company.Cash)
+                                    ? IndustryWaitReason.CashReserve : IndustryWaitReason.InsufficientCompanyFunds;
+                        }
+                    }
+                }
+            }
+
+            internal void SellPrivate()
+            {
+                foreach (var facility in OrderedFacilities())
+                {
+                    facility.SalesWaitReason = IndustryWaitReason.Disabled;
+                    if (!facility.Enabled || !facility.Policy.SalesEnabled) continue;
+                    facility.SalesWaitReason = IndustryWaitReason.ReserveRetained;
+                    foreach (var rule in facility.Policy.Outputs)
+                    {
+                        var wanted = Math.Max(0, facility.Inventory.GetQuantity(rule.GoodId) - rule.ReserveQuantity);
+                        if (wanted == 0) continue;
+                        var port = Ports[facility.PortId];
+                        var company = Companies[facility.OwnerId];
+                        var quote = port.Configuration.Market.Quotes[rule.GoodId];
+                        var marketStock = port.Inventory.GetQuantity(rule.GoodId);
+                        var quantity = TradeQuantityCalculator.Maximum(quote, TradeDirection.Sell, marketStock,
+                            facility.Inventory.GetQuantity(rule.GoodId), port.Cash, company.Cash, 0, wanted, rule.MinSellPrice);
+                        if (quantity > 0)
+                        {
+                            WarehouseTrade(facility, new TradeCommand(TradeDirection.Sell, rule.GoodId, quantity));
+                            if (facility.SalesWaitReason == IndustryWaitReason.ReserveRetained)
+                                facility.SalesWaitReason = IndustryWaitReason.None;
+                        }
+                        else if (facility.SalesWaitReason == IndustryWaitReason.ReserveRetained ||
+                            facility.SalesWaitReason == IndustryWaitReason.None)
+                        {
+                            facility.SalesWaitReason = marketStock == int.MaxValue ? IndustryWaitReason.MarketInventoryFull :
+                                !TradeQuantityCalculator.MeetsPrice(quote, TradeDirection.Sell, marketStock, 1, rule.MinSellPrice)
+                                    ? IndustryWaitReason.SellPriceLimit :
+                                !quote.FitsBudget(TradeDirection.Sell, marketStock, 1, long.MaxValue - company.Cash)
+                                    ? IndustryWaitReason.CashAccountFull : IndustryWaitReason.InsufficientMarketFunds;
+                        }
+                    }
+                }
+            }
+
+            internal void ProducePrivate(long nextDay)
+            {
+                foreach (var facility in OrderedFacilities())
+                {
+                    if (nextDay < facility.NextProductionDay) continue;
+                    var recipe = content.GetRecipe(facility.Blueprint.RecipeId);
+                    var starting = facility.Inventory.Snapshot();
+                    var outcome = ScheduledProductionOutcome.Disabled;
+                    if (facility.Enabled)
+                    {
+                        if (recipe.Inputs.Any(i => facility.Inventory.GetQuantity(i.GoodId) < i.Quantity))
+                            outcome = ScheduledProductionOutcome.InputShortage;
+                        else if (facility.Blueprint.OutputStockLimit.HasValue && recipe.Outputs.Any(output =>
+                            (long)facility.Inventory.GetQuantity(output.GoodId) -
+                            recipe.Inputs.Where(i => i.GoodId == output.GoodId).Sum(i => (long)i.Quantity) +
+                            output.Quantity > facility.Blueprint.OutputStockLimit.Value))
+                            outcome = ScheduledProductionOutcome.OutputLimit;
+                        else if ((long)facility.StoredUnits - recipe.Inputs.Sum(i => (long)i.Quantity) +
+                            recipe.Outputs.Sum(o => (long)o.Quantity) > facility.Blueprint.WarehouseCapacity)
+                            outcome = ScheduledProductionOutcome.WarehouseCapacity;
+                        else
+                        {
+                            outcome = Simulation.Production.TryRunBatch(facility.Inventory,
+                                facility.Blueprint.BuildingId, facility.Blueprint.RecipeId)
+                                ? ScheduledProductionOutcome.Produced : ScheduledProductionOutcome.InputShortage;
+                            if (outcome == ScheduledProductionOutcome.Produced)
+                            {
+                                facility.BatchesProduced = checked(facility.BatchesProduced + 1);
+                                foreach (var input in recipe.Inputs)
+                                    facility.Consumed[input.GoodId] = checked(facility.Consumed[input.GoodId] + input.Quantity);
+                                foreach (var output in recipe.Outputs)
+                                    facility.Produced[output.GoodId] = checked(facility.Produced[output.GoodId] + output.Quantity);
+                                facility.StoredUnits = checked((int)facility.Inventory.Snapshot().Values.Sum(v => (long)v));
+                                facility.NextProductionDay = checked(nextDay + facility.Blueprint.IntervalDays);
+                            }
+                        }
+                    }
+                    facility.LastOutcome = outcome;
+                    var changes = starting.Keys.Where(id => starting[id] != facility.Inventory.GetQuantity(id))
+                        .Select(id => new InventoryChange(id, starting[id], facility.Inventory.GetQuantity(id)));
+                    PrivateProduction.Add(new RegionalPrivateProduction(facility.Id, facility.OwnerId, facility.PortId,
+                        facility.Blueprint.RecipeId, outcome, changes));
+                }
             }
 
             internal void Depart(string shipId, string destinationPortId)

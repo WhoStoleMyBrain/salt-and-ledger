@@ -25,7 +25,7 @@ class ContentValidationTests(unittest.TestCase):
 
     def test_sample_loads_with_consistent_recipe(self):
         content = load_content()
-        self.assertEqual({"logs", "planks"}, {item["id"] for item in content["goods"]})
+        self.assertEqual({"logs", "planks", "grain", "flour", "bread", "furniture"}, {item["id"] for item in content["goods"]})
         recipe = content["recipes"][0]
         self.assertEqual("sawmill", recipe["buildingId"])
         self.assertEqual([{"goodId": "logs", "quantity": 2}], recipe["inputs"])

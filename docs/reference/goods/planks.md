@@ -8,7 +8,7 @@ Sawn timber produced by the sample sawmill recipe\.
 
 ## Used as input
 
-None defined.
+- [Make furniture](../recipes/make_furniture.md)
 
 ## Produced as output
 

@@ -12,11 +12,14 @@ var pricingMode = args.Length >= 2 && args[1] == "--pricing";
 var checkPricing = pricingMode && args.Length >= 3 && args[2] == "--check";
 var archipelagoMode = args.Length >= 2 && args[1] == "--archipelago";
 var checkArchipelago = archipelagoMode && args.Length >= 3 && args[2] == "--check";
+var enterpriseMode = args.Length >= 2 && args[1] == "--enterprise";
+var checkEnterprise = enterpriseMode && args.Length >= 3 && args[2] == "--check";
 if (args.Length != 1 && !(worldMode && args.Length <= 3) && !marketMode && !shippingMode && !automationMode &&
     !(pricingMode && args.Length <= (checkPricing ? 4 : 3)) &&
-    !(archipelagoMode && args.Length <= (checkArchipelago ? 4 : 3)))
+    !(archipelagoMode && args.Length <= (checkArchipelago ? 4 : 3)) &&
+    !(enterpriseMode && args.Length <= (checkEnterprise ? 4 : 3)))
 {
-    Console.Error.WriteLine("Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--world [initialLogs] | --market | --pricing [--check] [output.json] | --shipping | --automation | --archipelago [--check] [output.json]]");
+    Console.Error.WriteLine("Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--world [initialLogs] | --market | --pricing [--check] [output.json] | --shipping | --automation | --archipelago [--check] [output.json] | --enterprise [--check] [output.json]]");
     return 1;
 }
 
@@ -31,6 +34,13 @@ if (worldMode && args.Length == 3 &&
 try
 {
     var content = ContentLoader.Load(File.ReadAllText(args[0]));
+    if (enterpriseMode)
+    {
+        var outputIndex = checkEnterprise ? 3 : 2;
+        return EnterpriseExperiments.Run(content, args.Length > outputIndex ? args[outputIndex] : null, checkEnterprise);
+    }
+    if (worldMode || marketMode || shippingMode || automationMode || pricingMode || archipelagoMode)
+        content = LegacyContent.Timber(content);
     if (worldMode) return WorldDemo.Run(content, initialLogs);
     if (marketMode) return MarketDemo.Run(content);
     if (shippingMode) return ShippingDemo.Run(content);

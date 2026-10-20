@@ -10,6 +10,26 @@
       "id": "planks",
       "name": "Planks",
       "description": "Sawn timber produced by the sample sawmill recipe."
+    },
+    {
+      "id": "grain",
+      "name": "Grain",
+      "description": "Harvested grain milled into flour for the food supply chain."
+    },
+    {
+      "id": "flour",
+      "name": "Flour",
+      "description": "Milled grain used with timber fuel to bake bread."
+    },
+    {
+      "id": "bread",
+      "name": "Bread",
+      "description": "Finished food baked from flour using logs as fuel."
+    },
+    {
+      "id": "furniture",
+      "name": "Furniture",
+      "description": "Finished household goods manufactured from sawn planks."
     }
   ],
   "buildings": [
@@ -22,6 +42,26 @@
       "id": "lumber_camp",
       "name": "Lumber Camp",
       "description": "A resource-producing building that extracts logs without tradeable inputs."
+    },
+    {
+      "id": "farm",
+      "name": "Farm",
+      "description": "A resource-producing building that harvests grain without tradeable inputs."
+    },
+    {
+      "id": "mill",
+      "name": "Mill",
+      "description": "A building that processes grain into flour."
+    },
+    {
+      "id": "bakery",
+      "name": "Bakery",
+      "description": "A building that bakes flour into bread using logs as fuel."
+    },
+    {
+      "id": "furniture_workshop",
+      "name": "Furniture Workshop",
+      "description": "A building that manufactures furniture from planks."
     }
   ],
   "recipes": [
@@ -41,6 +81,42 @@
       "kind": "extraction",
       "inputs": [],
       "outputs": [{ "goodId": "logs", "quantity": 2 }]
+    },
+    {
+      "id": "harvest_grain",
+      "name": "Harvest grain",
+      "description": "Harvest four grain in one extraction batch. Scheduling and stock limits belong to the scenario.",
+      "buildingId": "farm",
+      "kind": "extraction",
+      "inputs": [],
+      "outputs": [{ "goodId": "grain", "quantity": 4 }]
+    },
+    {
+      "id": "mill_flour",
+      "name": "Mill flour",
+      "description": "Mill two grain into one flour.",
+      "buildingId": "mill",
+      "inputs": [{ "goodId": "grain", "quantity": 2 }],
+      "outputs": [{ "goodId": "flour", "quantity": 1 }]
+    },
+    {
+      "id": "bake_bread",
+      "name": "Bake bread",
+      "description": "Bake one flour into two bread, consuming one log as fuel.",
+      "buildingId": "bakery",
+      "inputs": [
+        { "goodId": "flour", "quantity": 1 },
+        { "goodId": "logs", "quantity": 1 }
+      ],
+      "outputs": [{ "goodId": "bread", "quantity": 2 }]
+    },
+    {
+      "id": "make_furniture",
+      "name": "Make furniture",
+      "description": "Manufacture one furniture from two planks.",
+      "buildingId": "furniture_workshop",
+      "inputs": [{ "goodId": "planks", "quantity": 2 }],
+      "outputs": [{ "goodId": "furniture", "quantity": 1 }]
     }
   ]
 }

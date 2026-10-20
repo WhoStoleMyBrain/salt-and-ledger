@@ -10,7 +10,7 @@ namespace SaltAndLedger.Simulation.Tests;
 
 public sealed class ArchipelagoScenarioTests
 {
-    private static ContentCatalog Content() => ContentLoader.Load(ContentLoaderTests.CanonicalJson());
+    private static ContentCatalog Content() => LegacyContent.Timber(ContentLoader.Load(ContentLoaderTests.CanonicalJson()));
 
     [Fact]
     public void SharedScenarioHasOnePlayerTwoIndependentMerchantsAndDistinctRoutes()
