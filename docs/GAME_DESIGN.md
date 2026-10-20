@@ -4,7 +4,7 @@
 
 Salt & Ledger is a single-player maritime trading and economic strategy game intended for Unity 6, inspired by Port Royale 2, Patrician 2, Antimatter Dimensions, and economic roguelikes. The central gameplay is intelligent optimization and automation of trading networks operating within a simulated economy.
 
-The current handcrafted archipelago includes six goods, interconnected production chains, player-owned factories, and three fixed economic challenges. Task 1.7 adds a run lifecycle, three replacement starting companies, automated industrial shipping, historical material-cost attribution, and generated player reference. City development, procedural worlds, customizable difficulty, and persistent lateral meta progression remain long-term directions.
+The archipelago includes six goods, interconnected production chains, player-owned factories, and three fixed economic challenges. Task 1.8 adds deterministic geography and selectable Ascension 1 over Task 1.7's run lifecycle, three replacement companies, industrial shipping and historical material-cost attribution. Classic retains the authored map. Seeded worlds move the existing economic roles and derive distances from their positions; they do not randomize the economy. Broader city development and persistent lateral meta progression remain future directions.
 
 The principles below are constraints for future design. Particular mechanisms that satisfy them remain open until prototypes provide evidence.
 
@@ -55,7 +55,7 @@ Potential systems include:
 - New adversaries and world configurations.
 - New optional difficulty modifiers.
 
-Further packages, capabilities, persistent unlocks, and modifiers are design directions, not implemented features. Their exact form and unlock conditions are hypotheses to test. No ascension, curse, challenge-point budget, or permanent income/production bonus exists.
+Further packages, capabilities, persistent unlocks and modifiers are design directions. Task 1.8 implements exactly one selectable modifier: Ascension 1 delays newly purchased player facilities by two complete days. Ascension 0 remains the baseline. Difficulty is chosen for each run; no unlock, stacking curse, challenge-point budget or permanent income/production bonus exists. The consortium's granted bakery is already operational at either difficulty, so this narrow industrial penalty affects charters and strategies differently.
 
 ## Fair challenges
 
@@ -67,7 +67,7 @@ Further packages, capabilities, persistent unlocks, and modifiers are design dir
 
 Fairness requires understandable exposure to risk and meaningful agency. The game need not remove consequences or adapt every challenge to the player's chosen strategy. The Coastal Supply Charter uses the existing world clock and a signed net-supply objective derived from completed transactions. Buying back and reselling the destination's goods cannot manufacture objective credit. Regional Relief measures actual scheduled consumption across towns, explicitly including public/NPC contributions. Enterprise Ambition requires private output and attributed material gross margin. All have a defined deadline, solvency condition, and terminal outcome.
 
-The [run guide](RUNS.md) documents the exact capped score and measured strategies. Scoring separates objective completion, victory, time remaining, and cash; results are grouped by challenge and starting charter. Granted goods have no paid acquisition expenditure, so their later proceeds and the different initial facilities can affect results. A universal normalized leaderboard is not claimed. Thresholds remain provisional, and there are no permanent rewards or progression systems.
+The [run guide](RUNS.md) documents the capped score and fixed-world strategies. New run identities group results by challenge, charter, ascension and exact world, including the seeded generator version and seed. Granted goods have no paid acquisition expenditure, so their proceeds and different initial facilities affect results. A universal normalized leaderboard is not claimed. [Seeded experiments](SEEDED_RUNS.md) separate valid, navigable maps from demonstrated strategic viability; no map receives secret funds, stock or deadline adjustments. Thresholds remain provisional, with no permanent rewards.
 
 ## A complete run and understandable consequences
 
@@ -86,4 +86,4 @@ Phase 0 puts definitions in a canonical JSON file and produces both Markdown and
 
 ## Design status
 
-The principles above are accepted. The [economy questions](ECONOMY.md) and [experiment ideas](IDEAS.md) remain unresolved, and the [roadmap](ROADMAP.md) is provisional. Legacy abstract ticks remain unchanged; regional worlds map one economic tick to one day and separate instant transactions from advancement. [Commerce and industry](ENTERPRISE.md), [automation](AUTOMATION.md), and [runs](RUNS.md) describe current behavior. [Living archipelago](LIVING_ARCHIPELAGO.md), [Pricing experiments](PRICING_EXPERIMENTS.md), and [Manual shipping comparison](SHIPPING_DEMO.md) retain historical comparisons. Final balance, procedural maps, persistent progression, and additional difficulty systems remain unselected.
+The principles above are accepted. The [economy questions](ECONOMY.md) and [experiment ideas](IDEAS.md) remain unresolved, and the [roadmap](ROADMAP.md) is provisional. Legacy ticks and fixed reports remain unchanged. [Commerce and industry](ENTERPRISE.md), [automation](AUTOMATION.md), [runs](RUNS.md) and [seeded worlds](SEEDED_RUNS.md) describe current behavior. Final balance, additional ascensions, procedural economic roles and persistent progression remain unselected. Readability is a current requirement: four layout-aware text scales should keep trading, policies and accounting usable without changing simulation state; actual verification belongs in [Unity integration](UNITY.md).

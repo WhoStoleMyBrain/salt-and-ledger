@@ -1,6 +1,14 @@
 # Your first company
 
-Begin at the main menu. **New Run** opens challenge and company-charter selection; **Sandbox** offers the same economic systems without a victory deadline. The encyclopedia is available before you commit to a run.
+Begin at the main menu. **New Run** opens world, seed, ascension, challenge and company-charter selection; **Sandbox** offers the same economic systems without a victory deadline. The encyclopedia is available before you commit to a run.
+
+## Choose a world and text size
+
+Settings offers Compact, Default, Large and Extra Large game-wide text. Default body text is 17 px; the selected preference is remembered on this device. It changes layout and hit targets without spending a day or changing the economy.
+
+Choose **Fixed / Classic Archipelago** for the original authored map, or **Seeded Archipelago** and enter a signed 32-bit integer. Inspect the town coordinates, six connections and voyage times before **Begin voyage**. **Copy seed** records the exact seed; **Randomize seed** changes only the preview. The same seed and generator version reproduce the same geography and authored economy.
+
+Ascension 0 preserves instant construction. Ascension 1 spends the full cost immediately but new private sites require two complete economic days, then a full production interval before the first eligible batch. The Industrial Consortium's inherited bakery is already built. See [seeded runs and Ascension](SEEDED_RUNS.md).
 
 ## Choose an approach
 
@@ -24,7 +32,7 @@ If an order cannot execute, read its reason: stock, capacity, company funds, des
 
 Use the generated [production-chain table](reference/chains.md) to find a recipe, its materials, and its building. Select a town and inspect its private-industry options. Construction competes with cargo purchases for liquid cash and starts with empty private storage.
 
-Configure local procurement to maintain input targets within acceptable buying prices and a company cash reserve. Apply the policy deliberately. A successful batch consumes the factory's private inputs and creates its private output; public market stock is a separate inventory.
+Use the recommended industry preset to prepare a draft. Review its input targets, price limits and cash reserve, then apply the policy deliberately to authorize future purchases. The status and schedule show construction progress, missing inputs and blocked operation; detailed controls remain available. A successful batch consumes the factory's private inputs and creates its private output; public market stock is a separate inventory.
 
 For factory-to-market transport:
 
@@ -48,7 +56,7 @@ Goods retain historical acquisition or input-material cost through manufacture a
 
 The objective summary shows the current goal, progress, time remaining, and outstanding conditions. A challenge stops automatically when it succeeds or reaches its failure condition. The whole triggering economic operation completes before results appear; playback does not continue behind the results screen.
 
-Review the outcome and score breakdown alongside actual cash, costs, deliveries, production, and remaining goods. Compare the same challenge and charter rather than treating different starter endowments as an equal leaderboard. **Retry** restores the chosen configuration; a new run allows another choice.
+Review the outcome and score breakdown alongside actual cash, costs, deliveries, production, and remaining goods. Compare only the same challenge, charter, ascension and exact world identity. **Retry Same World** restores all starting conditions, including seed and difficulty. **New World / Reroll** explicitly previews a new seed before you begin; **Change Setup** retains the current selections for editing.
 
 Escape closes the top trade or industry modal first. In ordinary gameplay it opens pause; in secondary screens it returns to the parent. Restart, return to menu, abandonment, and exit protect active progress with confirmation. Runs are in memory only and do not survive closing the application.
 

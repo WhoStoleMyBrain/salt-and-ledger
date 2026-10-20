@@ -7,9 +7,9 @@ This sequence describes planned work, not completed features or a fixed delivery
 | 0 | Project foundation, small architecture, automated tests, canonical content, and documentation pipeline | Implemented |
 | 0.5 | .NET 10 toolchain and minimal Unity integration using the existing simulation | Implemented; verification scope in [Unity integration](UNITY.md) |
 | 1 | Deterministic simulation, finite markets, shipping, automation, private industry, and a living economy slice | Tasks 1.1 through 1.7 add six goods, four towns, private factories, industrial logistics, and historical material-cost attribution |
-| 2 | Scenario objectives, time limits, and replayable runs | Task 1.7 adds three handcrafted challenges, selected starting companies, terminal results, and capped scoring; no procedural or persistent progression systems |
-| 3 | Constrained procedural world generation with economic viability checks | Planned |
-| 4 | Modifiers, curses, difficulty levels, and challenge combinations | Planned |
+| 2 | Scenario objectives, time limits, and replayable runs | Three handcrafted challenges, starting companies, terminal results and capped scoring; Task 1.8 adds exact world retry |
+| 3 | Constrained procedural world generation with economic viability checks | Task 1.8 adds geography-only four-town seed generation and bounded experiments; procedural economic roles remain deferred |
+| 4 | Modifiers, curses, difficulty levels, and challenge combinations | Task 1.8 adds selectable Ascension 0/1; broader modifiers remain deferred |
 | 5 | Lateral meta progression through starting packages, alternative production capabilities, and new economic problems | Three replacement starting packages available immediately; persistent unlocks and broader progression remain planned |
 | 6+ | Advanced competitors, piracy, political systems, optional combat, and other features justified by gameplay testing | Deferred |
 
@@ -77,7 +77,7 @@ Task 1.6 deliberately deferred historical acquisition-cost attribution. Task 1.7
 
 ## Task 1.7: the complete run experience
 
-The current run foundation offers a main menu, challenge/charter setup, pause/navigation, confirmed active-run replacement or abandonment, terminal results, and retry without relaunching. Three replacement charters trade liquidity, initial private industry, cargo, capacity, and location. All are available immediately; there are no stacking upgrades, saves, persistent unlocks, curses, or ascensions. [Runs](RUNS.md) records the exact initial assets and their limited replacement-quote comparisons.
+Task 1.7 introduced a main menu, challenge/charter setup, pause/navigation, confirmed active-run replacement or abandonment, terminal results, and retry without relaunching. Three replacement charters trade liquidity, initial private industry, cargo, capacity, and location. All are available immediately; that milestone added no stacking upgrades, saves, persistent unlocks or ascensions. Task 1.8's narrow construction modifier is described below. [Runs](RUNS.md) records the exact initial assets and their limited replacement-quote comparisons.
 
 Coastal Supply preserves its signed net-delivery protection. Regional Relief counts actual scheduled Bread consumption across the region, including public and NPC contributions. Enterprise Ambition requires private Bread production, attributed realized material gross margin, and cash. All use the same authoritative clock, day-60 deadline, terminal freeze, and transparent capped results score. The complete-run experiment demonstrates active success and idle failure for every challenge/charter pairing; it does not claim every strategy is viable or packages are equally advantaged.
 
@@ -89,13 +89,21 @@ The offline in-game encyclopedia consumes the generated canonical reference and 
 
 The new `--runs` and `--industrial-logistics` reports are separate from historical pricing, archipelago, and enterprise regression fixtures. [Automation](AUTOMATION.md#reproducible-industrial-shipping-comparison) explains actual shipment/input reductions and finite blockage. The complete-run and reference changes add no procedural generation, general route programming, fleet optimization, multiplayer, or online service.
 
+## Task 1.8: seeded geography, Ascension 1 and readability
+
+The same four-town economy now supports Classic or versioned seeded geography. Pure bounded integer generation changes positions and the six direct route distances without altering roles, resources, prices, charters or objectives. Immutable run identity captures world, seed/version, difficulty, challenge and charter; Retry Same World restores it while an explicit reroll returns to preview before starting. Classic/Ascension 0 APIs and historical benchmark files remain regression fixtures.
+
+Ascension 1 delays new player construction by two complete days after payment, with no automatic facility operation before completion and a full interval before the first batch. Granted starter facilities remain operational, preserving the Industrial Consortium's real advantage under this particular modifier. Construction dates, zero-cash completion events and accounting live within the existing atomic owner. No additional ascension, adaptive rescue or persistent progression is included.
+
+Four layout-aware text scales cover ArchipelagoLab, with a 17 px Default body and local presentation-preference persistence. Industry summaries and visible recommended drafts help explain stock gaps, timing, policies, real costs and physical delivery waits. [Seeded runs](SEEDED_RUNS.md) records generation constraints and experiment methodology; [Unity integration](UNITY.md) separates actual Editor/player verification from headless checks. Generated-world validity and benchmark performance are evidence for a later tuning pass, not proof of universal strategy viability or human usability.
+
 ## Recommended next milestone: observed playtesting
 
 Proposed next assignment: observe players from application startup through a completed result without source-code explanations. Ask them to select a charter, interpret the objective and bulk execution price, choose between a shipment and a factory, configure an entire industrial route, and diagnose a blocked shipment. Have them use the encyclopedia and explain the difference between liquid cash, granted assets, held basis, sale revenue, material margin, and construction spending.
 
 Record whether ownership, actual consumption versus delivery, route stage, deadlines, abandonment, and retry are understandable. Compare attention required by merchant and industrial approaches without treating fewer commands as proof of enjoyment. Review whether Independent Traders' larger hold and Industrial Consortium's lower liquidity create meaningful choices under different objectives.
 
-Pair observed confusion with focused presentation fixes, then extend deterministic liquidity and industry-policy observations beyond ninety days. Investigate input shortages, output price floors, unsold goods, and capital opportunity costs before changing balance or scoring. Do not add procedural maps, extra commodities, household finance, random risk, or unrelated systems merely to keep activity running. Human playtesting and resulting revisions are a proposed assignment, not completed user-research evidence.
+Pair observed confusion with focused presentation fixes, then extend deterministic seeded liquidity and industry-policy observations. Investigate input shortages, output price floors, unsold goods, construction delays, voyage distances and capital opportunity costs before changing balance or scoring. Do not add more ascensions, extra commodities, procedural economic roles, household finance or random risk merely to keep activity running. Human playtesting and resulting revisions remain a proposed assignment, not completed user-research evidence.
 
 ## Other follow-up work
 
@@ -103,4 +111,4 @@ Pair observed confusion with focused presentation fixes, then extend determinist
 2. **Calibrate the enterprise network and run choices.** Vary existing construction costs, procurement limits, source thresholds, production/consumption schedules, sale floors, and finite initial liquidity. Keep all challenge/charter feasibility and idle-failure checks. Distinguish temporary stock shortage, distribution failure, policy blockage, and liquidity exhaustion without introducing hidden money. Do not normalize scores across packages using an invented ship value.
 3. **Measure simulation cost before enlarging the world.** Snapshot copying and result allocation favor clear atomicity. Live cost lots depend on held acquisitions; bounded event journals do not imply a constant bound on all inventory-lot counts. Extend representative performance/allocation measurements before adding larger maps or fleets.
 
-These follow-ups are proposals, not selected final economic rules. Keep random behavior out until there is a concrete requirement and an explicit reproducible seed strategy.
+These follow-ups are proposals, not selected final economic rules. Keep randomness confined to the explicit versioned geography contract until another mechanic has its own approved scope and reproducible design.

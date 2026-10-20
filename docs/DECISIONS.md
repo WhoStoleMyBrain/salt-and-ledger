@@ -255,3 +255,27 @@ Keep canonical recipe facts in `data/content.json`. Add a small schema-validated
 Preparation refuses missing/stale encyclopedia output and stages the bundled `Resources/Encyclopedia.json` alongside the existing DLL and canonical JSON. Hash inputs and outputs in a versioned staging manifest. Unity supplies JSON support once through its pinned UPM package; offline reference browsing needs no network service or runtime-generated explanations.
 
 Retain MkDocs as a static site, separate player navigation from development details, and inspect rendered desktop/mobile pages. Prepare a manual-only GitHub Pages workflow and explicit activation instructions, without silently publishing or changing repository settings. Local builds remain independent of publication.
+
+## ADR 028: Generate geography from a versioned integer seed
+
+**Status:** Selected for Task 1.8; geographic bounds are a provisional gameplay constraint, not proof that every strategy wins.
+
+Keep the four existing economic roles and every initial economic parameter. Version 1 permutes four separated slots and applies bounded integer jitter using eleven specified uint mixing draws. Six direct distances are integer ceiling square roots derived from the generated coordinates. Existing ship speed and `SeaRoute.DurationDays` determine travel. This bounds work and voyage length without rejection loops, floating-point rounding, runtime-specific random implementations or seed-specific economic rescue.
+
+Preserve authored Classic positions/distances as an explicit separate mode. Reuse `EnterpriseScenario` economic definitions and retain legacy overloads and historical report bytes. A complete immutable `RunIdentity` carries challenge, charter, mode, seed/version and difficulty into snapshots/results. Retry reconstructs that identity. Reroll is an explicit host request that changes the draft seed before preview/start confirmation. New comparisons include difficulty and exact world identity; scores on unlike seeds are not equivalent leaderboard positions.
+
+## ADR 029: Complete delayed construction at the end of a daily commit
+
+**Status:** Selected for Task 1.8; extends ADR 021 without changing Ascension 0 or starter endowments.
+
+Add exactly `Normal` and `SlowFoundations` difficulty values. New player-owned purchases under Ascension 1 pay the full cost at order and create a pending owned site; completion requires two actual daily advances. Finish construction after voyages and before challenge evaluation, keeping pending sites out of all automatic factory phases of their completion day. Schedule the first production opportunity one full blueprint interval later. This makes day-0 ordering, day-2 completion and day-4 first eligibility explicit for a two-day bakery.
+
+Use snapshot dates/status and a shared timing preview for host feedback, plus structured commencement/completion results and a zero-cash completion event. Do not add another clock or cost basis, charge twice or grant free materials. Manual local warehouse trades and physical owned transfers remain allowed under existing bounds. Starter factories are already operational, preserving charter history and its asymmetric response to this narrow modifier. All lifecycle changes share the existing atomic rollback and terminal freeze.
+
+## ADR 030: Scale inherited UI layout tokens without touching the world
+
+**Status:** Selected for Task 1.8; actual resolution/input evidence is recorded in [Unity integration](UNITY.md).
+
+Replace the partial large-menu/reference toggle with four game-wide ArchipelagoLab text scales. Inherited root tokens control body/caption/headings and related control/table/map dimensions; responsive wrapping and internal scrolling maintain access to actions. Avoid a global visual transform that enlarges painting while leaving layout or hit targets behind.
+
+Keep this preference in a small presentation helper with no simulation commands. Save only the scale through ordinary local PlayerPrefs and retain it across screen transitions and fresh runs. Other display settings remain session-only; there is no economic save or cloud preference service. Test world-state invariance separately from real runtime geometry, keyboard and pointer interaction.

@@ -29,16 +29,17 @@ Historical inventory basis now follows actual acquisition lots through mixed pur
 
 ## Invest in private industry
 
-Select a town and open private industry management. Blueprints reference canonical building and recipe IDs. Their cost, interval, capacity, and eligible towns come from `EnterpriseScenario`, not UI constants. Construction is immediate and does not advance the day:
+Select a town and open private industry management. Blueprints reference canonical building and recipe IDs. Cost, interval, capacity, eligible towns and construction dates come from the simulation. Ordering is instantaneous and does not advance the day:
 
 1. Validate the owner, location, blueprint, and unique facility ID.
 2. Transfer the full construction payment from the company to the local public market.
 3. Create an empty private stockpile with finite total item capacity.
-4. Schedule the first batch for current day plus the blueprint interval.
+4. Ascension 0 becomes operational immediately; Ascension 1 newly purchased player sites complete after two daily advances.
+5. Schedule the first batch for completion day plus the full blueprint interval.
 
-There are no construction material requirements or completion delays in this prototype. A company may build at most one instance of each blueprint per town. Construction is a capital allocation decision; it grants no free goods or immediate batch.
+There are no construction material requirements. A company may build at most one instance of each blueprint per town. Ascension 1 pays once at order: a day-0 bakery completes after day 2's automatic phases, and its first production opportunity is day 4. Pending sites skip automatic procurement, production and sales, even on completion day. Manual local warehouse trades/storage and physically docked owned transfers remain allowed under the same finite bounds. Completion has no further charge or free materials. Construction is a capital allocation decision, never an immediate batch.
 
-The Industrial Consortium's starting bakery is a separate explicit charter grant. It is not recorded as a purchase or construction payment made during the run. Its initial inventory and first due date are initialized deterministically; all subsequent procurement, production, and transfers use the same ordinary rules.
+The Industrial Consortium's starting bakery is a separate explicit charter grant, already operational under both ascensions. It is not recorded as a purchase or construction payment made during the run. Its original inputs, day-2 first opportunity and provenance remain unchanged. A later purchased site still gets the selected delay. This asymmetry is documented rather than compensated by changing the charter's funds or inputs.
 
 | Private choice | Cost | Interval | Storage | Output ceiling | Eligible towns |
 | --- | ---: | ---: | ---: | ---: | --- |
@@ -54,7 +55,7 @@ One authoritative company account pays for all its ships and factories. Ship cas
 
 Configure each recipe input's target stock and maximum marginal purchase price. A procurement policy buys only from that facility's local market, uses normal finite market transactions, and preserves its configured company cash reserve. Each configured input gets at most one bounded purchase attempt per day.
 
-New construction starts with procurement and automatic sales off. The industry panel offers a suggested policy from the shared scenario; **Apply** commits that draft. Editing fields alone does not purchase inputs or change the active policy. Keep automatic sales off when retaining finished goods for a shipment.
+New construction starts with procurement and automatic sales off. The industry panel summarizes construction/operational status, next eligible batch, input gaps and current local quotes, held goods and actual expenditure. Its recommended setup prepares a visible draft from the shared scenario; **Apply** explicitly commits the rules. Drafting never buys goods or enables spending automatically. Detailed targets/limits remain available. Keep automatic sales off when retaining finished goods for shipping; the route summary shows the assigned physical delivery and its wait reason.
 
 Optional automatic sales keep a chosen output reserve and sell surplus only when the worst marginal bid meets the configured minimum and the market can pay. Production and these policies run while the facility is enabled. Missing stock, price limits, full storage, company funds, or market liquidity produce visible waits; automation does not replenish anything or find remote inputs.
 
@@ -64,7 +65,7 @@ For physical transport, dock Ledger at the factory's town and disable its route 
 
 An industrial route can instead load the private warehouse automatically, sail to a connected town, and sell there under a configured marginal price floor. A useful return can buy or load inputs and unload them into owned storage. Source thresholds, warehouse reserves, shipment bounds, ownership, actual docking, capacity, and finite cash remain enforced. The ship retains an explicit directional stage, so same-good return legs are unambiguous. See [industrial shipping](AUTOMATION.md#industrial-shipping-between-private-stock-and-markets) for configuration, waits, replacement-policy restrictions, and exact manual equivalence.
 
-The daily phase order is ship policies, private procurement, public production, private production, private automatic sales, public consumption, and voyages. Challenge evaluation follows those phases. A single atomic commit publishes the entire day; an exception rolls back all prior staged activity.
+The daily phase order is ship policies, operational private procurement, public production, operational private production/sales, public consumption, voyages, then due construction completion. Challenge evaluation follows. A single atomic commit publishes the entire day; an exception rolls back all prior staged activity, including lifecycle status and accounting. See [Seeded runs](SEEDED_RUNS.md) for selectable geography/difficulty and [Mechanics](MECHANICS.md#ascension-and-construction-lifecycle) for exact timing.
 
 ## Read cash flows honestly
 

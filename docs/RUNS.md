@@ -1,22 +1,32 @@
 # Runs, company charters, and results
 
-Choose one handcrafted challenge and one starting company charter, then build a strategy using the same four-town economy. A run ends when its objective and cash requirement are met, its deadline expires, or you deliberately abandon it. Sandbox uses the same economic rules without a scored objective or deadline.
+Choose one handcrafted challenge, one starting company charter, Classic or seeded geography, and Ascension 0 or 1. Build a strategy using the same four-town economy. A run ends when its objective and cash requirement are met, its deadline expires, or you deliberately abandon it. Sandbox uses the same economic rules without a scored objective or deadline.
 
 The menu, setup, pause, reference, and results screens form the current Unity host's run flow. [Playtest](PLAYTEST.md) documents controls; [Unity integration](UNITY.md) distinguishes automated, actual Editor, and standalone-player verification. Runs exist only in application memory. There is no persistent save, unlock history, or recovery after closing the application.
 
 ## Navigate a run
 
-**New Run** and **Sandbox** both open setup, with the corresponding challenge or unlimited option selected. Review the challenge, charter, initial assets, tradeoffs, objective, and deadline before starting. The title also offers **Encyclopedia**, **Settings**, and **Exit Game**; it has no misleading Continue or save option.
+**New Run** and **Sandbox** both open setup, with the corresponding challenge or unlimited option selected. Review the challenge, charter, initial assets, world preview, difficulty, objective and deadline before starting. The title also offers **Encyclopedia**, **Settings**, and **Exit Game**; it has no misleading Continue or save option.
 
-During gameplay, Escape opens the pause menu without advancing a day. **Resume** restores the playback state from before the pause. The menu also opens the encyclopedia, company ledger, and settings, or offers **Restart this run**, **Return to Main Menu**, and **Exit Game**. An active challenge additionally offers **Abandon and inspect results**.
+During gameplay, Escape opens the pause menu without advancing a day. **Resume** restores the playback state from before the pause. The menu also opens the encyclopedia, company ledger and settings, or offers **Retry Same World**, **Change Setup**, **New World / Reroll**, **Return to Main Menu** and **Exit Game**. An active challenge additionally offers **Abandon and inspect results**.
 
-Restarting, returning to the main menu, or exiting confirms loss of an active run. Explicit abandonment creates a terminal abandoned result. Confirmed return to the main menu abandons an active challenge and discards the host's in-memory session; starting again creates a new world. Results offer **Retry**, **New Run**, **Main Menu**, and **Encyclopedia**.
+Replacing a world, returning to the main menu or exiting confirms loss of active progress. Explicit abandonment creates a terminal abandoned result. Confirmed return to the main menu abandons an active challenge and discards the host's in-memory session. Results offer **Retry Same World**, **Change Setup**, **New World / Reroll**, **Main Menu** and **Encyclopedia**. Retry restores the exact original run identity and initial state; reroll changes the draft seed and returns to preview before a separate start. Merely opening a menu never rerolls.
 
 Escape first cancels a confirmation, or closes the open trade/industry modal, without also triggering a lower screen. In the encyclopedia it follows entry history and then returns to the parent screen; other secondary screens return to their parent. On the pause menu, Escape resumes. This ordering supports both keyboard events and the Input System navigation-cancel path. Actual Editor and standalone behavior must be checked separately as recorded in [Unity integration](UNITY.md).
 
+## Choose geography and difficulty
+
+**Fixed / Classic Archipelago** keeps the original authored coordinates and exact six sea distances. **Seeded Archipelago** moves the same four economic towns and derives all six direct distances from those integer coordinates. Enter an ASCII decimal seed from -2,147,483,648 through 2,147,483,647, optionally preceded by `+` or `-`, without spaces or separators. Randomization is an explicit host action; the selected seed is frozen when starting. The preview uses the same geography and routes as the actual run. Record seed, generator version, charter, challenge and ascension together.
+
+**Ascension 0: Normal** retains instant paid construction. **Ascension 1: Slow Foundations** charges the full cost at order, then waits two complete economic days before a newly purchased player facility becomes operational. A bakery ordered on day 0 completes after day 2's economic phases and first becomes production-eligible on day 4. Pending sites cannot automatically buy inputs, produce or sell outputs. Explicit local warehouse trading/storage and physically docked transfers remain legal. Inputs, enabled state, capacity and ordinary pricing still determine whether an eligible batch or trade succeeds.
+
+The Industrial Consortium's inherited bakery starts operational under either difficulty and keeps its day-2 first batch and granted inputs. This narrow construction penalty affects strategies differently; it is not a blanket claim that every challenge becomes harder. There are no unlocks, stacking modifiers or further ascensions. [Seeded runs](SEEDED_RUNS.md) details version-1 generation, constraints and measured difficulty limits.
+
+Settings applies **Compact/Default/Large/Extra Large** text to every ArchipelagoLab screen. Default body text is 17 px; Large and Extra Large use 21 and 25 px with wrapping and internal scrolling. The local PlayerPrefs preference survives retries/new runs and later application launches in the same preference environment. It does not persist economic progress, change the day/revision or reroll a world.
+
 ## Select a starting company
 
-Select exactly one charter before starting. It replaces the other packages; nothing stacks and there is no income or production multiplier. An active run cannot switch its charter. Retry initializes the same selected challenge and charter from scratch, including its original assets and provenance.
+Select exactly one charter before starting. It replaces the other packages; nothing stacks and there is no income or production multiplier. An active run cannot switch its charter. Retry initializes the same complete identity from scratch: challenge, charter, geography, seed/version and difficulty, with original accounts, stocks, cargo, policies, facilities, schedules and provenance. Host journal, clock/revision and playback reset to their initial state.
 
 | Charter | Liquid cash | Ship and initial port | Granted goods/facilities | Opportunity and tradeoff |
 | --- | ---: | --- | --- | --- |
@@ -66,7 +76,7 @@ All three terminal states reject further economic mutations and day advancement.
 
 ## Read the result
 
-The completed result identifies the challenge, starting charter, outcome, completion day/deadline, objective progress, and cash. Financial details distinguish:
+The completed result identifies the challenge, starting charter, mode, seed/generator version, ascension, outcome, completion day/deadline, objective progress and cash. Financial details distinguish:
 
 - Inventory purchases and actual sale revenue.
 - Historical cost released by completed sales and realized material gross margin.
@@ -100,7 +110,7 @@ Total = Objective + Victory + Time + Solvency
 
 Failed and abandoned runs can retain partial objective and solvency points; those points do not turn them into victories. Every component is capped. Overproduction, additional sale volume, or repeated buy/sell loops cannot create unbounded points. Exact same-market pricing and signed Coastal Supply credit separately preserve the economic protections.
 
-Results belong to a **challenge/charter comparison group**. They are not a universal leaderboard: starting grants, facilities, ship capacity, and strategies differ. Current scoring does not normalize an unmodeled ship valuation or claim perfect package balance.
+Identified results belong to a **challenge/charter/ascension/exact-world comparison group**. Different seeds and difficulties are not equivalent leaderboard placements. Legacy identity-null APIs preserve the older challenge/charter field in historical reports only. Starting grants, facilities, ship capacity and strategies differ; scoring does not normalize an unmodeled ship valuation or claim perfect package balance.
 
 For example, the Merchant Company completes Coastal Supply on day 29 with 1,014 cash: **500 objective + 1,000 victory + 310 time + 100 solvency = 1,910**. The Industrial Consortium completes the same challenge on day 39 with 1,027 cash: **500 + 1,000 + 210 + 100 = 1,810**. The second result uses a different endowment and comparison group.
 
@@ -111,7 +121,7 @@ dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --runs
 dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --runs --check
 ```
 
-The [generated report](experiments/run-results.json) contains one active strategy and one idle trial for each of the nine challenge/charter combinations. Each active strategy succeeds; all nine idle trials fail on day 60. Every committed operation reconciles event cash, purchases, revenue, released basis, construction, and held basis. Repeated runs and `tr-TR` culture match. Recreating the selected package restores the complete initial state, and terminal worlds reject another daily advance.
+The preserved **Classic/Ascension 0** [generated report](experiments/run-results.json) contains one active strategy and one idle trial for each of the nine challenge/charter combinations. Each active strategy succeeds; all nine idle trials fail on day 60. Every committed operation reconciles event cash, purchases, revenue, released basis, construction and held basis. Repeated runs and `tr-TR` culture match. These historical measurements are not claims about every generated map. The separate `--seeded-runs` / `--seeded-runs --check` experiment is described in [Seeded runs](SEEDED_RUNS.md).
 
 | Challenge | Charter and strategy | Completion day | Final cash | Realized material gross margin | Score |
 | --- | --- | ---: | ---: | ---: | ---: |
@@ -133,6 +143,6 @@ The separate [industrial logistics comparison](AUTOMATION.md#reproducible-indust
 
 ## Current limits and next questions
 
-There are no saves, persistent unlocks, ascensions, curses, procedural maps, online rankings, or automatic strategy search. All charters are available immediately. Finite liquidity and unfavorable prices can still block an enterprise. Changing a policy is a strategic choice, not a promise that any configuration can recover.
+There are no saves, persistent unlocks, additional ascensions, procedural economic roles, online rankings or automatic strategy search. All charters and both difficulty choices are available immediately. Finite liquidity, route length and unfavorable prices can still block an enterprise. A valid navigable generated map does not prove a particular policy wins. Changing a policy is a strategic choice, not a promise that any configuration can recover.
 
 The next design step is observed startup-to-results playtesting: can players understand the charter tradeoffs, configure a complete supply chain, distinguish sales from consumption, and explain their final cash and margin? Numerical feasibility and scoring reproducibility are necessary evidence, not a substitute for that observation.

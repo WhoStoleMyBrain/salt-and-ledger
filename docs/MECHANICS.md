@@ -366,14 +366,15 @@ Task 1.5 introduces `RegionalWorldState` without changing `WorldState.Step`, `Ma
 6. Sell configured private output surplus by ordinal port ID, facility ID, and good ID.
 7. Process due consumption by ordinal port ID and rule ID.
 8. Progress every voyage once, by ordinal ship ID, and resolve arrivals.
-9. Evaluate the optional challenge against the completing day and final company cash.
-10. Construct structured results and the immutable snapshot, then commit `Day + 1` and `Revision + 1`.
+9. Complete due private construction by ordinal port ID and facility ID. Pending sites have skipped all automatic facility phases above, including this completion day's phases.
+10. Evaluate the optional challenge against the completing day and final company cash.
+11. Construct structured results and the immutable snapshot, then commit `Day + 1` and `Revision + 1`.
 
 Every actor observes earlier actors' staged transactions. Historical NPC priorities 0 and 1, and the expanded scenario's grain merchant priority 2, precede the player's 10. A player instant command committed before this day naturally precedes the scheduled actors. UI selection and rendering order never alter precedence. Worlds without private facilities or a challenge retain the historical phase outcomes.
 
 Production and consumption evaluate the completing day number. The first three-day extraction opportunity is the day-3 commit. Sold inputs from the actor phase can be processed that day. Produced output can satisfy consumption later in that day; it becomes externally tradeable after commit. Daily automation cannot buy output that has not yet been produced.
 
-Exceptional failure rolls back all staged actor commands, cash, goods, schedules, controls, consumption counters, movement, day, and revision. Normal policy waits and ordinary trade shortages do not abort a day. The world retains no unbounded event history.
+Exceptional failure rolls back all staged actor commands, cash, goods, schedules, construction state, controls, consumption counters, movement, day, and revision. Normal policy waits and ordinary trade shortages do not abort a day. The world retains no unbounded event history.
 
 ### Scheduled production and physical demand
 
@@ -389,7 +390,7 @@ Consumption pays no money. It models physical use only. Extraction is the explic
 
 ### Regional routes and arrival
 
-`SeaRoute` is a direct, undirected positive integer distance between distinct existing ports. Duplicate undirected pairs are invalid. Each ship has a positive integer speed; duration is integer ceiling of distance/speed, at least one day. Rendering coordinates do not enter this calculation. No pathfinding or automatic intermediate voyage exists.
+`SeaRoute` is a direct, undirected positive integer distance between distinct existing ports. Duplicate undirected pairs are invalid. Each ship has a positive integer speed; duration is integer ceiling of distance/speed, at least one day. Classic uses its authored distances. Seeded generation derives integer distances from integer geographic coordinates once during setup; rendering and floating-point screen coordinates never enter travel calculations. No pathfinding or automatic intermediate voyage exists.
 
 Departure changes docked state to a voyage with its complete duration still remaining. It consumes no day. Each subsequent `AdvanceDay` decrements remaining duration once. A three-day departure on day 0 arrives in the day-3 snapshot. Manual trading is legal immediately after that commit, still on day 3. Daily automation acts before arrival and therefore trades on the following daily actor phase unless the host explicitly requests a zero-time run after arrival.
 
@@ -421,7 +422,25 @@ Ship interpolation only draws movement between committed positions. Paused displ
 
 `IndustryBlueprint` defines positive construction cost, interval and finite warehouse capacity, eligible ports, optional output ceiling, and canonical building/recipe IDs. A recipe must belong to that building. Private facility inventories use the same canonical goods and integer bounds as market/cargo inventories, but have distinct ownership and total item capacity.
 
-`ConstructFacility` validates references, eligibility, unique facility ID and one-blueprint-per-owner/port. Insufficient company cash is an ordinary unchanged `InsufficientFunds` result. Success pays the entire cost to the local market, creates empty enabled storage, and sets first production to current day plus interval. It spends no day and produces nothing. Recipient balance or deadline overflow throws and rolls back construction completely.
+`ConstructFacility` validates references, eligibility, unique facility ID and one-blueprint-per-owner/port. Insufficient company cash is an ordinary unchanged `InsufficientFunds` result. An accepted order pays the entire cost to the local market and creates empty enabled owned storage. It advances revision without spending a day or producing anything. Recipient balance, completion-date or first-production-date overflow throws and rolls back the entire order, including accounting.
+
+### Ascension and construction lifecycle
+
+`RunDifficulty` has exactly `Normal` (Ascension 0) and `SlowFoundations` (Ascension 1). A world fixes its validated difficulty at initialization; it cannot be changed during a run. Ascension 0 preserves the existing immediate `Built` outcome and first production at ordered day plus interval. Ascension 1 applies a two-day delay to purchased facilities owned by a company with a player ship. It returns `Started` at order, with `UnderConstruction` status. NPC-owned purchases remain ordinary immediate construction; the scenario adds no NPC building behavior.
+
+The pending site exposes its ordered day, scheduled completion day, remaining days, earliest production day and immutable status. Its full cost is paid once at order. Two subsequent successful `AdvanceDay` operations complete a day-D order on the D+2 commit. Instant trades, policy edits, enablement and presentation do not count as construction days. Completion runs after voyages and before challenge evaluation in the same atomic daily operation. It returns `Completed`, changes the site to `Operational`, and emits a zero-cash `ConstructionCompleted` event. It neither pays again nor creates goods or cost basis.
+
+Pending facilities perform no automatic procurement, private production or automatic output sales, including the automatic phases of the completion day. Their warehouse remains usable for explicit local market trades and physical owned transfers, under unchanged ownership/docking/capacity rules. Industrial shipping can likewise move genuinely stored goods through its ordinary transfer path; storage access grants no production exception. Procurement and sales can begin on the following daily operation if enabled. The first batch remains scheduled at completion plus the full normal interval, regardless of manually supplied inputs.
+
+| Day of a bakery ordered on day 0 | Ascension 0 | Ascension 1 |
+| --- | --- | --- |
+| 0, order | Pays once; operational; first eligible batch day 2 | Pays once; pending for two days; first eligible batch day 4 |
+| 1, first daily advance | Normal policies may act; no batch due | Pending; no automatic facility operation |
+| 2, second advance | Batch may run if inputs/capacity permit | Completes after automatic phases; no batch or automatic facility trade |
+| 3 | Ordinary schedule | Operational policies may act; no batch due |
+| 4 | Ordinary schedule | First batch opportunity, still conditional on inputs, enablement and capacity |
+
+`PreviewConstructionSchedule(ownerId, blueprintId)` calculates the same checked dates used by ordering, without reserving cash or establishing site eligibility. A starter facility is explicitly initialized `Operational`, with its historical initial schedule, grant provenance and zero construction expenditure. The Industrial Consortium therefore avoids the delay for its inherited bakery; buying another site still incurs it. This documented charter asymmetry is intentional, not a hidden economic compensation.
 
 Private production consumes only the facility's inputs and creates only its outputs. Missing inputs, final output ceiling or final total capacity prevent the whole batch. Success reuses the canonical atomic production operation and advances the deadline from completion. Blocked and disabled facilities remain due; enablement never creates a batch or resets the deadline. Checked lifetime batch/physical/purchase/sale counters are observations, not retained transaction history; counter overflow also rolls back the operation.
 
@@ -487,7 +506,7 @@ HeldGoods = Granted + Purchased + Produced - Consumed - Sold
 
 The physical formula applies independently to each commodity. Transfers cancel within the company. The material-cost equality includes transformation reallocations and excludes capital. The implementation checks the basis identity when constructing company financial snapshots; experiments additionally reconcile actual cash and physical stores. Combined market/company cash remains conserved. Ship cash projections must not be counted as additional accounts.
 
-`RegionalResult.EconomicEvents` returns the current operation's committed purchases, sales, physical transfers, private production, and construction. Events carry committed day/revision, company, source/destination owner/store, port, relevant good and quantity, actual cash total and signed company change, allocated cost, recipe/facility, and gross consumed/produced cost slices as appropriate. Initial grant provenance is retained in initial lots and facility configuration. A host can retain a bounded journal without becoming an authority.
+`RegionalResult.EconomicEvents` returns the current operation's committed purchases, sales, physical transfers, private production, construction payments and delayed construction completions. A completion event has zero cash, quantity and allocated cost; only the order contributes capital expenditure. Events carry committed day/revision, company, source/destination owner/store, port, relevant good and quantity, actual cash total and signed company change, allocated cost, recipe/facility, and gross consumed/produced cost slices as appropriate. Initial grant provenance is retained in initial lots and facility configuration. A host can retain a bounded journal without becoming an authority.
 
 Rejected commands leave lots, aggregates, snapshot identity, and revision unchanged. Exceptional failure discards all staged accounting and all other world changes, including earlier actions in the same chain/day. Cost or aggregate overflow is exceptional, not permission to lose attribution. World snapshots retain current lots and aggregates, not an immutable copy of every past transaction. The amount of open-lot state can grow with unsold acquisitions; historical event count alone does not grow it.
 
@@ -535,7 +554,25 @@ Solvency = min(100, floor(company cash / 10))
 Total = Objective + Victory + Time + Solvency
 ```
 
-Intermediate score arithmetic is exact. Total score is bounded by **2,200**; trade count and gross sale turnover receive no separate points. Partial objective and solvency scores remain visible on failure/abandonment, without a victory or time bonus. Results compare within `challenge ID / charter ID`: differing starter assets are not normalized into a universal competitive ranking. See [Economy](ECONOMY.md#task-17-complete-runs-and-attributed-results) for measured examples and endowment caveats.
+Intermediate score arithmetic is exact. Total score is bounded by **2,200**; trade count and gross sale turnover receive no separate points. Partial objective and solvency scores remain visible on failure/abandonment, without a victory or time bonus. Identified runs compare within challenge/charter/ascension/exact-world groups. Seeded identity includes seed and generator version; Classic is explicit. Legacy identity-null APIs retain the historical `challenge ID / charter ID` report field for byte compatibility, not a new cross-difficulty ranking. See [Economy](ECONOMY.md#task-17-complete-runs-and-attributed-results) for the historical examples and [Seeded runs](SEEDED_RUNS.md) for the expanded comparisons.
+
+## Seeded geography and immutable run identity
+
+`SeededArchipelago` version **1** accepts every signed 32-bit integer seed. The text parser accepts only ASCII digits with an optional leading `+` or `-`, no whitespace, separators, decimal point or exponent, and validates the int32 range. Host randomization chooses and displays a seed; the pure generator never accesses wall-clock time, Unity state or `System.Random`.
+
+Generation starts with slots `(250,200)`, `(750,200)`, `(250,500)`, `(750,500)`. Three Fisher–Yates draws permute them; eight more add independent integer jitter from -40 through 40 to X/Y for the fixed ordinal East/North/South/West IDs. Each uint draw adds `0x9E3779B9` to its wrapping state, applies the versioned Murmur3 avalanche multipliers `0x85EBCA6B`/`0xC2B2AE35`, then takes an explicit modulo. The seed's signed bits initialize that state. There are exactly eleven draws, with no rejection or retry loop.
+
+All four towns remain within X=210–790 and Y=160–540, separated by at least 220 chart units. Every pair gets one direct route: distance is the smallest positive integer `d` with `d*d >= dx*dx + dy*dy`, computed by bounded integer bisection. The maximum is 694, hence ordinary speed-100 ships take 3–7 days. Positions, sorted routes and the invariant signature come from one immutable geography. Distances are abstract chart units; direct lines imply no coastline collision or sea-pathfinding system.
+
+Only positions and routes vary. Town IDs, industries, NPCs, inventories, accounts, pricing, demand, ship speeds, charters and challenge deadlines reuse the existing scenario. Classic uses the exact authored positions and six distances, with version 0 and no seed. Legacy scenario overloads still construct Classic/Ascension 0 fixtures; prior golden reports remain separate from the seeded report.
+
+`RunIdentity` captures challenge/null sandbox, charter, world mode, nullable seed, generator version and difficulty. `RunScenario.Create(content, identity)` constructs from those selections; each snapshot and terminal result retains them. The world validates matching identity/difficulty/challenge. The host's **Retry Same World** reconstructs the same initial stocks, accounts, cargo, facilities, policies, schedules and day/revision, clearing journal/playback/selection state. **New World / Reroll** explicitly changes the draft seed and previews the new world before a separate start. Navigation, reference browsing and text settings cannot reroll.
+
+## Presentation text scale
+
+ArchipelagoLab uses Compact/Default/Large/Extra Large body sizes **14/17/21/25 px**, captions **12/15/19/23 px**, and headings **24/28/34/40 px**. Shared inherited USS tokens also adjust controls, map labels, table rows and panel sizing. Responsive classes, wrapping and internal scrolling handle smaller viewports; no paint-only global transform changes apparent text without its layout or hit targets. New controls inherit the active scale immediately.
+
+`ArchipelagoTextScale` stores only this presentation preference using Unity PlayerPrefs under `SaltAndLedger.UiTextScale`. It survives screen transitions, retries and fresh runs and is saved locally for subsequent launches of that application environment. Editor/player preference stores can differ; it is neither cross-device synchronization nor an economic save. Other settings remain session-only. Scale changes issue no simulation commands and cannot alter day, revision, prices or outcomes. [Unity integration](UNITY.md) records actual visual/input verification separately from automated tests.
 
 ## Determinism and remaining scope
 

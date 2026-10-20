@@ -537,3 +537,101 @@ The first player build launched successfully but did not include the optional QA
 Build evidence is `.cache/task17-build-mono-final.log` and its provenance JSON. Player evidence is `.cache/task17-player-final.log` and `.cache/task17-player-interactions.jsonl`; the verified executable remains under `.cache/unity-verification/Builds/ArchipelagoLab/Windows/`. The successful build retained licensing validation/entitlement diagnostics. The player retained AMD/NV optional native-plugin architecture diagnostics, the D3D12 information-queue query diagnostic, and stripped/unsupported unused URP post-processing shader messages. No managed gameplay exception was found. These optional graphics/service paths were not certified or altered to hide their messages.
 
 The final comparison checked **165** repository inputs against the isolated project: **161 matched**, including all host source, tests, scenes, prepared simulation/content/reference, and package manifests. Four settings files changed inside the isolated Editor/build: URP runtime references and shader-prefilter data, equivalent define ordering/explicit default Mono backend, and UnityConnect's enabled flag. Those differences are recorded in `.cache/task17-unity-final-hashes.json`; they were not copied back into the authored project. The additional isolated runtime QA configuration was deliberate. The root Editor ended stopped with background execution restored to false, auto-tick disabled, and zero Console errors/warnings. Temporary captures are archived under `.cache/task17-screenshots`; selected evidence remains versioned in `docs/images/`.
+
+## Task 1.8 seeded-run and readability verification
+
+Verified on Windows on **2026-10-20**, using Unity **6000.6.6f1**, official Unity CLI **1.0.0-beta.13** and the Unity Agent Plugin. The original Task 1.8 specification was reread before final acceptance. The [screenshot gallery](READABILITY_VERIFICATION.md) contains the reviewed Editor matrix, before/after evidence and construction sequence. [Seeded runs](SEEDED_RUNS.md) documents the generator, shared economy, exact timing and economic measurements.
+
+| Check | Actual final result |
+| --- | --- |
+| Locked restore and Release solution build | Passed; zero build warnings/errors |
+| Complete .NET suite | **596 passed**, zero failed/skipped |
+| Python tests and canonical/player-help validation | **54 passed**; content and help valid |
+| Generated references and freshness | **44 outputs** current; in-game encyclopedia staged |
+| Legacy demos and reports | All ten modes passed; all five historical report hashes unchanged |
+| Seeded experiments | **1,872 normal / 9,072 deep trials** completed; normal read-only freshness passed |
+| Order/culture/repeat comparison | 360 representative experiment rows matched repeated, reversed and `tr-TR` execution |
+| Official Unity Edit Mode | **80 passed**, zero failed/skipped |
+| Official Unity Play Mode | **42 passed**, zero failed/skipped, including trade nonoverlap and 96 map-layout combinations |
+| Actual Editor rendering | 72 reviewed views across Default/Large/Extra Large and both target resolutions; additional Compact captures and input checks |
+| Windows x64 Mono development build | Final accepted source built and launched successfully; no C# diagnostics |
+| Actual standalone run | Seed 42, Merchant, Coastal Supply, Ascension 1: victory day 36, net delivery 28, cash 1,072, margin 472, score 1,840; reproduced after retry |
+| Standalone preference | Large persisted across process exit and relaunch; no run was saved |
+| Documentation/staging | Strict MkDocs, generated-reference and Unity freshness checks passed; final documentation result is recorded in the progress log |
+
+### Actual Editor input, construction and outcomes
+
+New Run accepted real Game-view character events sent through the official Pipeline evaluation path. Invalid text disabled Begin; entering **-42** restored the preview, Copy Seed returned `-42`, and Begin created the matching seeded v1 world. `simulate_key` does not provide character typing, so this used `GameView.SendEvent`, not a direct field-value assignment. Numeric entry of quantity 3 and Tab updated a live exact quote to 31 (first price 10, last 11, displayed average 10.33) without an economic commit. Clicking Eastport through the trade overlay left Northport selected and day/revision unchanged; Escape closed the overlay first.
+
+The Merchant Company Ascension 1 Northport bakery was ordered and configured through actual controls:
+
+| Day | Observed state |
+| --- | --- |
+| 0 | Paid 300 once; cash 600 to 300; pending with two days remaining; no purchases or batches |
+| 1 | Pending with one day remaining; cash 300; no automatic purchases or production |
+| 2 | Operational at the daily commit; cash 300; no completion-day purchase or batch |
+| 3 | Applied procurement bought inputs for 62; cash 238; no batch yet |
+| 4 | First batch produced two Bread; next opportunity day 6 |
+
+Completion runs after voyages and before challenge evaluation in the same atomic daily commit. Pending sites skip all automatic industry phases, including their completion day. Ordinary owned local storage/trades remain legal. The first production opportunity is completion plus the full recipe interval. A separate actual Ascension 0 construction check stayed on day 0, paid 300 and immediately became operational with first eligibility day 2. Industrial charter captures show the already-operational grant and its preserved schedule.
+
+The player-directed Northport bakery/preset attempt on seed **-42**, Merchant Coastal Supply, Ascension 1 ended in a genuine **defeat on day 60**: 16 of 24 Bread delivered, cash 735. It is a different factory location from the headless Westhaven industrial benchmark. Retry restored **day 0, revision 0, cash 600 and no private factories**. Enabling the normal merchant route then produced a genuine **victory on day 43**: 26 net delivery, cash 1,118 and realized margin 518. Results displayed seed, generator version, ascension and qualified score group. Terminal freeze remained enforced.
+
+Explicit Reroll created draft seed **-1306163163**, while the committed session retained **-42** until Begin. Pause, menus, settings and help did not reroll. Editor Exit used the game's confirmation and stopped Play Mode.
+
+### Visual review and corrections
+
+The [gallery](READABILITY_VERIFICATION.md) covers main menu, setup, selected-port market, trade, factory, warehouse, merchant automation, industrial logistics, ledger, pause, encyclopedia and results at **1366x768 and 1920x1080**, Default/Large/Extra Large. Body sizes are 17/21/25 px (Compact 14); captions 15/19/23 (Compact 12). Settings applies inherited layout/text tokens immediately and persists only this presentation preference.
+
+Actual review found and fixed overlapping stacked trade panels at narrow Large/Extra Large, ellipsized logistics labels, obscured route captions, and an Extra Large docked-ship hit target over a neighboring town. The final captures passed independent review. Trade now uses explicit vertical layout at narrow large scales. Captions use a bounded placement search and leader lines when displaced; docked groups choose a clear side of their town. These are rendering decisions only. The authored/generated coordinates and authoritative routes remain unchanged. Added tests directly compare table/order, caption and marker bounds rather than only checking whether controls can be scrolled into view.
+
+The matrix uses public host setup/navigation APIs and UI events to create repeatable live views. It is not claimed as 72 separate pointer-only playthroughs. The seed, construction, numerical input, overlay, retry/reroll and terminal journeys above were exercised separately through actual controls. Compact market/trade views were also inspected at both resolutions. Long forms scroll internally; the Large/Extra Large 1366 trade order form follows the market table in that internal scroll.
+
+### Final Windows player and limitations
+
+The accepted Windows x64 **Mono development** executable was built from the final source, launched with the official `unity build run`, and observed advancing frames. Actual pointer controls selected Seeded 42 / Ascension 1, enabled the merchant route and Play, reaching the day-36 victory above. Retry restored day 0/cash 600 and reproduced the same victory. Extra Large trade rendering was captured at both resolutions. Large survived a full exit/relaunch; the preference was returned to Default afterward. Exit invoked the game's `Application.Quit()` path and the process closed.
+
+Player verification mixed native Pipeline pointer/key input and UI Toolkit navigation events. The first journey used pointer controls. After switching focus between Editor/player and dismissing Unity's development diagnostic overlay, simulated native input became unreliable; the remaining layout capture/navigation and final Exit used `NavigationSubmitEvent` on real controls. No economic state, challenge progress or outcome was fabricated. The diagnostic overlay was dismissed for inspection, while its messages remained in the log. Temporary background/input settings existed only in the running QA player, not authored project settings.
+
+**Still unverified:** arbitrary character typing in the standalone seed field, a complete pointer-only journey after the development-console/focus issue, and the construction timeline repeated manually in the final player. Those flows have Editor/test coverage, not full standalone input certification. IL2CPP, other operating systems, distribution builds and all possible seeds are not certified. This milestone provides no save/load or persistent progression. The remaining input limitation is recorded as a verification limit, not evidence that physical keyboard entry is broken.
+
+The accepted build retained **489 Sentis shader/compute-shader warnings** and three licensing Code 404 diagnostics, with no C# diagnostic codes. The player retained optional AMD/NV native-plugin architecture messages and unused/unsupported shader diagnostics; no managed gameplay exception was found. No package or functionality was removed to suppress them. Inspect and close Unity's development console if it covers footer buttons during local QA.
+
+Evidence: `unity/Logs/task18-edit-tests.json`, `unity/Logs/task18-play-tests.json`, `.cache/task18-build-mono-accepted.log` and its provenance JSON, `.cache/task18-player-accepted.log`, `.cache/task18-ui-interactions.jsonl`, `.cache/task18-player-interactions.jsonl`. Raw build/player logs can contain licensing data; share sanitized summaries. Of **181** compared isolated-build inputs, **177 matched** exactly, including host source, scenes, tests, prepared DLL/content/reference and manifests. The isolated Editor rewrote four settings assets (URP references/prefilter data, explicit default backend/define ordering, UnityConnect flag); those changes were not copied back. `.cache/task18-unity-final-hashes.json` records the comparison. The isolated development-only Pipeline QA connection is also deliberately excluded from authored inputs.
+
+[Standalone victory](images/task18/task18-player-accepted-victory-1366.png), [Extra Large trade 1366](images/task18/task18-player-accepted-xl-trade-1366.png), [Extra Large trade 1920](images/task18/task18-player-accepted-xl-trade-1920.png).
+
+The root Editor ended stopped, background execution restored to false, auto-tick disabled, and text preference Default. Authored `ProjectSettings.asset` has no QA-only diff. Temporary captures/builds remain ignored; reviewed images are versioned in `docs/images/task18/`.
+
+### Repeat local acceptance
+
+1. Prepare the checkout and run the official Edit/Play suites above; inspect complete test totals, including overlap cases.
+2. Follow [PLAYTEST](PLAYTEST.md#seeded-worlds-ascension-and-readability) at both resolutions and all four scales. Type -42, copy it, inspect preview/map durations, retry and reroll, and verify numeric input, Tab, Escape and modal blocking.
+3. Repeat the day-0/day-2/day-4 bakery sequence, Ascension 0 construction and Industrial starter exemption. Complete a seeded challenge and inspect the result identity and asset dates.
+4. Build/launch the intended backend. Repeat native keyboard seed entry, construction, results/retry and Exit in the player without relying on scripted navigation; record focus/diagnostic-overlay behavior. IL2CPP needs its own toolchain/build/runtime verification.
+
+### Definition of Done audit
+
+Each original acceptance item was checked individually after rereading `tasks/TASK-1.8.md`. "Passed" describes the implemented requirement and the evidence below, not every operating system or every possible seed.
+
+| # | Requirement | Result | Evidence |
+| --- | --- | --- | --- |
+| 1 | Global readable text and four scales | Passed | 14/17/21/25 body tokens, inherited controls and passive-setting tests; actual screenshots and preference relaunch. |
+| 2 | Large/XL at both resolutions | Passed | 72 reviewed views; trade stacking, captions, dock markers and logistics labels corrected; actions tested reachable. |
+| 3 | Pure bounded four-town generator | Passed | Version1 fixed 11 draws; four positions/six routes; bounds proof and4,098-seed tests. |
+| 4 | Distances, previews and voyages agree | Passed | Integer ceiling square root; shared routes/speed; golden vectors, host-preview and actual map checks. |
+| 5 | Meaningful geography, same economy | Passed | Seed0/42 route examples and99 / -42 strategy crossover; canonical economic definitions unchanged. |
+| 6 | Classic and historical compatibility | Passed | Legacy defaults intact; ten demo modes pass and five report hashes unchanged. |
+| 7 | Seed/setup preview and identity controls | Passed | Invalid text rejected; actual -42 entry/copy/start; all challenge/charter/ascension choices in setup. |
+| 8 | Exact retry and explicit reroll | Passed | Complete reset fingerprints/journal tests; actual day 0 / cash 600 retry and distinct draft-only reroll. |
+| 9 | Instant A0 and two-day A1 | Passed | Actual A0 day 0 operational; A1 pending on days 0/1, completion day 2; focused lifecycle tests. |
+| 10 | One payment, no early automatic phases | Passed | Actual cash 300 through day 2, inputs 62 on day 3, first bakery batch day 4; atomic lifecycle/accounting tests. |
+| 11 | Starter factory exemption | Passed | All charters tested at both difficulties; Industrial grant status/schedule visible in actual screenshots. |
+| 12 | Inspectable and auditable construction | Passed | Industry status/eligibility plus ledger/results dates; terminal pending-site Play test. |
+| 13 | Industry workflow and honest finances | Passed | Recommended draft then explicit Apply; stock/quotes/waits/capital/basis separated; five focused UX cases and actual sequence. |
+| 14 | Honest seeded outcomes and identity | Passed | Real Editor defeat/victory and player victory; terminal freeze and qualified results tests. |
+| 15 | Seed/difficulty experiments | Passed | 1,872 normal and 9,072 deep trials, all 3 x 3 x 2 combinations; idle/merchant/local/industrial strategies and bottleneck analysis. |
+| 16 | Accounting, goods, FIFO and rollback | Passed | 596 complete .NET tests plus per-operation reconciliation throughout sweeps; repeat/reverse/tr-TR checks. |
+| 17 | Actual menu-to-terminal Unity play | Passed | Editor -42 victoryday 43/failureday60; final Mono seed 42 victory day 36, reproduced after retry. |
+| 18 | Synchronized help and website | Passed | Updated player-help,44 generated outputs, staged encyclopedia and final strict MkDocs/freshness checks. |
+| 19 | Tests, CI and explicit verification limits | Passed with disclosed limits | 80 Edit / 42 Play, bounded CI seed check and documentedMono runtime evidence. Native player character entry/post-console pointer-only coverage, player construction walkthrough and IL2CPP remain unverified. |

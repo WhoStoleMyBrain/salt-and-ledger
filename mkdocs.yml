@@ -16,6 +16,8 @@ nav:
   - Player guide:
       - Getting started: PLAYER_GUIDE.md
       - Run choices and measured outcomes: RUNS.md
+      - Seeds, Ascension and readability: SEEDED_RUNS.md
+      - Readability settings: reference/mechanics/help_readability.md
       - Trade and prices: reference/mechanics/help_trading.md
       - Shipping: reference/mechanics/help_shipping.md
       - Factory ownership: reference/mechanics/help_factories.md
@@ -43,6 +45,7 @@ nav:
       - Historical shipping comparison: SHIPPING_DEMO.md
       - Playtest guides: PLAYTEST.md
       - Unity integration: UNITY.md
+      - Readability verification gallery: READABILITY_VERIFICATION.md
       - Website and publishing: WEBSITE.md
       - Roadmap: ROADMAP.md
       - Decisions: DECISIONS.md

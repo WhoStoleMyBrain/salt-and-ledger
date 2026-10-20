@@ -175,6 +175,34 @@ This supports attributed gross margin and an honest held-cost display. It does n
 
 Automation connects private warehouses to real shipping and ordinary markets, with measured manual-equivalent transitions and finite blocked cases in the [automation experiments](AUTOMATION.md). This reduces prescribed repetitive commands without improving prices, speed, or resource access. Actual player comprehension and enjoyable strategic choice still require observed playtesting.
 
+## Task 1.8: measured geography and construction pressure
+
+The [seeded run experiment](SEEDED_RUNS.md#reproduce-the-experiment) holds economic configuration fixed while permuting four bounded geographic slots and deriving six integer route distances. Ascension 1 delays new player facilities by two complete days; starter grants remain operational. The normal report covers 25 signed seeds plus Classic, all three challenges/charters, both ascensions, and idle, merchant, local-factory and factory-shipping policies: 1,872 finite trials. Each operation reconciles combined/company cash, physical extraction/transformation/consumption, trade transfers and FIFO basis. These are actual simulation runs, not an approximate profitability model.
+
+All 450 seeded challenge/charter/ascension combinations in the normal sample have a winning benchmark strategy. Idle wins none. That result is empirical sample coverage, not a guarantee of victory for every seed or player policy; the generator separately proves bounded, connected geography. No stock, liquidity, production, demand, recipe, objective or charter value was adjusted per seed or across the milestone.
+
+An executed 125-seed deep batch covers 9,072 total trials including Classic and finds a benchmark victory for all 2,250 seeded combinations. It reproduces the normal sample's strategy outcome pattern and completion-day ranges. Of its 375 Ascension 1 industrial Regional Relief trials, 130 succeed exactly on day 60; none do so at Ascension 0. This is measurable deadline exposure without a claim that every untested seed or arbitrary strategy is feasible.
+
+### Geography changes the fastest strategy
+
+For Merchant Company and Coastal Supply at Ascension 0, seed **99** favors the tested merchant route in completion time: day 28 versus day 39 for paid private industry and shipping. Seed **-42** reverses that relationship: merchant day 43 versus industrial day 28. Identical goals and starting assets therefore produce a real route/investment timing tradeoff.
+
+Cash and material margin answer different questions. On seed -42 the merchant finishes with 1,118 cash and 518 realized material margin; industry finishes with 926 cash and 697 margin after paying 300 construction capital. Its held material basis remains attached to unsold inventory. On seed 99 the comparable figures are 984 cash/384 margin versus 861 cash/769 margin. Neither the factory nor cargo receives an invented liquidation value. [Full measurements](SEEDED_RUNS.md#measured-difficulty-and-efficiency) retain the distinction.
+
+### Local profitability is not objective completion
+
+The local Westhaven bakery earns positive material margin and completes Enterprise Ambition, but loses Coastal Supply because its sales occur in the wrong town. It also loses Regional Relief with **22/24** consumed Bread: Westhaven's six-day demand interval permits only 20 Bread consumed by day 60, and two initial units are consumed elsewhere in these scripts. Producing more into the same town cannot create another scheduled demand opportunity. Physical shipping is the missing action, not a fabricated manufacturing subsidy or a global recipe buff.
+
+Procurement targets, marginal limits, company reserves, private stock, voyage duration and finite destination liquidity all remain operative. The experiment records blocked policy decisions and private procurement/sales reasons separately from actual rejected trades. A wait can prevent a purchase before any transaction is submitted; counting only rejected orders would hide that pressure. Held output and paid inputs remain on the balance explanation rather than being labeled realized profit.
+
+### Slow Foundations is a narrow modifier
+
+Purchased two-day-interval bakeries ordered on day 0 complete on day 2 and first produce no earlier than day 4, compared with day 2 on Ascension 0. In the normal seeded sample, industrial Coastal victories range from days 28–44 at Ascension 0 and 28–46 at Ascension 1. Industrial Regional Relief ranges move from 52–56 to 52–60; some Ascension 1 runs finish exactly on their deadline. Local-factory Enterprise Ambition finishes on day 12 normally and days 12–14 under Ascension 1.
+
+Industrial Consortium's inherited bakery retains its historical schedule and grants at both difficulties. Pure merchants also receive no penalty when they build nothing. All sampled merchant Coastal/Relief trials still win, so enabling a suitable default trading route remains easy. The modifier is not a claim of globally harder challenges, fairer starting packages or uniformly lower profit. Seed -42's purchased-factory run actually finishes with higher cash/margin under Ascension 1 despite finishing two days later, because its market timing changes.
+
+The calibration proposal remains conservative: retain existing prices, recipes, capital and deadlines, then test one explicit pressure at a time in a future tuning task. Compare local-factory and shipping decisions under the same charter/seed/ascension and report both liquidity and held basis. Observe whether people understand the consequences before changing several economic parameters at once. Human play difficulty, enjoyment and longer-horizon sustainability remain unresolved.
+
 ## Hypotheses to test
 
 - Scarcity coupled with finite cash may create useful tradeoffs between immediate profit and maintaining a network's supply.

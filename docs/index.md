@@ -2,7 +2,7 @@
 
 **Build an enterprise. Connect the archipelago. Make every shipment count.**
 
-Salt & Ledger is a single-player maritime economic strategy game. Four handcrafted towns share finite stock, cash, production, and demand. Trade alongside independent merchants, invest in private factories, and configure ships to connect your supply chain.
+Salt & Ledger is a single-player maritime economic strategy game. Four towns retain their authored economic roles across Classic and seeded geography, sharing finite stock, cash, production, and demand. Trade alongside independent merchants, invest in private factories, and configure ships to connect your supply chain.
 
 Start a challenge with a company charter, work toward its stated objective, then inspect the economic results. Or explore the same economy in an unlimited sandbox. The [run guide](RUNS.md) explains the available choices and measured examples.
 
@@ -12,6 +12,8 @@ Start a challenge with a company charter, work toward its stated objective, then
 
 | I want to... | Open |
 | --- | --- |
+| Share a world, retry it, or choose Ascension | [Seeded runs](SEEDED_RUNS.md) |
+| Make the interface easier to read | [Game-wide text sizes](reference/mechanics/help_readability.md) |
 | Choose a starting company and objective | [Charters](reference/mechanics/help_charters.md) and [challenges](reference/mechanics/help_challenges.md) |
 | Understand an order's real payment | [Buying and selling](reference/mechanics/help_trading.md) and [marginal prices](reference/mechanics/help_prices.md) |
 | Connect raw materials to finished goods | [Production chains](reference/chains.md) |
