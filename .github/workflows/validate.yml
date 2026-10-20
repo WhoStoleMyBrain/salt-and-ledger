@@ -65,6 +65,9 @@ jobs:
         run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --industrial-logistics --check
       - name: Verify complete runs, charters and financial reconciliation
         run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --runs --check
+      - name: Verify seeded worlds and both ascensions
+        # Stable 25-seed sample plus Classic; deeper 125-seed sweeps remain opt-in.
+        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --seeded-runs --check
       - name: Prepare Unity integration assets
         run: python tools/prepare_unity.py
       - name: Check Unity integration asset freshness
