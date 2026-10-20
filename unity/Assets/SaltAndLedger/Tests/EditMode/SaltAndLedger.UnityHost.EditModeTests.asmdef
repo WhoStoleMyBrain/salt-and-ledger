@@ -2,6 +2,7 @@
     "name": "SaltAndLedger.UnityHost.EditModeTests",
     "rootNamespace": "SaltAndLedger.UnityHost.Tests",
     "references": [
+        "SaltAndLedger.UnityHost",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],
