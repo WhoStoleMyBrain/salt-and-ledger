@@ -1,29 +1,32 @@
 # Salt & Ledger
 
-Salt & Ledger is a planned single-player maritime trading and economic strategy game for Unity 6. Its central activity is intelligent optimization and automation of trading networks within a simulated economy.
+**Build an enterprise. Connect the archipelago. Make every shipment count.**
 
-The repository implements the foundation through Task 1.6's economic enterprise: a Unity-independent C# simulation, six canonical goods, .NET 10 experiments/tests, generated reference documentation, and a map-first Unity UI Toolkit sandbox. Four towns share finite markets with the player and three NPC merchants. Companies can invest in private factories, configure local procurement/sales, and transport owned stock through geographic voyages. A contextual trading overlay displays exact totals and averages; an optional fixed supply charter offers a deadline. The regional owner reuses the established transaction, pricing, production and atomicity contracts. Bootstrap, TradingLab, historical scenarios and older demos remain regression tools. An encyclopedia UI remains deferred.
+Salt & Ledger is a single-player maritime economic strategy game. Four handcrafted towns share finite stock, cash, production, and demand. Trade alongside independent merchants, invest in private factories, and configure ships to connect your supply chain.
 
-## Read the project
+Start a challenge with a company charter, work toward its stated objective, then inspect the economic results. Or explore the same economy in an unlimited sandbox. The [run guide](RUNS.md) explains the available choices and measured examples.
 
-- [Game design](GAME_DESIGN.md): non-negotiable principles and intended player experience.
-- [Architecture](ARCHITECTURE.md): implemented modules, contracts, and dependencies.
-- [Mechanics](MECHANICS.md): maintained contracts for production, finite trading, accounting, tick ordering, and rollback.
-- [Content reference](reference/index.md): generated goods, building, and recipe definitions.
-- [Economy](ECONOMY.md): accepted modeling goals and unresolved choices.
-- [Pricing experiments](PRICING_EXPERIMENTS.md): reproducible fixed/linear/scarcity comparisons, measured limitations, and a provisional recommendation.
-- [Manual shipping comparison](SHIPPING_DEMO.md): reproducible two-port expeditions, travel timing, cargo decisions, and realized gross profit.
-- [Automation](AUTOMATION.md): configurable route rules, bounded waiting, player control, and manual-equivalent measured expeditions.
-- [Living archipelago](LIVING_ARCHIPELAGO.md): towns, sources/sinks, NPC shipping, daily time, geography, and measured sixty-day strategies.
-- [Commerce and industry](ENTERPRISE.md): contextual trading, private production, storage transfers, the supply charter, and measured ninety-day strategies.
-- [Playtest guides](PLAYTEST.md): ArchipelagoLab and legacy TradingLab controls, expeditions, blocked-route diagnosis, and policy recovery.
-- [Roadmap](ROADMAP.md): provisional development sequence.
-- [Decisions](DECISIONS.md): accepted foundation decisions and their tradeoffs.
-- [Ideas](IDEAS.md): experiments and intentionally deferred concepts.
-- [Unity integration](UNITY.md): reproducible preparation, Editor/player verification, and recorded limits.
+## Chart your first voyage
 
-## Canonical definitions and maintained rules
+[Start with the player guide](PLAYER_GUIDE.md) for menus, trading, factory ownership, and the path to an automated delivery. The [in-game reference](reference/index.md) covers the same goods, recipes, and explanations available offline inside the game.
 
-`data/content.json` is the source for both runtime content and generated reference pages. `data/content.schema.json` describes its structure; semantic validators check relationships and additional constraints. The generator also emits `generated/encyclopedia.json` for a future in-game reference consumer.
+| I want to... | Open |
+| --- | --- |
+| Choose a starting company and objective | [Charters](reference/mechanics/help_charters.md) and [challenges](reference/mechanics/help_challenges.md) |
+| Understand an order's real payment | [Buying and selling](reference/mechanics/help_trading.md) and [marginal prices](reference/mechanics/help_prices.md) |
+| Connect raw materials to finished goods | [Production chains](reference/chains.md) |
+| Ship a factory's output automatically | [Industrial shipping](reference/mechanics/help_industrial_routes.md) |
+| Understand cash, costs, and margin | [Financial reports](reference/mechanics/help_finances.md) and [historical cost](reference/mechanics/help_cost_basis.md) |
+| Find a commodity or rule | Use **Search**, or browse [all mechanics](reference/catalog-mechanics.md) |
 
-Generated reference pages describe only canonical facts, including explicit extraction recipes. Command semantics, legacy abstract ticks and regional days, fixed/dynamic prices, transactions, schedules, cargo, travel, policies, ordering, and error behavior are specified in [Mechanics](MECHANICS.md). Dynamic formulas and scenario values remain experimental. Extraction is explicit, consumption is physical without household payments, and automatic strategy discovery remains deferred. Long-term design direction is not a claim that those mechanics exist today.
+## An economy you can inspect
+
+Goods and money really move. Loading a private warehouse changes physical stock; sailing takes economic days; a town without cash cannot buy a shipment. Automation follows your rules and exposes its reasons for waiting. It does not replenish resources or choose an optimal strategy for you.
+
+Recipe definitions and relationships are generated from the same canonical data the simulation loads. Shared player-help text feeds this website and the game's encyclopedia. Scenario-specific prices, schedules, and assets come from the active run; prototypes and long-term proposals are identified separately.
+
+## For developers and playtesters
+
+Use [Unity setup](UNITY.md) to prepare and launch the project, [Playtest](PLAYTEST.md) for reproducible interaction checks, and [Architecture](ARCHITECTURE.md) for implementation boundaries. The Development menu contains precise mechanics, measured experiments, decisions, and remaining limitations.
+
+The website is a local static MkDocs build. [Website instructions](WEBSITE.md) explain validation, the shared reference pipeline, and optional GitHub Pages publication. A prepared deployment workflow does not mean a public site has been published.

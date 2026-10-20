@@ -7,19 +7,21 @@ from pathlib import Path
 
 from tools.content import ROOT, load_content, validate_content
 from tools.generate_docs import ENCYCLOPEDIA_PATH, render_outputs, synchronize
+from tools.player_help import load_player_help
 
 
 class ReferenceGenerationTests(unittest.TestCase):
     def setUp(self):
         self.content = load_content()
+        self.help = load_player_help(self.content)
 
     def test_checked_in_reference_is_fresh(self):
-        self.assertEqual([], synchronize(render_outputs(self.content), ROOT, check=True))
+        self.assertEqual([], synchronize(render_outputs(self.content, self.help), ROOT, check=True))
 
     def test_reference_contains_forward_and_reverse_semantic_links(self):
-        outputs = render_outputs(self.content)
+        outputs = render_outputs(self.content, self.help)
         encyclopedia = json.loads(outputs[ENCYCLOPEDIA_PATH])
-        self.assertEqual(1, encyclopedia["formatVersion"])
+        self.assertEqual(2, encyclopedia["formatVersion"])
         self.assertEqual(1, encyclopedia["sourceSchemaVersion"])
         goods = {item["id"]: item for item in encyclopedia["goods"]}
         buildings = {item["id"]: item for item in encyclopedia["buildings"]}
@@ -39,7 +41,7 @@ class ReferenceGenerationTests(unittest.TestCase):
                 self.assertIn(Path("docs") / item["wikiPath"], outputs)
 
     def test_extraction_page_explains_resource_source(self):
-        outputs = render_outputs(self.content)
+        outputs = render_outputs(self.content, self.help)
         recipe = outputs[Path("docs/reference/recipes/harvest_logs.md")].decode()
         self.assertIn("Recipe kind: **extraction**.", recipe)
         self.assertIn("No tradeable inputs.", recipe)
@@ -51,21 +53,54 @@ class ReferenceGenerationTests(unittest.TestCase):
         self.assertEqual("transformation", legacy["recipes"][0]["kind"])
 
     def test_all_generated_markdown_links_resolve(self):
-        outputs = render_outputs(self.content)
+        outputs = render_outputs(self.content, self.help)
         for path, value in outputs.items():
             if path.suffix != ".md":
                 continue
             for link in re.findall(r"\]\(([^)]+)\)", value.decode("utf-8")):
                 target = (ROOT / path.parent / link).resolve().relative_to(ROOT)
-                self.assertTrue(target in outputs or target == Path("docs/MECHANICS.md"), f"Broken link in {path}: {link}")
+                self.assertTrue(target in outputs or target in (Path("docs/MECHANICS.md"), Path("docs/PLAYER_GUIDE.md")), f"Broken link in {path}: {link}")
 
     def test_generation_is_byte_stable_and_uses_lf(self):
-        first = render_outputs(self.content)
-        self.assertEqual(first, render_outputs(self.content))
+        first = render_outputs(self.content, self.help)
+        self.assertEqual(first, render_outputs(self.content, self.help))
         for value in first.values():
             self.assertTrue(value.endswith(b"\n"))
             self.assertNotIn(b"\r", value)
             self.assertNotIn(str(ROOT).encode(), value)
+
+    def test_index_entity_ids_cannot_collide_with_category_catalogs(self):
+        from mkdocs.structure.files import File
+
+        for kind in ("goods", "buildings", "recipes", "mechanics"):
+            with self.subTest(kind=kind):
+                content = copy.deepcopy(self.content)
+                help_data = copy.deepcopy(self.help)
+                entity = {"id": "index", "name": "Index entity", "description": "A valid stable ID."}
+                if kind == "mechanics":
+                    entity.update(paragraphs=["This explanation remains accessible."], relatedIds=[])
+                    help_data["entries"].append(entity)
+                else:
+                    if kind == "recipes":
+                        entity.update(buildingId="sawmill", inputs=[{"goodId": "logs", "quantity": 1}],
+                                      outputs=[{"goodId": "planks", "quantity": 1}])
+                    content[kind].append(entity)
+                outputs = render_outputs(validate_content(content), help_data)
+                entity_path = Path(f"docs/reference/{kind}/index.md")
+                self.assertIn(b"# Index entity", outputs[entity_path])
+                catalog_path = Path(f"docs/reference/catalog-{kind}.md")
+                self.assertIn(f"]({kind}/index.md)".encode(), outputs[catalog_path])
+                reference = json.loads(outputs[ENCYCLOPEDIA_PATH])
+                entry = next(item for item in reference[kind] if item["id"] == "index")
+                self.assertEqual(entity_path, Path("docs") / entry["wikiPath"])
+
+                # Distinct source paths alone do not prevent MkDocs directory-URL
+                # collisions (goods.md and goods/index.md render to the same file).
+                rendered = [
+                    File(str(path.relative_to("docs")), "docs", "site", use_directory_urls=True).dest_uri
+                    for path in outputs if path.suffix == ".md"
+                ]
+                self.assertEqual(len(rendered), len(set(rendered)))
 
     def test_reordered_definitions_and_recipe_sides_have_identical_output(self):
         expanded = copy.deepcopy(self.content)
@@ -87,10 +122,10 @@ class ReferenceGenerationTests(unittest.TestCase):
         self.assertEqual(render_outputs(expanded), render_outputs(reverse(expanded)))
 
     def test_source_changes_update_machine_reference_and_wiki(self):
-        before = render_outputs(self.content)
+        before = render_outputs(self.content, self.help)
         self.content["recipes"][0]["inputs"][0]["quantity"] = 3
         self.content["goods"][0]["description"] = "Changed source description."
-        after = render_outputs(validate_content(self.content))
+        after = render_outputs(validate_content(self.content), self.help)
         recipe_path = Path("docs/reference/recipes/saw_planks.md")
         self.assertNotEqual(before[recipe_path], after[recipe_path])
         self.assertIn(b"| [Logs](../goods/logs.md) | 3 |", after[recipe_path])
@@ -101,7 +136,7 @@ class ReferenceGenerationTests(unittest.TestCase):
 
     def test_changed_relationship_updates_reverse_references(self):
         self.content["recipes"][0]["inputs"][0]["goodId"] = "planks"
-        outputs = render_outputs(validate_content(self.content))
+        outputs = render_outputs(validate_content(self.content), self.help)
         encyclopedia = json.loads(outputs[ENCYCLOPEDIA_PATH])
         goods = {item["id"]: item for item in encyclopedia["goods"]}
         self.assertEqual(["bake_bread"], goods["logs"]["consumedByRecipeIds"])
@@ -112,17 +147,18 @@ class ReferenceGenerationTests(unittest.TestCase):
         name = "Logs | [link](evil) <b>bold</b> *star* & stuff"
         self.content["goods"][0]["name"] = name
         self.content["goods"][0]["description"] = "Text\n# injected heading"
-        outputs = render_outputs(validate_content(self.content))
+        outputs = render_outputs(validate_content(self.content), self.help)
         recipe = outputs[Path("docs/reference/recipes/saw_planks.md")].decode()
         self.assertIn(r"Logs \| \[link\]\(evil\) &lt;b&gt;bold&lt;/b&gt; \*star\* &amp; stuff", recipe)
         self.assertNotIn("<b>", recipe)
         self.assertNotIn("[link](evil)", recipe)
         self.assertNotIn("\n# injected", outputs[Path("docs/reference/goods/logs.md")].decode())
+        self.assertNotIn("<b>", outputs[Path("docs/reference/goods/logs.md")].decode())
         machine = json.loads(outputs[ENCYCLOPEDIA_PATH])
         self.assertEqual(name, next(good for good in machine["goods"] if good["id"] == "logs")["name"])
 
     def test_check_reports_missing_changed_and_unexpected_files_without_writing(self):
-        outputs = render_outputs(self.content)
+        outputs = render_outputs(self.content, self.help)
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             missing = synchronize(outputs, root, check=True)
@@ -164,7 +200,7 @@ class ReferenceGenerationTests(unittest.TestCase):
             synchronize(render_outputs(validate_content(expanded)), root, check=False)
             obsolete = root / "docs/reference/goods/test_good.md"
             self.assertTrue(obsolete.exists())
-            outputs = render_outputs(self.content)
+            outputs = render_outputs(self.content, self.help)
             self.assertTrue(any("Unexpected" in line for line in synchronize(outputs, root, check=True)))
             synchronize(outputs, root, check=False)
             self.assertFalse(obsolete.exists())

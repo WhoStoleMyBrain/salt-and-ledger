@@ -1,15 +1,33 @@
 {
-  "formatVersion": 1,
+  "formatVersion": 2,
   "sourceSchemaVersion": 1,
+  "sourceHelpSchemaVersion": 1,
   "goods": [
     {
       "id": "bread",
       "name": "Bread",
       "description": "Finished food baked from flour using logs as fuel.",
       "wikiPath": "reference/goods/bread.md",
+      "paragraphs": [
+        "Production sources: Bake bread (Bakery): 1 Flour + 1 Logs → 2 Bread.",
+        "Used by: None defined."
+      ],
+      "relatedIds": [
+        "bake_bread",
+        "bakery",
+        "flour",
+        "logs"
+      ],
       "consumedByRecipeIds": [],
       "producedByRecipeIds": [
         "bake_bread"
+      ],
+      "relatedBuildingIds": [
+        "bakery"
+      ],
+      "relatedGoodIds": [
+        "flour",
+        "logs"
       ]
     },
     {
@@ -17,11 +35,33 @@
       "name": "Flour",
       "description": "Milled grain used with timber fuel to bake bread.",
       "wikiPath": "reference/goods/flour.md",
+      "paragraphs": [
+        "Production sources: Mill flour (Mill): 2 Grain → 1 Flour.",
+        "Used by: Bake bread (Bakery): 1 Flour + 1 Logs → 2 Bread."
+      ],
+      "relatedIds": [
+        "bake_bread",
+        "bakery",
+        "bread",
+        "grain",
+        "logs",
+        "mill",
+        "mill_flour"
+      ],
       "consumedByRecipeIds": [
         "bake_bread"
       ],
       "producedByRecipeIds": [
         "mill_flour"
+      ],
+      "relatedBuildingIds": [
+        "bakery",
+        "mill"
+      ],
+      "relatedGoodIds": [
+        "bread",
+        "grain",
+        "logs"
       ]
     },
     {
@@ -29,9 +69,24 @@
       "name": "Furniture",
       "description": "Finished household goods manufactured from sawn planks.",
       "wikiPath": "reference/goods/furniture.md",
+      "paragraphs": [
+        "Production sources: Make furniture (Furniture Workshop): 2 Planks → 1 Furniture.",
+        "Used by: None defined."
+      ],
+      "relatedIds": [
+        "furniture_workshop",
+        "make_furniture",
+        "planks"
+      ],
       "consumedByRecipeIds": [],
       "producedByRecipeIds": [
         "make_furniture"
+      ],
+      "relatedBuildingIds": [
+        "furniture_workshop"
+      ],
+      "relatedGoodIds": [
+        "planks"
       ]
     },
     {
@@ -39,11 +94,29 @@
       "name": "Grain",
       "description": "Harvested grain milled into flour for the food supply chain.",
       "wikiPath": "reference/goods/grain.md",
+      "paragraphs": [
+        "Production sources: Harvest grain (Farm): No tradeable inputs → 4 Grain.",
+        "Used by: Mill flour (Mill): 2 Grain → 1 Flour."
+      ],
+      "relatedIds": [
+        "farm",
+        "flour",
+        "harvest_grain",
+        "mill",
+        "mill_flour"
+      ],
       "consumedByRecipeIds": [
         "mill_flour"
       ],
       "producedByRecipeIds": [
         "harvest_grain"
+      ],
+      "relatedBuildingIds": [
+        "farm",
+        "mill"
+      ],
+      "relatedGoodIds": [
+        "flour"
       ]
     },
     {
@@ -51,12 +124,37 @@
       "name": "Logs",
       "description": "Unprocessed timber used by the sample sawmill recipe.",
       "wikiPath": "reference/goods/logs.md",
+      "paragraphs": [
+        "Production sources: Harvest logs (Lumber Camp): No tradeable inputs → 2 Logs.",
+        "Used by: Bake bread (Bakery): 1 Flour + 1 Logs → 2 Bread.; Saw planks (Sawmill): 2 Logs → 1 Planks."
+      ],
+      "relatedIds": [
+        "bake_bread",
+        "bakery",
+        "bread",
+        "flour",
+        "harvest_logs",
+        "lumber_camp",
+        "planks",
+        "saw_planks",
+        "sawmill"
+      ],
       "consumedByRecipeIds": [
         "bake_bread",
         "saw_planks"
       ],
       "producedByRecipeIds": [
         "harvest_logs"
+      ],
+      "relatedBuildingIds": [
+        "bakery",
+        "lumber_camp",
+        "sawmill"
+      ],
+      "relatedGoodIds": [
+        "bread",
+        "flour",
+        "planks"
       ]
     },
     {
@@ -64,11 +162,31 @@
       "name": "Planks",
       "description": "Sawn timber produced by the sample sawmill recipe.",
       "wikiPath": "reference/goods/planks.md",
+      "paragraphs": [
+        "Production sources: Saw planks (Sawmill): 2 Logs → 1 Planks.",
+        "Used by: Make furniture (Furniture Workshop): 2 Planks → 1 Furniture."
+      ],
+      "relatedIds": [
+        "furniture",
+        "furniture_workshop",
+        "logs",
+        "make_furniture",
+        "saw_planks",
+        "sawmill"
+      ],
       "consumedByRecipeIds": [
         "make_furniture"
       ],
       "producedByRecipeIds": [
         "saw_planks"
+      ],
+      "relatedBuildingIds": [
+        "furniture_workshop",
+        "sawmill"
+      ],
+      "relatedGoodIds": [
+        "furniture",
+        "logs"
       ]
     }
   ],
@@ -78,8 +196,25 @@
       "name": "Bakery",
       "description": "A building that bakes flour into bread using logs as fuel.",
       "wikiPath": "reference/buildings/bakery.md",
+      "paragraphs": [
+        "Bake bread (Bakery): 1 Flour + 1 Logs → 2 Bread.",
+        "Production intervals, construction availability and payments are supplied by the active scenario."
+      ],
+      "relatedIds": [
+        "bake_bread",
+        "bread",
+        "flour",
+        "logs"
+      ],
       "recipeIds": [
         "bake_bread"
+      ],
+      "inputGoodIds": [
+        "flour",
+        "logs"
+      ],
+      "outputGoodIds": [
+        "bread"
       ]
     },
     {
@@ -87,8 +222,20 @@
       "name": "Farm",
       "description": "A resource-producing building that harvests grain without tradeable inputs.",
       "wikiPath": "reference/buildings/farm.md",
+      "paragraphs": [
+        "Harvest grain (Farm): No tradeable inputs → 4 Grain.",
+        "Production intervals, construction availability and payments are supplied by the active scenario."
+      ],
+      "relatedIds": [
+        "grain",
+        "harvest_grain"
+      ],
       "recipeIds": [
         "harvest_grain"
+      ],
+      "inputGoodIds": [],
+      "outputGoodIds": [
+        "grain"
       ]
     },
     {
@@ -96,8 +243,23 @@
       "name": "Furniture Workshop",
       "description": "A building that manufactures furniture from planks.",
       "wikiPath": "reference/buildings/furniture_workshop.md",
+      "paragraphs": [
+        "Make furniture (Furniture Workshop): 2 Planks → 1 Furniture.",
+        "Production intervals, construction availability and payments are supplied by the active scenario."
+      ],
+      "relatedIds": [
+        "furniture",
+        "make_furniture",
+        "planks"
+      ],
       "recipeIds": [
         "make_furniture"
+      ],
+      "inputGoodIds": [
+        "planks"
+      ],
+      "outputGoodIds": [
+        "furniture"
       ]
     },
     {
@@ -105,8 +267,20 @@
       "name": "Lumber Camp",
       "description": "A resource-producing building that extracts logs without tradeable inputs.",
       "wikiPath": "reference/buildings/lumber_camp.md",
+      "paragraphs": [
+        "Harvest logs (Lumber Camp): No tradeable inputs → 2 Logs.",
+        "Production intervals, construction availability and payments are supplied by the active scenario."
+      ],
+      "relatedIds": [
+        "harvest_logs",
+        "logs"
+      ],
       "recipeIds": [
         "harvest_logs"
+      ],
+      "inputGoodIds": [],
+      "outputGoodIds": [
+        "logs"
       ]
     },
     {
@@ -114,8 +288,23 @@
       "name": "Mill",
       "description": "A building that processes grain into flour.",
       "wikiPath": "reference/buildings/mill.md",
+      "paragraphs": [
+        "Mill flour (Mill): 2 Grain → 1 Flour.",
+        "Production intervals, construction availability and payments are supplied by the active scenario."
+      ],
+      "relatedIds": [
+        "flour",
+        "grain",
+        "mill_flour"
+      ],
       "recipeIds": [
         "mill_flour"
+      ],
+      "inputGoodIds": [
+        "grain"
+      ],
+      "outputGoodIds": [
+        "flour"
       ]
     },
     {
@@ -123,8 +312,23 @@
       "name": "Sawmill",
       "description": "A building that can use the logs-to-planks recipe.",
       "wikiPath": "reference/buildings/sawmill.md",
+      "paragraphs": [
+        "Saw planks (Sawmill): 2 Logs → 1 Planks.",
+        "Production intervals, construction availability and payments are supplied by the active scenario."
+      ],
+      "relatedIds": [
+        "logs",
+        "planks",
+        "saw_planks"
+      ],
       "recipeIds": [
         "saw_planks"
+      ],
+      "inputGoodIds": [
+        "logs"
+      ],
+      "outputGoodIds": [
+        "planks"
       ]
     }
   ],
@@ -134,6 +338,17 @@
       "name": "Bake bread",
       "description": "Bake one flour into two bread, consuming one log as fuel.",
       "wikiPath": "reference/recipes/bake_bread.md",
+      "paragraphs": [
+        "Building: Bakery. Recipe kind: transformation.",
+        "1 Flour + 1 Logs → 2 Bread.",
+        "A complete batch requires every input; a blocked batch consumes nothing."
+      ],
+      "relatedIds": [
+        "bakery",
+        "bread",
+        "flour",
+        "logs"
+      ],
       "buildingId": "bakery",
       "kind": "transformation",
       "inputs": [
@@ -158,6 +373,15 @@
       "name": "Harvest grain",
       "description": "Harvest four grain in one extraction batch. Scheduling and stock limits belong to the scenario.",
       "wikiPath": "reference/recipes/harvest_grain.md",
+      "paragraphs": [
+        "Building: Farm. Recipe kind: extraction.",
+        "No tradeable inputs → 4 Grain.",
+        "Extraction creates its configured output without tradeable inputs."
+      ],
+      "relatedIds": [
+        "farm",
+        "grain"
+      ],
       "buildingId": "farm",
       "kind": "extraction",
       "inputs": [],
@@ -173,6 +397,15 @@
       "name": "Harvest logs",
       "description": "Create two logs in one resource-extraction batch. Scheduling and stock limits belong to the scenario.",
       "wikiPath": "reference/recipes/harvest_logs.md",
+      "paragraphs": [
+        "Building: Lumber Camp. Recipe kind: extraction.",
+        "No tradeable inputs → 2 Logs.",
+        "Extraction creates its configured output without tradeable inputs."
+      ],
+      "relatedIds": [
+        "logs",
+        "lumber_camp"
+      ],
       "buildingId": "lumber_camp",
       "kind": "extraction",
       "inputs": [],
@@ -188,6 +421,16 @@
       "name": "Make furniture",
       "description": "Manufacture one furniture from two planks.",
       "wikiPath": "reference/recipes/make_furniture.md",
+      "paragraphs": [
+        "Building: Furniture Workshop. Recipe kind: transformation.",
+        "2 Planks → 1 Furniture.",
+        "A complete batch requires every input; a blocked batch consumes nothing."
+      ],
+      "relatedIds": [
+        "furniture",
+        "furniture_workshop",
+        "planks"
+      ],
       "buildingId": "furniture_workshop",
       "kind": "transformation",
       "inputs": [
@@ -208,6 +451,16 @@
       "name": "Mill flour",
       "description": "Mill two grain into one flour.",
       "wikiPath": "reference/recipes/mill_flour.md",
+      "paragraphs": [
+        "Building: Mill. Recipe kind: transformation.",
+        "2 Grain → 1 Flour.",
+        "A complete batch requires every input; a blocked batch consumes nothing."
+      ],
+      "relatedIds": [
+        "flour",
+        "grain",
+        "mill"
+      ],
       "buildingId": "mill",
       "kind": "transformation",
       "inputs": [
@@ -228,6 +481,16 @@
       "name": "Saw planks",
       "description": "Convert logs into planks in one sample production batch.",
       "wikiPath": "reference/recipes/saw_planks.md",
+      "paragraphs": [
+        "Building: Sawmill. Recipe kind: transformation.",
+        "2 Logs → 1 Planks.",
+        "A complete batch requires every input; a blocked batch consumes nothing."
+      ],
+      "relatedIds": [
+        "logs",
+        "planks",
+        "sawmill"
+      ],
       "buildingId": "sawmill",
       "kind": "transformation",
       "inputs": [
@@ -242,6 +505,278 @@
           "quantity": 1
         }
       ]
+    }
+  ],
+  "mechanics": [
+    {
+      "id": "help_capacity",
+      "name": "Cargo and storage capacity",
+      "description": "Every physical item uses one unit of ship or private storage capacity.",
+      "paragraphs": [
+        "Capacity counts all commodities together. A hold containing several kinds of goods has less room for the next shipment even if the selected commodity's quantity is small.",
+        "Buying and transfers respect available stock and receiving capacity. Production checks the complete resulting private inventory before consuming inputs. A blocked batch does not partly consume materials.",
+        "Maximum trade quantities reflect current stock, exact payment, liquidity, and capacity. They remain previews and cannot authorize a remote transaction."
+      ],
+      "relatedIds": [
+        "help_ownership",
+        "help_production",
+        "help_shipping"
+      ],
+      "wikiPath": "reference/mechanics/help_capacity.md"
+    },
+    {
+      "id": "help_challenges",
+      "name": "Challenges and run outcomes",
+      "description": "A challenge ends in victory, deadline defeat, or confirmed voluntary abandonment.",
+      "paragraphs": [
+        "Run setup states the objective, deadline, and required cash. The supply charter counts signed net target-market sales minus purchases by your company. Buying back and reselling that market's goods cannot create delivery credit; merely arriving or transferring stock does not count.",
+        "Regional relief measures real scheduled consumption fulfilled in the configured towns. It is regional performance, not a claim that your company alone supplied every consumed item. An enterprise objective combines attributed financial performance with actual private production.",
+        "The complete economic operation finishes before the objective is evaluated. Success or deadline failure then freezes further economic actions and opens results. The final daily operation can succeed before the deadline failure check.",
+        "Sandbox has no victory deadline. An active run can be deliberately abandoned with confirmation. No run survives application restart: there is no persistent save or cloud recovery system."
+      ],
+      "relatedIds": [
+        "help_charters",
+        "help_finances",
+        "help_navigation",
+        "help_scoring"
+      ],
+      "wikiPath": "reference/mechanics/help_challenges.md"
+    },
+    {
+      "id": "help_charters",
+      "name": "Starting company charters",
+      "description": "Choose one replacement starting package with understandable tradeoffs.",
+      "paragraphs": [
+        "Run setup shows the selected charter's company cash, ship, cargo, facilities, and supplied stock. Merchant liquidity, an industrial foothold, and independent trading flexibility offer different opportunities rather than stacking upgrades.",
+        "Cash alone is not starting wealth. A granted factory or useful stock can support production while a larger hold changes shipping opportunities. Compare the whole package and the chosen objective before starting.",
+        "Starter assets are initialized explicitly and are not paid purchases during the run. A charter cannot be changed in an active run. Retry restores that run's original selected configuration; another choice begins a new run."
+      ],
+      "relatedIds": [
+        "help_challenges",
+        "help_cost_basis",
+        "help_factories",
+        "help_scoring"
+      ],
+      "wikiPath": "reference/mechanics/help_charters.md"
+    },
+    {
+      "id": "help_cost_basis",
+      "name": "Historical inventory cost",
+      "description": "Held goods carry actual acquisition or input-material expenditure through their journey.",
+      "paragraphs": [
+        "Stock uses first-in, first-out acquisition lots in receipt order within each store and commodity. Several purchases at different prices remain distinguishable. A partial sale releases the earliest available slices at that store; transferred slices join the end of the destination queue with their original cost and provenance. Current market quotes never rewrite historical cost.",
+        "A lot's cost is allocated by exact cumulative integer shares. Taking a slice releases the difference between the cumulative shares at its end and start. Split transfers preserve that original interval, so slicing cannot manufacture or lose cost through rounding.",
+        "Production removes the historical material cost of its consumed inputs and allocates that total across actual output units in stable commodity order. Finished goods therefore carry their input-material cost. Transfers keep that cost without creating revenue.",
+        "Starter grants retain explicit grant provenance and zero purchased expenditure. That is not their market value. Input-free extraction can have zero modeled material expenditure. Labor, depreciation, and travel costs are not simulated and must not be inferred as zero total economic cost."
+      ],
+      "relatedIds": [
+        "help_charters",
+        "help_finances",
+        "help_ownership",
+        "help_production"
+      ],
+      "wikiPath": "reference/mechanics/help_cost_basis.md"
+    },
+    {
+      "id": "help_factories",
+      "name": "Owning a factory",
+      "description": "Invest cash in a fixed recipe and a finite private stockpile.",
+      "paragraphs": [
+        "The active scenario lists available blueprints, eligible towns, construction payments, production intervals, and storage limits. Construction pays the local market, creates empty private storage, and schedules the first batch later. It does not grant materials or an immediate batch.",
+        "Input procurement and automatic sales are explicit policies. Their drafts do nothing until applied. Keep output sales disabled, or retain an appropriate reserve, when a ship should transport finished goods.",
+        "A charter may grant an initial facility or goods. Those starter assets are recorded as grants, not purchases or construction payments made during the run. Factory capital spending remains separate from material cost and sale margin."
+      ],
+      "relatedIds": [
+        "help_charters",
+        "help_finances",
+        "help_procurement",
+        "help_production"
+      ],
+      "wikiPath": "reference/mechanics/help_factories.md"
+    },
+    {
+      "id": "help_finances",
+      "name": "Financial reports and the ledger",
+      "description": "Separate cash, revenue, attributed costs, realized margin, and capital.",
+      "paragraphs": [
+        "Sale revenue is actual money received. Cost of goods sold is the historical basis released by those sales. Realized gross margin is revenue minus that attributed cost. Unsold cargo and warehouse goods retain their basis instead of becoming realized profit.",
+        "Inventory purchases are cash outflows, while held inventory cost describes the purchased or manufactured goods still owned. Construction is separate capital spending, not another cargo purchase or a recurring charge on every manufactured unit.",
+        "The ledger identifies committed transactions, transfers, production, and grants with their company, store, commodity, quantity, time, and relevant cash or cost. The visible journal is bounded; authoritative lifetime summaries remain available after old detail entries leave the display.",
+        "Reports do not supply speculative resale values for factories, ships, or unsold stock. Gross margin is not net profit after unmodeled labor, operating costs, depreciation, or taxes."
+      ],
+      "relatedIds": [
+        "help_challenges",
+        "help_cost_basis",
+        "help_factories",
+        "help_scoring"
+      ],
+      "wikiPath": "reference/mechanics/help_finances.md"
+    },
+    {
+      "id": "help_industrial_routes",
+      "name": "Industrial shipping automation",
+      "description": "Connect owned production to physical transport and a chosen destination.",
+      "paragraphs": [
+        "Choose a source market or owned warehouse, commodity, stock threshold, retained reserve, shipment target and minimum, destination, and selling limit. A route may deliver into an owned destination warehouse instead of selling. Optional return cargo can make the return voyage useful.",
+        "Warehouse loading removes your stock and adds it to the assigned ship without payment. Warehouse unloading reverses that movement. Market buying and selling use ordinary prices and finite cash. Every action requires the correct dock and ownership.",
+        "A route keeps an explicit outbound or return stage. It runs a bounded sequence of dockside actions and stops for travel, a wait, or incompatible cargo. Unsold cargo stays aboard; a blocked shipment is never discarded or teleported.",
+        "Read the current stage and wait reason before changing rules. Factory procurement, output reserves, and shipping must agree: a local sales policy can otherwise sell the stock that your ship was waiting to load. Automation executes your choices; it does not optimize a strategy or receive an economic bonus."
+      ],
+      "relatedIds": [
+        "help_ownership",
+        "help_prices",
+        "help_procurement",
+        "help_shipping"
+      ],
+      "wikiPath": "reference/mechanics/help_industrial_routes.md"
+    },
+    {
+      "id": "help_liquidity",
+      "name": "Market liquidity",
+      "description": "Stock and money are separate finite limits.",
+      "paragraphs": [
+        "A town can have goods to sell but too little cash to buy your cargo. Your company likewise needs actual cash to procure inputs, buy cargo, or construct a facility.",
+        "A blocked automated sale keeps unsold cargo aboard and explains the wait. Lowering a price limit cannot create buyer cash. Nothing silently replenishes stock or funds.",
+        "Consumption removes physical goods without a household payment. Extraction creates the recipe's goods, not money. Construction and trading move existing cash between companies and towns."
+      ],
+      "relatedIds": [
+        "help_finances",
+        "help_production",
+        "help_trading"
+      ],
+      "wikiPath": "reference/mechanics/help_liquidity.md"
+    },
+    {
+      "id": "help_navigation",
+      "name": "Menus, pause, and the encyclopedia",
+      "description": "Inspect, pause, and begin another run without accidentally advancing the economy.",
+      "paragraphs": [
+        "Start from the main menu, select a challenge and charter in New Run, or choose an unlimited sandbox. Setup and reference browsing do not advance economic time.",
+        "Escape first closes the active trade or industry overlay. From the encyclopedia it returns to the parent screen. During ordinary gameplay it opens pause; from pause it resumes unless a confirmation is active.",
+        "Restart, abandonment, return to menu, and exit protect an active run with confirmation where progress would be discarded. Exit closes the standalone game. No hidden saved session or persistent Continue option is promised.",
+        "The encyclopedia is available from the main menu, run setup, and pause menu. Browse a category, search names or descriptions, follow related entries, and use Back to return. All recipe facts are generated from the same content the simulation loads and work offline."
+      ],
+      "relatedIds": [
+        "help_challenges",
+        "help_industrial_routes",
+        "help_production",
+        "help_trading"
+      ],
+      "wikiPath": "reference/mechanics/help_navigation.md"
+    },
+    {
+      "id": "help_ownership",
+      "name": "Company, market, and private ownership",
+      "description": "One company cash account supports distinct ship cargo and private warehouses.",
+      "paragraphs": [
+        "A public market owns its stock. Buying from it changes ownership and moves cash. A factory's private stock belongs to its company and is separate from the town market, even when they occupy the same port.",
+        "Transfers between your ship and your warehouse preserve ownership and historical cost. They are not sales and move no cash or time. Both stores must have the same owner and the ship must be docked at the warehouse's town.",
+        "Remote management may buy or sell against a factory's local market. It cannot move goods to another port. Company cash shown beside a ship is the same account, not another balance."
+      ],
+      "relatedIds": [
+        "help_cost_basis",
+        "help_factories",
+        "help_shipping"
+      ],
+      "wikiPath": "reference/mechanics/help_ownership.md"
+    },
+    {
+      "id": "help_prices",
+      "name": "Marginal prices and execution averages",
+      "description": "The displayed next price and the cost of a whole order answer different questions.",
+      "paragraphs": [
+        "Ask is what you pay to buy; bid is what the market pays when you sell. In the regional scenario each unit changes public stock, so later units in a large order may have different prices.",
+        "The exact total adds the actual prices across the complete order. Average execution price is that total divided by quantity for display. Neither average nor the first marginal price replaces the exact total used for payment.",
+        "An automation price limit applies to the worst marginal unit in its selected order. A profitable-looking current quote does not guarantee the same price after a voyage, production, consumption, or another merchant's trade."
+      ],
+      "relatedIds": [
+        "help_cost_basis",
+        "help_industrial_routes",
+        "help_trading"
+      ],
+      "wikiPath": "reference/mechanics/help_prices.md"
+    },
+    {
+      "id": "help_procurement",
+      "name": "Private procurement and local sales",
+      "description": "Maintain chosen inputs and sell chosen surplus through ordinary local trades.",
+      "paragraphs": [
+        "For each recipe input, choose a target stock and maximum marginal buying price. A cash reserve protects company liquidity. Procurement buys only what the local town can supply and the company can afford within the policy.",
+        "For outputs, choose a retained quantity and minimum marginal selling price. Surplus sales use the town's actual cash and the same exact pricing as manual trades. Each configured good gets at most one transaction in its daily policy phase.",
+        "Targets compete for shared cash and warehouse space. A price, liquidity, stock, or capacity wait is a real constraint. Policies never discover a substitute source or create resources to meet a target."
+      ],
+      "relatedIds": [
+        "help_factories",
+        "help_industrial_routes",
+        "help_liquidity",
+        "help_prices"
+      ],
+      "wikiPath": "reference/mechanics/help_procurement.md"
+    },
+    {
+      "id": "help_production",
+      "name": "Production and scheduling",
+      "description": "Complete canonical recipes run at explicitly scheduled economic days.",
+      "paragraphs": [
+        "A recipe lists its actual input and output quantities. Transformation requires every input. Extraction has no tradeable inputs and creates its configured output. Canonical recipe pages describe quantities; the active scenario supplies intervals and limits.",
+        "A private factory consumes and produces only within its own storage. A successful batch schedules the next opportunity one interval later. Missing inputs, disabled production, or full output storage keep the batch due without accumulating catch-up batches.",
+        "Daily ship actions occur before procurement and production. Private procurement is followed by public production, private production, private sales, scheduled consumption, and voyage progress. Fresh output therefore cannot be loaded by an earlier ship action in that same daily operation."
+      ],
+      "relatedIds": [
+        "help_factories",
+        "help_industrial_routes",
+        "help_procurement"
+      ],
+      "wikiPath": "reference/mechanics/help_production.md"
+    },
+    {
+      "id": "help_scoring",
+      "name": "Results and scoring",
+      "description": "Read the explicit score breakdown alongside the actual economy.",
+      "paragraphs": [
+        "Results identify the challenge, charter, outcome, completed day, objective progress, cash, actual revenue, attributed cost and margin, capital spending, factories, produced goods, deliveries, and remaining holdings.",
+        "Score combines four capped components: up to 500 objective points in proportion to completed progress; 1,000 points for victory; 10 points per remaining deadline day on victory, capped at 600; and one solvency point per 10 cash, capped at 100. Fractional points round down. Enterprise Ambition uses the lower of its production and margin progress for objective points. Total score cannot exceed 2,200; repeated transaction count earns no separate points.",
+        "Compare results within the same challenge and starting charter. Packages have different endowments and capabilities; their scores are not a normalized universal leaderboard. Retry starts the same configuration, while New Run lets you choose another."
+      ],
+      "relatedIds": [
+        "help_challenges",
+        "help_charters",
+        "help_finances"
+      ],
+      "wikiPath": "reference/mechanics/help_scoring.md"
+    },
+    {
+      "id": "help_shipping",
+      "name": "Shipping and voyages",
+      "description": "Goods travel aboard a real ship between directly connected towns.",
+      "paragraphs": [
+        "Departing changes the ship's voyage immediately without spending a day. Advancing economic days progresses travel. After arrival is committed, manual dockside actions are available at the destination.",
+        "Duration follows the route's distance and the ship's configured speed. Map drawing and playback speed never alter travel or economic calculations. You cannot trade or transfer while sailing.",
+        "There are currently no simulated fuel, wages, voyage fees, or transport losses. This means no modeled transport expenditure, not a claim that shipping has no real economic cost."
+      ],
+      "relatedIds": [
+        "help_capacity",
+        "help_industrial_routes",
+        "help_trading"
+      ],
+      "wikiPath": "reference/mechanics/help_shipping.md"
+    },
+    {
+      "id": "help_trading",
+      "name": "Buying and selling",
+      "description": "Exchange goods with a town using the company's finite cash account.",
+      "paragraphs": [
+        "Buy moves goods from the public market into your ship or private warehouse and pays the town. Sell reverses those movements. A ship must actually be docked at that town; a remote quote is information, not permission to trade.",
+        "Choose a good and quantity, then read the exact order total before confirming. Manual trades execute the complete requested quantity or leave goods and cash unchanged. Quantity shortcuts only edit the proposal. Transactions do not advance the economic day.",
+        "Opening trade pauses playback. Close the window and resume deliberately when ready. Disable that ship's automation before issuing manual trades or sailing orders."
+      ],
+      "relatedIds": [
+        "help_capacity",
+        "help_liquidity",
+        "help_ownership",
+        "help_prices"
+      ],
+      "wikiPath": "reference/mechanics/help_trading.md"
     }
   ]
 }

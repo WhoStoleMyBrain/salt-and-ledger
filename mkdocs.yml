@@ -1,26 +1,52 @@
-site_name: Salt and Ledger
-site_description: Design notes and generated content reference for the economic simulation foundation.
+site_name: Salt & Ledger
+site_description: A player's guide, offline encyclopedia reference, and development notes for the maritime economic strategy game.
+site_url: !ENV [SALT_LEDGER_SITE_URL, ""]
 docs_dir: docs
 site_dir: site
 theme:
   name: mkdocs
+  navigation_depth: 2
+  highlightjs: false
+extra_css:
+  - stylesheets/maritime.css
+plugins:
+  - search
 nav:
-  - Overview: index.md
-  - Game design: GAME_DESIGN.md
-  - Architecture: ARCHITECTURE.md
-  - Implemented mechanics: MECHANICS.md
-  - Content reference: reference/index.md
-  - Economy questions: ECONOMY.md
-  - Pricing experiments: PRICING_EXPERIMENTS.md
-  - Manual shipping comparison: SHIPPING_DEMO.md
-  - Route automation: AUTOMATION.md
-  - Living archipelago: LIVING_ARCHIPELAGO.md
-  - Commerce and industry: ENTERPRISE.md
-  - Playtest guides: PLAYTEST.md
-  - Roadmap: ROADMAP.md
-  - Decisions: DECISIONS.md
-  - Deferred ideas: IDEAS.md
-  - Unity integration: UNITY.md
+  - Welcome: index.md
+  - Player guide:
+      - Getting started: PLAYER_GUIDE.md
+      - Run choices and measured outcomes: RUNS.md
+      - Trade and prices: reference/mechanics/help_trading.md
+      - Shipping: reference/mechanics/help_shipping.md
+      - Factory ownership: reference/mechanics/help_factories.md
+      - Industrial automation: reference/mechanics/help_industrial_routes.md
+      - Financial reports: reference/mechanics/help_finances.md
+      - Charters: reference/mechanics/help_charters.md
+      - Challenges and outcomes: reference/mechanics/help_challenges.md
+      - Results and scoring: reference/mechanics/help_scoring.md
+  - Game reference:
+      - Encyclopedia: reference/index.md
+      - Production chains: reference/chains.md
+      - Commodities: reference/catalog-goods.md
+      - Buildings: reference/catalog-buildings.md
+      - Recipes: reference/catalog-recipes.md
+      - All player mechanics: reference/catalog-mechanics.md
+  - Development:
+      - Game design: GAME_DESIGN.md
+      - Architecture: ARCHITECTURE.md
+      - Exact mechanics contracts: MECHANICS.md
+      - Economy questions: ECONOMY.md
+      - Commerce and industry experiment: ENTERPRISE.md
+      - Automation experiments: AUTOMATION.md
+      - Historical archipelago experiment: LIVING_ARCHIPELAGO.md
+      - Pricing experiments: PRICING_EXPERIMENTS.md
+      - Historical shipping comparison: SHIPPING_DEMO.md
+      - Playtest guides: PLAYTEST.md
+      - Unity integration: UNITY.md
+      - Website and publishing: WEBSITE.md
+      - Roadmap: ROADMAP.md
+      - Decisions: DECISIONS.md
+      - Deferred ideas: IDEAS.md
 validation:
   nav:
     omitted_files: ignore

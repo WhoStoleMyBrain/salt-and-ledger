@@ -1,4 +1,5 @@
 import shutil
+import json
 import subprocess
 import tempfile
 import unittest
@@ -8,7 +9,7 @@ from unittest.mock import patch
 from tools.content import ContentError, ROOT
 from tools.prepare_unity import (
     BUILT_DLL, GENERATED, MANIFEST, PROJECT, SIMULATION_DLL, SOURCE_CONTENT,
-    UNITY_CONTENT, check_prepared, metadata_outputs, prepare,
+    UNITY_CONTENT, UNITY_ENCYCLOPEDIA, ENCYCLOPEDIA_PATH, check_prepared, metadata_outputs, prepare,
 )
 
 
@@ -19,7 +20,9 @@ class UnityPreparationTests(unittest.TestCase):
         self.root = Path(self.temporary.name)
         for path in (PROJECT, SOURCE_CONTENT, Path("data/content.schema.json"),
                      Path("global.json"), Path("tools/content.py"), Path("tools/prepare_unity.py"),
-                     PROJECT.parent / "packages.lock.json"):
+                     PROJECT.parent / "packages.lock.json", ENCYCLOPEDIA_PATH,
+                     Path("tools/generate_docs.py"), Path("tools/player_help.py"),
+                     Path("data/player-help.json"), Path("data/player-help.schema.json")):
             target = self.root / path
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(ROOT / path, target)
@@ -48,11 +51,12 @@ class UnityPreparationTests(unittest.TestCase):
         self.prepare()
         staged = {path.relative_to(self.root) for path in (self.root / GENERATED).rglob("*")
                   if path.is_file()}
-        expected = set(metadata_outputs()) | {SIMULATION_DLL, UNITY_CONTENT}
+        expected = set(metadata_outputs()) | {SIMULATION_DLL, UNITY_CONTENT, UNITY_ENCYCLOPEDIA}
         expected.remove(Path(str(GENERATED) + ".meta"))
         self.assertEqual(expected, staged)
         self.assertEqual((self.root / BUILT_DLL).read_bytes(), (self.root / SIMULATION_DLL).read_bytes())
         self.assertEqual((self.root / SOURCE_CONTENT).read_bytes(), (self.root / UNITY_CONTENT).read_bytes())
+        self.assertEqual((self.root / ENCYCLOPEDIA_PATH).read_bytes(), (self.root / UNITY_ENCYCLOPEDIA).read_bytes())
         self.assertEqual([], check_prepared(self.root))
         build = self.run.call_args_list[1].args[0]
         self.assertIn("-p:RestoreLockedMode=true", build)
@@ -97,7 +101,9 @@ class UnityPreparationTests(unittest.TestCase):
         self.assertIn("Stale staging inputs", "\n".join(check_prepared(self.root)))
 
     def test_sdk_policy_and_package_lock_changes_are_detected(self):
-        for path in (Path("global.json"), PROJECT.parent / "packages.lock.json"):
+        for path in (Path("global.json"), PROJECT.parent / "packages.lock.json",
+                     Path("tools/generate_docs.py"), Path("tools/player_help.py"),
+                     Path("data/player-help.json"), Path("data/player-help.schema.json")):
             with self.subTest(path=path):
                 self.prepare()
                 target = self.root / path
@@ -184,6 +190,40 @@ class UnityPreparationTests(unittest.TestCase):
         errors = "\n".join(check_prepared(self.root))
         self.assertIn("Stale generated metadata", errors)
         self.assertIn("Staged content differs", errors)
+
+    def test_missing_stale_or_unsupported_encyclopedia_prevents_build(self):
+        original = (self.root / ENCYCLOPEDIA_PATH).read_bytes()
+        for value in (None, b"{}", original.replace(b'"formatVersion": 2', b'"formatVersion": 99')):
+            with self.subTest(value=value is None):
+                source = self.root / ENCYCLOPEDIA_PATH
+                if value is None:
+                    source.unlink()
+                else:
+                    source.write_bytes(value)
+                with self.assertRaisesRegex(ContentError, "generated/encyclopedia.json"):
+                    self.prepare()
+                self.run.assert_not_called()
+                source.write_bytes(original)
+
+    def test_authored_help_change_requires_reference_regeneration_first(self):
+        self.prepare()
+        path = self.root / "data/player-help.json"
+        value = json.loads(path.read_text(encoding="utf-8"))
+        value["entries"][0]["description"] = "Changed authoritative help."
+        path.write_text(json.dumps(value), encoding="utf-8")
+        self.run.reset_mock()
+        with self.assertRaisesRegex(ContentError, "Stale generated/encyclopedia.json"):
+            self.prepare()
+        self.run.assert_not_called()
+
+    def test_modified_or_missing_staged_encyclopedia_is_detected(self):
+        self.prepare()
+        target = self.root / UNITY_ENCYCLOPEDIA
+        target.write_bytes(b"{}")
+        errors = "\n".join(check_prepared(self.root))
+        self.assertIn("Staged encyclopedia differs", errors)
+        target.unlink()
+        self.assertIn("Missing generated file", "\n".join(check_prepared(self.root)))
 
 
 if __name__ == "__main__":
