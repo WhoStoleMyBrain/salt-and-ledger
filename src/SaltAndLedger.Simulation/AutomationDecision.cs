@@ -17,7 +17,10 @@ namespace SaltAndLedger.Simulation
         Depart,
         ContinueSailing,
         Wait,
-        Pause
+        Pause,
+        LoadAndDepart,
+        Unload,
+        AdvanceStage
     }
 
     public enum AutomationReason

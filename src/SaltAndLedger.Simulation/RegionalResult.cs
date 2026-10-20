@@ -122,12 +122,13 @@ namespace SaltAndLedger.Simulation
         public IReadOnlyList<RegionalPrivateProduction> PrivateProduction { get; }
         public IReadOnlyList<RegionalConstruction> Construction { get; }
         public IReadOnlyList<RegionalTransfer> Transfers { get; }
+        public IReadOnlyList<EconomicEvent> EconomicEvents { get; }
         internal RegionalResult(RegionalWorldSnapshot before, RegionalWorldSnapshot after,
             IEnumerable<RegionalTrade> trades, IEnumerable<RegionalProduction> production,
             IEnumerable<RegionalConsumption> consumption, IEnumerable<RegionalMovement> movements,
             IEnumerable<RegionalDecision> decisions, IEnumerable<RegionalWarehouseTrade> warehouseTrades,
             IEnumerable<RegionalPrivateProduction> privateProduction, IEnumerable<RegionalConstruction> construction,
-            IEnumerable<RegionalTransfer> transfers)
+            IEnumerable<RegionalTransfer> transfers, IEnumerable<EconomicEvent> economicEvents)
         {
             Before = before; After = after;
             Trades = Array.AsReadOnly(trades.ToArray());
@@ -139,6 +140,7 @@ namespace SaltAndLedger.Simulation
             PrivateProduction = Array.AsReadOnly(privateProduction.ToArray());
             Construction = Array.AsReadOnly(construction.ToArray());
             Transfers = Array.AsReadOnly(transfers.ToArray());
+            EconomicEvents = Array.AsReadOnly(economicEvents.ToArray());
         }
     }
 }

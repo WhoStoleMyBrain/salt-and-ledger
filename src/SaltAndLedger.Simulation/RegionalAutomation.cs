@@ -10,11 +10,29 @@ namespace SaltAndLedger.Simulation
         public AutomationAction Action { get; }
         public string Reason { get; }
         public AutomationDecision? Detail { get; }
-        public int SelectedQuantity => Detail?.SelectedQuantity ?? 0;
-        public TradeAttempt? Preview => Detail?.Preview;
+        public IndustrialRouteDecision? IndustrialDetail { get; }
+        public int SelectedQuantity => IndustrialDetail?.SelectedQuantity ?? Detail?.SelectedQuantity ?? 0;
+        public TradeAttempt? Preview => IndustrialDetail?.Preview ?? Detail?.Preview;
         internal RegionalDecision(RegionalWorldSnapshot before, string shipId, AutomationStage stage,
             AutomationAction action, string reason, AutomationDecision? detail = null)
         { Before = before; ShipId = shipId; Stage = stage; Action = action; Reason = reason; Detail = detail; }
+
+        internal RegionalDecision(IndustrialRouteDecision detail)
+        {
+            Before = detail.Before; ShipId = detail.ShipId; IndustrialDetail = detail; Reason = detail.Reason;
+            Stage = detail.Action == IndustrialRouteAction.ContinueSailing ? AutomationStage.InTransit :
+                detail.Stage == IndustrialRouteStage.AcquireOutbound ? AutomationStage.OutboundLoading :
+                detail.Stage == IndustrialRouteStage.DeliverOutbound ? AutomationStage.OutboundSale :
+                detail.Stage == IndustrialRouteStage.AcquireReturn ? AutomationStage.ReturnLoading : AutomationStage.ReturnSale;
+            Action = detail.Action == IndustrialRouteAction.LoadAndDepart ? AutomationAction.LoadAndDepart :
+                detail.Action == IndustrialRouteAction.Unload ? AutomationAction.Unload :
+                detail.Action == IndustrialRouteAction.AdvanceStage ? AutomationAction.AdvanceStage :
+                detail.Action == IndustrialRouteAction.BuyAndDepart ? AutomationAction.BuyAndDepart :
+                detail.Action == IndustrialRouteAction.Sell ? AutomationAction.Sell :
+                detail.Action == IndustrialRouteAction.Depart ? AutomationAction.Depart :
+                detail.Action == IndustrialRouteAction.ContinueSailing ? AutomationAction.ContinueSailing :
+                detail.Action == IndustrialRouteAction.Wait ? AutomationAction.Wait : AutomationAction.Pause;
+        }
     }
 
     /// <summary>Projects one actor's route into the proven evaluator; never owns economic state.</summary>
@@ -24,6 +42,8 @@ namespace SaltAndLedger.Simulation
         {
             if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
             var ship = snapshot.Ships[shipId];
+            if (ship.IndustrialPolicy != null)
+                return new RegionalDecision(IndustrialRouteEvaluator.Evaluate(snapshot, shipId));
             if (!ship.AutomationEnabled || ship.Policy == null)
                 return new RegionalDecision(snapshot, shipId, AutomationStage.Suspended, AutomationAction.Pause,
                     "Automation is paused; enable it to execute the configured route.");

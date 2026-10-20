@@ -133,6 +133,8 @@ namespace SaltAndLedger.Simulation
         public int StoredUnits { get; }
         public int Capacity => Blueprint.WarehouseCapacity;
         public long ConstructionCost => Blueprint.ConstructionCost;
+        public bool IsStarterGrant { get; }
+        public string Provenance { get; }
         public long BatchesProduced { get; }
         public long ProcurementCost { get; }
         public long SalesRevenue { get; }
@@ -145,7 +147,8 @@ namespace SaltAndLedger.Simulation
             ScheduledProductionOutcome lastOutcome, IReadOnlyDictionary<string, int> inventory,
             long batchesProduced, long procurementCost, long salesRevenue,
             IReadOnlyDictionary<string, long> produced, IReadOnlyDictionary<string, long> consumed,
-            IndustryWaitReason procurementWaitReason, IndustryWaitReason salesWaitReason)
+            IndustryWaitReason procurementWaitReason, IndustryWaitReason salesWaitReason,
+            bool isStarterGrant = false, string provenance = "constructed")
         {
             Id = id; OwnerId = ownerId; PortId = portId; Blueprint = blueprint; Policy = policy;
             Enabled = enabled; CreatedDay = createdDay; NextProductionDay = nextProductionDay; LastOutcome = lastOutcome;
@@ -161,6 +164,7 @@ namespace SaltAndLedger.Simulation
             ProducedQuantities = new ReadOnlyDictionary<string, long>(producedTotals);
             ConsumedQuantities = new ReadOnlyDictionary<string, long>(consumedTotals);
             ProcurementWaitReason = procurementWaitReason; SalesWaitReason = salesWaitReason;
+            IsStarterGrant = isStarterGrant; Provenance = provenance;
         }
     }
 

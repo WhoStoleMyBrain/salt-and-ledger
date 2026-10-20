@@ -23,7 +23,16 @@ namespace SaltAndLedger.Simulation
         public const long CharterMinimumCash = 100;
 
         public static RegionalWorldState Create(ContentCatalog content, bool challenge = false,
-            bool reverseConfiguration = false)
+            bool reverseConfiguration = false) =>
+            CreateCore(content, challenge ? new ChallengeConfiguration("coastal_supply_charter",
+                "The Coastal Supply Charter", PlayerOwnerId, East, "bread", CharterBread,
+                CharterDeadline, CharterMinimumCash) : null, null, reverseConfiguration);
+
+        internal static RegionalWorldState CreateRun(ContentCatalog content, ChallengeConfiguration? challenge,
+            StartingCharter charter) => CreateCore(content, challenge, charter, false);
+
+        private static RegionalWorldState CreateCore(ContentCatalog content, ChallengeConfiguration? challenge,
+            StartingCharter? charter, bool reverseConfiguration)
         {
             var ports = new[]
             {
@@ -80,7 +89,8 @@ namespace SaltAndLedger.Simulation
                         new RouteLeg("grain", 6, 4, 12, 4, 72),
                         new RouteLeg("flour", 3, 1, 22, 4, 66), cashReserve: 20, allowEmptyReturn: true),
                     automationEnabled: true),
-                new RegionalShipConfiguration(new ShipConfiguration(PlayerShipId, 10, North),
+                new RegionalShipConfiguration(new ShipConfiguration(PlayerShipId, charter?.CargoCapacity ?? 10,
+                    charter?.StartingPortId ?? North, charter?.Cargo),
                     PlayerOwnerId, "Ledger", 0, 100, priority: 10, isPlayer: true,
                     policy: MerchantPolicy(), automationEnabled: false)
             };
@@ -89,7 +99,7 @@ namespace SaltAndLedger.Simulation
                 new CompanyConfiguration("timber_company", 300),
                 new CompanyConfiguration("plank_company", 400),
                 new CompanyConfiguration("grain_company", 500),
-                new CompanyConfiguration(PlayerOwnerId, InitialPlayerCash)
+                new CompanyConfiguration(PlayerOwnerId, charter?.Cash ?? InitialPlayerCash)
             };
             var blueprints = new[]
             {
@@ -100,16 +110,14 @@ namespace SaltAndLedger.Simulation
                 new IndustryBlueprint(WorkshopBlueprint, "furniture_workshop", "make_furniture", 360, 3, 40,
                     new[] { South, East }, 15)
             };
-            var charter = challenge ? new ChallengeConfiguration("coastal_supply_charter",
-                "The Coastal Supply Charter", PlayerOwnerId, East, "bread", CharterBread,
-                CharterDeadline, CharterMinimumCash) : null;
             return new RegionalWorldState(content,
                 reverseConfiguration ? ports.Reverse() : ports,
                 reverseConfiguration ? routes.Reverse() : routes,
                 reverseConfiguration ? ships.Reverse() : ships,
                 companies: reverseConfiguration ? companies.Reverse() : companies,
                 industryBlueprints: reverseConfiguration ? blueprints.Reverse() : blueprints,
-                challenge: charter);
+                challenge: challenge, initialFacilities: charter?.Facilities,
+                initialGrantProvenance: charter?.Id ?? "initial_inventory");
         }
 
         public static TradeRoutePolicy MerchantPolicy() =>

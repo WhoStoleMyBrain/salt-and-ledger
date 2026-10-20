@@ -18,7 +18,9 @@ namespace SaltAndLedger.Simulation
         public RegionalWorldState(ContentCatalog content, IEnumerable<RegionalPortConfiguration> ports,
             IEnumerable<SeaRoute> routes, IEnumerable<RegionalShipConfiguration> ships,
             long initialDay = 0, long initialRevision = 0, IEnumerable<CompanyConfiguration>? companies = null,
-            IEnumerable<IndustryBlueprint>? industryBlueprints = null, ChallengeConfiguration? challenge = null)
+            IEnumerable<IndustryBlueprint>? industryBlueprints = null, ChallengeConfiguration? challenge = null,
+            IEnumerable<PrivateFacilityConfiguration>? initialFacilities = null,
+            string initialGrantProvenance = "initial_inventory")
         {
             this.content = content ?? throw new ArgumentNullException(nameof(content));
             if (ports == null) throw new ArgumentNullException(nameof(ports));
@@ -86,15 +88,57 @@ namespace SaltAndLedger.Simulation
                 content.GetGood(challenge.GoodId);
                 if (challenge.DeadlineDay <= initialDay) throw new ArgumentException("Challenge deadline must follow the starting day.");
             }
+            var accounting = new WorkingAccounting();
+            foreach (var account in accounts.Values) accounting.RegisterCompany(account.Id, account.Cash);
+            foreach (var vessel in vessels.OrderBy(v => v.Id, StringComparer.Ordinal))
+            {
+                accounting.RegisterStore("ship:" + vessel.Id, vessel.OwnerId);
+                foreach (var stock in vessel.Cargo.Where(p => p.Value > 0).OrderBy(p => p.Key, StringComparer.Ordinal))
+                    accounting.Grant("ship:" + vessel.Id, stock.Key, stock.Value, initialGrantProvenance);
+            }
+            var privateFacilities = new List<PrivateFacilitySnapshot>();
+            var facilityIds = new HashSet<string>(locations.SelectMany(p => p.Facilities)
+                .Select(f => f.Configuration.Instance.Id), StringComparer.Ordinal);
+            foreach (var configured in (initialFacilities ?? Array.Empty<PrivateFacilityConfiguration>())
+                .OrderBy(f => f.Id, StringComparer.Ordinal))
+            {
+                if (!accounts.ContainsKey(configured.OwnerId)) throw new ArgumentException("Unknown starter facility owner.");
+                var blueprint = blueprints.SingleOrDefault(b => b.Id == configured.BlueprintId)
+                    ?? throw new ArgumentException("Unknown starter facility blueprint.");
+                if (!blueprint.EligiblePortIds.Contains(configured.PortId))
+                    throw new ArgumentException("Starter facility is not eligible at its port.");
+                if (!facilityIds.Add(configured.Id)) throw new ArgumentException("Duplicate starter facility ID.");
+                if (privateFacilities.Any(f => f.OwnerId == configured.OwnerId && f.PortId == configured.PortId &&
+                    f.Blueprint.Id == configured.BlueprintId)) throw new ArgumentException("Duplicate starter industry at a port.");
+                ValidateIndustryPolicy(content.GetRecipe(blueprint.RecipeId), blueprint, configured.Policy);
+                var inventory = new Inventory(content, configured.InitialInventory).Snapshot();
+                if (inventory.Values.Sum(v => (long)v) > blueprint.WarehouseCapacity)
+                    throw new ArgumentException("Starter inventory exceeds warehouse capacity.");
+                var totals = content.Goods.ToDictionary(g => g.Id, _ => 0L, StringComparer.Ordinal);
+                privateFacilities.Add(new PrivateFacilitySnapshot(configured.Id, configured.OwnerId, configured.PortId,
+                    blueprint, configured.Policy, configured.Enabled, initialDay, checked(initialDay + blueprint.IntervalDays),
+                    ScheduledProductionOutcome.NotDue, inventory, 0, 0, 0, totals, totals,
+                    IndustryWaitReason.None, IndustryWaitReason.None, true, configured.Provenance));
+                accounting.RegisterStore("facility:" + configured.Id, configured.OwnerId);
+                foreach (var stock in inventory.Where(p => p.Value > 0).OrderBy(p => p.Key, StringComparer.Ordinal))
+                    accounting.Grant("facility:" + configured.Id, stock.Key, stock.Value, configured.Provenance);
+            }
             state = new RegionalWorldSnapshot(initialDay, initialRevision, locations, vessels, connections,
-                accounts.Values, blueprints, Array.Empty<PrivateFacilitySnapshot>(),
-                challenge == null ? null : ChallengeRules.Create(challenge));
+                accounts.Values, blueprints, privateFacilities,
+                challenge == null ? null : ChallengeRules.Create(challenge), accounting.Snapshot());
             foreach (var vessel in state.Ships.Values)
                 if (vessel.Policy != null) RegionalAutomation.ValidatePolicy(state, vessel.Id, vessel.Policy);
         }
 
         public RegionalWorldSnapshot Snapshot() => state;
         public RegionalDecision EvaluateAutomation(string shipId) => RegionalAutomation.Evaluate(state, shipId);
+
+        public RegionalResult AbandonChallenge() => Mutate(work =>
+        {
+            if (work.Challenge == null) throw new InvalidOperationException("The sandbox has no challenge to abandon.");
+            work.Challenge = ChallengeRules.Abandon(work.Challenge, work.Day);
+            work.Changed = true;
+        });
 
         public RegionalResult ExecuteTrade(string shipId, string portId, TradeCommand command,
             RegionalWorldSnapshot? expectedSnapshot = null) =>
@@ -124,20 +168,29 @@ namespace SaltAndLedger.Simulation
                 if (policy == null) throw new ArgumentNullException(nameof(policy));
                 var facility = work.OwnedFacility(ownerId, facilityId);
                 var recipe = content.GetRecipe(facility.Blueprint.RecipeId);
-                if (policy.Inputs.Any(r => !recipe.Inputs.Any(i => i.GoodId == r.GoodId)) ||
-                    policy.Outputs.Any(r => !recipe.Outputs.Any(o => o.GoodId == r.GoodId)))
-                    throw new ArgumentException("Industry policy rules must match the fixed canonical recipe.");
-                if (policy.Inputs.Any(r => r.TargetQuantity > facility.Blueprint.WarehouseCapacity) ||
-                    policy.Outputs.Any(r => r.ReserveQuantity > facility.Blueprint.WarehouseCapacity))
-                    throw new ArgumentException("Policy stock levels cannot exceed warehouse capacity.");
+                ValidateIndustryPolicy(recipe, facility.Blueprint, policy);
                 if (ReferenceEquals(facility.Policy, policy)) return;
                 facility.Policy = policy;
                 work.Changed = true;
             });
 
+        private static void ValidateIndustryPolicy(RecipeDefinition recipe, IndustryBlueprint blueprint, IndustryPolicy policy)
+        {
+            if (policy.Inputs.Any(r => !recipe.Inputs.Any(i => i.GoodId == r.GoodId)) ||
+                policy.Outputs.Any(r => !recipe.Outputs.Any(o => o.GoodId == r.GoodId)))
+                throw new ArgumentException("Industry policy rules must match the fixed canonical recipe.");
+            if (policy.Inputs.Any(r => r.TargetQuantity > blueprint.WarehouseCapacity) ||
+                policy.Outputs.Any(r => r.ReserveQuantity > blueprint.WarehouseCapacity))
+                throw new ArgumentException("Policy stock levels cannot exceed warehouse capacity.");
+        }
+
         public RegionalResult TransferGoods(string ownerId, string shipId, string facilityId,
             TransferDirection direction, string goodId, int quantity) =>
-            Mutate(work => work.Transfer(ownerId, shipId, facilityId, direction, goodId, quantity));
+            Mutate(work =>
+            {
+                EnsureManual(work.Ships[shipId]);
+                work.Transfer(ownerId, shipId, facilityId, direction, goodId, quantity);
+            });
 
         public RegionalResult ExecuteWarehouseTrade(string ownerId, string facilityId, TradeCommand command,
             RegionalWorldSnapshot? expectedSnapshot = null) =>
@@ -169,6 +222,30 @@ namespace SaltAndLedger.Simulation
                 var ship = work.Ships[shipId];
                 if (ReferenceEquals(ship.Policy, policy) && ship.AutomationEnabled == enabled) return;
                 ship.Policy = policy;
+                ship.IndustrialPolicy = null;
+                ship.AutomationEnabled = enabled;
+                work.Changed = true;
+            });
+        }
+
+        public RegionalResult ConfigureIndustrialAutomation(string shipId, IndustrialRoutePolicy policy, bool enabled)
+        {
+            if (policy == null) throw new ArgumentNullException(nameof(policy));
+            return Mutate(work =>
+            {
+                IndustrialRouteEvaluator.ValidatePolicy(state, shipId, policy);
+                var ship = work.Ships[shipId];
+                if (ReferenceEquals(ship.IndustrialPolicy, policy))
+                {
+                    if (ship.AutomationEnabled != enabled) { ship.AutomationEnabled = enabled; work.Changed = true; }
+                    return;
+                }
+                if (ship.CargoUnits != 0 || (ship.Dock != policy.OriginPortId && ship.Dock != policy.DestinationPortId))
+                    throw new InvalidOperationException("Configure an industrial route with an empty ship docked at either route port.");
+                ship.Policy = null;
+                ship.IndustrialPolicy = policy;
+                ship.IndustrialStage = ship.Dock == policy.OriginPortId
+                    ? IndustrialRouteStage.AcquireOutbound : IndustrialRouteStage.AcquireReturn;
                 ship.AutomationEnabled = enabled;
                 work.Changed = true;
             });
@@ -178,7 +255,8 @@ namespace SaltAndLedger.Simulation
             Mutate(work =>
             {
                 var ship = work.Ships[shipId];
-                if (enabled && ship.Policy == null) throw new InvalidOperationException("Configure a route first.");
+                if (enabled && ship.Policy == null && ship.IndustrialPolicy == null)
+                    throw new InvalidOperationException("Configure a route first.");
                 if (ship.AutomationEnabled == enabled) return;
                 ship.AutomationEnabled = enabled;
                 work.Changed = true;
@@ -253,7 +331,7 @@ namespace SaltAndLedger.Simulation
                 var after = work.Changed ? work.View(checked(before.Revision + 1)) : before;
                 var result = new RegionalResult(before, after, work.Trades, work.Production, work.Consumption,
                     work.Movements, work.Decisions, work.WarehouseTrades, work.PrivateProduction,
-                    work.Construction, work.Transfers);
+                    work.Construction, work.Transfers, work.Accounting.Events(after.Day, after.Revision));
                 state = after;
                 return result;
             }
@@ -287,6 +365,8 @@ namespace SaltAndLedger.Simulation
             internal Inventory Cargo { get; }
             internal int CargoUnits { get; set; }
             internal TradeRoutePolicy? Policy { get; set; }
+            internal IndustrialRoutePolicy? IndustrialPolicy { get; set; }
+            internal IndustrialRouteStage IndustrialStage { get; set; }
             internal bool AutomationEnabled { get; set; }
             internal string? Dock { get; set; }
             internal string? Origin { get; set; }
@@ -299,6 +379,8 @@ namespace SaltAndLedger.Simulation
                 Cargo = new Inventory(content, before.Cargo);
                 CargoUnits = before.CargoUnits;
                 Policy = before.Policy;
+                IndustrialPolicy = before.IndustrialPolicy;
+                IndustrialStage = before.IndustrialStage;
                 AutomationEnabled = before.AutomationEnabled;
                 Dock = before.DockedPortId;
                 Origin = before.OriginPortId;
@@ -308,7 +390,8 @@ namespace SaltAndLedger.Simulation
             }
             internal RegionalShipSnapshot Snapshot(long cash) => new RegionalShipSnapshot(Configuration,
                 new ShipSnapshot(Configuration.Ship.Id, Configuration.Ship.CargoCapacity, Cargo.Snapshot(),
-                    Dock, Origin, Destination, Remaining), cash, Policy, AutomationEnabled, Duration);
+                    Dock, Origin, Destination, Remaining), cash, Policy, AutomationEnabled, Duration,
+                    IndustrialPolicy, IndustrialStage);
         }
 
         private sealed class WorkingCompany
@@ -328,6 +411,8 @@ namespace SaltAndLedger.Simulation
             internal IndustryPolicy Policy { get; set; }
             internal bool Enabled { get; set; }
             internal long CreatedDay { get; }
+            internal bool IsStarterGrant { get; }
+            internal string Provenance { get; }
             internal long NextProductionDay { get; set; }
             internal ScheduledProductionOutcome LastOutcome { get; set; }
             internal Inventory Inventory { get; }
@@ -343,6 +428,7 @@ namespace SaltAndLedger.Simulation
             {
                 Id = before.Id; OwnerId = before.OwnerId; PortId = before.PortId; Blueprint = before.Blueprint;
                 Policy = before.Policy; Enabled = before.Enabled; CreatedDay = before.CreatedDay;
+                IsStarterGrant = before.IsStarterGrant; Provenance = before.Provenance;
                 NextProductionDay = before.NextProductionDay; LastOutcome = before.LastOutcome;
                 Inventory = new Inventory(content, before.Inventory); StoredUnits = before.StoredUnits;
                 BatchesProduced = before.BatchesProduced; ProcurementCost = before.ProcurementCost; SalesRevenue = before.SalesRevenue;
@@ -352,7 +438,8 @@ namespace SaltAndLedger.Simulation
             }
             internal PrivateFacilitySnapshot Snapshot() => new PrivateFacilitySnapshot(Id, OwnerId, PortId, Blueprint,
                 Policy, Enabled, CreatedDay, NextProductionDay, LastOutcome, Inventory.Snapshot(), BatchesProduced,
-                ProcurementCost, SalesRevenue, Produced, Consumed, ProcurementWaitReason, SalesWaitReason);
+                ProcurementCost, SalesRevenue, Produced, Consumed, ProcurementWaitReason, SalesWaitReason,
+                IsStarterGrant, Provenance);
         }
 
         private sealed class WorkingWorld
@@ -366,6 +453,7 @@ namespace SaltAndLedger.Simulation
             internal SortedDictionary<string, WorkingCompany> Companies { get; } = new SortedDictionary<string, WorkingCompany>(StringComparer.Ordinal);
             internal SortedDictionary<string, WorkingFacility> PrivateFacilities { get; } = new SortedDictionary<string, WorkingFacility>(StringComparer.Ordinal);
             internal ChallengeSnapshot? Challenge { get; set; }
+            internal WorkingAccounting Accounting { get; }
             internal List<RegionalTrade> Trades { get; } = new List<RegionalTrade>();
             internal List<RegionalProduction> Production { get; } = new List<RegionalProduction>();
             internal List<RegionalConsumption> Consumption { get; } = new List<RegionalConsumption>();
@@ -386,17 +474,19 @@ namespace SaltAndLedger.Simulation
                 foreach (var company in before.Companies.Values) Companies.Add(company.Id, new WorkingCompany(company));
                 foreach (var facility in before.PrivateFacilities.Values) PrivateFacilities.Add(facility.Id, new WorkingFacility(content, facility));
                 Challenge = before.Challenge;
+                Accounting = new WorkingAccounting(before.Accounting);
             }
             internal RegionalWorldSnapshot View(long? revision = null) => new RegionalWorldSnapshot(Day,
                 revision ?? before.Revision, Ports.Values.Select(p => p.Snapshot()),
                 Ships.Values.Select(s => s.Snapshot(Companies[s.Configuration.OwnerId].Cash)), before.Routes,
                 Companies.Values.Select(c => c.Snapshot()), before.IndustryBlueprints.Values,
-                PrivateFacilities.Values.Select(f => f.Snapshot()), Challenge);
+                PrivateFacilities.Values.Select(f => f.Snapshot()), Challenge, Accounting.Snapshot());
 
             internal void EvaluateChallenge()
             {
                 if (Challenge == null) return;
-                var after = ChallengeRules.Evaluate(Challenge, Day, Companies[Challenge.Configuration.OwnerId].Cash);
+                var after = ChallengeRules.Evaluate(Challenge, Day, Companies[Challenge.Configuration.OwnerId].Cash,
+                    Accounting.Snapshot().Companies[Challenge.Configuration.OwnerId]);
                 if (!ReferenceEquals(Challenge, after)) { Challenge = after; Changed = true; }
             }
 
@@ -417,8 +507,19 @@ namespace SaltAndLedger.Simulation
                 company.Cash = attempt.TraderCashChange.After;
                 Trades.Add(new RegionalTrade(shipId, ship.Configuration.OwnerId, portId, attempt));
                 if (Challenge != null) Challenge = ChallengeRules.ApplyTrade(Challenge, company.Id, portId, attempt);
-                if (attempt.Outcome == TradeOutcome.Traded) Changed = true;
+                if (attempt.Outcome == TradeOutcome.Traded)
+                {
+                    AccountTrade("ship:" + shipId, portId, attempt);
+                    Changed = true;
+                }
                 return attempt;
+            }
+
+            private void AccountTrade(string storeId, string portId, TradeAttempt attempt)
+            {
+                if (attempt.Direction == TradeDirection.Buy)
+                    Accounting.Purchase(storeId, portId, attempt.GoodId, attempt.ExecutedQuantity, attempt.ExecutedAmount);
+                else Accounting.Sell(storeId, portId, attempt.GoodId, attempt.ExecutedQuantity, attempt.ExecutedAmount);
             }
 
             internal WorkingFacility OwnedFacility(string ownerId, string facilityId)
@@ -453,6 +554,8 @@ namespace SaltAndLedger.Simulation
                     true, Day, due, ScheduledProductionOutcome.NotDue, new Inventory(content).Snapshot(),
                     0, 0, 0, totals, totals, IndustryWaitReason.Disabled, IndustryWaitReason.Disabled);
                 PrivateFacilities.Add(facilityId, new WorkingFacility(content, facility));
+                Accounting.RegisterStore("facility:" + facilityId, ownerId);
+                Accounting.Construct(ownerId, facilityId, portId, blueprint.ConstructionCost);
                 company.Cash -= blueprint.ConstructionCost;
                 port.Cash = nextCash;
                 Construction.Add(new RegionalConstruction(facilityId, ownerId, portId, blueprintId,
@@ -470,7 +573,6 @@ namespace SaltAndLedger.Simulation
                 var facility = OwnedFacility(ownerId, facilityId);
                 var ship = Ships[shipId];
                 if (ship.Configuration.OwnerId != ownerId) throw new InvalidOperationException("The ship belongs to another company.");
-                EnsureManual(ship);
                 if (ship.Dock != facility.PortId) throw new InvalidOperationException("Transfer requires docking at the warehouse's port.");
                 var toWarehouse = direction == TransferDirection.ShipToWarehouse;
                 var source = toWarehouse ? ship.Cargo : facility.Inventory;
@@ -487,6 +589,8 @@ namespace SaltAndLedger.Simulation
                     destination.Commit(new Dictionary<string, int> { [goodId] = nextDestination });
                     facility.StoredUnits = checked(facility.StoredUnits + (toWarehouse ? quantity : -quantity));
                     ship.CargoUnits = checked(ship.CargoUnits + (toWarehouse ? -quantity : quantity));
+                    Accounting.Transfer(toWarehouse ? "ship:" + shipId : "facility:" + facilityId,
+                        toWarehouse ? "facility:" + facilityId : "ship:" + shipId, facility.PortId, goodId, quantity);
                     Changed = true;
                 }
                 Transfers.Add(new RegionalTransfer(ownerId, shipId, facilityId, direction, goodId, quantity, outcome));
@@ -507,6 +611,7 @@ namespace SaltAndLedger.Simulation
                 WarehouseTrades.Add(new RegionalWarehouseTrade(facility.Id, facility.OwnerId, facility.PortId, attempt));
                 if (attempt.Outcome == TradeOutcome.Traded)
                 {
+                    AccountTrade("facility:" + facility.Id, facility.PortId, attempt);
                     if (command.Direction == TradeDirection.Buy)
                         facility.ProcurementCost = checked(facility.ProcurementCost + attempt.ExecutedAmount);
                     else facility.SalesRevenue = checked(facility.SalesRevenue + attempt.ExecutedAmount);
@@ -623,6 +728,7 @@ namespace SaltAndLedger.Simulation
                                 ? ScheduledProductionOutcome.Produced : ScheduledProductionOutcome.InputShortage;
                             if (outcome == ScheduledProductionOutcome.Produced)
                             {
+                                Accounting.Produce("facility:" + facility.Id, facility.PortId, recipe);
                                 facility.BatchesProduced = checked(facility.BatchesProduced + 1);
                                 foreach (var input in recipe.Inputs)
                                     facility.Consumed[input.GoodId] = checked(facility.Consumed[input.GoodId] + input.Quantity);
@@ -661,6 +767,11 @@ namespace SaltAndLedger.Simulation
                 Decisions.Add(decision);
                 if (decision.Action == AutomationAction.Wait || decision.Action == AutomationAction.Pause ||
                     decision.Action == AutomationAction.ContinueSailing) return;
+                if (decision.IndustrialDetail != null)
+                {
+                    ApplyIndustrialDecision(decision.IndustrialDetail);
+                    return;
+                }
                 var detail = decision.Detail ?? throw new InvalidOperationException("An actionable decision needs commands.");
                 if (detail.Trade != null)
                 {
@@ -676,6 +787,36 @@ namespace SaltAndLedger.Simulation
                 if (detail.Departure != null) Depart(decision.ShipId, detail.Departure.DestinationPortId);
             }
 
+            private void ApplyIndustrialDecision(IndustrialRouteDecision decision)
+            {
+                var ship = Ships[decision.ShipId];
+                if (decision.Stage != ship.IndustrialStage)
+                    throw new InvalidOperationException("The industrial route stage has changed.");
+                if (decision.Trade != null)
+                {
+                    var fresh = View().PreviewTrade(decision.ShipId, decision.Trade.PortId, decision.Trade.Trade);
+                    if (fresh.Outcome != TradeOutcome.Traded || decision.Preview == null ||
+                        fresh.ExecutedAmount != decision.Preview.ExecutedAmount ||
+                        fresh.ExecutedQuantity != decision.Preview.ExecutedQuantity)
+                        throw new InvalidOperationException("Industrial trade no longer matches its preview.");
+                    Trade(decision.ShipId, decision.Trade.PortId, decision.Trade.Trade);
+                }
+                if (decision.Transfer != null)
+                {
+                    var command = decision.Transfer;
+                    Transfer(ship.Configuration.OwnerId, decision.ShipId, command.FacilityId,
+                        command.Direction, command.GoodId, command.Quantity);
+                    if (Transfers[Transfers.Count - 1].Outcome != TransferOutcome.Transferred)
+                        throw new InvalidOperationException("A validated industrial transfer must execute.");
+                }
+                if (decision.Departure != null) Depart(decision.ShipId, decision.Departure.DestinationPortId);
+                if (ship.IndustrialStage != decision.NextStage)
+                {
+                    ship.IndustrialStage = decision.NextStage;
+                    Changed = true;
+                }
+            }
+
             internal void RunAutomation(string shipId, int limit)
             {
                 for (var action = 0; action < limit; action++)
@@ -683,8 +824,11 @@ namespace SaltAndLedger.Simulation
                     var decision = RegionalAutomation.Evaluate(View(), shipId);
                     var tradeCount = Trades.Count;
                     var movementCount = Movements.Count;
+                    var transferCount = Transfers.Count;
+                    var stage = Ships[shipId].IndustrialStage;
                     ApplyDecision(decision);
-                    if (Ships[shipId].Dock == null || (tradeCount == Trades.Count && movementCount == Movements.Count)) break;
+                    if (Ships[shipId].Dock == null || (tradeCount == Trades.Count && movementCount == Movements.Count &&
+                        transferCount == Transfers.Count && stage == Ships[shipId].IndustrialStage)) break;
                 }
             }
 
@@ -742,6 +886,7 @@ namespace SaltAndLedger.Simulation
                         port.Consumption[index] = new ConsumptionSnapshot(config, checked(nextDay + config.IntervalDays),
                             unmet, checked(demand.TotalUnmetQuantity + unmet));
                         Consumption.Add(new RegionalConsumption(entry.Key, config, consumed));
+                        if (Challenge != null) Challenge = ChallengeRules.ApplyConsumption(Challenge, config.GoodId, consumed);
                     }
                 }
             }

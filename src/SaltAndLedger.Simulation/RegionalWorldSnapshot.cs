@@ -73,6 +73,8 @@ namespace SaltAndLedger.Simulation
         public bool IsPlayer => Configuration.IsPlayer;
         public long Cash { get; }
         public TradeRoutePolicy? Policy { get; }
+        public IndustrialRoutePolicy? IndustrialPolicy { get; }
+        public IndustrialRouteStage IndustrialStage { get; }
         public bool AutomationEnabled { get; }
         public int VoyageDurationDays { get; }
         public IReadOnlyDictionary<string, int> Cargo => Ship.Cargo;
@@ -83,12 +85,16 @@ namespace SaltAndLedger.Simulation
         public string? DestinationPortId => Ship.DestinationPortId;
         public int RemainingTravelDays => Ship.RemainingTravelTicks;
         internal RegionalShipSnapshot(RegionalShipConfiguration configuration, ShipSnapshot ship,
-            long cash, TradeRoutePolicy? policy, bool automationEnabled, int voyageDurationDays)
+            long cash, TradeRoutePolicy? policy, bool automationEnabled, int voyageDurationDays,
+            IndustrialRoutePolicy? industrialPolicy = null,
+            IndustrialRouteStage industrialStage = IndustrialRouteStage.AcquireOutbound)
         {
             Configuration = configuration;
             Ship = ship;
             Cash = cash;
             Policy = policy;
+            IndustrialPolicy = industrialPolicy;
+            IndustrialStage = industrialStage;
             AutomationEnabled = automationEnabled;
             VoyageDurationDays = voyageDurationDays;
         }
@@ -106,10 +112,12 @@ namespace SaltAndLedger.Simulation
         public IReadOnlyDictionary<string, IndustryBlueprint> IndustryBlueprints { get; }
         public IReadOnlyDictionary<string, PrivateFacilitySnapshot> PrivateFacilities { get; }
         public ChallengeSnapshot? Challenge { get; }
+        public AccountingSnapshot Accounting { get; }
         internal RegionalWorldSnapshot(long day, long revision, IEnumerable<RegionalPortSnapshot> ports,
             IEnumerable<RegionalShipSnapshot> ships, IEnumerable<SeaRoute> routes,
             IEnumerable<CompanySnapshot> companies, IEnumerable<IndustryBlueprint> industryBlueprints,
-            IEnumerable<PrivateFacilitySnapshot> privateFacilities, ChallengeSnapshot? challenge)
+            IEnumerable<PrivateFacilitySnapshot> privateFacilities, ChallengeSnapshot? challenge,
+            AccountingSnapshot accounting)
         {
             Day = day;
             Revision = revision;
@@ -125,6 +133,7 @@ namespace SaltAndLedger.Simulation
             PrivateFacilities = new ReadOnlyDictionary<string, PrivateFacilitySnapshot>(
                 new SortedDictionary<string, PrivateFacilitySnapshot>(privateFacilities.ToDictionary(f => f.Id), StringComparer.Ordinal));
             Challenge = challenge;
+            Accounting = accounting;
         }
 
         public SeaRoute GetRoute(string from, string to)
