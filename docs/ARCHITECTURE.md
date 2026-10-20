@@ -1,6 +1,6 @@
 # Implemented architecture
 
-Phase 0 separates content, simulation, host presentation, and reference generation using a small set of concrete modules. Phase 0.5 connects the same simulation to a minimal Unity host. Task 1.1 adds an explicitly stepped world using the existing production operation. Task 1.2 adds finite market/trader accounts and atomic trades to those same steps. Task 1.2b adds exact inventory-sensitive pricing, shared trade preview/execution calculations, and reproducible headless experiments while retaining fixed prices. Task 1.3a introduces a focused maritime world owning two ports and one ship, reusing those economic calculations under one atomic clock. Task 1.3b adds immutable route policies and a stateless evaluator producing those same maritime commands, with safe execution and bounded host observation. These layers introduce no speculative services or extension points for future systems.
+Phase 0 separates content, simulation, host presentation, and reference generation using a small set of concrete modules. Phase 0.5 connects the same simulation to a minimal Unity host. Task 1.1 adds an explicitly stepped world using the existing production operation. Task 1.2 adds finite market/trader accounts and atomic trades to those same steps. Task 1.2b adds exact inventory-sensitive pricing, shared trade preview/execution calculations, and reproducible headless experiments while retaining fixed prices. Task 1.3a introduces a focused maritime world owning two ports and one ship, reusing those economic calculations under one atomic clock. Task 1.3b adds immutable route policies and a stateless evaluator producing those same maritime commands, with safe execution and bounded host observation. Task 1.4 presents those systems in the Unity TradingLab scene with UI Toolkit and explicit user actions. These layers introduce no speculative services or extension points for future systems.
 
 ```text
 data/content.json + data/content.schema.json
@@ -21,6 +21,7 @@ data/content.json + data/content.schema.json
                             |       +-- same trade calculator, pricing, and production operation
                             |       +-- route policy --> snapshot decision --> normal commands
                             |       +-- manual/automated shipping comparisons / headless and Unity tests
+                            |       +-- Unity TradingLab session --> UI Toolkit controller / UXML / USS
                             +-- original console demo / Unity Bootstrap smoke
 ```
 
@@ -31,7 +32,7 @@ data/content.json + data/content.schema.json
 | `src/SaltAndLedger.Simulation` | Content loading, immutable definitions, inventory, atomic production/trading, exact stock-sensitive prices, local/maritime worlds, stateless route decisions, and bounded host execution | `netstandard2.1`, C# 8, Newtonsoft.Json 13.0.3 |
 | `samples/SaltAndLedger.Demo` | Read content; demonstrate production/world/trading/shipping/automation; compare pricing hypotheses and emit reproducible experiment reports | `net10.0`, simulation project |
 | `tests/SaltAndLedger.Simulation.Tests` | Headless tests of content, production, trading/accounting, pricing/preview invariants, scheduling, state ownership, determinism, and rollback | `net10.0`, simulation project, test dependencies |
-| `unity` | Bootstrap smoke scene/component, integration tests, and a player build entry point | Unity 6000.6.6f1, staged simulation DLL, Unity Newtonsoft package 3.2.2 |
+| `unity` | TradingLab scene and UI Toolkit presentation, Bootstrap smoke, integration tests, and separate player build entry points | Unity 6000.6.6f1, staged simulation DLL, Unity Newtonsoft package 3.2.2 |
 | `data` | Canonical content and Draft 2020-12 JSON Schema | No host or presentation dependency |
 | `tools` | Validate authoring data; generate reference artifacts; prepare Unity runtime assets | Python, dependencies in `requirements.txt`; .NET 10 for Unity preparation |
 | `tests/python` | Schema, semantic validator, and generation tests | Python test runner and pipeline dependencies |
@@ -226,6 +227,18 @@ The evaluator uses bounded binary search over existing monotone prices, stock, c
 The runner counts committed trades, movement, and changed production as progress; it separately limits elapsed steps and consecutive no-progress ticks. It is a reusable headless host helper in the portable assembly, not a new authority or background scheduler. A reporting callback runs after commit and must not mutate the world. Its side effects and failures cannot be rolled back by an already committed step. Hosts decide what finite history, if any, to retain.
 
 The `--shipping` and `--automation` demos share the small `ShippingScenario` factory. The latter asserts equivalent manual/automatic states each tick, threshold-dependent outcomes, bounded liquidity waits, and repeated/reordered/culture-independent transcripts. It produces no canonical entries or generated report requiring another pipeline.
+
+## TradingLab presentation host
+
+[ADR 017](DECISIONS.md#adr-017-host-the-trading-laboratory-with-explicit-ui-actions) keeps the playable lab outside the economic authority. `Assets/Scenes/TradingLab.unity` initializes the prepared canonical content and a small Unity-host scenario factory. The factory uses the existing configuration types and the shipping comparison's parameters; it does not reference the .NET 10 demo assembly. Bootstrap and its original production tests remain separate.
+
+The host session owns the current `MaritimeWorldState`, selected scenario, immutable policy, enablement flag, and bounded presentation history. It exposes snapshots and previews to a UI Toolkit controller. UXML and USS define the interface; the controller translates selections and validated input into session calls, then refreshes from committed state. The Panel Settings asset uses `TradingLabTheme.tss`, which imports Unity's built-in default runtime theme with `unity-theme://default`; custom styles remain in `TradingLab.uss`. Canonical goods and recipe descriptions come from `ContentCatalog`. No host code calculates prices, chooses automated quantities, transfers inventory/cash, executes production, or advances a separate movement clock.
+
+Manual actions submit existing `PortTradeCommand` and `SailCommand` values through `Step`. Combined buy/depart requires a fresh successful preview of the current snapshot before a single command batch. Automated actions evaluate the current immutable policy and use `TradeRouteAutomation` or the bounded runner, with no same-tick manual orders. Policy replacement discards the old pending decision. Selection, preview, parameter editing, policy application, and enablement changes are passive; only an explicit step action advances the world. Reset creates a new scenario world rather than repairing an existing economy.
+
+The map reads dock/voyage state and remaining ticks from the snapshot; there is no frame-driven interpolation or autonomous simulation. The market panel distinguishes next marginal bid/ask from a complete order's first/last prices and exact total. Remote previews remain hypothetical and do not enable remote execution. Structured trades, movement, production, and decisions feed a finite host activity list; the world still retains no history. The displayed cash change is separate from realized gross profit, which requires an empty-cargo accounting interval. There is no speculative cargo valuation.
+
+The lab deliberately has one fixed connection, one ship, three starting comparisons, and a narrow outbound policy form. [Playtest](PLAYTEST.md) documents its controls and verification flows. Scene/control tests verify wiring and economic outcomes; interactive screenshots and player execution establish a separate, explicitly recorded scope in [Unity integration](UNITY.md).
 
 ## Determinism and headless execution
 

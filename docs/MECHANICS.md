@@ -330,6 +330,20 @@ The host owns enablement and which immutable policy to use next. It may disable 
 
 The [automation guide](AUTOMATION.md) records the executable full-load, restrictive-price, and liquidity-blocked comparisons. Equivalent manual and automated itineraries use the same six ticks and produce the same accounts and inventory; the automated route receives no hidden economic or movement advantage.
 
+## TradingLab interaction rules
+
+Task 1.4 exposes the existing maritime world in a Unity UI Toolkit scene. It adds presentation and host choices, without changing the economic rules above. The [playtest guide](PLAYTEST.md) gives the controls and reproducible expeditions.
+
+Selecting a port or good, changing a quantity, obtaining a preview, editing policy fields, applying a policy or preset, and toggling automation consume **no tick**. The scenario selector is also passive; **Reset scenario** explicitly constructs a new starting world, clears the recent activity, and disables automation. It is a testing operation, not an in-world injection of goods or money.
+
+**Next tick** executes one ordinary step, using the active policy when automation is enabled and no commands otherwise. **Advance 3 ticks** uses up to three ordinary steps. Automation has explicit one-tick and **Run up to 6 ticks** controls; the bounded run also stops after three consecutive ticks without trade, movement, or changed production, or before a policy pause. There is no background advancement. A runner stop does not disable the policy or prove permanent economic deadlock.
+
+Manual buy, sell, sail, and combined buy/depart each consume one tick when executed. Manual actions require automation to be disabled; trades require the selected port to be the starting dock. The interface validates positive integer quantities before constructing commands. Remote or sailing previews remain available as hypothetical economic inspections, with actual execution unavailable. Normal stock, cash, and capacity rejection is explained separately from malformed input or unexpected simulation errors. A combined buy/depart refreshes its preview against the current snapshot and refuses the action if the purchase is not executable, so it cannot depart empty after a rejected purchase. Ordinary simulation command semantics remain unchanged.
+
+The route form edits only outbound log limits and the cash reserve. Applying a valid form constructs a new immutable policy and discards the previous decision; editing alone does not apply it. The fixed return leg targets/minimums two planks, with maximum marginal buy price 18 and minimum marginal sell price 31. The full and restrictive presets differ only in the outbound buy ceiling, 10 versus 8. The current decision shows the stage, action, readable reason, quantity, exact preview amount, and departure intent. The ship indicator uses committed dock/voyage fields; arrival changes the displayed dock and enables destination trading on the next action.
+
+The host retains at most 40 recent activity entries derived from structured results, with newest entries first. This bounded display does not add simulation history or persistence. Trader cash and its change since reset are shown separately from cargo. Realized gross trading profit is reported only when a completed empty-cargo comparison permits purchase costs and sale revenue to be compared; unsold cargo is shown without speculative valuation or a realized-loss label. No policy change creates liquidity, restocks a market, discards cargo, or otherwise repairs the world.
+
 ## Determinism and remaining scope
 
 The same validated content, initial world state, and per-tick ordered commands produce the same states and structured outcomes. Reversing equivalent input building collections does not change results. Callers advance several ticks by calling `Step` repeatedly; the optional bounded automation helper issues those same sequential calls without a separate clock.

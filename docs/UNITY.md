@@ -1,6 +1,6 @@
 # Unity 6 integration and verification
 
-The existing project at `unity/` uses **Unity 6000.6.6f1**. Its Bootstrap scene loads canonical content and runs the same production command as the .NET 10 console demo. Simulation source remains only in `src/SaltAndLedger.Simulation`; the host adds no economic rules.
+The existing project at `unity/` uses **Unity 6000.6.6f1**. TradingLab presents the two-port world through UI Toolkit; the separate Bootstrap scene loads canonical content and runs the same production command as the .NET 10 console demo. Simulation source remains only in `src/SaltAndLedger.Simulation`; both hosts use the prepared DLL and add no economic rules.
 
 ## Prepare a checkout
 
@@ -32,6 +32,14 @@ The portable build uses NuGet **Newtonsoft.Json 13.0.3**. Unity's manifest direc
 
 Unity's [package manual](https://docs.unity3d.com/Packages/com.unity.nuget.newtonsoft-json@3.2/manual/index.html) identifies upstream version 13.0.2. Inspection of the installed 3.2.2 package confirmed file version 13.0.2 and assembly identity `Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed`, matching the NuGet 13.0.3 assembly identity. This resolves the assembly reference; behavioral compatibility is established only for the configurations exercised below. The package version and upstream library version are different numbering schemes.
 
+## Open the playable lab
+
+After preparation/import, open **`Assets/Scenes/TradingLab.unity`** and enter Play mode. The scene initializes its own UI document and the canonical content. Use the [playtest guide](PLAYTEST.md) to complete the manual six-tick expedition, run Standard and Restrictive automation, inspect the zero-liquidity blockage, and recover from a buy-price ceiling of 7 by applying 10 without advancing time.
+
+Check the Game view at **1920×1080** and **1366×768**. The three columns scroll independently; verify labels, exact preview totals, disabled remote/sailing trade controls, policy feedback, and the bottom status message. Inspecting snapshots or passing a headless test does not verify that the visible controls are usable. The verification record below separates automated scene/control checks from actual visual inspection.
+
+The authored scene, controller/session/scenario scripts, UXML/USS, Panel Settings, theme stylesheet, and their `.meta` files belong in version control. `TradingLabTheme.tss` imports Unity's built-in default runtime theme; the Panel Settings asset references it, and the UXML references the custom `TradingLab.uss` styles. The original Bootstrap scene and its build entry point remain independent. The new build entry point described below selects TradingLab directly; it does not depend on altering the smoke build's scene list.
+
 ## Editor smoke and integration tests
 
 Open **`Assets/Scenes/Bootstrap.unity`** and enter Play mode. The **Production Smoke Test** GameObject has `SaltAndLedger.UnityHost.ProductionSmokeTest`, whose `Start()` calls `RunSmokeTest()`. It loads `Resources.Load<TextAsset>("CanonicalContent")`, invokes `ContentLoader`, `Inventory`, and `Production.TryRunBatch`, and checks the outcomes. The Console must show:
@@ -49,14 +57,14 @@ A missing staged asset or invalid outcome fails explicitly. No Inspector content
 
 Open **Window > General > Test Runner** and run:
 
-- **Edit Mode:** `SaltAndLedger.UnityHost.EditModeTests` (10 cases covering explicit production, deterministic world scheduling, finite trading with production, both dynamic pricing models, maritime transport, configurable automation, and the single UPM Newtonsoft provider, including a hash comparison of the loaded DLL against the pinned package binary). Dynamic local-market cases check a read-only quote, a bulk purchase across several prices, historical snapshot isolation, and a reversal with no cash profit. Maritime cases transport cargo over two ticks, reject an in-transit trade, arrive, sell using the destination's linear/scarcity prices, and feed local production. Automation cases evaluate full and restrictive route policies, reject a stale decision, and finish the six-tick expedition with the headless comparison's exact cargo, stock, and cash results.
-- **Play Mode:** `SaltAndLedger.UnityHost.PlayModeTests` (1 test that loads Bootstrap and checks the component's actual `Start()` result).
+- **Edit Mode:** `SaltAndLedger.UnityHost.EditModeTests`. The existing integration cases cover explicit production, deterministic world scheduling, finite trading with production, both dynamic pricing models, maritime transport, configurable automation, and the single UPM Newtonsoft provider. TradingLab session cases additionally cover its scenario fixture, exact preview/manual execution, policy control, bounded waits, reset, and accounting presentation conditions. The simulation remains authoritative in all cases.
+- **Play Mode:** `SaltAndLedger.UnityHost.PlayModeTests`. Preserve the test that loads Bootstrap and checks its actual `Start()` result, and run the TradingLab scene/control tests. These load the actual scene and exercise its UI wiring and displayed state; inspect the current test result count rather than running only the older Bootstrap filter.
 
 For repeatable command-line tests, close the Editor instance using this project first, or use a separate complete checkout prepared with the same commands. Do not launch a second Editor against an already-open project. The PowerShell examples below run from the repository root; change the Editor path for your installation. Piping to `Out-Host` makes PowerShell wait for the GUI executable to finish.
 
 ### Official Unity Agent Plugin workflow
 
-Tasks 1.2, 1.2b, 1.3a, and 1.3b use the locally installed `unity@unity-agent-plugin` **`unity:unity-cli`** skill and supported `unity test`/`unity build` commands. These batch workflows do not require a running Editor or the live Pipeline connection. The primary economic verification remains the headless suite; the Unity trade tests check that the same staged assembly works in the Editor, including exact `System.Numerics.BigInteger` pricing calculations, maritime movement/account ownership, and route-policy evaluation/execution. No additional dependency DLL is staged. Bootstrap and its Play Mode/player checks retain their original production behavior.
+Tasks 1.2 through 1.4 use the locally installed `unity@unity-agent-plugin` **`unity:unity-cli`** skill and supported `unity test`/`unity build` commands. Task 1.4 also uses **`unity:ui`** and **`unity:ui-uitk`** for its UI Toolkit host. Batch tests/builds do not require a running Editor or the live Pipeline connection; live scene inspection and screenshots use the supported Pipeline workflow. The primary economic verification remains the headless suite; Unity checks exercise the same staged assembly and actual scene host. No additional dependency DLL is staged. Bootstrap retains its original production behavior.
 
 With the plugin's Unity CLI installed, check its version and discover existing Editors before starting a batch run. If sandbox restrictions prevent network or process discovery, retry with the required access; do not interpret restricted discovery as proof that no Editor is open. These examples assume `unity` is on PATH (the local Windows installation used `%LOCALAPPDATA%/Unity/bin/unity.exe`):
 
@@ -69,25 +77,25 @@ $unityProject = (Resolve-Path 'unity').Path
 $resultsDir = Join-Path $PWD '.cache/unity-results'
 New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
 unity test $unityProject --editor-version 6000.6.6f1 --mode EditMode `
-    --filter SaltAndLedger.UnityHost.Tests.SimulationIntegrationTests `
+    --filter SaltAndLedger.UnityHost.Tests `
     --output "$resultsDir/editmode.xml" --timeout 600 --format json `
     -- -nographics -logFile "$resultsDir/editmode.log"
 if ($LASTEXITCODE -ne 0) { throw "Unity Edit Mode failed: $LASTEXITCODE" }
 unity test $unityProject --editor-version 6000.6.6f1 --mode PlayMode `
-    --filter SaltAndLedger.UnityHost.Tests.BootstrapSmokeTests `
+    --filter SaltAndLedger.UnityHost.Tests `
     --output "$resultsDir/playmode.xml" --timeout 600 --format json `
     -- -nographics -logFile "$resultsDir/playmode.log"
 if ($LASTEXITCODE -ne 0) { throw "Unity Play Mode failed: $LASTEXITCODE" }
 
 [xml]$editResults = Get-Content "$resultsDir/editmode.xml"
 [xml]$playResults = Get-Content "$resultsDir/playmode.xml"
-if ($editResults.'test-run'.result -ne 'Passed' -or [int]$editResults.'test-run'.passed -ne 10 -or
-    $playResults.'test-run'.result -ne 'Passed' -or [int]$playResults.'test-run'.passed -ne 1) {
+if ($editResults.'test-run'.result -ne 'Passed' -or [int]$editResults.'test-run'.passed -ne 27 -or
+    $playResults.'test-run'.result -ne 'Passed' -or [int]$playResults.'test-run'.passed -ne 5) {
     throw 'Unexpected Unity test outcome or test count; inspect XML and logs.'
 }
 ```
 
-The CLI supplies `-batchmode`, test flags, and result paths. Do not forward reserved flags or add `-quit` to a test run. Keep logs local; Editor logs may include authentication arguments, so redact them before sharing.
+The CLI supplies `-batchmode`, test flags, and result paths. Do not forward reserved flags or add `-quit` to a test run. Inspect individual cases as well as the counts; the current expected totals are 27 Edit Mode and 5 Play Mode cases. Keep logs local; Editor logs may include authentication arguments, so redact them before sharing.
 
 ### Direct Editor alternative
 
@@ -112,7 +120,29 @@ if ($LASTEXITCODE -ne 0) { throw "Unity Play Mode failed: $LASTEXITCODE" }
 
 Do **not** add `-quit` to `-runTests`: the test runner owns completion and Editor exit. Inspect the NUnit XML files for a passed result and the expected nonzero test count, as well as the Editor logs; an exit code alone is insufficient evidence. See Unity's [Test Framework command-line reference](https://docs.unity3d.com/6000.2/Documentation/Manual/test-framework/reference-command-line.html).
 
-## Windows Mono player
+## Windows Mono players
+
+### TradingLab development player
+
+The small `SaltAndLedger.UnityHost.Editor.TradingLabBuild.BuildWindowsMono` entry point builds only `Assets/Scenes/TradingLab.unity` as a Windows x64 **development** player. It selects Mono for the build and restores the prior backend afterward. The output is `unity/Builds/TradingLab/Windows/SaltAndLedger.TradingLab.exe`, separate from Bootstrap.
+
+With the official CLI and the variables from the test example:
+
+```powershell
+unity build $unityProject --editor-version 6000.6.6f1 --target StandaloneWindows64 `
+    --execute-method SaltAndLedger.UnityHost.Editor.TradingLabBuild.BuildWindowsMono `
+    --allow-dirty-build --timeout 1200 `
+    --log-file "$resultsDir/build-tradinglab-mono.log" --no-tail --format json
+if ($LASTEXITCODE -ne 0) { throw "TradingLab player build failed: $LASTEXITCODE" }
+
+$labPlayer = Join-Path $unityProject 'Builds/TradingLab/Windows/SaltAndLedger.TradingLab.exe'
+& $labPlayer -screen-fullscreen 0 -screen-width 1366 -screen-height 768 `
+    -logFile "$resultsDir/player-tradinglab-mono.log" | Out-Host
+```
+
+This launches an interactive window and waits until it closes. Do not add `-batchmode` or `-nographics` when assessing visible controls. A successful initial setup logs `Salt & Ledger Trading Lab ready: tick 0, cash 100, cargo 0/6.` Repeat at 1920×1080 and follow [Playtest](PLAYTEST.md); a successful build or clean startup is separate from completing the trading interactions. The Editor menu **Salt & Ledger > Build Windows Mono Trading Lab** invokes the same build method. Build outputs are ignored by Git.
+
+### Original Bootstrap smoke player
 
 With Windows build support installed, the following entry point builds only Bootstrap to `unity/Builds/Smoke/Windows/SaltAndLedger.Smoke.exe`. It temporarily chooses Mono and restores the previous backend setting. The first build can take several minutes compiling shaders from the retained template packages, including the inference package; allow this compilation to finish. Using the official CLI and variables above:
 
@@ -143,7 +173,7 @@ if ($LASTEXITCODE -ne 0) { throw "Unity player smoke failed: $LASTEXITCODE" }
 Get-Content "$resultsDir/player-mono.log"
 ```
 
-The `-saltAndLedgerSmokeTest` flag exits the player with code **0 only after all smoke assertions pass** and code **1 on failure**. Confirm the exact completion message in the player log. Normal Play mode and a player launched without this flag remain open. A blank scene with Console/log output is expected; graphical presentation is outside this task.
+The `-saltAndLedgerSmokeTest` flag exits the player with code **0 only after all smoke assertions pass** and code **1 on failure**. Confirm the exact completion message in the player log. Normal Play mode and a player launched without this flag remain open. A blank scene with Console/log output is expected for Bootstrap; use TradingLab for graphical playtesting.
 
 ## Verification record and limits
 
@@ -293,9 +323,52 @@ An initial preparation call used the sandbox's default .NET cache and could not 
 
 The successful official Unity workflow still emitted the verification directory-name and duplicate assembly hint-path warnings. The build's `editorErrors` also lists licensing-client validation and entitlement-404 diagnostics. The official license-status check reported an active license and signed-in state; their specific entitlement cause remains unresolved. Play Mode logged an unavailable debugger listener on port 3380; a subsequent local check found no listener, so its cause remains unresolved and debugger attachment is unverified. These diagnostics did not prevent the inspected tests, build, or player smoke from passing. No package, licensing, or debugger configuration was changed to suppress them.
 
+### Task 1.4 TradingLab verification
+
+Checked on Windows on **2026-10-18**, using .NET SDK **10.0.402**, Unity **6000.6.6f1**, official Unity CLI **1.0.0-beta.13**, and the installed Unity Agent Plugin **0.1.8-beta**. The `unity:ui`, `unity:ui-uitk`, and `unity:unity-cli` skills guided the UI Toolkit host and supported Editor workflow. Simulation source, canonical content, package dependencies, and generated reference facts remain unchanged. Hash comparisons confirmed that the isolated verification copy matched the authored scene, controller, tests, UXML/USS, theme, Panel Settings, and prepared simulation DLL.
+
+| Check | Result |
+| --- | --- |
+| Locked restore and Release solution build | Passed, zero build warnings/errors |
+| Complete .NET regression suite | 310 passed |
+| Production, world, market, shipping, and automation demos | Passed with their previous measured outcomes |
+| Pricing report freshness | Passed: 165 observations and 1,883 invariant checks; repeated and `tr-TR` reports match |
+| Python pipeline tests | 39 passed |
+| Canonical validation and generated-reference freshness | Passed; all six generated reference outputs remain current |
+| Authored documentation and strict MkDocs build | Passed |
+| Unity preparation and freshness | Passed; the staged DLL/content and single UPM Newtonsoft provider are retained |
+| Official CLI Edit Mode | 27 passed: 10 prior integration cases and 17 TradingLab session cases |
+| Official CLI Play Mode | 5 passed: the original Bootstrap scene case and four actual TradingLab scene/control cases |
+| Live Editor graphical interaction | Passed through official Pipeline pointer input: manual/full/restrictive expeditions, blocked liquidity, and policy recovery/manual intervention |
+| Live Game view sizes | Actual 1366×768 and 1920×1080 runtime dimensions verified; visible layout and state changes inspected |
+| Windows x64 Mono TradingLab development player | Build passed with successful provenance and exit 0; windowed 1366×768 launch responded and emitted the exact ready marker without exceptions |
+| TradingLab player control flows, IL2CPP, other platforms, large-world profiling, independent human playtesting, and remote GitHub Actions | Not run; trading flows and visual layout were checked in the Editor |
+
+The live checks used the actual TradingLab scene, visible controls, and the official CLI's `simulate_pointer` capability. The manual six-tick expedition and full automation both ended with trader cash **219**, empty cargo at Northport, and gross profit **119**. Restrictive automation ended with cash **169** and profit **69**. The zero-cash destination run stopped at tick **5** with cash **46**, six logs aboard, and an explicit inability-to-pay explanation. Applying a minimum sale price of 1 preserved that blocked world and reason.
+
+Recovery was also exercised through the UI: a buy ceiling of 7 produced a wait; applying 10 changed the proposal without changing tick, accounts, or cargo. An automated tick bought and departed. Pausing consumed no time, manual controls completed arrival and sale, and resumed automation completed the return with cash 219 and empty cargo. Selection, disabled remote/sailing trade controls, previews, status updates, and policy feedback were inspected. The live Game view was set to each intended resolution through official Editor evaluation; `Screen.width`/`Screen.height` and a subsequent frame advance were checked before screenshots. This is graphical integration evidence, separate from headless session tests and from a study of unassisted player understanding.
+
+The initial Play Mode run passed Bootstrap but failed the four new UI tests because their synthetic `NavigationSubmitEvent` did not explicitly target/focus the intended button. The test helper was corrected and checked through live evaluation; this was a test-input delivery failure, not a failed economic transaction. The final official CLI rerun passed all five cases, with individual NUnit outcomes inspected. The new tests exercise passive inspection/invalid input, the manual expedition, policy pause/recovery/reset, and restrictive/blocked scenarios through the actual scene controls.
+
+The official CLI built a Windows x64 Mono development player containing TradingLab as its sole scene. Successful build provenance and exit code 0 were inspected. The player launched in a visible 1366×768 window, responded, and logged `Salt & Ledger Trading Lab ready: tick 0, cash 100, cargo 0/6.` without exceptions. Its actual trading controls were **not** exercised; the complete manual/automatic/recovery flows above are Editor evidence. The player remained interactive rather than using Bootstrap's automatic smoke exit.
+
+The player emitted 22 stable unsupported/stripped URP post-processing shader warnings. Read-only inspection of the installed URP 17.6.0 package, renderer configuration, and build log found that unused post-processing programs were stripped while Renderer2D still initialized their passes; Bloom's 17 materials account for 17 warnings. TradingLab's camera has no enabled post-processing or Volume, and UI Toolkit uses its separate rendering path. No requested post-processing effect was configured, so the working renderer/package settings were retained. A `Curl` error 7 came from Unity telemetry endpoints under restricted networking; the lab has no networking dependency. The successful build also retained the previously observed licensing validation/entitlement-404 diagnostics. These findings explain the startup diagnostics without extending the player verification beyond launch/readiness.
+
+Tooling issues were investigated within the official workflow:
+
+- An initial restricted NuGet restore could not obtain vulnerability metadata and reported `NU1900`. A locked restore with the required network access passed; audit checks and dependency versions were not changed to bypass the restriction.
+- Pipeline connection was initially unavailable while the Editor compiled/imported. Readiness checks after compilation restored access; a later listener interruption during recompilation likewise required waiting for the supported connection to become ready.
+- `eval_file` expects a method body, so top-level `using` directives were removed. PowerShell stripped quotes in an inline evaluation; a C# evaluation file preserved them. Scene switching invalidated a previously loaded visual-tree asset reference; creating the scene before loading assets resolved that operation.
+- Screenshot requests reject parent-path traversal. Captures were saved under `Assets/Logs` through the supported tool, then selected evidence was copied to authored documentation. A PowerShell script invocation was blocked by execution policy; the same authorized commands ran directly without changing that policy.
+- The Editor also reported an AI account API timeout and the existing duplicate assembly hint-path and licensing entitlement diagnostics. A fresh official license-status check reported an active license, signed-in state, and OAuth authentication. Final Editor inspection reported successful compilation, zero Console errors, and one AI account timeout warning. These service-specific causes remain unresolved; no dependency, licensing, or simulation change was made to suppress them.
+
+Local artifacts use `.cache/task14-editmode.xml`, `.cache/task14-playmode.xml`, corresponding logs, `.cache/task14-demo-*.txt`, `.cache/task14-build-mono.log`, `.cache/task14-build-mono.provenance.json`, and `.cache/task14-player-mono.log`. Selected 1366×768 and 1920×1080 Game view evidence is included in [Playtest](PLAYTEST.md#recorded-editor-views); additional local captures remain under `.cache/task14-screenshots`. Temporary captures were removed from the Unity asset tree through the official AssetDatabase workflow. The UI remains a desktop laboratory: independent column scrolling exposes longer policy/activity content, no save or background-time system exists, and there has been no independent player usability study. The next recommended milestone is the observed playtest in [Roadmap](ROADMAP.md#recommended-next-milestone-observed-playtesting).
+
 ### Remaining player verification
 
 For an intended IL2CPP target, install its Unity build support and native compiler prerequisites, select Bootstrap in the Build Profile, set **Scripting Backend: IL2CPP**, retain **API Compatibility Level: .NET Standard 2.1**, and select the intended managed stripping level. Build a development player, launch it with the smoke flag, and inspect its exit code and log as above. Record Editor version, operating system, target architecture, backend, stripping level, UPM version, and result. No blanket `link.xml` is supplied; investigate concrete stripping failures before adding preservation rules.
+
+Then build TradingLab with that same intended backend/stripping configuration and repeat the player-facing manual, automated, blocked, and recovery flows. The provided TradingLab build method deliberately selects Mono; it does not certify IL2CPP. A passing Bootstrap production smoke alone does not establish UI rendering or route operation on a new backend.
 
 The smoke verifies assembly import, Unity's JSON dependency, packaged content loading, successful production, and an atomic rejection. It does not validate a production content-distribution system, save games, performance, every malformed input on every backend, or all player targets.
 

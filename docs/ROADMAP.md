@@ -6,14 +6,14 @@ This sequence describes planned work, not completed features or a fixed delivery
 | --- | --- | --- |
 | 0 | Project foundation, small architecture, automated tests, canonical content, and documentation pipeline | Implemented |
 | 0.5 | .NET 10 toolchain and minimal Unity integration using the existing simulation | Implemented; verification scope in [Unity integration](UNITY.md) |
-| 1 | Deterministic simulation, markets, finite inventories, ships, basic trading, and trade automation | In progress; Tasks 1.1, 1.2, 1.2b, 1.3a, and 1.3b implemented |
+| 1 | Deterministic simulation, markets, finite inventories, ships, basic trading, and trade automation | In progress; Tasks 1.1 through 1.4 implemented, including the playable TradingLab |
 | 2 | Fixed-map scenarios, objectives, time limits, and roguelike runs | Planned |
 | 3 | Constrained procedural world generation with economic viability checks | Planned |
 | 4 | Modifiers, curses, difficulty levels, and challenge combinations | Planned |
 | 5 | Lateral meta progression through starting packages, alternative production capabilities, and new economic problems | Planned |
 | 6+ | Advanced competitors, piracy, political systems, optional combat, and other features justified by gameplay testing | Deferred |
 
-Phase 0 includes logs, planks, a sawmill, one production conversion, validation, a console demo, headless tests, and generated reference output. Phase 0.5 exposes the same behavior through a Unity component and integration tests. Task 1.1 adds one fixed location, multiple runtime building instances, an abstract 64-bit tick, enable/disable commands, deterministic production scheduling, atomic world steps, and structured immutable results. Task 1.2 extends that world with one finite market, one trader, separate goods/cash accounts, and explicit trading. Task 1.2b adds exact stock-sensitive pricing, read-only trade previews, and reproducible pricing comparisons. Task 1.3a adds two ports, one shared trader account, and one manually sailed cargo ship. Task 1.3b executes configurable route policies through the same maritime commands. All reuse the same canonical content, transaction/pricing calculations, and production operation. No graphical trading interface is implemented.
+Phase 0 includes logs, planks, a sawmill, one production conversion, validation, a console demo, headless tests, and generated reference output. Phase 0.5 exposes the same behavior through a Unity component and integration tests. Task 1.1 adds one fixed location, multiple runtime building instances, an abstract 64-bit tick, enable/disable commands, deterministic production scheduling, atomic world steps, and structured immutable results. Task 1.2 extends that world with one finite market, one trader, separate goods/cash accounts, and explicit trading. Task 1.2b adds exact stock-sensitive pricing, read-only trade previews, and reproducible pricing comparisons. Task 1.3a adds two ports, one shared trader account, and one manually sailed cargo ship. Task 1.3b executes configurable route policies through the same maritime commands. Task 1.4 makes that world playable through a focused Unity UI Toolkit interface. All reuse the same canonical content, transaction/pricing calculations, and production operation.
 
 ## Task 1.1 scope and remaining questions
 
@@ -53,11 +53,17 @@ The `--automation` demo reproduces the six-log manual expedition's 119 gross pro
 
 This policy does not forecast destination prices, guarantee recovery, optimize strategy, or resolve mixed cargo. Finite markets can remain blocked indefinitely; the host runner limits observation and reports no progress without repairing the economy. Mechanical equivalence and fewer prescribed action batches do not establish enjoyable or balanced gameplay.
 
-## Recommended next milestone: policy control and recovery
+## Task 1.4: first playable Unity Trading Lab
 
-Proposed next assignment: a small fixed-scenario experiment focused on explaining and recovering from blocked routes. Use existing commands to compare initial stock/liquidity and policy limits, measure temporary versus persistent waits, and exercise pause, manual intervention, and reconfiguration. Define what a player should understand and what recovery means before selecting a presentation layer or additional economic systems. The current reason enums and immutable results provide an inspectable starting point.
+Implemented: a separate TradingLab scene with a two-port map, ship/cargo/cash status, canonical market information, exact trade previews, manual trading/sailing, explicit tick controls, editable outbound automation limits, bounded execution, and a finite recent-activity display. The Standard, Restrictive, and No destination cash scenarios expose the existing comparison outcomes. Pausing, applying policy edits, and inspecting markets leave time and the economy unchanged; reset clearly starts a new test world. Bootstrap remains the production smoke.
 
-Keep this narrow: no additional ships/traders, warehouses, pathfinding, demand, replenishment, random risk, full route editor, or persistent event history merely to extend the experiment. This is a recommendation requiring a separate task, not an implemented gameplay system.
+The [playtest guide](PLAYTEST.md) provides a manual expedition, automated comparisons, a price-limit recovery, and a liquidity-blocked diagnosis. [Unity integration](UNITY.md) records actual scene/control, visual, and player verification separately. This is a working host for experiments, not proof of usability, economic sustainability, final balance, or a complete game.
+
+## Recommended next milestone: observed playtesting
+
+Proposed next assignment: observe a small set of players completing the TradingLab guide without source-code explanations. Record whether they distinguish marginal quotes from bulk totals, predict cargo/travel constraints, explain price versus liquidity waits, and recover by applying a feasible policy change. Collect concrete confusion points and fix presentation issues before adding economic systems. Compare attention required by manual and automated expeditions without treating prescribed button counts as a measurement of enjoyment.
+
+Keep this narrow: no additional ships/traders, warehouses, pathfinding, demand, replenishment, random risk, full route editor, or persistent event history merely to prolong a session. Human playtesting and resulting UI revisions are recommendations for a separate task, not completed user-research evidence.
 
 ## Other follow-up work
 

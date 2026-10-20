@@ -1,6 +1,6 @@
 # Architectural decisions
 
-These records describe accepted decisions through Task 1.3b. Unresolved game rules live in [Economy](ECONOMY.md); hypotheses and deferred concepts live in [Ideas](IDEAS.md). New evidence can supersede a decision explicitly.
+These records describe accepted decisions through Task 1.4. Unresolved game rules live in [Economy](ECONOMY.md); hypotheses and deferred concepts live in [Ideas](IDEAS.md). New evidence can supersede a decision explicitly.
 
 ## ADR 001: Keep the simulation independent of Unity
 
@@ -149,3 +149,15 @@ Keep route configuration immutable and route evaluation stateless. One outbound 
 Select the largest feasible quantity by bounded binary search over stock, capacity, exact marginal price limits, buyer funds, and the configured trader reserve. Reuse the existing pricing summation with a `BigInteger` budget comparison for large search probes, then obtain the selected transaction through the existing snapshot preview. Public transaction totals and receiver balances retain checked numeric bounds; unexpected arithmetic failures remain exceptional. Minimum shipment sizes apply to the combined cargo departing its source, not to sales. Partial sales retain unsold cargo and prevent departure. Unexpected or mixed cargo requires intervention.
 
 Bind each immutable decision to its exact source snapshot. `TradeRouteAutomation.Execute` rejects a stale decision before stepping, freshly previews its trade, and submits only the decision's commands. One sequential host must not mix manual commands into that execution. This permits a successful purchase and departure in the same tick without changing manual rejection behavior or the existing atomic commit boundary. Pausing and replacing policies are host choices between steps; no persistent route stage or second clock exists. Waiting can remain indefinite in a finite economy, so a host runner must impose an explicit finite observation limit and report lack of progress without inventing replenishment.
+
+## ADR 017: Host the trading laboratory with explicit UI actions
+
+**Status:** Selected before Task 1.4 implementation; accepted presentation boundary.
+
+Add a separate `TradingLab` scene using UI Toolkit, authored UXML/USS, and a small controller/session pair. Keep Bootstrap as the original production smoke. The session loads the prepared canonical content and constructs the existing two-port fixture with ordinary simulation configuration types. It references the staged simulation DLL, never the .NET 10 console assembly. A small host fixture duplicates setup parameters only; pricing, transactions, production, cargo capacity, route decisions, movement, and time remain exclusively in the simulation.
+
+User actions choose either manual maritime commands or snapshot-bound automation for each step. Inspecting a port, editing a field, applying an immutable policy, and enabling or disabling automation do not advance time. Explicit buttons advance one tick or a finite sequence of ordinary ticks; neither frames nor elapsed real time drive the economy. Derive the ship indicator from the committed snapshot. Freshly preview a combined purchase/departure before submitting it, and refuse departure if that purchase cannot succeed.
+
+Render authoritative snapshots, exact preview totals, and structured step results. Keep only a bounded recent-activity list in the host. Report cash and cargo independently; label realized gross trading profit only for a completed accounting interval whose initial and final cargo are empty. Do not introduce cargo valuation, persistent event sourcing, a generalized UI framework, new economic rules, or hidden recovery funding. Reset constructs a new test world and is explicitly separate from an in-world action.
+
+The fixed scenarios make manual operation, configured automation, policy-limit recovery, and finite-liquidity blockage directly inspectable. Automated scene/control tests and interactive visual checks are separate evidence; record both actual results and limits in [Unity integration](UNITY.md). The [playtest guide](PLAYTEST.md) defines the player-facing checks without claiming that mechanical correctness establishes enjoyable gameplay.

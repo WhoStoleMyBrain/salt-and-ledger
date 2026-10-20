@@ -2,7 +2,7 @@
 
 A single-player maritime trading and economic strategy game intended for Unity 6. The long-term focus is building, optimizing, and automating trading networks within a simulated economy, inspired by Port Royale 2, Patrician 2, Antimatter Dimensions, and economic roguelikes.
 
-This repository contains **the Phase 0/0.5 foundation, Task 1.1 deterministic world, Task 1.2 finite trading/accounting prototype, Task 1.2b dynamic pricing experiments, Task 1.3a manual two-port shipping, and Task 1.3b configurable route automation**. It loads validated logs, planks, a sawmill, and one recipe; advances explicitly stepped worlds; trades at finite local markets; transports cargo manually or under player-selected rules; compares fixed and inventory-sensitive prices; and generates reference documentation from canonical definitions. The console demos and Unity host use the same simulation assembly. There is no graphical trading game yet.
+This repository contains **the Phase 0/0.5 foundation through Task 1.4's playable Unity Trading Lab**: deterministic worlds, finite markets and accounting, dynamic pricing experiments, two-port shipping, and configurable route automation. It loads validated logs, planks, a sawmill, and one recipe; advances explicitly stepped worlds; trades at finite local markets; transports cargo manually or under player-selected rules; and generates reference documentation from canonical definitions. The console demos and Unity UI use the same simulation assembly. TradingLab is a small gameplay experiment, not a complete game.
 
 ## Prerequisites
 
@@ -109,7 +109,7 @@ The demo shares the manual starting fixture. A log buying limit of 10 carries si
 
 The runner prints decisions, exact prices, commands, transactions, cargo, local markets, and bounded stop reasons. It asserts repeated, reversed-port, and alternate-culture output. Four useful manual action batches become one policy configuration; both still need six host advances. See [Automation](docs/AUTOMATION.md) for exact rules, measurements, pausing/reconfiguration, safe execution, and limitations.
 
-## Open the Unity smoke scene
+## Play the Unity Trading Lab
 
 After installing the Python dependencies, run from the repository root:
 
@@ -118,7 +118,11 @@ python tools/prepare_unity.py
 python tools/prepare_unity.py --check
 ```
 
-Preparation validates content, rebuilds the existing simulation with locked NuGet dependencies, and stages its DLL plus canonical JSON under ignored `unity/Assets/Generated/`. Open `unity/` through Unity Hub using **6000.6.6f1**, let packages resolve, and open `Assets/Scenes/Bootstrap.unity`. Enter Play mode; the Console should report three successful batches, an unchanged rejected batch, and `Salt & Ledger smoke passed: logs=0, planks=3; rejected batch left inventory unchanged.`
+Preparation validates content, rebuilds the existing simulation with locked NuGet dependencies, and stages its DLL plus canonical JSON under ignored `unity/Assets/Generated/`. Open `unity/` through Unity Hub using **6000.6.6f1**, let packages resolve, open **`Assets/Scenes/TradingLab.unity`**, and enter Play mode.
+
+Inspect Northport and Southhaven, preview exact bulk prices, buy and sell cargo, and sail the two-tick route. Time advances only through explicit actions. Enable the full or restrictive route policy to compare the documented six-tick expeditions; the zero-liquidity scenario shows why a ship can retain goods despite an attractive price. Pause, change a limit, or intervene manually without a hidden clock. Follow [Playtest](docs/PLAYTEST.md) for controls, complete itineraries, blocked-route diagnosis, and a recovery experiment.
+
+The separate **`Assets/Scenes/Bootstrap.unity`** remains the production smoke. Entering Play mode there should report three successful batches, an unchanged rejected batch, and `Salt & Ledger smoke passed: logs=0, planks=3; rejected batch left inventory unchanged.`
 
 Rerun preparation after simulation, content, or relevant build configuration changes. Do not copy simulation sources or a NuGet `Newtonsoft.Json.dll` into Unity. See [Unity integration](docs/UNITY.md) for Edit Mode/Play Mode tests, player build commands, and actual verification limits.
 
@@ -153,7 +157,7 @@ For an intentional NuGet dependency change, run `dotnet restore SaltAndLedger.sl
 | `src/SaltAndLedger.Simulation/` | Unity-independent content, atomic production/trading, finite accounts, exact pricing/previews, local/maritime worlds, stateless route policies, bounded execution, and immutable results |
 | `samples/SaltAndLedger.Demo/` | Original production, repeatable world/market/shipping/automation demos, and reproducible pricing experiments using canonical content |
 | `tests/SaltAndLedger.Simulation.Tests/` | Standalone C# tests |
-| `unity/` | Existing Unity 6 project, Bootstrap smoke component, and integration tests |
+| `unity/` | Unity 6 TradingLab scene/UI, original Bootstrap smoke, and integration tests |
 | `data/content.json` | Canonical example content |
 | `data/content.schema.json` | JSON Schema for content format version 1 |
 | `tools/` | Data validation, deterministic documentation generation, and Unity preparation |

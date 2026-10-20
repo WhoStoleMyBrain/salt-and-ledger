@@ -1,6 +1,6 @@
 # Repository guidance
 
-Salt & Ledger is a Unity 6 maritime economic strategy project. This repository implements the Phase 0/0.5 foundation, Task 1.1 deterministic world, Task 1.2 finite trading/accounting prototype, Task 1.2b inventory-sensitive pricing experiments, Task 1.3a manual two-port shipping, and Task 1.3b configurable route automation. Read `docs/ARCHITECTURE.md`, `docs/GAME_DESIGN.md`, and `docs/MECHANICS.md` before changing its boundaries or behavior.
+Salt & Ledger is a Unity 6 maritime economic strategy project. This repository implements the Phase 0/0.5 foundation through Task 1.4's playable Unity TradingLab: deterministic worlds, finite markets/accounting, inventory-sensitive pricing experiments, two-port shipping, and configurable route automation. Read `docs/ARCHITECTURE.md`, `docs/GAME_DESIGN.md`, and `docs/MECHANICS.md` before changing its boundaries or behavior.
 
 - Keep `src/SaltAndLedger.Simulation` independent of Unity, presentation, file-system policy, and documentation generation. Preserve `netstandard2.1` and C# 8 compatibility.
 - Prefer small concrete types and explicit state transitions. Do not add speculative service layers, plugin systems, or interfaces for deferred features.
@@ -17,6 +17,7 @@ Salt & Ledger is a Unity 6 maritime economic strategy project. This repository i
 - Regenerate `docs/experiments/pricing-results.json` with the `--pricing` demo after relevant experiment/calculation changes; use `--pricing --check` to verify it. Keep authored analysis aligned with measured output and distinguish pricing hypotheses from accounting contracts.
 - The demo and headless tests use .NET 10; `global.json` selects a stable 10.0 SDK. Keep NuGet lock files and Unity's package manifest/lock synchronized with intentional dependency changes.
 - Run `python tools/prepare_unity.py` after simulation or content changes. It rebuilds and stages the simulation DLL and canonical JSON under ignored `unity/Assets/Generated/`; never copy simulation source or another Newtonsoft assembly into Unity. Unity's pinned UPM package supplies JSON support.
+- Keep TradingLab a UI Toolkit host over the staged simulation DLL. Preserve Bootstrap. Use snapshots, previews, and structured results; never duplicate economic calculations or movement/time rules. Selection, policy editing/application, and enablement are passive. Explicit actions alone step the world; keep activity and multi-tick execution bounded, and distinguish cash changes from closed empty-cargo gross profit. Document controls and recovery checks in `docs/PLAYTEST.md`.
 - C#: PascalCase for public types/members, camelCase for local variables/parameters, four-space indentation. Python: snake_case, four-space indentation, standard-library solutions when sufficient. Follow adjacent code.
 - Add focused tests for meaningful behavior changes and failure cases. Do not scaffold later roadmap features as part of foundation maintenance.
 - Do not claim Unity integration was tested unless the Editor and relevant player build were actually exercised. Use `docs/UNITY.md` for local verification.
