@@ -2,7 +2,7 @@
 
 Automation repeats the transactions you configure. You still choose the route, commodities, shipment sizes, acceptable prices, and cash reserve. It does not search for the best strategy or promise a profitable destination. A route can wait indefinitely when finite markets cannot satisfy your rules.
 
-The first sections preserve the legacy two-port API and TradingLab comparison. [Regional automation](#regional-automation-in-archipelagolab) uses the same evaluator with explicit actors, expenditure caps, and bounded zero-time dockside actions.
+The first sections preserve the legacy two-port API and TradingLab comparison. [Regional automation](#regional-automation-in-archipelagolab) uses the same evaluator with explicit actors, expenditure caps, and bounded zero-time dockside actions. [Industrial shipping](#industrial-shipping-between-private-stock-and-markets) adds physical private loading and unloading, explicit route stages, and useful return shipments.
 
 Run the controlled comparison from the repository root:
 
@@ -157,6 +157,76 @@ On each day, enabled factories buy local inputs before public/private production
 
 Missing inputs, exhausted market cash, price limits, full storage, cash reserves, or a full receiving account create explicit waits. Already satisfied targets and retained output reserves are distinguished from shortages. An enabled factory continues on its schedule without repetitive toggles; disabling it pauses both production and policies without resetting its deadline.
 
-Local warehouse transactions may be managed remotely, but the goods remain at that town. Ship/storage transfer requires the actual dock and correct ownership. Ship route automation does not automatically load a private factory's output: the current industrial shipping strategy uses explicit warehouse loading and ordinary voyages. General warehouse route stops and production scripting are deferred.
+Local warehouse transactions may be managed remotely, but the goods remain at that town. Ship/storage transfer requires the actual dock and correct ownership. Task 1.7 connects these private inventories to the industrial shipping policy below. The historical Task 1.6 experiment still uses its original explicit warehouse loading and voyages.
 
-See [Commerce and industry](ENTERPRISE.md) for the tested defaults and measured comparison. Factory purchased-stock expenditure and sale revenue are cash flows; they do not provide full cost attribution for transferred inputs or unsold output.
+See [Commerce and industry](ENTERPRISE.md) for the tested defaults and historical comparison. Factory purchased-stock expenditure and sale revenue are cash flows. Task 1.7's company accounting separately follows actual acquisition basis through physical transfers, private manufacturing, held stock, and completed sales.
+
+## Industrial shipping between private stock and markets
+
+An industrial route assigns one ship to two directly connected ports. Each directional leg carries one chosen good and selects a source and destination operation:
+
+| Endpoint | Source operation | Destination operation |
+| --- | --- | --- |
+| Public market | Buy with company cash at exact marginal asks | Sell cargo into finite market stock/cash at exact marginal bids |
+| Owned warehouse | Load actual private stock into the docked ship | Unload actual cargo into that company's warehouse |
+
+The outbound and optional return legs may carry the same good. A useful return can buy factory inputs at the destination and unload them privately at the origin. This is a fixed two-port policy, not a waypoint language, automatic route discovery, or fleet optimizer.
+
+Choose the shipment target and departure minimum, source-stock threshold, private source reserve, marginal buying/selling limits, purchase expenditure cap, company cash reserve, and empty-return permission. Warehouse reserves apply to private loading only. The source threshold checks total source stock before a new shipment; the reserve determines how much remains after loading. For example, waiting for **8 Bread**, retaining **2**, and loading **6** sends a complete shipment while preserving two private units.
+
+Existing compatible cargo already meeting the departure minimum can leave immediately. Otherwise the evaluator selects the largest additional quantity within the shipment target and capacity. A purchase must also fit stock, exact total cost, marginal limit, account headroom, cash reserve, and the per-order expenditure cap. The minimum is a departure rule; destination sales may complete partially.
+
+The policy never moves private goods remotely. Its source and destination facilities must belong to the ship's company and be at the configured endpoint. Every transfer uses the ordinary ownership/docking/capacity operation and carries its original cost-basis slices. It moves no cash and spends no day. Market endpoints use the same price calculator and execution path as manual trade; private endpoints require no public quote.
+
+### Stage, waits, and recovery
+
+The ship retains one authoritative stage:
+
+1. Acquire outbound goods at the origin, then depart.
+2. Deliver outbound goods at the destination.
+3. Acquire return goods, or take an allowed empty return, then depart.
+4. Deliver return goods at the origin, then repeat.
+
+The stage changes inside the same atomic commit as the corresponding goods movement. A voyage retains its delivery stage; it does not infer direction from commodity identity. This supports same-good return legs without accidentally selling new return stock at the wrong port. Cargo incompatible with the active leg pauses the policy intact rather than being discarded or guessed into another shipment.
+
+A blocked or partial sale leaves unsold cargo aboard and prevents return acquisition. A full destination warehouse likewise unloads only its available capacity and retains the rest. Waiting reasons identify stock thresholds/reserves, marginal limits, cash reserves, expenditure caps, finite liquidity, storage, account headroom, or incompatible location/cargo. A return leg with no qualifying shipment can depart empty only when explicitly allowed and the hold is empty.
+
+Dockside execution reevaluates after each staged action and stops after **four actions**, a wait/pause, departure, or no progress. Acquiring goods and departing form one action; a completed delivery can proceed to return acquisition at the same economic time. Completing an empty return advances its stage once. A chain cannot cycle indefinitely because the next acquisition departs on a real voyage.
+
+Daily ship actions still precede private procurement and production. A factory batch completed today becomes available to an explicitly requested dockside chain after that commit, or the next daily ship phase. The policy adds no clock, free travel, procurement discount, or early batch.
+
+Applying a different industrial policy requires an empty ship docked at one of its two ports. This prevents existing cargo from being silently reassigned to another route stage. Pausing/resuming preserves stage and cargo; reapplying the same policy object does not reset either. To replace a route while goods are blocked aboard, pause automation and first sell or transfer them through ordinary legal operations. Moving the ship manually away from the stage's required port causes a clear pause until location or configuration is resolved.
+
+Only one route mode is active per ship. Applying an industrial route replaces its public-market route; applying a public-market route clears the industrial policy. Configuration and enablement are passive. A changed configuration invalidates pending decisions even within the same day, and exceptional failure later in a chain or daily phase rolls back goods, basis, cash, stage, and time together.
+
+### Reproducible industrial shipping comparison
+
+Run from the repository root:
+
+```text
+dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --industrial-logistics
+dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --industrial-logistics --check
+```
+
+The [generated report](experiments/industrial-logistics-results.json) uses `EnterpriseScenario`: construct a Westhaven bakery for **300**, enable its standard local input procurement, physically sail the player ship from Northport to Westhaven, then send six Bread to Eastport whenever private stock reaches eight while retaining two. The marginal sale floor is **25**, and the return is empty. Initial company cash is **600**, cargo capacity is **10**, and the Westhaven–Eastport voyage takes **six days**. The observation ends on day **90**.
+
+The baseline includes a separate manual world. After every automatic dockside chain, ordinary manual trade/transfer/departure commands reproduce it; both worlds then advance the same whole day. Every comparison checks physical inventory, cash, schedules, voyages, and full FIFO accounting. Revisions, route control/stage fields, and event grouping differ because manual commands commit separately. Automation receives no economic bonus.
+
+| Policy/condition | Bread sold at Eastport | Final cash | Inventory purchases | Sale revenue | Released basis | Held basis | Blocked days |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Automatic, identical manual economy | 42 | 1,586 | 793 | 2,079 | 556 | 237 | 6 |
+| Sale floor 1,000 | 0 | 100 | 200 | 0 | 0 | 200 | 82 |
+| Bakery disabled | 0 | 300 | 0 | 0 | 0 | 0 | 88 |
+| Eastport starts with zero cash | 0 | 100 | 200 | 0 | 0 | 200 | 82 |
+| Bakery interval four days | 36 | 1,457 | 625 | 1,782 | 453 | 172 | 14 |
+| Eastport bread demand every two days | 42 | 1,586 | 793 | 2,079 | 556 | 237 | 6 |
+
+All cases pay the same **300 construction capital**, separately from inventory purchases. The zero-liquidity variant explicitly starts the whole region with less money; it never drains, replenishes, or repairs an existing run. The slower bakery changes only its configured production interval. Stronger demand changes only Eastport's bread-consumption interval from four to two days: baseline demand consumes **38 Bread** and misses **6**, while stronger demand consumes **40** and misses **50**. It does not increase sale revenue in this particular route because the baseline demand already clears each delivery before the next arrives. Actual consumption and unmet requests remain separate from goods sold into the market.
+
+The baseline sells seven six-unit shipments and completes **30 private batches**, retaining **18 Bread and 3 Logs**. Realized material gross margin is **2,079 − 556 = 1,523**. Liquid cash changes by **986** after the separate construction expenditure and the **237** of acquisition basis still held. None of these numbers is labeled net profit: wages, operating costs, depreciation, and ship resale values are not simulated.
+
+Both the restrictive-floor and cashless-market cases retain **six Bread aboard**. Their factories eventually reach the configured cash reserve instead of receiving rescue funding. Blocked days count distinct economic days with a wait/pause, including waiting for a qualifying production batch; sailing is excluded.
+
+The manual baseline requires **28 economic commands** after the shared setup, compared with one industrial-route configuration: **27 prescribed inputs avoided**. This excludes day advancement, construction, input-policy setup, and player thought. It measures execution workload rather than proven usability. The report repeats the run, reverses equivalent configuration order, checks `tr-TR` culture, and reconciles every operation's cash, goods, released basis, and held basis.
+
+A focused automated test additionally exercises useful return cargo: a bakery sends private Bread, buys Flour at the destination, physically returns, and unloads Flour into its own input storage while ordinary local procurement supplies Logs. No manual warehouse loading or unloading is needed during the repeated cycle. Multi-port scripting, mixed-commodity optimization, and automatic recovery from an impossible strategy remain outside this policy.

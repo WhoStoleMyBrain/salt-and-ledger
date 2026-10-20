@@ -14,12 +14,18 @@ var archipelagoMode = args.Length >= 2 && args[1] == "--archipelago";
 var checkArchipelago = archipelagoMode && args.Length >= 3 && args[2] == "--check";
 var enterpriseMode = args.Length >= 2 && args[1] == "--enterprise";
 var checkEnterprise = enterpriseMode && args.Length >= 3 && args[2] == "--check";
+var industrialMode = args.Length >= 2 && args[1] == "--industrial-logistics";
+var checkIndustrial = industrialMode && args.Length >= 3 && args[2] == "--check";
+var runsMode = args.Length >= 2 && args[1] == "--runs";
+var checkRuns = runsMode && args.Length >= 3 && args[2] == "--check";
 if (args.Length != 1 && !(worldMode && args.Length <= 3) && !marketMode && !shippingMode && !automationMode &&
     !(pricingMode && args.Length <= (checkPricing ? 4 : 3)) &&
     !(archipelagoMode && args.Length <= (checkArchipelago ? 4 : 3)) &&
-    !(enterpriseMode && args.Length <= (checkEnterprise ? 4 : 3)))
+    !(enterpriseMode && args.Length <= (checkEnterprise ? 4 : 3)) &&
+    !(industrialMode && args.Length <= (checkIndustrial ? 4 : 3)) &&
+    !(runsMode && args.Length <= (checkRuns ? 4 : 3)))
 {
-    Console.Error.WriteLine("Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--world [initialLogs] | --market | --pricing [--check] [output.json] | --shipping | --automation | --archipelago [--check] [output.json] | --enterprise [--check] [output.json]]");
+    Console.Error.WriteLine("Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--world [initialLogs] | --market | --pricing [--check] [output.json] | --shipping | --automation | --archipelago [--check] [output.json] | --enterprise [--check] [output.json] | --industrial-logistics [--check] [output.json] | --runs [--check] [output.json]]");
     return 1;
 }
 
@@ -34,6 +40,16 @@ if (worldMode && args.Length == 3 &&
 try
 {
     var content = ContentLoader.Load(File.ReadAllText(args[0]));
+    if (industrialMode)
+    {
+        var outputIndex = checkIndustrial ? 3 : 2;
+        return IndustrialLogisticsExperiments.Run(content, args.Length > outputIndex ? args[outputIndex] : null, checkIndustrial);
+    }
+    if (runsMode)
+    {
+        var outputIndex = checkRuns ? 3 : 2;
+        return RunExperiments.Run(content, args.Length > outputIndex ? args[outputIndex] : null, checkRuns);
+    }
     if (enterpriseMode)
     {
         var outputIndex = checkEnterprise ? 3 : 2;
