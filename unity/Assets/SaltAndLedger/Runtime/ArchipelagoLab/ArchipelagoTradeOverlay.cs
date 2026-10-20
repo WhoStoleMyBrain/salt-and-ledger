@@ -26,8 +26,10 @@ namespace SaltAndLedger.UnityHost
             Click("quantityPlus", () => AdjustQuantity(1));
             Click("quantityMaxBuy", () => SetMaximum(TradeDirection.Buy));
             Click("quantityMaxSell", () => SetMaximum(TradeDirection.Sell));
-            Click("startChallengeButton", () => StartScenario(true));
-            Click("startSandboxButton", () => StartScenario(false));
+            Click("startChallengeButton", () => Confirm("Choose a new run?",
+                "Current progress will be discarded. Choose the next challenge and starting charter in run setup.", () => OpenSetup(false)));
+            Click("startSandboxButton", () => Confirm("Choose a new sandbox?",
+                "Current progress will be discarded. Choose your next starting company in run setup.", () => OpenSetup(true)));
             BindIndustry();
             Root.RegisterCallback<KeyDownEvent>(evt =>
             {
@@ -203,6 +205,8 @@ namespace SaltAndLedger.UnityHost
 
         private void RefreshModalStatus()
         {
+            var navigationStatus = Root.Q<Label>("navigationStatus");
+            if (navigationStatus != null) navigationStatus.text = statusIsError ? status : "";
             foreach (var name in new[] { "tradeStatusLabel", "industryStatusLabel" })
             {
                 var label = Root.Q<Label>(name);
@@ -220,10 +224,7 @@ namespace SaltAndLedger.UnityHost
                 SetText("challengeLabel", "SANDBOX · Build your enterprise at your own pace. No deadline.");
                 return;
             }
-            var goal = challenge.Configuration;
-            SetText("challengeLabel", goal.Title + " · " + challenge.Status + "\n" + challenge.DeliveredQuantity + "/" + goal.RequiredQuantity +
-                " net " + Session.Content.GetGood(goal.GoodId).Name + " supplied to " + PortName(goal.PortId) +
-                " · " + Math.Max(0, goal.DeadlineDay - Session.Snapshot.Day) + " days left · retain cash ≥ " + Number(goal.MinimumCash));
+            SetText("challengeLabel", ObjectiveText());
         }
     }
 }

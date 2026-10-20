@@ -4,7 +4,8 @@
     "references": [],
     "overrideReferences": true,
     "precompiledReferences": [
-        "SaltAndLedger.Simulation.dll"
+        "SaltAndLedger.Simulation.dll",
+        "Newtonsoft.Json.dll"
     ],
     "autoReferenced": true
 }

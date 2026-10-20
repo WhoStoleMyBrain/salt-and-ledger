@@ -35,6 +35,10 @@ tasks/
 /unity/.simulation-staging.json
 /unity/MemoryCaptures/
 /unity/Recordings/
+/unity/Assets/Logs.meta
+# Pipeline build-only assets must not survive into source control.
+/unity/Assets/Settings/Pipeline/Resources/RuntimePipelineConfig.asset*
+/unity/Assets/Settings/Pipeline/Resources/RuntimePipelineBuildInfo.asset*
 
 
 # OS files

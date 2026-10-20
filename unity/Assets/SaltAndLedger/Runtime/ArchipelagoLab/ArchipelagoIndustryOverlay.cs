@@ -89,10 +89,12 @@ namespace SaltAndLedger.UnityHost
                 "\nOne batch every " + facility.Blueprint.IntervalDays + " days · next opportunity day " + facility.NextProductionDay +
                 (facility.Blueprint.OutputStockLimit.HasValue ? " · output ceiling " + facility.Blueprint.OutputStockLimit.Value : ""));
             SetText("facilityStatsLabel", "Age " + (snapshot.Day - facility.CreatedDay) + " days · " + facility.BatchesProduced + " batches\n" +
-                "Construction paid " + Number(facility.ConstructionCost) + " · purchases " + Number(facility.ProcurementCost) +
+                (facility.IsStarterGrant ? "Starter facility grant" : "Construction paid " + Number(facility.ConstructionCost)) +
+                " · purchases " + Number(facility.ProcurementCost) +
                 " · actual sales " + Number(facility.SalesRevenue) + "\nConsumed: " + QuantityTotals(facility.ConsumedQuantities) +
                 "\nProduced: " + QuantityTotals(facility.ProducedQuantities) +
-                "\nCash flows, not net profit. Unsold goods and transferred inputs have no attributed cost basis.");
+                "\nHeld material basis " + Number(snapshot.Accounting.Stores["facility:" + facility.Id].TotalCostBasis) +
+                ". Company FIFO accounting and realized gross margin are in the Ledger.");
             SetText("facilityStateLabel", (facility.Enabled ? ArchipelagoLabSession.FacilityStatus(facility.LastOutcome) : "Operation disabled") +
                 "\nProcurement: " + WaitText(facility.ProcurementWaitReason) + " · sales: " + WaitText(facility.SalesWaitReason) +
                 "\nInputs on hand: " + string.Join(", ", recipe.Inputs.Select(input => facility.Inventory[input.GoodId] + "/" + input.Quantity +

@@ -36,8 +36,10 @@ namespace SaltAndLedger.UnityHost
                 Map.ShipSelected += id => Run(() => Session.SelectShip(id));
                 Map.PortTradeRequested += OpenTrade;
                 Bind();
+                BindRunExperience();
                 LoadPolicy();
                 Refresh();
+                ShowScreen(ArchipelagoScreen.MainMenu);
                 Debug.Log("Salt & Ledger Archipelago Lab ready: day 0, " + Session.Snapshot.Ports.Count + " ports, " + Session.Snapshot.Ships.Count + " ships.");
             }
             catch (Exception exception) { ReportException(exception); }
@@ -53,7 +55,7 @@ namespace SaltAndLedger.UnityHost
                     status = Session.LastStatus;
                     Refresh();
                 }
-                Map.AdvanceVisual(Time.unscaledDeltaTime, Session.IsPlaying);
+                Map.AdvanceVisual(Time.unscaledDeltaTime, Session.IsPlaying && SmoothMovement);
             }
             catch (Exception exception)
             {
@@ -90,16 +92,7 @@ namespace SaltAndLedger.UnityHost
             Click("pauseButton", () => Run(Session.Pause));
             Click("nextDayButton", () => Run(() => Session.NextDay()));
             Click("playerShipButton", () => Run(() => Session.SelectShip(Session.Player.Id)));
-            Click("resetButton", () => Run(() =>
-            {
-                Session.Reset();
-                LoadPolicy();
-                Element<DropdownField>("speedDropdown").SetValueWithoutNotify("1×");
-                Element<TextField>("quantityField").SetValueWithoutNotify("2");
-                CloseModals();
-                Element<Foldout>("automationFoldout").SetValueWithoutNotify(false);
-                Element<ScrollView>("contextScroll").scrollOffset = Vector2.zero;
-            }));
+            Click("resetButton", RequestRestart);
             Click("sailButton", () => Run(() => Session.Sail()));
             Click("buyButton", () => Trade(TradeDirection.Buy));
             Click("sellButton", () => Trade(TradeDirection.Sell));
@@ -236,8 +229,8 @@ namespace SaltAndLedger.UnityHost
             Element<Button>("playButton").SetEnabled(!Session.IsPlaying && !Session.IsChallengeEnded);
             Element<Button>("nextDayButton").SetEnabled(!Session.IsChallengeEnded);
             Element<Button>("pauseButton").SetEnabled(Session.IsPlaying);
-            Map.Present(snapshot, Session.SelectedPortId, Session.SelectedShipId, Session.IsPlaying, Session.PlaybackInterval);
-            Map.AdvanceVisual(0, Session.IsPlaying);
+            Map.Present(snapshot, Session.SelectedPortId, Session.SelectedShipId, Session.IsPlaying && SmoothMovement, Session.PlaybackInterval);
+            Map.AdvanceVisual(0, Session.IsPlaying && SmoothMovement);
             SetIndex("shipPicker", Session.SelectedShipId == null ? 0 : shipIds.IndexOf(Session.SelectedShipId) + 1);
             SetText("mapHint", Session.NavigationArmed
                 ? "Your ship selected · right-click a town to trade; left-click to plan a voyage."
@@ -257,6 +250,7 @@ namespace SaltAndLedger.UnityHost
             SetText("statusLabel", status ?? Session.LastStatus);
             Element<Label>("statusLabel").EnableInClassList("error", statusIsError);
             RefreshModalStatus();
+            RefreshRunExperience();
         }
 
         private void RefreshNavigation()
@@ -375,12 +369,16 @@ namespace SaltAndLedger.UnityHost
         {
             Element<Toggle>("automationToggle").SetValueWithoutNotify(Session.Player.AutomationEnabled);
             SetText("decisionLabel", DecisionText(Session.CurrentDecision));
-            SetText("activeRouteLabel", PortName(Session.Policy.OriginPortId) + " ↔ " + PortName(Session.Policy.DestinationPortId) +
+            SetText("activeRouteLabel", (Session.Player.IndustrialPolicy != null ? "Industrial shipping · " : "") +
+                PortName(Session.Player.IndustrialPolicy?.OriginPortId ?? Session.Policy.OriginPortId) + " ↔ " +
+                PortName(Session.Player.IndustrialPolicy?.DestinationPortId ?? Session.Policy.DestinationPortId) +
                 " · " + (Session.Player.AutomationEnabled ? "enabled" : "manual control"));
             Element<Button>("runDocksideButton").SetEnabled(Session.Player.AutomationEnabled && !Session.IsChallengeEnded);
-            SetText("profitLabel", "Your cash change " + Signed(Session.CashChange) + (Session.ClosedCashProfit.HasValue ?
-                "\nEmpty-cargo closed cash profit " + Signed(Session.ClosedCashProfit.Value) :
-                "\nConstruction, purchased inputs and held goods are separate cash flows; unsold stock is not revenue."));
+            var finance = Session.Snapshot.Accounting.Companies[Session.Player.OwnerId];
+            SetText("profitLabel", "Cash change " + Signed(Session.CashChange) +
+                "\nRealized material gross margin " + Signed(finance.RealizedGrossMargin) +
+                " · held material basis " + Number(finance.HeldInventoryCost) +
+                "\nGrants have zero paid basis. Construction and unmodeled operating costs are separate; see the Ledger.");
         }
 
         private void RefreshActivity()
@@ -399,6 +397,8 @@ namespace SaltAndLedger.UnityHost
         private string DecisionText(RegionalDecision decision)
         {
             var actor = decision.Before.Ships[decision.ShipId];
+            if (decision.IndustrialDetail != null)
+                return actor.IndustrialStage + " · " + decision.IndustrialDetail.Action + "\n" + decision.Reason;
             var text = !actor.AutomationEnabled
                 ? (actor.IsPlayer ? "Manual control" : "Automation disabled") + "\n" + decision.Reason
                 : TradingLabText.Stage(decision.Stage) + " · " + TradingLabText.Action(decision.Action) + "\n" + decision.Reason;

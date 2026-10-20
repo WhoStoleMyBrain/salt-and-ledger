@@ -24,6 +24,8 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(controller.Session, Is.Not.Null);
             root = controller.Root;
             Assert.That(root.panel, Is.Not.Null);
+            controller.BeginRun(null, RunScenario.MerchantCharter);
+            yield return null;
         }
 
         [UnityTest]
@@ -215,6 +217,7 @@ namespace SaltAndLedger.UnityHost.Tests
             yield return null;
             Assert.That(controller.Session.Snapshot, Is.SameAs(paused));
             Click("resetButton");
+            Click("confirmAcceptButton");
             Assert.That(controller.Session.Snapshot.Day, Is.Zero);
             Assert.That(controller.Session.IsPlaying, Is.False);
             Assert.That(controller.Session.PlaybackSpeed, Is.EqualTo(1));
@@ -387,16 +390,20 @@ namespace SaltAndLedger.UnityHost.Tests
         public IEnumerator ChallengeDisplayEndingAndResetUseTheSameEconomicDay()
         {
             Click("startChallengeButton");
+            Click("confirmAcceptButton");
+            Click("startRunButton");
             Assert.That(controller.Session.ChallengeMode, Is.True);
-            Assert.That(root.Q<Label>("challengeLabel").text, Does.Contain("0/" + EnterpriseScenario.CharterBread));
+            Assert.That(root.Q<Label>("challengeLabel").text, Does.Contain("0 / " + EnterpriseScenario.CharterBread));
             for (var day = 0; day < EnterpriseScenario.CharterDeadline; day++) Click("nextDayButton");
             Assert.That(controller.Session.Snapshot.Challenge.Status, Is.EqualTo(ChallengeStatus.Failed));
             Assert.That(root.Q<Label>("challengeLabel").text, Does.Contain("Failed"));
             Assert.That(root.Q<Button>("nextDayButton").enabledInHierarchy, Is.False);
-            Click("resetButton");
+            Click("retryRunButton");
             Assert.That(controller.Session.Snapshot.Day, Is.Zero);
             Assert.That(controller.Session.Snapshot.Challenge.Status, Is.EqualTo(ChallengeStatus.Active));
             Click("startSandboxButton");
+            Click("confirmAcceptButton");
+            Click("startRunButton");
             Assert.That(controller.Session.Snapshot.Challenge, Is.Null);
             yield return null;
         }

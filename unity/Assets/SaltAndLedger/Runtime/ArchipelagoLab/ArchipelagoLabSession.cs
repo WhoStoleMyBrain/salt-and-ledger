@@ -31,6 +31,7 @@ namespace SaltAndLedger.UnityHost
     {
         public const int MaximumActivity = 60;
         public const int MaximumDaysPerFrame = 4;
+        public const int MaximumJournalEntries = 200;
         public const double SecondsPerDay = 1.5;
 
         private RegionalWorldState world;
@@ -41,13 +42,23 @@ namespace SaltAndLedger.UnityHost
         private long initialPlayerCash;
         private bool hasPlayerTrade;
         private readonly bool legacyScenario;
+        private bool configuredRun;
+        private readonly List<EconomicEvent> journal = new List<EconomicEvent>();
+        private readonly SortedDictionary<string, long> shipDeliveries = new SortedDictionary<string, long>(StringComparer.Ordinal);
+        public IReadOnlyDictionary<string, long> ShipDeliveries => new ReadOnlyDictionary<string, long>(shipDeliveries);
+        public string CharterId { get; private set; } = RunScenario.MerchantCharter;
+        public string ChallengeId { get; private set; }
+        public bool HasConfiguredRun => configuredRun;
+        public long PlayerInputs { get; private set; }
+        public long AutomatedActions { get; private set; }
+        public IReadOnlyList<EconomicEvent> Journal => journal.AsReadOnly();
         public bool ChallengeMode { get; private set; }
         public bool IsChallengeEnded => Snapshot.Challenge != null && Snapshot.Challenge.Status != ChallengeStatus.Active;
 
         public ContentCatalog Content { get; }
         public RegionalWorldSnapshot Snapshot => world.Snapshot();
         public RegionalShipSnapshot Player => Snapshot.Ships[ArchipelagoScenario.PlayerShipId];
-        public TradeRoutePolicy Policy => Player.Policy;
+        public TradeRoutePolicy Policy => Player.Policy ?? EnterpriseScenario.MerchantPolicy();
         public RegionalDecision CurrentDecision => world.EvaluateAutomation(Player.Id);
         public IReadOnlyList<ArchipelagoActivity> Activity => activityView;
         public string SelectedPortId { get; private set; }
@@ -72,11 +83,12 @@ namespace SaltAndLedger.UnityHost
 
         public void Reset()
         {
-            var replacement = legacyScenario ? ArchipelagoScenario.Create(Content) : EnterpriseScenario.Create(Content, ChallengeMode);
+            var replacement = configuredRun ? RunScenario.Create(Content, ChallengeId, CharterId) :
+                legacyScenario ? ArchipelagoScenario.Create(Content) : EnterpriseScenario.Create(Content, ChallengeMode);
             world = replacement;
             initialPlayerCash = Player.Cash;
             hasPlayerTrade = false;
-            SelectedPortId = ArchipelagoScenario.North;
+            SelectedPortId = Player.DockedPortId ?? ArchipelagoScenario.North;
             SelectedShipId = null;
             PendingDestinationId = null;
             NavigationArmed = false;
@@ -84,6 +96,10 @@ namespace SaltAndLedger.UnityHost
             PlaybackSpeed = 1;
             accumulatedSeconds = 0;
             activity.Clear();
+            journal.Clear();
+            shipDeliveries.Clear();
+            PlayerInputs = 0;
+            AutomatedActions = 0;
             lastReasons.Clear();
             LastStatus = "New archipelago. Paused on day 0. Select a port to inspect, or your ship to plan a voyage.";
             Add(null, null, LastStatus);
@@ -91,8 +107,36 @@ namespace SaltAndLedger.UnityHost
 
         public void StartScenario(bool challenge)
         {
+            configuredRun = false;
             ChallengeMode = challenge;
             Reset();
+        }
+
+        public void StartRun(string challengeId, string charterId)
+        {
+            RunScenario.GetCharter(charterId);
+            if (challengeId != null) RunScenario.GetChallenge(challengeId);
+            CharterId = charterId;
+            ChallengeId = challengeId;
+            ChallengeMode = challengeId != null;
+            configuredRun = true;
+            Reset();
+        }
+
+        public RegionalResult AbandonRun()
+        {
+            Pause();
+            var result = world.AbandonChallenge();
+            Observe(result);
+            LastStatus = "Run abandoned. The committed assets and accounts remain available in results.";
+            return result;
+        }
+
+        public void ApplyIndustrialPolicy(IndustrialRoutePolicy policy, bool enabled)
+        {
+            var result = world.ConfigureIndustrialAutomation(Player.Id, policy, enabled);
+            Observe(result);
+            LastStatus = "Industrial shipping applied. Goods move only through your docked ship and actual market trades.";
         }
 
         public void InspectTradePort(string portId)
@@ -293,6 +337,15 @@ namespace SaltAndLedger.UnityHost
 
         private void Observe(RegionalResult result)
         {
+            if (!ReferenceEquals(result.Before, result.After) && result.After.Day == result.Before.Day &&
+                result.Decisions.Count == 0) PlayerInputs++;
+            AutomatedActions += result.Decisions.Count(d => d.ShipId == Player.Id &&
+                (d.Detail?.Trade != null || d.Detail?.Departure != null ||
+                 d.IndustrialDetail?.Transfer != null || d.IndustrialDetail?.Trade != null ||
+                 d.IndustrialDetail?.Departure != null));
+            foreach (var entry in result.EconomicEvents.Where(e => e.CompanyId == Player.OwnerId))
+                journal.Insert(0, entry);
+            if (journal.Count > MaximumJournalEntries) journal.RemoveRange(MaximumJournalEntries, journal.Count - MaximumJournalEntries);
             if (IsChallengeEnded) { IsPlaying = false; accumulatedSeconds = 0; }
             foreach (var facility in result.After.PrivateFacilities.Values)
             {
@@ -310,6 +363,8 @@ namespace SaltAndLedger.UnityHost
                 var ship = result.After.Ships[item.ShipId];
                 if (trade.Outcome != TradeOutcome.Traded) continue;
                 if (ship.IsPlayer) hasPlayerTrade = true;
+                if (ship.IsPlayer && trade.Direction == TradeDirection.Sell)
+                    shipDeliveries[trade.GoodId] = checked((shipDeliveries.TryGetValue(trade.GoodId, out var delivered) ? delivered : 0) + trade.ExecutedQuantity);
                 Add(item.PortId, item.ShipId, ship.Name + " " +
                     (trade.Direction == TradeDirection.Buy ? "bought " : "delivered ") + trade.ExecutedQuantity +
                     " " + Content.GetGood(trade.GoodId).Name + " at " + result.After.Ports[item.PortId].Name +

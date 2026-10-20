@@ -15,9 +15,13 @@ namespace SaltAndLedger.UnityHost.Editor
                 "..", "Builds", "ArchipelagoLab", "Windows", "SaltAndLedger.ArchipelagoLab.exe"));
             Directory.CreateDirectory(Path.GetDirectoryName(playerPath));
             var previousBackend = PlayerSettings.GetScriptingBackend(NamedBuildTarget.Standalone);
+            var previousDevelopment = EditorUserBuildSettings.development;
             try
             {
                 PlayerSettings.SetScriptingBackend(NamedBuildTarget.Standalone, ScriptingImplementation.Mono2x);
+                // Build preprocessors (including Pipeline's optional QA runtime) inspect
+                // this flag as well as BuildPlayerOptions. Keep both views consistent.
+                EditorUserBuildSettings.development = true;
                 var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
                 {
                     scenes = new[] { "Assets/Scenes/ArchipelagoLab.unity" },
@@ -31,6 +35,7 @@ namespace SaltAndLedger.UnityHost.Editor
             }
             finally
             {
+                EditorUserBuildSettings.development = previousDevelopment;
                 PlayerSettings.SetScriptingBackend(NamedBuildTarget.Standalone, previousBackend);
             }
         }

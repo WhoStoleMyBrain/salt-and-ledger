@@ -1,5 +1,6 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <ui:Style src="ArchipelagoLab.uss" />
+    <ui:Style src="ArchipelagoRunExperience.uss" />
     <ui:VisualElement name="archipelagoLab" class="archipelago-lab">
         <ui:VisualElement name="topBar" class="top-bar">
             <ui:Label text="SALT &amp; LEDGER" class="brand" />
@@ -10,13 +11,13 @@
             <ui:Button name="pauseButton" text="Pause" />
             <ui:Button name="nextDayButton" text="Next day" />
             <ui:DropdownField name="speedDropdown" class="speed-picker" tooltip="Presentation speed. The same number of days and commands always has the same economic result." />
-            <ui:Button name="resetButton" text="Reset world" tooltip="Testing tool: replace this world with the authored starting scenario." />
+            <ui:Button name="resetButton" text="Restart" tooltip="Confirm before restoring this run's selected challenge and company." />
         </ui:VisualElement>
         <ui:VisualElement name="mainLayout" class="main-layout">
             <ui:VisualElement class="map-side">
                 <ui:VisualElement class="row scenario-bar">
                     <ui:Label name="challengeLabel" text="Sandbox · build your enterprise at your own pace." class="challenge-summary" />
-                    <ui:Button name="startChallengeButton" text="Start supply charter" tooltip="Start a fresh 60-day charter. Supply net bread to Eastport while retaining company cash. Buybacks subtract progress; only actual sales count." />
+                    <ui:Button name="startChallengeButton" text="New Run" tooltip="Confirm before choosing another challenge and starting company." />
                     <ui:Button name="startSandboxButton" text="New sandbox" />
                 </ui:VisualElement>
                 <ui:VisualElement class="map-frame">
