@@ -91,3 +91,58 @@
 .unity-scroller .unity-base-slider__dragger { background-image: none; background-color: #527481; border-width: 0; border-radius: 4px; }
 .unity-scroller .unity-base-slider__dragger-border { background-image: none; background-color: transparent; border-width: 0; }
 .unity-scroller .unity-button { min-height: 0; padding: 0; margin: 0; border-width: 0; }
+
+.scenario-bar { margin-bottom: 6px; align-items: center; }
+.scenario-bar .unity-button { font-size: 11px; margin-top: 0; }
+.challenge-summary { flex-grow: 1; flex-shrink: 1; white-space: normal; color: #edce91; font-size: 12px; }
+.context-actions { margin: 10px 0; }
+.modal-backdrop { position: absolute; left: 0; right: 0; top: 0; bottom: 0; background-color: rgba(5, 15, 22, 0.86); align-items: center; justify-content: center; }
+.trade-modal { width: 1080px; max-width: 96%; max-height: 94%; padding: 18px 22px; background-color: #1b323e; border-width: 1px; border-color: #8ba49a; border-radius: 10px; }
+.modal-heading { flex-direction: row; align-items: center; margin-bottom: 8px; }
+.modal-heading-copy { flex-grow: 1; }
+.eyebrow { font-size: 10px; color: #adccc5; letter-spacing: 1px; margin: 0; padding: 0; }
+.modal-title { font-size: 25px; -unity-font-style: bold; color: #f1d497; margin: 1px 0; padding: 0; }
+.trade-header { white-space: normal; padding: 9px 12px; margin: 0 0 12px 0; background-color: #122a35; border-radius: 5px; color: #d8e9e4; }
+.trade-body { flex-direction: row; align-items: stretch; }
+.trade-market { flex-grow: 1; flex-basis: 0; min-width: 0; margin-right: 20px; }
+.trade-order { width: 365px; flex-shrink: 0; }
+.trade-goods-row { flex-direction: row; align-items: center; height: 41px; margin: 0; padding: 0 9px; border-radius: 0; border-width: 0; border-bottom-width: 1px; border-bottom-color: #37515b; background-color: #203b48; }
+.trade-goods-row:hover { background-color: #345667; }
+.trade-goods-row.selected-good { background-color: #3b5e5b; border-left-width: 3px; border-left-color: #e7c580; }
+.trade-column-header { height: 28px; background-color: #152d38; color: #a8c7ca; font-size: 10px; }
+.trade-good-name { flex-grow: 1; min-width: 80px; -unity-text-align: middle-left; margin: 0; }
+.trade-cell { width: 72px; -unity-text-align: middle-right; margin: 0; }
+.trade-description { white-space: normal; color: #c5d7d4; font-size: 12px; margin: 10px 0; }
+.quantity-row { align-items: center; }
+.quantity-row .unity-button { flex-grow: 0; flex-basis: auto; width: 36px; }
+.quantity-row .unity-text-field { flex-grow: 1; flex-shrink: 1; min-width: 0; }
+.quantity-row .unity-base-field__label { min-width: 62px; }
+.quantity-shortcuts .unity-button { min-height: 26px; padding: 3px; margin-top: 2px; font-size: 11px; }
+.trade-quote-card { border-radius: 5px; background-color: #122b35; margin-top: 8px; padding: 9px 12px; }
+.trade-exact { white-space: normal; color: #f1e4c6; font-size: 13px; margin: 5px 0 1px 0; padding: 0; }
+.trade-quote-card .unity-button { width: auto; margin-right: 0; min-height: 30px; }
+.modal-footer { flex-direction: row; align-items: center; border-top-width: 1px; border-top-color: #405860; margin-top: 12px; padding-top: 8px; }
+.modal-explanation { flex-grow: 1; flex-shrink: 1; white-space: normal; color: #c2d5d7; font-size: 12px; margin: 0 10px 0 0; }
+.modal-status { white-space: normal; min-height: 22px; margin: 6px 0 0 0; font-size: 12px; color: #e8cf99; }
+
+.industry-modal { width: 1130px; max-width: 96%; height: 682px; max-height: 94%; padding: 16px 20px; background-color: #1b323e; border-width: 1px; border-color: #8ba49a; border-radius: 10px; }
+.construction-bar { flex-direction: row; align-items: center; background-color: #122a35; padding: 7px 10px; border-radius: 5px; }
+.construction-bar .unity-base-field { width: 260px; margin-right: 12px; }
+.construction-summary { flex-grow: 1; flex-shrink: 1; white-space: normal; font-size: 12px; color: #e8d7ad; }
+.industry-body { flex-grow: 1; min-height: 0; flex-direction: row; align-items: stretch; }
+.industry-policy { width: 365px; flex-shrink: 0; margin-right: 18px; background-color: #142b35; border-radius: 5px; }
+.industry-policy .unity-scroll-view__content-container { padding: 10px; }
+.industry-policy .unity-base-field__label { min-width: 100px; white-space: normal; }
+.industry-state { white-space: normal; font-size: 12px; color: #efcf91; }
+.industry-storage { flex-grow: 1; min-width: 0; }
+.storage-row { flex-direction: row; align-items: center; height: 25px; border-bottom-width: 1px; border-bottom-color: #36505b; padding: 0 6px; }
+.storage-header { font-size: 10px; color: #aac8ca; background-color: #122b35; }
+.storage-cell { width: 92px; -unity-text-align: middle-right; }
+.storage-input > .unity-base-field { flex-grow: 1; min-width: 0; flex-basis: 0; margin-right: 8px; }
+.storage-input .unity-base-field__label { min-width: 34px; }
+.transfer-note { color: #9ad5bd; font-size: 11px; margin: 4px 0; }
+.warehouse-quote { flex-grow: 1; flex-basis: 0; margin-right: 8px; padding: 5px; background-color: #142c37; }
+.warehouse-quote .help { min-height: 45px; margin: 0; }
+.warehouse-quote .unity-button { font-size: 11px; }
+.policy-rule { border-top-width: 1px; border-top-color: #3c5059; padding-top: 4px; margin-top: 5px; }
+.policy-rule-name { font-size: 12px; color: #d9c48f; }

@@ -15,7 +15,7 @@ namespace SaltAndLedger.UnityHost.Tests
         {
             var content = Resources.Load<TextAsset>("CanonicalContent");
             Assert.That(content, Is.Not.Null);
-            session = new ArchipelagoLabSession(ContentLoader.Load(content.text));
+            session = new ArchipelagoLabSession(ContentLoader.Load(content.text), legacyScenario: true);
         }
 
         [Test]
@@ -126,7 +126,7 @@ namespace SaltAndLedger.UnityHost.Tests
         [Test]
         public void PlaybackSpeedChangesOnlyHowFrequentlyWholeDaysAreRequested()
         {
-            var fast = new ArchipelagoLabSession(session.Content);
+            var fast = new ArchipelagoLabSession(session.Content, legacyScenario: true);
             fast.SetPlaybackSpeed(10);
             session.Play();
             fast.Play();

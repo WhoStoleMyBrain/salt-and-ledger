@@ -35,7 +35,7 @@ namespace SaltAndLedger.UnityHost
                     new[] { new BuildingInstance("sawmill_a", "sawmill", "saw_planks") },
                     new Dictionary<string, int> { ["logs"] = 2 })
             };
-            return new MaritimeWorldState(content, ports, "trader", InitialTraderCash,
+            return new MaritimeWorldState(LegacyContent.Timber(content), ports, "trader", InitialTraderCash,
                 new ShipConfiguration("ship", 6, North), travelTicks: 2);
         }
 

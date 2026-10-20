@@ -40,6 +40,9 @@ namespace SaltAndLedger.UnityHost
         private double accumulatedSeconds;
         private long initialPlayerCash;
         private bool hasPlayerTrade;
+        private readonly bool legacyScenario;
+        public bool ChallengeMode { get; private set; }
+        public bool IsChallengeEnded => Snapshot.Challenge != null && Snapshot.Challenge.Status != ChallengeStatus.Active;
 
         public ContentCatalog Content { get; }
         public RegionalWorldSnapshot Snapshot => world.Snapshot();
@@ -56,18 +59,20 @@ namespace SaltAndLedger.UnityHost
         public double PlaybackInterval => SecondsPerDay / PlaybackSpeed;
         public string LastStatus { get; private set; }
         public long CashChange => checked(Player.Cash - initialPlayerCash);
-        public long? ClosedCashProfit => hasPlayerTrade && Player.CargoUnits == 0 ? CashChange : (long?)null;
+        public long? ClosedCashProfit => hasPlayerTrade && Player.CargoUnits == 0 && Snapshot.PrivateFacilities.Count == 0 ? CashChange : (long?)null;
 
-        public ArchipelagoLabSession(ContentCatalog content)
+        public ArchipelagoLabSession(ContentCatalog content, bool challenge = false, bool legacyScenario = false)
         {
             Content = content ?? throw new ArgumentNullException(nameof(content));
+            this.legacyScenario = legacyScenario;
+            ChallengeMode = challenge;
             activityView = activity.AsReadOnly();
             Reset();
         }
 
         public void Reset()
         {
-            var replacement = ArchipelagoScenario.Create(Content);
+            var replacement = legacyScenario ? ArchipelagoScenario.Create(Content) : EnterpriseScenario.Create(Content, ChallengeMode);
             world = replacement;
             initialPlayerCash = Player.Cash;
             hasPlayerTrade = false;
@@ -82,6 +87,27 @@ namespace SaltAndLedger.UnityHost
             lastReasons.Clear();
             LastStatus = "New archipelago. Paused on day 0. Select a port to inspect, or your ship to plan a voyage.";
             Add(null, null, LastStatus);
+        }
+
+        public void StartScenario(bool challenge)
+        {
+            ChallengeMode = challenge;
+            Reset();
+        }
+
+        public void InspectTradePort(string portId)
+        {
+            var port = Snapshot.Ports[portId];
+            SelectedPortId = port.Id;
+            PendingDestinationId = null;
+            Pause();
+        }
+
+        public void SailTo(string portId)
+        {
+            SelectShip(Player.Id);
+            SelectPort(portId);
+            Sail();
         }
 
         public void SelectPort(string portId)
@@ -104,7 +130,7 @@ namespace SaltAndLedger.UnityHost
             PendingDestinationId = null;
             if (ship.DockedPortId != null) SelectedPortId = ship.DockedPortId;
             LastStatus = ship.IsPlayer
-                ? "Your ship selected. Click a destination port, inspect the journey, then confirm departure."
+                ? "Your ship selected. Right-click a town to trade; left-click a destination to plan a voyage."
                 : "Inspecting " + ship.Name + ". NPC ships use their own accounts and policies.";
         }
 
@@ -114,6 +140,7 @@ namespace SaltAndLedger.UnityHost
 
         public void Play()
         {
+            if (IsChallengeEnded) throw new InvalidOperationException("The charter has ended. Start a new charter or sandbox.");
             IsPlaying = true;
             accumulatedSeconds = 0;
             LastStatus = "Playback running. Each whole day resolves merchants, production, consumption and voyages.";
@@ -142,7 +169,7 @@ namespace SaltAndLedger.UnityHost
             // A stalled renderer never leaves an unlimited backlog of economic commands.
             accumulatedSeconds = Math.Min(accumulatedSeconds + elapsedSeconds, PlaybackInterval * MaximumDaysPerFrame);
             var days = 0;
-            while (accumulatedSeconds >= PlaybackInterval && days < MaximumDaysPerFrame)
+            while (IsPlaying && accumulatedSeconds >= PlaybackInterval && days < MaximumDaysPerFrame)
             {
                 accumulatedSeconds -= PlaybackInterval;
                 AdvanceDay();
@@ -161,17 +188,19 @@ namespace SaltAndLedger.UnityHost
         {
             var result = world.AdvanceDay();
             Observe(result);
-            LastStatus = "Day " + Number(Snapshot.Day) + " committed. All ports and ships share this day.";
+            LastStatus = IsChallengeEnded ? "Charter " + Snapshot.Challenge.Status + " on day " + Snapshot.Day + ". Start a new scenario to continue." :
+                "Day " + Number(Snapshot.Day) + " committed. All ports and ships share this day.";
+            if (IsChallengeEnded) { IsPlaying = false; accumulatedSeconds = 0; }
             return result;
         }
 
         public TradeAttempt PreviewTrade(TradeDirection direction, string goodId, int quantity) =>
             Snapshot.PreviewTrade(Player.Id, SelectedPortId, new TradeCommand(direction, goodId, quantity));
 
-        public RegionalResult Trade(TradeDirection direction, string goodId, int quantity)
+        public RegionalResult Trade(TradeDirection direction, string goodId, int quantity, RegionalWorldSnapshot expectedSnapshot = null)
         {
             Pause();
-            var result = world.ExecuteTrade(Player.Id, SelectedPortId, new TradeCommand(direction, goodId, quantity));
+            var result = world.ExecuteTrade(Player.Id, SelectedPortId, new TradeCommand(direction, goodId, quantity), expectedSnapshot);
             Observe(result);
             var trade = result.Trades[0].Trade;
             LastStatus = trade.Outcome == TradeOutcome.Traded
@@ -218,10 +247,60 @@ namespace SaltAndLedger.UnityHost
             return result;
         }
 
+        public RegionalResult Construct(string blueprintId)
+        {
+            Pause();
+            var facilityId = Player.OwnerId + "_" + SelectedPortId + "_" + blueprintId;
+            var result = world.ConstructFacility(Player.OwnerId, SelectedPortId, blueprintId, facilityId);
+            Observe(result);
+            LastStatus = result.After.PrivateFacilities.ContainsKey(facilityId)
+                ? "Facility constructed. The town received the investment; private storage starts empty."
+                : "Construction needs more company cash. No money or day changed.";
+            return result;
+        }
+
+        public void ConfigureFacility(string facilityId, IndustryPolicy policy, bool enabled)
+        {
+            Observe(world.ConfigureFacility(Player.OwnerId, facilityId, policy));
+            Observe(world.SetFacilityEnabled(Player.OwnerId, facilityId, enabled));
+            LastStatus = "Industry policy applied. Local purchases and sales run on whole days; inputs and outputs remain private.";
+        }
+
+        public RegionalResult Transfer(string facilityId, TransferDirection direction, string goodId, int quantity)
+        {
+            Pause();
+            var result = world.TransferGoods(Player.OwnerId, Player.Id, facilityId, direction, goodId, quantity);
+            Observe(result);
+            LastStatus = ReferenceEquals(result.Before, result.After)
+                ? "Transfer rejected: check source stock and destination capacity. Nothing changed."
+                : "Transferred " + quantity + " " + Content.GetGood(goodId).Name + ". Ownership, cash and day unchanged.";
+            return result;
+        }
+
+        public RegionalResult WarehouseTrade(string facilityId, TradeDirection direction, string goodId, int quantity,
+            RegionalWorldSnapshot expectedSnapshot)
+        {
+            Pause();
+            var result = world.ExecuteWarehouseTrade(Player.OwnerId, facilityId,
+                new TradeCommand(direction, goodId, quantity), expectedSnapshot);
+            Observe(result);
+            LastStatus = ReferenceEquals(result.Before, result.After) ? "Warehouse trade rejected. No economic state changed."
+                : "Private stock traded with the local town. Company cash and ownership changed; no day passed.";
+            return result;
+        }
+
         public RegionalDecision DecisionFor(string shipId) => world.EvaluateAutomation(shipId);
 
         private void Observe(RegionalResult result)
         {
+            if (IsChallengeEnded) { IsPlaying = false; accumulatedSeconds = 0; }
+            foreach (var facility in result.After.PrivateFacilities.Values)
+            {
+                if (!result.Before.PrivateFacilities.TryGetValue(facility.Id, out var prior))
+                    Add(facility.PortId, null, "Constructed private " + Content.GetBuilding(facility.Blueprint.BuildingId).Name + ".");
+                else if (facility.BatchesProduced > prior.BatchesProduced)
+                    Add(facility.PortId, null, "Your " + Content.GetBuilding(facility.Blueprint.BuildingId).Name + " completed a batch into private storage.");
+            }
             if (result.Movements.Any(movement => movement.ShipId == ArchipelagoScenario.PlayerShipId &&
                 (movement.Kind == ShipMovementKind.Departure || movement.Kind == ShipMovementKind.Arrival)))
                 PendingDestinationId = null;
@@ -286,6 +365,7 @@ namespace SaltAndLedger.UnityHost
                 case ScheduledProductionOutcome.Produced: return "last batch completed";
                 case ScheduledProductionOutcome.InputShortage: return "waiting for inputs";
                 case ScheduledProductionOutcome.OutputLimit: return "waiting for output stock space";
+                case ScheduledProductionOutcome.WarehouseCapacity: return "waiting for private warehouse capacity";
                 default: return outcome.ToString();
             }
         }

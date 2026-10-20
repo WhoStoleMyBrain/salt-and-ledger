@@ -23,6 +23,7 @@ namespace SaltAndLedger.UnityHost
         private float interval = 1;
 
         public event Action<string> PortSelected;
+        public event Action<string> PortTradeRequested;
         public event Action<string> ShipSelected;
         public RegionalWorldSnapshot Snapshot => snapshot;
         public int PortMarkerCount => ports.Count;
@@ -61,7 +62,7 @@ namespace SaltAndLedger.UnityHost
                 var npcCount = occupants.Length - playerCount;
                 ports[port.Id].text = port.Name + "\n" + playerCount + " player · " + npcCount + " NPC";
                 ports[port.Id].EnableInClassList("selected-marker", selectedShipId == null && port.Id == selectedPortId);
-                ports[port.Id].tooltip = port.Role + "\nClick to inspect the finite market and local economy.";
+                ports[port.Id].tooltip = port.Role + "\nLeft-click to inspect. Right-click to open the market exchange.";
             }
             foreach (var ship in snapshot.Ships.Values)
             {
@@ -92,6 +93,12 @@ namespace SaltAndLedger.UnityHost
                 var id = port.Id;
                 var button = new Button(() => PortSelected?.Invoke(id)) { name = "port_" + id };
                 button.AddToClassList("port-marker");
+                button.RegisterCallback<PointerDownEvent>(evt =>
+                {
+                    if (evt.button != 1) return;
+                    evt.StopImmediatePropagation();
+                    PortTradeRequested?.Invoke(id);
+                }, TrickleDown.TrickleDown);
                 ports.Add(id, button);
                 Add(button);
             }

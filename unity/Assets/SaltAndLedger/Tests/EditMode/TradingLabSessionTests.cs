@@ -13,7 +13,12 @@ namespace SaltAndLedger.UnityHost.Tests
         {
             var asset = Resources.Load<TextAsset>("CanonicalContent");
             Assert.That(asset, Is.Not.Null, "Run python tools/prepare_unity.py before opening Unity.");
-            return new TradingLabSession(ContentLoader.Load(asset.text), scenario);
+            var canonical = ContentLoader.Load(asset.text);
+            var session = new TradingLabSession(canonical, scenario);
+            Assert.That(session.Content.Goods.Select(good => good.Id), Is.EquivalentTo(new[] { "logs", "planks" }));
+            Assert.That(session.Content.GetGood("logs"), Is.SameAs(canonical.GetGood("logs")));
+            Assert.That(session.Content.GetRecipe("saw_planks"), Is.SameAs(canonical.GetRecipe("saw_planks")));
+            return session;
         }
 
         [Test]

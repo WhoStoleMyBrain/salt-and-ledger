@@ -56,7 +56,8 @@ namespace SaltAndLedger.UnityHost
 
         public TradingLabSession(ContentCatalog content, TradingLabScenario scenario = TradingLabScenario.Standard)
         {
-            Content = content ?? throw new ArgumentNullException(nameof(content));
+            // Preserve the historical two-good scene while reusing the same canonical definition objects.
+            Content = LegacyContent.Timber(content ?? throw new ArgumentNullException(nameof(content)));
             activityView = activity.AsReadOnly();
             Reset(scenario);
         }

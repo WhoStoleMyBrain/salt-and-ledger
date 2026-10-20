@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 namespace SaltAndLedger.UnityHost
 {
     [RequireComponent(typeof(UIDocument))]
-    public sealed class ArchipelagoLabController : MonoBehaviour
+    public sealed partial class ArchipelagoLabController : MonoBehaviour
     {
         private readonly List<string> goodIds = new List<string>();
         private readonly List<string> portIds = new List<string>();
@@ -34,10 +34,11 @@ namespace SaltAndLedger.UnityHost
                 Element<VisualElement>("mapContainer").Add(Map);
                 Map.PortSelected += id => Run(() => Session.SelectPort(id));
                 Map.ShipSelected += id => Run(() => Session.SelectShip(id));
+                Map.PortTradeRequested += OpenTrade;
                 Bind();
                 LoadPolicy();
                 Refresh();
-                Debug.Log("Salt & Ledger Archipelago Lab ready: day 0, four ports, three ships.");
+                Debug.Log("Salt & Ledger Archipelago Lab ready: day 0, " + Session.Snapshot.Ports.Count + " ports, " + Session.Snapshot.Ships.Count + " ships.");
             }
             catch (Exception exception) { ReportException(exception); }
         }
@@ -95,7 +96,7 @@ namespace SaltAndLedger.UnityHost
                 LoadPolicy();
                 Element<DropdownField>("speedDropdown").SetValueWithoutNotify("1×");
                 Element<TextField>("quantityField").SetValueWithoutNotify("2");
-                Element<Foldout>("tradeFoldout").SetValueWithoutNotify(false);
+                CloseModals();
                 Element<Foldout>("automationFoldout").SetValueWithoutNotify(false);
                 Element<ScrollView>("contextScroll").scrollOffset = Vector2.zero;
             }));
@@ -103,14 +104,12 @@ namespace SaltAndLedger.UnityHost
             Click("buyButton", () => Trade(TradeDirection.Buy));
             Click("sellButton", () => Trade(TradeDirection.Sell));
             Click("applyPolicyButton", ApplyPolicy);
-            Click("presetButton", () => Run(() => { Session.ApplyPolicy(ArchipelagoScenario.PlayerPolicy()); LoadPolicy(); }));
+            Click("presetButton", () => Run(() => { Session.ApplyPolicy(EnterpriseScenario.MerchantPolicy()); LoadPolicy(); }));
             Click("runDocksideButton", () => Run(() => Session.RunDockside()));
             Element<Toggle>("automationToggle").RegisterValueChangedCallback(change =>
                 Run(() => Session.SetAutomationEnabled(change.newValue)));
-            Element<Foldout>("tradeFoldout").RegisterValueChangedCallback(change =>
-            {
-                if (change.newValue) Run(Session.Pause);
-            });
+            BindOverlays();
+            SetIndex("goodDropdown", goodIds.IndexOf("logs"));
             foreach (var name in new[] { "routeOriginDropdown", "routeDestinationDropdown", "outGoodDropdown", "returnGoodDropdown" })
                 Element<DropdownField>(name).RegisterValueChangedCallback(_ => DraftChanged());
             foreach (var prefix in new[] { "out", "return" })
@@ -219,7 +218,12 @@ namespace SaltAndLedger.UnityHost
                 Validation("Enter a positive whole quantity.");
                 return;
             }
-            Run(() => Session.Trade(direction, SelectedGoodId(), quantity));
+            Run(() =>
+            {
+                if (tradeShipId != Session.Player.Id) throw new InvalidOperationException("NPC markets are inspection only.");
+                Session.Trade(direction, SelectedGoodId(), quantity, tradeSnapshot);
+            });
+            RefreshTradeOverlay();
         }
 
         private void Refresh()
@@ -229,26 +233,30 @@ namespace SaltAndLedger.UnityHost
             SetText("dayLabel", "DAY " + Number(snapshot.Day));
             SetText("cashLabel", "Cash " + Number(player.Cash) + "  ·  cargo " + player.CargoUnits + "/" + player.CargoCapacity);
             SetText("playbackLabel", Session.IsPlaying ? "Playing " + Session.PlaybackSpeed + "×" : "Paused");
-            Element<Button>("playButton").SetEnabled(!Session.IsPlaying);
+            Element<Button>("playButton").SetEnabled(!Session.IsPlaying && !Session.IsChallengeEnded);
+            Element<Button>("nextDayButton").SetEnabled(!Session.IsChallengeEnded);
             Element<Button>("pauseButton").SetEnabled(Session.IsPlaying);
             Map.Present(snapshot, Session.SelectedPortId, Session.SelectedShipId, Session.IsPlaying, Session.PlaybackInterval);
             Map.AdvanceVisual(0, Session.IsPlaying);
             SetIndex("shipPicker", Session.SelectedShipId == null ? 0 : shipIds.IndexOf(Session.SelectedShipId) + 1);
             SetText("mapHint", Session.NavigationArmed
-                ? "Your ship selected · click a port, then confirm the voyage below."
+                ? "Your ship selected · right-click a town to trade; left-click to plan a voyage."
                 : "Select an island to inspect its economy. Select a ship to inspect cargo and voyages.");
             var isShip = Session.SelectedShipId != null;
             Element<VisualElement>("portContext").EnableInClassList("hidden", isShip);
             Element<VisualElement>("shipContext").EnableInClassList("hidden", !isShip);
-            Element<Foldout>("tradeFoldout").EnableInClassList("hidden", isShip && !snapshot.Ships[Session.SelectedShipId].IsPlayer);
+
             if (isShip) RefreshShip(snapshot.Ships[Session.SelectedShipId]);
             else RefreshPort();
             RefreshPreviews();
+            RefreshIndustry();
+            RefreshChallenge();
             RefreshNavigation();
             RefreshPolicy();
             RefreshActivity();
             SetText("statusLabel", status ?? Session.LastStatus);
             Element<Label>("statusLabel").EnableInClassList("error", statusIsError);
+            RefreshModalStatus();
         }
 
         private void RefreshNavigation()
@@ -269,7 +277,7 @@ namespace SaltAndLedger.UnityHost
             var sail = Element<Button>("sailButton");
             sail.text = destination == null ? "Confirm voyage" : "Sail to " + PortName(destination);
             sail.SetEnabled(destination != null && ship.DockedPortId != null &&
-                destination != ship.DockedPortId && !ship.AutomationEnabled);
+                destination != ship.DockedPortId && !ship.AutomationEnabled && !Session.IsChallengeEnded);
         }
 
         private void RefreshPort()
@@ -321,7 +329,9 @@ namespace SaltAndLedger.UnityHost
                 " · cumulative unmet " + rule.TotalUnmetQuantity).ToArray();
             SetText("consumptionLabel", consumption.Length == 0 ? "No recurring local consumption." : string.Join("\n\n", consumption) +
                 "\nPhysical consumption removes stock. Household payments are not modeled.");
-            SetText("economySummaryLabel", port.Facilities.Count + " facilities · " + port.Consumption.Count +
+            SetText("economySummaryLabel", port.Facilities.Count + " public industries · " +
+                Session.Snapshot.PrivateFacilities.Values.Count(f => f.OwnerId == Session.Player.OwnerId && f.PortId == port.Id) +
+                " private industries · " + port.Consumption.Count +
                 " consumption rules" + (port.Consumption.Any(rule => rule.LastUnmetQuantity > 0) ? "\nRecent demand unmet. Inspect economy details." : ""));
             SetText("pricingLabel", string.Join("\n\n", port.Quotes.Values.Select(quote =>
             {
@@ -359,29 +369,7 @@ namespace SaltAndLedger.UnityHost
                 "Inspection only. This merchant obeys the same market cash, cargo and voyage rules.");
         }
 
-        private void RefreshPreviews()
-        {
-            var player = Session.Player;
-            var local = player.DockedPortId == Session.SelectedPortId;
-            SetText("tradeAvailabilityLabel", player.AutomationEnabled ? "Disable your route before manual orders." :
-                local ? "Docked at " + PortName(Session.SelectedPortId) + ". Trades are instant; opening this panel pauses playback." :
-                "Remote inspection: previews are hypothetical. Your ship must dock here to trade.");
-            if (!int.TryParse(Element<TextField>("quantityField").value, NumberStyles.Integer,
-                CultureInfo.InvariantCulture, out var quantity) || quantity <= 0)
-            {
-                SetText("buyPreviewLabel", "Enter a positive whole quantity.");
-                SetText("sellPreviewLabel", "Enter a positive whole quantity.");
-                Element<Button>("buyButton").SetEnabled(false);
-                Element<Button>("sellButton").SetEnabled(false);
-                return;
-            }
-            var buy = Session.PreviewTrade(TradeDirection.Buy, SelectedGoodId(), quantity);
-            var sell = Session.PreviewTrade(TradeDirection.Sell, SelectedGoodId(), quantity);
-            SetText("buyPreviewLabel", PreviewText(buy));
-            SetText("sellPreviewLabel", PreviewText(sell));
-            Element<Button>("buyButton").SetEnabled(local && !player.AutomationEnabled && buy.Outcome == TradeOutcome.Traded);
-            Element<Button>("sellButton").SetEnabled(local && !player.AutomationEnabled && sell.Outcome == TradeOutcome.Traded);
-        }
+        private void RefreshPreviews() => RefreshTradeOverlay();
 
         private void RefreshPolicy()
         {
@@ -389,10 +377,10 @@ namespace SaltAndLedger.UnityHost
             SetText("decisionLabel", DecisionText(Session.CurrentDecision));
             SetText("activeRouteLabel", PortName(Session.Policy.OriginPortId) + " ↔ " + PortName(Session.Policy.DestinationPortId) +
                 " · " + (Session.Player.AutomationEnabled ? "enabled" : "manual control"));
-            Element<Button>("runDocksideButton").SetEnabled(Session.Player.AutomationEnabled);
+            Element<Button>("runDocksideButton").SetEnabled(Session.Player.AutomationEnabled && !Session.IsChallengeEnded);
             SetText("profitLabel", "Your cash change " + Signed(Session.CashChange) + (Session.ClosedCashProfit.HasValue ?
                 "\nEmpty-cargo closed cash profit " + Signed(Session.ClosedCashProfit.Value) :
-                "\nHeld cargo is not valued as realized profit."));
+                "\nConstruction, purchased inputs and held goods are separate cash flows; unsold stock is not revenue."));
         }
 
         private void RefreshActivity()
@@ -509,6 +497,7 @@ namespace SaltAndLedger.UnityHost
             statusIsError = true;
             SetText("statusLabel", message);
             Element<Label>("statusLabel").AddToClassList("error");
+            RefreshModalStatus();
         }
 
         private void ReportException(Exception exception)
@@ -517,6 +506,7 @@ namespace SaltAndLedger.UnityHost
             statusIsError = true;
             var label = Root?.Q<Label>("statusLabel");
             if (label != null) { label.text = status; label.AddToClassList("error"); }
+            if (Root != null) RefreshModalStatus();
             Debug.LogException(exception, this);
         }
     }
