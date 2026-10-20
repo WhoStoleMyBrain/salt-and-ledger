@@ -8,7 +8,8 @@
     "overrideReferences": true,
     "precompiledReferences": [
         "nunit.framework.dll",
-        "SaltAndLedger.Simulation.dll"
+        "SaltAndLedger.Simulation.dll",
+        "Newtonsoft.Json.dll"
     ],
     "autoReferenced": false,
     "defineConstraints": [

@@ -20,10 +20,12 @@ namespace SaltAndLedger.UnityHost
         public ArchipelagoLabSession Session { get; private set; }
         public VisualElement Root { get; private set; }
         public ArchipelagoMap Map { get; private set; }
+        public ArchipelagoTextScale TextScale { get; private set; }
 
         private void Start()
         {
             Root = GetComponent<UIDocument>().rootVisualElement;
+            TextScale = new ArchipelagoTextScale(Root);
             try
             {
                 var canonical = Resources.Load<TextAsset>("CanonicalContent");

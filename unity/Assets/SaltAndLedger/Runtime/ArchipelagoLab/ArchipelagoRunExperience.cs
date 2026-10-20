@@ -66,6 +66,10 @@ namespace SaltAndLedger.UnityHost
                 evt.StopImmediatePropagation();
                 HandleCancel();
             }, TrickleDown.TrickleDown);
+            var identityDetails = new Foldout { name = "runIdentityFoldout", text = "Run identity", value = false };
+            Element<ScrollView>("contextScroll").Add(identityDetails);
+            Text(identityDetails, "runIdentityLabel", "", "run-copy");
+            Button(identityDetails, "copyRunSeedButton", "Copy seed", () => CopySeed(Session.Identity));
             var bar = Element<VisualElement>("topBar");
             Button(bar, "ledgerButton", "Ledger", () => OpenSecondary(ArchipelagoScreen.Ledger));
             Button(bar, "menuButton", "Menu", OpenPauseMenu);
@@ -89,7 +93,9 @@ namespace SaltAndLedger.UnityHost
         {
             var screen = CreateScreen(ArchipelagoScreen.MainMenu, "The archipelago awaits");
             var layout = Panel(screen, null, "run-title-layout");
-            var copy = Panel(layout, null, "run-title-copy");
+            var copy = new ScrollView(ScrollViewMode.Vertical) { name = "mainMenuScroll" };
+            copy.AddToClassList("run-title-copy");
+            layout.Add(copy);
             Text(copy, null, "Salt\n& Ledger", "run-title");
             Text(copy, null, "A COMPANY. A SHIP. AN OPEN HORIZON.", "run-eyebrow");
             Text(copy, null, "Trade across a living archipelago. Build an industry, connect its supply lines, and decide what your company will become.", "run-introduction");
@@ -104,74 +110,13 @@ namespace SaltAndLedger.UnityHost
             Text(screen, null, "Handcrafted voyages · finite markets · meaningful choices\nRuns live only in this application session. There is no persistent save or recovery.", "run-footnote");
         }
 
-        private void BuildRunSetup()
-        {
-            var screen = CreateScreen(ArchipelagoScreen.Setup, "Chart your course",
-                "Choose one challenge and one starting company. Charters replace each other; their advantages never stack.");
-            var columns = Panel(screen, null, "run-columns");
-            var objective = Panel(columns, null, "run-column run-card");
-            Text(objective, null, "YOUR OBJECTIVE", "run-eyebrow");
-            var challenges = new DropdownField { name = "challengePicker",
-                choices = new[] { "Unlimited sandbox" }.Concat(RunScenario.Challenges.Select(c => c.Name)).ToList() };
-            objective.Add(challenges);
-            challenges.SetValueWithoutNotify(challenges.choices[1]);
-            challenges.RegisterValueChangedCallback(_ => RefreshSetup());
-            Text(objective, "setupChallengeDescription", "", "run-copy");
-            Text(objective, "setupObjective", "", "run-objective");
-            Text(objective, "setupDeadline", "", "run-copy");
-            Text(objective, null, "Every run uses four connected towns and six goods. Markets have finite goods and cash. Voyages and production take whole economic days.", "run-copy");
-            var charter = Panel(columns, null, "run-column run-card");
-            Text(charter, null, "YOUR COMPANY", "run-eyebrow");
-            var charters = new DropdownField { name = "charterPicker", choices = RunScenario.Charters.Select(c => c.Name).ToList() };
-            charter.Add(charters);
-            charters.SetValueWithoutNotify(charters.choices[0]);
-            charters.RegisterValueChangedCallback(_ => RefreshSetup());
-            Text(charter, "setupCharterDescription", "", "run-copy");
-            Text(charter, "setupAssets", "", "run-objective");
-            Text(charter, "setupTradeoff", "", "run-copy");
-            Text(charter, null, "Starter assets are grants, not purchases. Cash alone does not describe your starting opportunities.", "run-footnote");
-            var actions = Panel(screen, null, "run-actions row");
-            Button(actions, "setupBackButton", "Main Menu", () => ShowScreen(ArchipelagoScreen.MainMenu));
-            Button(actions, "setupHelpButton", "Encyclopedia", () => OpenSecondary(ArchipelagoScreen.Encyclopedia));
-            Button(actions, "startRunButton", "Begin voyage", () => BeginRun(SetupChallengeId(), SetupCharterId()), "primary");
-        }
+        public void BeginRun(string challengeId, string charterId) => BeginRun(new RunIdentity(challengeId, charterId));
 
-        private string SetupChallengeId()
-        {
-            var index = Math.Max(0, Element<DropdownField>("challengePicker").index);
-            return index == 0 ? null : RunScenario.Challenges[index - 1].Id;
-        }
-        private string SetupCharterId() => RunScenario.Charters[Math.Max(0, Element<DropdownField>("charterPicker").index)].Id;
-        private void RefreshSetup()
-        {
-            var id = SetupChallengeId();
-            var challenge = id == null ? null : RunScenario.GetChallenge(id);
-            var charter = RunScenario.GetCharter(SetupCharterId());
-            SetText("setupChallengeDescription", challenge?.Description ?? "Build and trade at your own pace. The economy remains finite, but there is no deadline or scored objective.");
-            SetText("setupObjective", challenge?.Objective ?? "Explore the archipelago, invest, and automate. End the session when you choose.");
-            SetText("setupDeadline", challenge == null ? "No victory or deadline failure in sandbox." :
-                "Deadline: day " + challenge.Configuration.DeadlineDay + " · Minimum cash: " + challenge.Configuration.MinimumCash +
-                "\nA completed objective wins automatically. Missing it at the deadline ends the run in defeat.");
-            SetText("setupCharterDescription", charter.Description);
-            SetText("setupAssets", charter.Endowment);
-            SetText("setupTradeoff", "Opportunity cost\n" + charter.Tradeoff);
-        }
-
-        private void OpenSetup(bool sandbox)
-        {
-            if (HasActiveRun && Session.Snapshot.Challenge != null && !Session.IsChallengeEnded) Session.AbandonRun();
-            HasActiveRun = false;
-            var field = Element<DropdownField>("challengePicker");
-            field.SetValueWithoutNotify(field.choices[sandbox ? 0 : 1]);
-            RefreshSetup();
-            ShowScreen(ArchipelagoScreen.Setup);
-            field.Focus();
-        }
-
-        public void BeginRun(string challengeId, string charterId)
+        public void BeginRun(RunIdentity identity)
         {
             CloseModals();
-            Session.StartRun(challengeId, charterId);
+            Session.StartRun(identity);
+            LoadSetupIdentity(identity);
             HasActiveRun = true;
             presentedResult = null;
             tradeShipId = Session.Player.Id;
@@ -191,13 +136,18 @@ namespace SaltAndLedger.UnityHost
         private void BuildPauseMenu()
         {
             var screen = CreateScreen(ArchipelagoScreen.Pause, "At anchor", "Economic time is paused. Inspect your accounts, change course, or leave this run.");
-            var card = Panel(screen, null, "run-pause-card run-card");
+            var pauseScroll = new ScrollView(ScrollViewMode.Vertical) { name = "pauseScroll" };
+            pauseScroll.AddToClassList("run-pause-scroll");
+            screen.Add(pauseScroll);
+            var card = Panel(pauseScroll, null, "run-pause-card run-card");
             Text(card, "pauseSummary", "", "run-copy");
             Button(card, "resumeButton", "Resume", ResumeGame, "primary run-menu-button");
             Button(card, "pauseEncyclopediaButton", "Encyclopedia", () => OpenSecondary(ArchipelagoScreen.Encyclopedia), "run-menu-button");
             Button(card, "pauseLedgerButton", "Company ledger", () => OpenSecondary(ArchipelagoScreen.Ledger), "run-menu-button");
             Button(card, "pauseSettingsButton", "Settings", () => OpenSecondary(ArchipelagoScreen.Settings), "run-menu-button");
-            Button(card, "restartRunButton", "Restart this run", RequestRestart, "run-menu-button");
+            Button(card, "restartRunButton", "Retry Same World", RequestRestart, "run-menu-button");
+            Button(card, "changeSetupButton", "Change Setup", RequestChangeSetup, "run-menu-button");
+            Button(card, "rerollWorldButton", "New World / Reroll", RequestReroll, "run-menu-button");
             Button(card, "abandonRunButton", "Abandon and inspect results", () => Confirm(
                 "Abandon this challenge?", "This ends the current run with an abandonment result. Your assets and financial summary remain visible.",
                 () => Run(() => Session.AbandonRun())), "run-menu-button");
@@ -213,7 +163,7 @@ namespace SaltAndLedger.UnityHost
             CloseModals();
             SetText("pauseSummary", RunScenario.GetCharter(Session.CharterId).Name + " · Day " + Session.Snapshot.Day +
                 " · Cash " + Number(Session.Player.Cash) + "\n" +
-                (Session.Snapshot.Challenge?.Configuration.Title ?? "Unlimited sandbox"));
+                (Session.Snapshot.Challenge?.Configuration.Title ?? "Unlimited sandbox") + "\n" + WorldIdentityText(Session.Identity));
             Element<Button>("abandonRunButton").EnableInClassList("hidden", Session.Snapshot.Challenge == null);
             ShowScreen(ArchipelagoScreen.Pause);
             Element<Button>("resumeButton").Focus();
@@ -228,9 +178,9 @@ namespace SaltAndLedger.UnityHost
             Element<Button>("menuButton").Focus();
         }
 
-        private void RequestRestart() => Confirm("Restart this run?",
-            "Discard current progress and restore the same challenge and starting charter. Runs are not saved.",
-            () => BeginRun(Session.ChallengeId, Session.CharterId));
+        private void RequestRestart() => Confirm("Retry Same World?",
+            "Discard progress and restore this exact world, seed, ascension, challenge and starting charter. Runs are not saved.",
+            () => BeginRun(Session.Identity));
 
         private void RequestMainMenu()
         {
@@ -299,10 +249,11 @@ namespace SaltAndLedger.UnityHost
             Text(scroll, "resultFinances", "", "run-copy");
             Text(scroll, "resultAssets", "", "run-copy");
             Text(scroll, "resultOperations", "", "run-copy");
-            Text(scroll, null, "Realized gross margin deducts the paid material basis released by sales. Wages, transport operating costs, depreciation and asset resale values are not modeled. Grants have zero paid basis, not zero economic value. Compare scores within the same challenge and starting charter.", "run-footnote");
+            Text(scroll, null, "Realized gross margin deducts the paid material basis released by sales. Wages, transport operating costs, depreciation and asset resale values are not modeled. Grants have zero paid basis, not zero economic value. Compare scores only within the same challenge, charter, ascension and exact world identity. Different seeds are not equivalent leaderboard placements.", "run-footnote");
             var actions = Panel(screen, null, "run-actions row");
-            Button(actions, "retryRunButton", "Retry", () => BeginRun(Session.ChallengeId, Session.CharterId), "primary");
-            Button(actions, "resultsNewRunButton", "New Run", () => OpenSetup(false));
+            Button(actions, "retryRunButton", "Retry Same World", () => BeginRun(Session.Identity), "primary");
+            Button(actions, "resultsNewRunButton", "Change Setup", ChangeSetup);
+            Button(actions, "resultsRerollButton", "New World / Reroll", RerollWorld);
             Button(actions, "resultsMenuButton", "Main Menu", ReturnToMainMenu);
             Button(actions, "resultsHelpButton", "Encyclopedia", () => OpenSecondary(ArchipelagoScreen.Encyclopedia));
         }
@@ -316,12 +267,14 @@ namespace SaltAndLedger.UnityHost
             SetText("resultOutcome", result.Challenge.Status == ChallengeStatus.Succeeded ? "VICTORY" :
                 result.Challenge.Status == ChallengeStatus.Abandoned ? "RUN ABANDONED" : "DEFEAT");
             SetText("resultIdentity", result.Challenge.Configuration.Title + "\n" + result.Charter.Name +
-                " · Day " + presentedResult.Day + " of " + result.Challenge.Configuration.DeadlineDay);
+                " · Day " + presentedResult.Day + " of " + result.Challenge.Configuration.DeadlineDay +
+                "\n" + WorldIdentityText(result.Identity));
             SetText("resultObjective", ObjectiveText());
             SetText("resultScore", "Score " + result.TotalScore + "\nObjective " + result.ObjectiveScore +
                 " / 500 · Victory " + result.VictoryScore + " / 1,000 · Time remaining " + result.TimeScore +
                 " / 600 · Cash " + result.SolvencyScore + " / 100\n" +
-                "Objective: 500 × capped completion fraction. Victory: 1,000. Winning early: 10 per remaining day, capped at 60 days. Cash: 1 per 10, capped at 100.");
+                "Comparison group: " + result.ComparisonGroup.Replace("/", " / ") +
+                "\nObjective: 500 × capped completion fraction. Victory: 1,000. Winning early: 10 per remaining day, capped at 60 days. Cash: 1 per 10, capped at 100.");
             SetText("resultFinances", FinancialText());
             SetText("resultAssets", AssetText());
             SetText("resultOperations", OperationsText());
@@ -332,14 +285,15 @@ namespace SaltAndLedger.UnityHost
         private void BuildSettings()
         {
             var screen = CreateScreen(ArchipelagoScreen.Settings, "Presentation settings",
-                "These settings affect this application session. They never change economic rules.");
+                "Text size applies throughout the game and is remembered on this device. Other presentation settings last for this application session. Neither changes economic rules.");
             var card = Panel(screen, null, "run-card");
             var smooth = new Toggle("Smooth ship movement between committed days") { name = "smoothMovementToggle", value = true };
             card.Add(smooth);
             smooth.RegisterValueChangedCallback(change => { SmoothMovement = change.newValue; Refresh(); });
-            var large = new Toggle("Larger reference and menu text") { name = "largeTextToggle" };
-            card.Add(large);
-            large.RegisterValueChangedCallback(change => Root.EnableInClassList("large-text", change.newValue));
+            var scale = new DropdownField("Game-wide text size", new List<string> { "Compact", "Default", "Large", "Extra Large" },
+                (int)TextScale.Current) { name = "textScaleDropdown" };
+            card.Add(scale);
+            scale.RegisterValueChangedCallback(_ => TextScale.Apply((ArchipelagoUiScale)scale.index));
             Text(card, null, "Economic speed remains under your control on the map. Pause and menus stop the economic clock.", "run-copy");
             Button(screen, "settingsBackButton", "Back", () => ShowScreen(secondaryParent));
         }
@@ -381,6 +335,10 @@ namespace SaltAndLedger.UnityHost
         {
             if (navigationRoot == null) return;
             if (HasActiveRun && Session.IsChallengeEnded && !ReferenceEquals(presentedResult, Session.Snapshot)) PresentResults();
+            SetText("runIdentityLabel", WorldIdentityText(Session.Identity) + "\n" +
+                (Session.ChallengeId == null ? "Unlimited sandbox" : RunScenario.GetChallenge(Session.ChallengeId).Name) +
+                "\n" + RunScenario.GetCharter(Session.CharterId).Name);
+            Element<Button>("copyRunSeedButton").SetEnabled(Session.Identity?.Seed != null);
             if (Screen == ArchipelagoScreen.Ledger) RefreshLedger();
             if (Screen == ArchipelagoScreen.Logistics) RefreshLogisticsStatus();
         }

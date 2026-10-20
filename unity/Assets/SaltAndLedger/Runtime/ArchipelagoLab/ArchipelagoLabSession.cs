@@ -48,6 +48,7 @@ namespace SaltAndLedger.UnityHost
         public IReadOnlyDictionary<string, long> ShipDeliveries => new ReadOnlyDictionary<string, long>(shipDeliveries);
         public string CharterId { get; private set; } = RunScenario.MerchantCharter;
         public string ChallengeId { get; private set; }
+        public RunIdentity Identity { get; private set; }
         public bool HasConfiguredRun => configuredRun;
         public long PlayerInputs { get; private set; }
         public long AutomatedActions { get; private set; }
@@ -83,7 +84,7 @@ namespace SaltAndLedger.UnityHost
 
         public void Reset()
         {
-            var replacement = configuredRun ? RunScenario.Create(Content, ChallengeId, CharterId) :
+            var replacement = configuredRun ? RunScenario.Create(Content, Identity) :
                 legacyScenario ? ArchipelagoScenario.Create(Content) : EnterpriseScenario.Create(Content, ChallengeMode);
             world = replacement;
             initialPlayerCash = Player.Cash;
@@ -108,17 +109,21 @@ namespace SaltAndLedger.UnityHost
         public void StartScenario(bool challenge)
         {
             configuredRun = false;
+            Identity = null;
             ChallengeMode = challenge;
             Reset();
         }
 
-        public void StartRun(string challengeId, string charterId)
+        public void StartRun(string challengeId, string charterId) =>
+            StartRun(new RunIdentity(challengeId, charterId));
+
+        public void StartRun(RunIdentity identity)
         {
-            RunScenario.GetCharter(charterId);
-            if (challengeId != null) RunScenario.GetChallenge(challengeId);
-            CharterId = charterId;
-            ChallengeId = challengeId;
-            ChallengeMode = challengeId != null;
+            if (identity == null) throw new ArgumentNullException(nameof(identity));
+            Identity = identity;
+            CharterId = identity.CharterId;
+            ChallengeId = identity.ChallengeId;
+            ChallengeMode = identity.ChallengeId != null;
             configuredRun = true;
             Reset();
         }
@@ -297,8 +302,9 @@ namespace SaltAndLedger.UnityHost
             var facilityId = Player.OwnerId + "_" + SelectedPortId + "_" + blueprintId;
             var result = world.ConstructFacility(Player.OwnerId, SelectedPortId, blueprintId, facilityId);
             Observe(result);
-            LastStatus = result.After.PrivateFacilities.ContainsKey(facilityId)
-                ? "Facility constructed. The town received the investment; private storage starts empty."
+            LastStatus = result.After.PrivateFacilities.TryGetValue(facilityId, out var site)
+                ? (site.IsOperational ? "Facility operational. " : "Construction ordered; completes on day " + site.ConstructionCompletionDay + ". ") +
+                    "The town received the full investment. First eligible production: day " + site.FirstProductionDay + ", if inputs and capacity allow."
                 : "Construction needs more company cash. No money or day changed.";
             return result;
         }
@@ -350,7 +356,11 @@ namespace SaltAndLedger.UnityHost
             foreach (var facility in result.After.PrivateFacilities.Values)
             {
                 if (!result.Before.PrivateFacilities.TryGetValue(facility.Id, out var prior))
-                    Add(facility.PortId, null, "Constructed private " + Content.GetBuilding(facility.Blueprint.BuildingId).Name + ".");
+                    Add(facility.PortId, null, (facility.IsOperational ? "Constructed private " : "Started construction of private ") +
+                        Content.GetBuilding(facility.Blueprint.BuildingId).Name + "; first eligible batch day " + facility.FirstProductionDay + ".");
+                else if (!prior.IsOperational && facility.IsOperational)
+                    Add(facility.PortId, null, "Construction completed: " + Content.GetBuilding(facility.Blueprint.BuildingId).Name +
+                        ". First eligible batch day " + facility.FirstProductionDay + "; inputs and capacity still required.");
                 else if (facility.BatchesProduced > prior.BatchesProduced)
                     Add(facility.PortId, null, "Your " + Content.GetBuilding(facility.Blueprint.BuildingId).Name + " completed a batch into private storage.");
             }

@@ -23,6 +23,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(controller, Is.Not.Null);
             Assert.That(controller.Session, Is.Not.Null);
             root = controller.Root;
+            controller.TextScale.Apply(ArchipelagoUiScale.Default, false);
             Assert.That(root.panel, Is.Not.Null);
             controller.BeginRun(null, RunScenario.MerchantCharter);
             yield return null;
@@ -53,9 +54,10 @@ namespace SaltAndLedger.UnityHost.Tests
                 {
                     var marker = root.Q<Button>("ship_" + ship.Id).worldBound;
                     var port = root.Q<Button>("port_" + ship.DockedPortId).worldBound;
-                    Assert.That(marker.center.y - port.center.y, Is.EqualTo(52).Within(1), ship.Id);
+                    Assert.That(marker.yMin - port.yMax, Is.EqualTo(8).Within(1), ship.Id);
                     Assert.That(marker.Overlaps(port), Is.False, ship.Id);
-                    Assert.That(controller.Map.worldBound.Contains(marker.center), Is.True,
+                    Assert.That(controller.Map.worldBound.Contains(marker.min) &&
+                        controller.Map.worldBound.Contains(marker.max), Is.True,
                         ship.Id + " at " + size + "; map=" + controller.Map.worldBound + "; marker=" + marker);
                 }
             }

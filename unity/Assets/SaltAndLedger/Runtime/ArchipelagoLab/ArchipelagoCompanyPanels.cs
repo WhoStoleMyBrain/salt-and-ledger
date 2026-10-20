@@ -38,6 +38,12 @@ namespace SaltAndLedger.UnityHost
             Field(source, "logisticsQuantity", "Load up to", "8");
             Field(source, "logisticsReserve", "Leave in source storage", "0");
             Button(source, "logisticsPresetButton", "Bakery shipping preset", LoadLogisticsPreset);
+            var procurementPreview = EnterpriseScenario.BakeryPolicy(false);
+            Text(source, "logisticsProcurementPreview", "INPUT PRESET BEFORE APPLYING\n" +
+                string.Join("\n", procurementPreview.Inputs.Select(rule => "Buy " + Session.Content.GetGood(rule.GoodId).Name +
+                    " toward " + rule.TargetQuantity + " units, worst marginal price at most " + Number(rule.MaxBuyPrice))) +
+                "\nRetain company cash " + Number(procurementPreview.CashReserve) +
+                ". Local output sales stay off. Applying authorizes future daily purchases; it places no order now.", "run-footnote");
             Button(source, "logisticsProcurementButton", "Apply bakery input procurement", () => Run(() =>
             {
                 var facility = SelectedLogisticsFacility();
@@ -113,8 +119,10 @@ namespace SaltAndLedger.UnityHost
                         g.Quantity + " " + Session.Content.GetGood(g.GoodId).Name + " · basis " + Number(g.CostBasis)))))) +
                 "\n\nOWNED FACTORIES  " + facilities.Length + "\n" + (facilities.Length == 0 ? "None" :
                     string.Join("\n", facilities.Select(f => Session.Content.GetBuilding(f.Blueprint.BuildingId).Name + " at " +
-                        PortName(f.PortId) + (f.IsStarterGrant ? " · starter grant" : " · constructed") +
-                        " · " + f.BatchesProduced + " batches"))) +
+                        PortName(f.PortId) + (f.IsStarterGrant ? " · operational starter grant" :
+                            " · ordered day " + f.OrderedDay + (f.IsOperational ? " · completed day " + f.ConstructionCompletedDay :
+                            " · under construction, completes day " + f.ConstructionCompletionDay)) +
+                        " · first eligible day " + f.FirstProductionDay + " · " + f.BatchesProduced + " batches"))) +
                 "\n\nSTARTER GOODS GRANTED\n" + QuantityTotals(finance.GrantedQuantities);
         }
         private string OperationsText()

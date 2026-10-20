@@ -13,17 +13,30 @@ namespace SaltAndLedger.UnityHost.Tests
     {
         private ArchipelagoLabController controller;
         private VisualElement root;
+        private bool hadPreference;
+        private int originalPreference;
 
         [UnitySetUp]
         public IEnumerator LoadTitle()
         {
+            hadPreference = PlayerPrefs.HasKey(ArchipelagoTextScale.PreferenceKey);
+            originalPreference = PlayerPrefs.GetInt(ArchipelagoTextScale.PreferenceKey);
             yield return SceneManager.LoadSceneAsync("ArchipelagoLab", LoadSceneMode.Single);
             yield return null;
             controller = Object.FindAnyObjectByType<ArchipelagoLabController>();
             Assert.That(controller, Is.Not.Null);
             Assert.That(controller.Session, Is.Not.Null);
             root = controller.Root;
+            controller.TextScale.Apply(ArchipelagoUiScale.Default, false);
             Assert.That(root.panel, Is.Not.Null);
+        }
+
+        [TearDown]
+        public void RestorePreference()
+        {
+            if (hadPreference) PlayerPrefs.SetInt(ArchipelagoTextScale.PreferenceKey, originalPreference);
+            else PlayerPrefs.DeleteKey(ArchipelagoTextScale.PreferenceKey);
+            PlayerPrefs.Save();
         }
 
         [UnityTest]
@@ -228,10 +241,11 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("pauseSettingsButton");
             var before = controller.Session.Snapshot;
             root.Q<Toggle>("smoothMovementToggle").value = false;
-            root.Q<Toggle>("largeTextToggle").value = true;
+            root.Q<DropdownField>("textScaleDropdown").value = "Large";
             Assert.That(controller.SmoothMovement, Is.False);
-            Assert.That(root.ClassListContains("large-text"), Is.True);
+            Assert.That(controller.TextScale.Current, Is.EqualTo(ArchipelagoUiScale.Large));
             Assert.That(controller.Session.Snapshot, Is.SameAs(before));
+            controller.TextScale.Apply(ArchipelagoUiScale.Default, false);
             Cancel();
             Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Pause));
             Click("pauseExitButton");
@@ -252,7 +266,13 @@ namespace SaltAndLedger.UnityHost.Tests
                 Contained("newRunButton"); Contained("menuExitButton");
                 Click("newRunButton");
                 yield return null;
-                Contained("challengePicker"); Contained("charterPicker"); Contained("setupAssets"); Contained("startRunButton");
+                Contained("worldModePicker"); Contained("startRunButton");
+                foreach (var name in new[] { "challengePicker", "charterPicker", "setupAssets" })
+                {
+                    root.Q<ScrollView>("setupScroll").ScrollTo(root.Q(name));
+                    yield return null;
+                    Contained(name);
+                }
                 Click("setupHelpButton");
                 yield return null;
                 Contained("encyclopediaSearch"); Contained("encyclopediaEntries"); Contained("encyclopediaDetail"); Contained("encyclopediaCloseButton");

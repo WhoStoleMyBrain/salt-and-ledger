@@ -21,24 +21,12 @@
                     <ui:Button name="startSandboxButton" text="New sandbox" />
                 </ui:VisualElement>
                 <ui:VisualElement class="map-frame">
-                    <ui:Label name="mapHint" class="map-hint" />
                     <ui:VisualElement name="mapContainer" class="archipelago-map" />
                     <ui:VisualElement class="map-footer">
-                        <ui:Label text="Gold P · you     Blue markers · NPC merchants     Dashed · sea routes" class="map-legend" />
                         <ui:DropdownField name="shipPicker" class="fleet-picker" tooltip="Inspect any vessel, including ships sharing a route position." />
                         <ui:Button name="playerShipButton" text="Select your ship" />
                     </ui:VisualElement>
                 </ui:VisualElement>
-                <ui:VisualElement class="voyage-bar">
-                    <ui:Label name="voyageLabel" class="voyage-copy" />
-                    <ui:Button name="sailButton" text="Confirm voyage" class="primary" />
-                </ui:VisualElement>
-                <ui:Label name="latestEventLabel" class="latest-event" />
-                <ui:Foldout name="activityFoldout" text="Captain's log · recent events (60 maximum)" value="false" class="activity-foldout">
-                    <ui:ScrollView mode="Vertical" class="activity-scroll">
-                        <ui:VisualElement name="activityEntries" />
-                    </ui:ScrollView>
-                </ui:Foldout>
             </ui:VisualElement>
             <ui:ScrollView name="contextScroll" mode="Vertical" class="context-panel">
                 <ui:Label name="selectionTitle" class="selection-title" />
@@ -79,6 +67,16 @@
                     <ui:Button name="openTradeButton" text="Trade / inspect market" class="primary" />
                     <ui:Button name="openIndustryButton" text="Your industries" />
                 </ui:VisualElement>
+                <ui:VisualElement name="voyageBar" class="voyage-bar">
+                    <ui:Label name="voyageLabel" class="voyage-copy" />
+                    <ui:Button name="sailButton" text="Confirm voyage" class="primary" />
+                </ui:VisualElement>
+                <ui:Label name="latestEventLabel" class="latest-event" />
+                <ui:Foldout name="activityFoldout" text="Captain's log · recent events (60 maximum)" value="false" class="activity-foldout">
+                    <ui:ScrollView mode="Vertical" class="activity-scroll">
+                        <ui:VisualElement name="activityEntries" />
+                    </ui:ScrollView>
+                </ui:Foldout>
                 <ui:Foldout name="automationFoldout" text="Your trade route" value="false">
                     <ui:Label name="activeRouteLabel" class="summary" />
                     <ui:Toggle name="automationToggle" label="Enable player automation" class="switch" />
@@ -152,6 +150,11 @@
                     </ui:VisualElement>
                     <ui:Label text="Different goods on each leg keep cargo intent explicit. Unsold cargo stays aboard. Changing limits never replenishes cash or stock." class="help" />
                 </ui:Foldout>
+                <ui:Foldout name="mapHelpFoldout" text="Map controls and legend" value="false">
+                    <ui:Label name="mapHint" class="map-hint" />
+                        <ui:Label text="Gold P · you     Blue markers · NPC merchants     Dashed · sea routes" class="map-legend" />
+                    <ui:Label text="Distances use abstract units. Straight sea connections do not use coastline pathfinding." class="help" />
+                </ui:Foldout>
                 <ui:Label name="profitLabel" class="help" />
             </ui:ScrollView>
         </ui:VisualElement>
@@ -167,7 +170,8 @@
                     <ui:Button name="closeTradeButton" text="Close  ×" tooltip="Close the exchange. Escape also closes; playback stays paused." />
                 </ui:VisualElement>
                 <ui:Label name="tradeHeader" class="trade-header" />
-                <ui:VisualElement class="trade-body">
+                <ui:ScrollView name="tradeContentScroll" mode="Vertical" class="trade-content-scroll">
+                  <ui:VisualElement class="trade-body">
                     <ui:VisualElement class="trade-market">
                         <ui:VisualElement class="trade-goods-row trade-column-header">
                             <ui:Label text="COMMODITY" class="trade-good-name" />
@@ -204,7 +208,8 @@
                             <ui:Button name="sellButton" text="Sell now" />
                         </ui:VisualElement>
                     </ui:VisualElement>
-                </ui:VisualElement>
+                  </ui:VisualElement>
+                </ui:ScrollView>
                 <ui:VisualElement class="modal-footer">
                     <ui:Label name="tradeAvailabilityLabel" class="modal-explanation" />
                     <ui:Button name="tradeSailButton" text="Sail here" />
@@ -227,23 +232,42 @@
                     <ui:Label name="constructionLabel" class="construction-summary" />
                     <ui:Button name="constructButton" text="Construct" class="primary" />
                 </ui:VisualElement>
-                <ui:Label text="Construction is instant. Payment goes to this town; private storage starts empty. Production begins at the next scheduled opportunity." class="help" />
+                <ui:Foldout name="constructionRulesFoldout" text="Construction timing and charter grants" value="false" class="construction-rules">
+                    <ui:ScrollView name="constructionRulesScroll" mode="Vertical" class="construction-rules-scroll">
+                        <ui:Label name="constructionTimingLabel" class="help" />
+                    </ui:ScrollView>
+                </ui:Foldout>
                 <ui:DropdownField name="facilityDropdown" label="Your facility" />
                 <ui:Label name="noFacilityLabel" text="Choose an investment above. Public industries and public market stock remain separate from your company." class="summary" />
                 <ui:VisualElement name="facilityBody" class="industry-body hidden">
                     <ui:ScrollView name="industryPolicyScroll" mode="Vertical" class="industry-policy">
-                        <ui:Label name="facilityRecipeLabel" class="summary" />
-                        <ui:Label name="facilityStatsLabel" class="help" />
-                        <ui:Label name="facilityStateLabel" class="industry-state" />
-                        <ui:Toggle name="facilityEnabled" label="Operate facility" />
-                        <ui:Toggle name="procurementEnabled" label="Buy local inputs automatically" />
-                        <ui:VisualElement name="inputPolicyRows" />
-                        <ui:TextField name="industryCashReserve" label="Retain cash" value="100" />
-                        <ui:Toggle name="salesEnabled" label="Sell surplus output automatically" />
-                        <ui:VisualElement name="outputPolicyRows" />
-                        <ui:Label text="Policies run once per whole day, using finite local stock, capacity and company cash. Apply a draft to start it." class="help" />
+                        <ui:Label name="facilityStateLabel" class="industry-state industry-summary" />
+                        <ui:Label name="facilityScheduleLabel" class="help" />
+                        <ui:Label name="industryAppliedPolicyLabel" class="help" />
+                        <ui:Button name="recommendIndustryPresetButton" text="Prepare recommended input draft" />
                         <ui:Label name="industryPolicyDraftLabel" class="industry-state" />
+                        <ui:Label name="industryPolicyPreviewLabel" class="help policy-preview" />
                         <ui:Button name="applyIndustryPolicy" text="Apply operating policy" class="primary" />
+                        <ui:Foldout name="industryShippingFoldout" text="Physical shipping connection" value="false">
+                            <ui:Label name="industryShippingLabel" class="help" />
+                            <ui:Button name="industryShippingButton" text="Connect / inspect industrial shipping" />
+                        </ui:Foldout>
+                        <ui:Foldout name="industryInputsFoldout" text="Input availability and exact quotes" value="false">
+                            <ui:Label name="facilityInputStatusLabel" class="help" />
+                        </ui:Foldout>
+                        <ui:Foldout name="industryDetailsFoldout" text="Edit detailed operating limits" value="false">
+                            <ui:Toggle name="facilityEnabled" label="Operate facility" />
+                            <ui:Toggle name="procurementEnabled" label="Buy local inputs automatically" />
+                            <ui:VisualElement name="inputPolicyRows" />
+                            <ui:TextField name="industryCashReserve" label="Retain cash" value="100" />
+                            <ui:Toggle name="salesEnabled" label="Sell surplus output automatically" />
+                            <ui:VisualElement name="outputPolicyRows" />
+                            <ui:Label text="These are draft rules. Review the preview above, then Apply. Each configured good has at most one automatic local transaction per daily phase." class="help" />
+                        </ui:Foldout>
+                        <ui:Foldout name="industryFinancesFoldout" text="Recipe and actual finances" value="false">
+                            <ui:Label name="facilityRecipeLabel" class="summary" />
+                            <ui:Label name="facilityStatsLabel" class="help" />
+                        </ui:Foldout>
                     </ui:ScrollView>
                     <ui:ScrollView name="industryStorageScroll" mode="Vertical" class="industry-storage">
                         <ui:Label name="storageCapacityLabel" class="summary" />
