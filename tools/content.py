@@ -42,7 +42,11 @@ def parse_json(text: str) -> object:
 
 
 def validate_content(content: object, schema_path: Path = DEFAULT_SCHEMA) -> dict:
-    """Validate schema, references, unique IDs, and recipe ingredient semantics."""
+    """Validate recipe kinds, references, IDs, and integer ingredient semantics.
+
+    The schema requires nonempty transformation inputs (also the omitted-kind
+    default), empty extraction inputs, and nonempty outputs for either kind.
+    """
     schema = parse_json(schema_path.read_text(encoding="utf-8"))
     Draft202012Validator.check_schema(schema)
     validator = Draft202012Validator(schema)

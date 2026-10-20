@@ -44,22 +44,30 @@ namespace SaltAndLedger.Simulation
         }
     }
 
+    public enum RecipeKind
+    {
+        Transformation,
+        Extraction
+    }
+
     public sealed class RecipeDefinition
     {
         public string Id { get; }
         public string Name { get; }
         public string Description { get; }
         public string BuildingId { get; }
+        public RecipeKind Kind { get; }
         public IReadOnlyList<RecipeQuantity> Inputs { get; }
         public IReadOnlyList<RecipeQuantity> Outputs { get; }
 
         internal RecipeDefinition(string id, string name, string description,
-            string buildingId, IEnumerable<RecipeQuantity> inputs, IEnumerable<RecipeQuantity> outputs)
+            string buildingId, RecipeKind kind, IEnumerable<RecipeQuantity> inputs, IEnumerable<RecipeQuantity> outputs)
         {
             Id = id;
             Name = name;
             Description = description;
             BuildingId = buildingId;
+            Kind = kind;
             Inputs = Array.AsReadOnly(inputs.ToArray());
             Outputs = Array.AsReadOnly(outputs.ToArray());
         }

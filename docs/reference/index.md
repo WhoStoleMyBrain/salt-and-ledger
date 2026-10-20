@@ -11,8 +11,10 @@ These pages describe the canonical definitions. Behavior is specified in the mai
 
 ## Buildings
 
+- [Lumber Camp](buildings/lumber_camp.md)
 - [Sawmill](buildings/sawmill.md)
 
 ## Recipes
 
+- [Harvest logs](recipes/harvest_logs.md)
 - [Saw planks](recipes/saw_planks.md)

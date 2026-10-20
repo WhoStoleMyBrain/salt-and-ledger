@@ -8,6 +8,8 @@ Convert logs into planks in one sample production batch\.
 
 Building: [Sawmill](../buildings/sawmill.md)
 
+Recipe kind: **transformation**.
+
 ## Inputs
 
 | Good | Quantity |

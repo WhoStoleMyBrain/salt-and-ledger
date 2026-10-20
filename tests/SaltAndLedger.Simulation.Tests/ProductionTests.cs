@@ -17,6 +17,31 @@ public sealed class ProductionTests
         Assert.Equal(expected.OrderBy(item => item.Key), actual.Snapshot().OrderBy(item => item.Key));
 
     [Fact]
+    public void ExtractionUsesCanonicalOutputAndDoesNotConsumeOtherStock()
+    {
+        var content = Canonical();
+        var inventory = Stock(content, 0, 3);
+        Assert.True(Production.TryRunBatch(inventory, "lumber_camp", "harvest_logs"));
+        Assert.Equal(2, inventory.GetQuantity("logs"));
+        Assert.Equal(3, inventory.GetQuantity("planks"));
+        Assert.True(Production.TryRunBatch(inventory, "lumber_camp", "harvest_logs"));
+        Assert.Equal(4, inventory.GetQuantity("logs"));
+        Assert.Equal(RecipeKind.Extraction, content.GetRecipe("harvest_logs").Kind);
+    }
+
+    [Fact]
+    public void ExtractionOverflowDoesNotCommitEarlierOutputs()
+    {
+        var content = ContentLoader.Load(ContentLoaderTests.Change(root =>
+            ((JArray)root["recipes"]![1]!["outputs"]!).Add(
+                new JObject { ["goodId"] = "planks", ["quantity"] = 1 })));
+        var inventory = Stock(content, 0, int.MaxValue);
+        var before = inventory.Snapshot();
+        Assert.Throws<OverflowException>(() => Production.TryRunBatch(inventory, "lumber_camp", "harvest_logs"));
+        EqualBalances(before, inventory);
+    }
+
+    [Fact]
     public void ProductionUsesCanonicalRecipeQuantities()
     {
         var content = Canonical();

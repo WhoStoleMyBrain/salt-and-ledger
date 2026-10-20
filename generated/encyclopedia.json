@@ -10,7 +10,9 @@
       "consumedByRecipeIds": [
         "saw_planks"
       ],
-      "producedByRecipeIds": []
+      "producedByRecipeIds": [
+        "harvest_logs"
+      ]
     },
     {
       "id": "planks",
@@ -25,6 +27,15 @@
   ],
   "buildings": [
     {
+      "id": "lumber_camp",
+      "name": "Lumber Camp",
+      "description": "A resource-producing building that extracts logs without tradeable inputs.",
+      "wikiPath": "reference/buildings/lumber_camp.md",
+      "recipeIds": [
+        "harvest_logs"
+      ]
+    },
+    {
       "id": "sawmill",
       "name": "Sawmill",
       "description": "A building that can use the logs-to-planks recipe.",
@@ -36,11 +47,27 @@
   ],
   "recipes": [
     {
+      "id": "harvest_logs",
+      "name": "Harvest logs",
+      "description": "Create two logs in one resource-extraction batch. Scheduling and stock limits belong to the scenario.",
+      "wikiPath": "reference/recipes/harvest_logs.md",
+      "buildingId": "lumber_camp",
+      "kind": "extraction",
+      "inputs": [],
+      "outputs": [
+        {
+          "goodId": "logs",
+          "quantity": 2
+        }
+      ]
+    },
+    {
       "id": "saw_planks",
       "name": "Saw planks",
       "description": "Convert logs into planks in one sample production batch.",
       "wikiPath": "reference/recipes/saw_planks.md",
       "buildingId": "sawmill",
+      "kind": "transformation",
       "inputs": [
         {
           "goodId": "logs",

@@ -23,8 +23,10 @@ namespace SaltAndLedger.UnityHost.Tests
 
             Assert.That(content.SchemaVersion, Is.EqualTo(1));
             Assert.That(content.Goods.Count, Is.EqualTo(2));
-            Assert.That(content.Buildings.Count, Is.EqualTo(1));
-            Assert.That(content.Recipes.Count, Is.EqualTo(1));
+            Assert.That(content.Buildings.Count, Is.EqualTo(2));
+            Assert.That(content.Recipes.Count, Is.EqualTo(2));
+            Assert.That(content.GetRecipe("saw_planks").Kind, Is.EqualTo(RecipeKind.Transformation));
+            Assert.That(content.GetRecipe("harvest_logs").Kind, Is.EqualTo(RecipeKind.Extraction));
             Assert.That(inventory.GetQuantity("planks"), Is.Zero);
 
             for (var batch = 1; batch <= 3; batch++)

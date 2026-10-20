@@ -17,6 +17,11 @@
       "id": "sawmill",
       "name": "Sawmill",
       "description": "A building that can use the logs-to-planks recipe."
+    },
+    {
+      "id": "lumber_camp",
+      "name": "Lumber Camp",
+      "description": "A resource-producing building that extracts logs without tradeable inputs."
     }
   ],
   "recipes": [
@@ -27,6 +32,15 @@
       "buildingId": "sawmill",
       "inputs": [{ "goodId": "logs", "quantity": 2 }],
       "outputs": [{ "goodId": "planks", "quantity": 1 }]
+    },
+    {
+      "id": "harvest_logs",
+      "name": "Harvest logs",
+      "description": "Create two logs in one resource-extraction batch. Scheduling and stock limits belong to the scenario.",
+      "buildingId": "lumber_camp",
+      "kind": "extraction",
+      "inputs": [],
+      "outputs": [{ "goodId": "logs", "quantity": 2 }]
     }
   ]
 }

@@ -26,9 +26,12 @@ public sealed class ContentLoaderTests
         var catalog = ContentLoader.Load(CanonicalJson());
         Assert.Equal(1, catalog.SchemaVersion);
         Assert.Equal(new[] { "logs", "planks" }, catalog.Goods.Select(good => good.Id));
-        Assert.Equal("Sawmill", Assert.Single(catalog.Buildings).Name);
-        var recipe = Assert.Single(catalog.Recipes);
+        Assert.Equal(new[] { "sawmill", "lumber_camp" }, catalog.Buildings.Select(building => building.Id));
+        Assert.Equal(new[] { "saw_planks", "harvest_logs" }, catalog.Recipes.Select(item => item.Id));
+        Assert.Equal("Sawmill", catalog.GetBuilding("sawmill").Name);
+        var recipe = catalog.GetRecipe("saw_planks");
         Assert.Same(catalog.GetRecipe("saw_planks"), recipe);
+        Assert.Equal(RecipeKind.Transformation, recipe.Kind);
         Assert.Equal(catalog.GetBuilding("sawmill").Id, recipe.BuildingId);
         Assert.Equal("logs", Assert.Single(recipe.Inputs).GoodId);
         Assert.Equal(2, recipe.Inputs[0].Quantity);
@@ -36,6 +39,35 @@ public sealed class ContentLoaderTests
         Assert.Equal(1, recipe.Outputs[0].Quantity);
         foreach (var good in recipe.Inputs.Concat(recipe.Outputs))
             Assert.Equal(good.GoodId, catalog.GetGood(good.GoodId).Id);
+
+        var extraction = catalog.GetRecipe("harvest_logs");
+        Assert.Equal("lumber_camp", extraction.BuildingId);
+        Assert.Equal(RecipeKind.Extraction, extraction.Kind);
+        Assert.Empty(extraction.Inputs);
+        Assert.Equal("logs", Assert.Single(extraction.Outputs).GoodId);
+        Assert.Equal(2, extraction.Outputs[0].Quantity);
+    }
+
+    [Fact]
+    public void OriginalVersionOneDocumentRetainsImplicitTransformationKind()
+    {
+        var originalJson = Change(root =>
+        {
+            ((JArray)root["buildings"]!).RemoveAt(1);
+            ((JArray)root["recipes"]!).RemoveAt(1);
+        });
+        var catalog = ContentLoader.Load(originalJson);
+        Assert.Equal(1, catalog.SchemaVersion);
+        Assert.Single(catalog.Buildings);
+        Assert.Equal(RecipeKind.Transformation, Assert.Single(catalog.Recipes).Kind);
+    }
+
+    [Fact]
+    public void ExplicitTransformationMatchesOmittedKind()
+    {
+        var catalog = ContentLoader.Load(Change(root => root["recipes"]![0]!["kind"] = "transformation"));
+        Assert.Equal(RecipeKind.Transformation, catalog.GetRecipe("saw_planks").Kind);
+        Assert.Equal(2, catalog.GetRecipe("saw_planks").Inputs[0].Quantity);
     }
 
     [Fact]
@@ -109,6 +141,21 @@ public sealed class ContentLoaderTests
             ["unknown output reference"] = root => root["recipes"]![0]!["outputs"]![0]!["goodId"] = "missing",
             ["building as good reference"] = root => root["recipes"]![0]!["inputs"]![0]!["goodId"] = "sawmill",
             ["empty inputs"] = root => root["recipes"]![0]!["inputs"] = new JArray(),
+            ["explicit transformation without inputs"] = root =>
+            {
+                root["recipes"]![0]!["kind"] = "transformation";
+                root["recipes"]![0]!["inputs"] = new JArray();
+            },
+            ["extraction with inputs"] = root => root["recipes"]![0]!["kind"] = "extraction",
+            ["extraction without explicit kind"] = root => ((JObject)root["recipes"]![1]!).Property("kind")!.Remove(),
+            ["extraction without outputs"] = root => root["recipes"]![1]!["outputs"] = new JArray(),
+            ["null recipe kind"] = root => root["recipes"]![0]!["kind"] = null,
+            ["numeric recipe kind"] = root => root["recipes"]![0]!["kind"] = 1,
+            ["boolean recipe kind"] = root => root["recipes"]![0]!["kind"] = true,
+            ["unknown recipe kind"] = root => root["recipes"]![0]!["kind"] = "renewable",
+            ["case-sensitive recipe kind"] = root => root["recipes"]![0]!["kind"] = "Extraction",
+            ["extraction null inputs"] = root => root["recipes"]![1]!["inputs"] = null,
+            ["extraction missing inputs"] = root => ((JObject)root["recipes"]![1]!).Property("inputs")!.Remove(),
             ["empty outputs"] = root => root["recipes"]![0]!["outputs"] = new JArray(),
             ["null inputs"] = root => root["recipes"]![0]!["inputs"] = null,
             ["null ingredient"] = root => root["recipes"]![0]!["inputs"]![0] = null,

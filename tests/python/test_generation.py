@@ -22,15 +22,33 @@ class ReferenceGenerationTests(unittest.TestCase):
         self.assertEqual(1, encyclopedia["formatVersion"])
         self.assertEqual(1, encyclopedia["sourceSchemaVersion"])
         goods = {item["id"]: item for item in encyclopedia["goods"]}
+        buildings = {item["id"]: item for item in encyclopedia["buildings"]}
+        recipes = {item["id"]: item for item in encyclopedia["recipes"]}
         self.assertEqual(["saw_planks"], goods["logs"]["consumedByRecipeIds"])
-        self.assertEqual([], goods["logs"]["producedByRecipeIds"])
+        self.assertEqual(["harvest_logs"], goods["logs"]["producedByRecipeIds"])
         self.assertEqual(["saw_planks"], goods["planks"]["producedByRecipeIds"])
-        self.assertEqual(["saw_planks"], encyclopedia["buildings"][0]["recipeIds"])
-        self.assertEqual("sawmill", encyclopedia["recipes"][0]["buildingId"])
-        self.assertEqual(self.content["recipes"][0]["inputs"], encyclopedia["recipes"][0]["inputs"])
+        self.assertEqual(["saw_planks"], buildings["sawmill"]["recipeIds"])
+        self.assertEqual("sawmill", recipes["saw_planks"]["buildingId"])
+        self.assertEqual(self.content["recipes"][0]["inputs"], recipes["saw_planks"]["inputs"])
+        self.assertEqual("transformation", recipes["saw_planks"]["kind"])
+        self.assertEqual(["harvest_logs"], buildings["lumber_camp"]["recipeIds"])
+        self.assertEqual("extraction", recipes["harvest_logs"]["kind"])
+        self.assertEqual([], recipes["harvest_logs"]["inputs"])
         for kind in ("goods", "buildings", "recipes"):
             for item in encyclopedia[kind]:
                 self.assertIn(Path("docs") / item["wikiPath"], outputs)
+
+    def test_extraction_page_explains_resource_source(self):
+        outputs = render_outputs(self.content)
+        recipe = outputs[Path("docs/reference/recipes/harvest_logs.md")].decode()
+        self.assertIn("Recipe kind: **extraction**.", recipe)
+        self.assertIn("No tradeable inputs.", recipe)
+        self.assertIn("| [Logs](../goods/logs.md) | 2 |", recipe)
+        original = copy.deepcopy(self.content)
+        original["recipes"] = original["recipes"][:1]
+        original["buildings"] = original["buildings"][:1]
+        legacy = json.loads(render_outputs(validate_content(original))[ENCYCLOPEDIA_PATH])
+        self.assertEqual("transformation", legacy["recipes"][0]["kind"])
 
     def test_all_generated_markdown_links_resolve(self):
         outputs = render_outputs(self.content)
@@ -77,7 +95,8 @@ class ReferenceGenerationTests(unittest.TestCase):
         self.assertNotEqual(before[recipe_path], after[recipe_path])
         self.assertIn(b"| [Logs](../goods/logs.md) | 3 |", after[recipe_path])
         self.assertNotEqual(before[ENCYCLOPEDIA_PATH], after[ENCYCLOPEDIA_PATH])
-        self.assertEqual(3, json.loads(after[ENCYCLOPEDIA_PATH])["recipes"][0]["inputs"][0]["quantity"])
+        recipe = next(item for item in json.loads(after[ENCYCLOPEDIA_PATH])["recipes"] if item["id"] == "saw_planks")
+        self.assertEqual(3, recipe["inputs"][0]["quantity"])
         self.assertIn(b"Changed source description", after[Path("docs/reference/goods/logs.md")])
 
     def test_changed_relationship_updates_reverse_references(self):

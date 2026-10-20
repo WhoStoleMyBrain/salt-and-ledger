@@ -12,6 +12,6 @@ Unprocessed timber used by the sample sawmill recipe\.
 
 ## Produced as output
 
-None defined.
+- [Harvest logs](../recipes/harvest_logs.md)
 
 [All content](../index.md)

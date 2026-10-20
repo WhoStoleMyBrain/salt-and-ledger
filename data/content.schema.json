@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Salt and Ledger content version 1",
-  "description": "Structural rules. Loaders also check globally unique IDs, references, duplicate ingredients, and integer tokens.",
+  "description": "Backward-compatible version 1 evolution: an omitted recipe kind means transformation; explicit extraction requires no inputs. Loaders also check globally unique IDs, references, duplicate ingredients, and integer tokens.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "goods", "buildings", "recipes"],
@@ -54,9 +54,9 @@
         "name": { "$ref": "#/$defs/text" },
         "description": { "$ref": "#/$defs/text" },
         "buildingId": { "$ref": "#/$defs/id" },
+        "kind": { "type": "string", "enum": ["transformation", "extraction"] },
         "inputs": {
           "type": "array",
-          "minItems": 1,
           "items": { "$ref": "#/$defs/ingredient" }
         },
         "outputs": {
@@ -64,7 +64,13 @@
           "minItems": 1,
           "items": { "$ref": "#/$defs/ingredient" }
         }
-      }
+      },
+      "if": {
+        "required": ["kind"],
+        "properties": { "kind": { "const": "extraction" } }
+      },
+      "then": { "properties": { "inputs": { "maxItems": 0 } } },
+      "else": { "properties": { "inputs": { "minItems": 1 } } }
     }
   }
 }

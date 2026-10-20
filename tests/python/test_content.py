@@ -37,6 +37,37 @@ class ContentValidationTests(unittest.TestCase):
                 self.assert_invalid(lambda data: data.__setitem__(kind, []))
                 self.assert_invalid(lambda data: data.pop(kind))
 
+    def test_extraction_is_explicit_and_has_only_outputs(self):
+        content = load_content()
+        extraction = next(recipe for recipe in content["recipes"] if recipe["id"] == "harvest_logs")
+        self.assertEqual("extraction", extraction["kind"])
+        self.assertEqual("lumber_camp", extraction["buildingId"])
+        self.assertEqual([], extraction["inputs"])
+        self.assertEqual([{"goodId": "logs", "quantity": 2}], extraction["outputs"])
+        self.assert_invalid(lambda data: data["recipes"][1].pop("kind"))
+        self.assert_invalid(lambda data: data["recipes"][1].__setitem__("inputs", [{"goodId": "logs", "quantity": 1}]))
+        self.assert_invalid(lambda data: data["recipes"][1].__setitem__("outputs", []))
+        self.assert_invalid(lambda data: data["recipes"][1].__setitem__("inputs", None))
+        self.assert_invalid(lambda data: data["recipes"][1].pop("inputs"))
+
+    def test_recipe_kinds_are_closed_and_case_sensitive(self):
+        for value in ("renewable", "Extraction", "", None, True, 1, []):
+            with self.subTest(value=value):
+                self.assert_invalid(lambda data: data["recipes"][0].__setitem__("kind", value))
+        self.assert_invalid(lambda data: data["recipes"][0].__setitem__("kind", "extraction"))
+        self.content["recipes"][0]["kind"] = "transformation"
+        validate_content(self.content)
+        self.content["recipes"][0]["inputs"] = []
+        with self.assertRaises(ContentError):
+            validate_content(self.content)
+
+    def test_original_version_one_document_remains_valid(self):
+        self.content["buildings"] = self.content["buildings"][:1]
+        self.content["recipes"] = self.content["recipes"][:1]
+        validate_content(self.content)
+        self.assertNotIn("kind", self.content["recipes"][0])
+        self.assertEqual(1, self.content["schemaVersion"])
+
     def test_schema_version_is_exact_integer_one(self):
         for version in (0, 2, "1", True, None, 1.0):
             with self.subTest(version=version):

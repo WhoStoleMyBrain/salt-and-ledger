@@ -76,10 +76,16 @@ def render_outputs(content: dict) -> dict[Path, bytes]:
             else:
                 building = buildings[item["buildingId"]]
                 reference["buildingId"] = building["id"]
+                recipe_kind = item.get("kind", "transformation")
+                reference["kind"] = recipe_kind
                 page.extend([f"Building: [{_text(building['name'])}](../buildings/{building['id']}.md)", ""])
+                page.extend([f"Recipe kind: **{recipe_kind}**.", ""])
                 for side, heading in (("inputs", "Inputs"), ("outputs", "Outputs")):
                     ingredients = sorted(item[side], key=lambda entry: entry["goodId"])
                     reference[side] = [{"goodId": entry["goodId"], "quantity": entry["quantity"]} for entry in ingredients]
+                    if side == "inputs" and recipe_kind == "extraction":
+                        page.extend([f"## {heading}", "", "No tradeable inputs. This resource-extraction recipe creates its configured outputs.", ""])
+                        continue
                     page.extend([f"## {heading}", "", "| Good | Quantity |", "| --- | ---: |"])
                     for entry in ingredients:
                         good = goods[entry["goodId"]]

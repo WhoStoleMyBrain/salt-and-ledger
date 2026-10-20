@@ -74,9 +74,16 @@ namespace SaltAndLedger.Simulation
             foreach (var token in RequireArray(root["recipes"], "$.recipes"))
             {
                 var item = RequireObject(token);
-                RequireProperties(item, item.Path, "id", "name", "description", "buildingId", "inputs", "outputs");
+                if (item.Property("kind", StringComparison.Ordinal) == null)
+                    RequireProperties(item, item.Path, "id", "name", "description", "buildingId", "inputs", "outputs");
+                else
+                    RequireProperties(item, item.Path, "id", "name", "description", "buildingId", "kind", "inputs", "outputs");
+                var kind = RecipeType(item);
+                var inputs = Quantities(item, "inputs", allowEmpty: kind == RecipeKind.Extraction);
+                if (kind == RecipeKind.Extraction && inputs.Count != 0)
+                    throw Invalid(item.Path + ".inputs", "extraction must have no tradeable inputs");
                 recipes.Add(new RecipeDefinition(DefinitionId(item, ids), Text(item, "name"), Text(item, "description"),
-                    Id(item, "buildingId"), Quantities(item, "inputs"), Quantities(item, "outputs")));
+                    Id(item, "buildingId"), kind, inputs, Quantities(item, "outputs")));
             }
 
             var goodIds = new HashSet<string>(goods.Select(good => good.Id), StringComparer.Ordinal);
@@ -114,10 +121,20 @@ namespace SaltAndLedger.Simulation
         private static JObject RequireObject(JToken token) => token as JObject
             ?? throw Invalid(token.Path, "must be an object");
 
-        private static JArray RequireArray(JToken? token, string path)
+        private static JArray RequireArray(JToken? token, string path, bool allowEmpty = false)
         {
-            if (!(token is JArray array) || array.Count == 0) throw Invalid(path, "must be a nonempty array");
+            if (!(token is JArray array) || (!allowEmpty && array.Count == 0))
+                throw Invalid(path, allowEmpty ? "must be an array" : "must be a nonempty array");
             return array;
+        }
+
+        private static RecipeKind RecipeType(JObject item)
+        {
+            if (item.Property("kind", StringComparison.Ordinal) == null) return RecipeKind.Transformation;
+            var kind = Text(item, "kind");
+            if (kind == "transformation") return RecipeKind.Transformation;
+            if (kind == "extraction") return RecipeKind.Extraction;
+            throw Invalid(item.Path + ".kind", "must be transformation or extraction");
         }
 
         private static void RequireProperties(JObject item, string path, params string[] names)
@@ -164,11 +181,11 @@ namespace SaltAndLedger.Simulation
             return value;
         }
 
-        private static IReadOnlyList<RecipeQuantity> Quantities(JObject recipe, string side)
+        private static IReadOnlyList<RecipeQuantity> Quantities(JObject recipe, string side, bool allowEmpty = false)
         {
             var result = new List<RecipeQuantity>();
             var ids = new HashSet<string>(StringComparer.Ordinal);
-            foreach (var token in RequireArray(recipe[side], recipe.Path + "." + side))
+            foreach (var token in RequireArray(recipe[side], recipe.Path + "." + side, allowEmpty))
             {
                 var item = RequireObject(token);
                 RequireProperties(item, item.Path, "goodId", "quantity");
