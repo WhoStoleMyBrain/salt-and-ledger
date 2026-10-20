@@ -1,0 +1,136 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:Style src="TradingLab.uss" />
+    <ui:VisualElement name="tradingLab" class="trading-lab">
+        <ui:VisualElement class="heading">
+            <ui:Label text="SALT &amp; LEDGER" class="title" />
+            <ui:Label text="TRADING LAB  /  Two ports. One ship. Your decisions." class="subtitle" />
+            <ui:Label name="tickLabel" text="TICK 0" class="section-title" />
+        </ui:VisualElement>
+        <ui:VisualElement class="metrics">
+            <ui:VisualElement class="metric">
+                <ui:Label text="TRADER CASH" class="eyebrow" />
+                <ui:Label name="cashLabel" class="metric-value" />
+                <ui:Label name="cashChangeLabel" class="metric-detail" />
+            </ui:VisualElement>
+            <ui:VisualElement class="metric">
+                <ui:Label text="SHIP CARGO" class="eyebrow" />
+                <ui:Label name="cargoLabel" class="metric-value" />
+                <ui:Label name="cargoContentsLabel" class="metric-detail" />
+            </ui:VisualElement>
+            <ui:VisualElement class="metric">
+                <ui:Label text="EMPTY-CARGO ACCOUNTING" class="eyebrow" />
+                <ui:Label name="profitLabel" class="metric-value" />
+                <ui:Label text="Cash is not profit while goods remain aboard." class="metric-detail" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement class="toolbar">
+            <ui:DropdownField name="scenarioDropdown" label="Scenario" class="scenario-picker" />
+            <ui:Button name="resetButton" text="Reset scenario" tooltip="Creates a new world using the selected scenario. This is a testing tool, not an economic action." />
+            <ui:Label text="All time is explicit. Inspecting, editing and pausing spend no ticks." class="toolbar-note" />
+        </ui:VisualElement>
+        <ui:VisualElement class="columns">
+            <ui:ScrollView name="marketScroll" mode="Vertical" class="column">
+                <ui:Label text="01  Ports &amp; markets" class="section-title" />
+                <ui:VisualElement class="map-ports">
+                    <ui:Button name="northportButton" text="Northport" tooltip="Inspect Northport. No tick passes." />
+                    <ui:Button name="southhavenButton" text="Southhaven" tooltip="Inspect Southhaven. No tick passes." />
+                </ui:VisualElement>
+                <ui:ProgressBar name="shipProgress" low-value="0" high-value="100" title="Ship at Northport" class="map-connection" />
+                <ui:Label name="shipStatusLabel" class="ship-status" />
+                <ui:Label text="Northport ← ship position → Southhaven" class="muted" />
+                <ui:Label name="marketTitle" class="subheading" />
+                <ui:Label name="marketCashLabel" class="body" />
+                <ui:VisualElement class="market-row market-header">
+                    <ui:Label text="GOOD" class="market-good" />
+                    <ui:Label text="STOCK" class="market-cell" />
+                    <ui:Label text="SELL / BID" class="market-cell" />
+                    <ui:Label text="BUY / ASK" class="market-cell" />
+                </ui:VisualElement>
+                <ui:VisualElement name="marketRows" />
+                <ui:Label text="Prices above are for the next unit, from your perspective. Buying removes stock and can raise later unit prices. Preview the full order before trading." class="help" />
+                <ui:Label text="Local production" class="subheading" />
+                <ui:Label name="productionLabel" class="body" />
+                <ui:Foldout text="Stock-sensitive pricing parameters" value="false" class="pricing-details">
+                    <ui:Label name="pricingLabel" class="help" />
+                </ui:Foldout>
+                <ui:Label text="Travel takes two ticks. Departure uses the first; arrival uses the second. Trade at the destination on the next step." class="help" />
+            </ui:ScrollView>
+            <ui:ScrollView name="manualScroll" mode="Vertical" class="column">
+                <ui:Label text="02  Manual orders &amp; time" class="section-title" />
+                <ui:VisualElement class="row">
+                    <ui:Button name="nextTickButton" text="Next tick (1)" class="accent-button" />
+                    <ui:Button name="advanceTicksButton" text="Advance 3 ticks" />
+                </ui:VisualElement>
+                <ui:Button name="sailButton" text="Sail (1 tick)" />
+                <ui:VisualElement class="row manual-inputs">
+                    <ui:DropdownField name="goodDropdown" label="Good" />
+                    <ui:TextField name="quantityField" label="Qty" value="6" />
+                </ui:VisualElement>
+                <ui:Label name="goodDescriptionLabel" class="help" />
+                <ui:Label name="tradeAvailabilityLabel" class="body" />
+                <ui:VisualElement class="card">
+                    <ui:Label text="BUY · total cost" class="preview-title" />
+                    <ui:Label name="buyPreviewLabel" class="preview-copy" />
+                    <ui:VisualElement class="row">
+                        <ui:Button name="buyButton" text="Buy (1 tick)" />
+                        <ui:Button name="buyDepartButton" text="Buy + depart (1 tick)" class="primary-button" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="card">
+                    <ui:Label text="SELL · total revenue" class="preview-title" />
+                    <ui:Label name="sellPreviewLabel" class="preview-copy" />
+                    <ui:Button name="sellButton" text="Sell (1 tick)" />
+                </ui:VisualElement>
+                <ui:Label text="Orders are all-or-nothing. Production and travel also advance during every committed trade tick." class="help" />
+                <ui:Label name="timeModeLabel" class="help" />
+                <ui:Label text="Recent activity · newest first" class="subheading" />
+                <ui:VisualElement name="activityEntries" />
+            </ui:ScrollView>
+            <ui:ScrollView name="automationScroll" mode="Vertical" class="column last-column">
+                <ui:Label text="03  Route automation" class="section-title" />
+                <ui:Toggle name="automationToggle" label="Automation enabled" class="automation-switch" />
+                <ui:Label text="Enabling does not run time. Disable to trade or sail manually." class="help" />
+                <ui:VisualElement name="decisionCard" class="card">
+                    <ui:Label text="NEXT DECISION" class="eyebrow" />
+                    <ui:Label name="decisionLabel" class="decision" />
+                </ui:VisualElement>
+                <ui:VisualElement class="row">
+                    <ui:Button name="automationTickButton" text="Auto tick (1)" class="primary-button" />
+                    <ui:Button name="automationRunButton" text="Run up to 6 ticks" class="primary-button" />
+                </ui:VisualElement>
+                <ui:VisualElement class="row">
+                    <ui:Button name="fullPresetButton" text="Full preset" tooltip="Apply the six-log policy now. No tick passes." />
+                    <ui:Button name="restrictivePresetButton" text="Restrictive preset" tooltip="Apply the lower buy-price limit now. No tick passes." />
+                </ui:VisualElement>
+                <ui:Label name="outboundLabel" class="subheading" />
+                <ui:VisualElement class="row">
+                    <ui:VisualElement class="field-block">
+                        <ui:Label text="Maximum buy / unit" class="field-caption" />
+                        <ui:TextField name="maxBuyField" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="field-block">
+                        <ui:Label text="Minimum sell / unit" class="field-caption" />
+                        <ui:TextField name="minSellField" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="row">
+                    <ui:VisualElement class="field-block">
+                        <ui:Label text="Target shipment" class="field-caption" />
+                        <ui:TextField name="maxShipmentField" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="field-block">
+                        <ui:Label text="Minimum shipment" class="field-caption" />
+                        <ui:TextField name="minShipmentField" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:Label text="Cash reserve (0 or more)" class="field-caption" />
+                <ui:TextField name="cashReserveField" />
+                <ui:Button name="applyPolicyButton" text="Apply policy · no tick" />
+                <ui:Label name="policyDraftLabel" class="help" />
+                <ui:Label name="returnPolicyLabel" class="help" />
+                <ui:Label text="Bounded runs stop after 3 ticks without progress. Limits do not add stock or money. Reapply a policy or use manual control to investigate a wait." class="help" />
+            </ui:ScrollView>
+        </ui:VisualElement>
+        <ui:Label name="statusLabel" class="status" />
+    </ui:VisualElement>
+</ui:UXML>
