@@ -289,8 +289,17 @@ internal static class EnterpriseExperiments
         {
             p.Id, p.Name, p.X, p.Y, p.Role,
             Quotes = p.Quotes.Values.Select(q => new { q.GoodId, q.Pricing }).ToArray(),
-            Facilities = p.Facilities.Select(f => f.Configuration).ToArray(),
-            Consumption = p.Consumption.Select(c => c.Configuration).ToArray()
+            // Preserve the historical report contract independently of new living-city fields.
+            Facilities = p.Facilities.Select(f => new
+            {
+                f.Configuration.Instance, f.Configuration.IntervalDays,
+                f.Configuration.OutputStockLimit, f.Configuration.FirstDueDay
+            }).ToArray(),
+            Consumption = p.Consumption.Select(c => new
+            {
+                c.Configuration.Id, c.Configuration.GoodId, c.Configuration.Quantity,
+                c.Configuration.IntervalDays, c.Configuration.FirstDueDay
+            }).ToArray()
         }).ToArray(),
         Routes = s.Routes,
         Ships = s.Ships.Values.Select(ship => new
@@ -299,7 +308,11 @@ internal static class EnterpriseExperiments
             ship.Configuration.MinimumOriginStock, ship.Configuration.MinimumReturnStock,
             ship.AutomationEnabled, ship.Policy
         }).ToArray(),
-        Blueprints = s.IndustryBlueprints.Values,
+        Blueprints = s.IndustryBlueprints.Values.Select(b => new
+        {
+            b.Id, b.BuildingId, b.RecipeId, b.ConstructionCost, b.IntervalDays,
+            b.WarehouseCapacity, b.OutputStockLimit, b.EligiblePortIds
+        }).ToArray(),
         Policies = s.IndustryBlueprints.Values.Select(b => new
         {
             BlueprintId = b.Id, DefaultPolicy = EnterpriseScenario.DefaultIndustryPolicy(b.Id)

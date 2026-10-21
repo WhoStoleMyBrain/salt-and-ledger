@@ -51,6 +51,7 @@ namespace SaltAndLedger.Simulation
         public const string CoastalChallenge = "coastal_supply_charter";
         public const string ReliefChallenge = "regional_relief";
         public const string AmbitionChallenge = "enterprise_ambition";
+        public const string RecoveryChallenge = "city_recovery";
         public const int StartingShipSpeed = 100;
 
         public static IReadOnlyList<StartingCharter> Charters { get; } = Array.AsReadOnly(new[]
@@ -96,17 +97,44 @@ namespace SaltAndLedger.Simulation
 
         public static StartingCharter GetCharter(string id) => Charters.SingleOrDefault(c => c.Id == id)
             ?? throw new ArgumentException("Unknown starting charter: " + id, nameof(id));
-        public static RunChallenge GetChallenge(string id) => Challenges.SingleOrDefault(c => c.Id == id)
+        public static StartingCharter GetCharter(RunIdentity identity)
+        {
+            if (identity == null) throw new ArgumentNullException(nameof(identity));
+            return identity.WorldMode == RunWorldMode.LivingCities
+                ? LivingCityScenario.GetCharter(LivingCityGeneration.Generate(identity.Seed!.Value,
+                    identity.GeneratorVersion, identity.LivingPricingMode), identity.CharterId)
+                : GetCharter(identity.CharterId);
+        }
+
+        public static IReadOnlyList<RunChallenge> GetChallenges(RunWorldMode mode)
+        {
+            if (!Enum.IsDefined(typeof(RunWorldMode), mode)) throw new ArgumentOutOfRangeException(nameof(mode));
+            return mode == RunWorldMode.LivingCities ? LivingChallenges : Challenges;
+        }
+
+        private static IReadOnlyList<RunChallenge> LivingChallenges { get; } = Array.AsReadOnly(new[]
+        {
+            new RunChallenge(LivingCityScenario.RecoveryConfiguration(EnterpriseScenario.East),
+                "Restore sustained paid food access in the generated vulnerable town. This measures regional welfare, including public and NPC contributions.",
+                "Meet at least 90% of Bread needs over six due opportunities, preserve the initial population, reach prosperity 55, and retain 100 company cash by day 90. The target follows the vulnerable town role.")
+        });
+
+        public static RunChallenge GetChallenge(string id) => Challenges.Concat(LivingChallenges).SingleOrDefault(c => c.Id == id)
             ?? throw new ArgumentException("Unknown challenge: " + id, nameof(id));
 
-        public static RegionalWorldState Create(ContentCatalog content, string? challengeId, string charterId) =>
-            EnterpriseScenario.CreateRun(content, challengeId == null ? null : GetChallenge(challengeId).Configuration,
+        public static RegionalWorldState Create(ContentCatalog content, string? challengeId, string charterId)
+        {
+            if (challengeId == RecoveryChallenge) throw new ArgumentException("City Recovery requires a Living Cities identity.", nameof(challengeId));
+            return EnterpriseScenario.CreateRun(content, challengeId == null ? null : GetChallenge(challengeId).Configuration,
                 GetCharter(charterId));
+        }
 
         public static RegionalWorldState Create(ContentCatalog content, RunIdentity identity,
             bool reverseConfiguration = false)
         {
             if (identity == null) throw new ArgumentNullException(nameof(identity));
+            if (identity.WorldMode == RunWorldMode.LivingCities)
+                return LivingCityScenario.Create(content, identity, reverseConfiguration);
             return EnterpriseScenario.CreateRun(content,
                 identity.ChallengeId == null ? null : GetChallenge(identity.ChallengeId).Configuration,
                 GetCharter(identity.CharterId), identity, reverseConfiguration);
@@ -116,7 +144,10 @@ namespace SaltAndLedger.Simulation
         {
             if (identity == null) throw new ArgumentNullException(nameof(identity));
             return identity.WorldMode == RunWorldMode.Classic ? ArchipelagoGeography.Classic :
-                SeededArchipelago.Generate(identity.Seed!.Value, identity.GeneratorVersion);
+                identity.WorldMode == RunWorldMode.LivingCities ?
+                    LivingCityGeneration.Generate(identity.Seed!.Value, identity.GeneratorVersion,
+                        identity.LivingPricingMode).Geography :
+                    SeededArchipelago.Generate(identity.Seed!.Value, identity.GeneratorVersion);
         }
 
         public static IndustrialRoutePolicy BakeryShippingPolicy(string facilityId = StarterBakery,
@@ -168,7 +199,7 @@ namespace SaltAndLedger.Simulation
         {
             Snapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
             Identity = identity;
-            Charter = RunScenario.GetCharter(charterId);
+            Charter = identity == null ? RunScenario.GetCharter(charterId) : RunScenario.GetCharter(identity);
             Challenge = snapshot.Challenge ?? throw new ArgumentException("Sandbox runs have no scored objective.");
             if (identity != null && identity.ChallengeId != Challenge.Configuration.Id)
                 throw new ArgumentException("Result challenge must match the authoritative run.", nameof(identity));

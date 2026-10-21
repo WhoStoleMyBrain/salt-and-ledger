@@ -7,7 +7,7 @@ using System.Numerics;
 namespace SaltAndLedger.Simulation
 {
     public enum InventoryCostOrigin { StarterGrant, Purchased, Manufactured }
-    public enum EconomicEventKind { StarterGrant, Purchase, Sale, Transfer, Production, Construction, ConstructionCompleted }
+    public enum EconomicEventKind { StarterGrant, Purchase, Sale, Transfer, Production, Construction, ConstructionCompleted, Wage }
 
     /// <summary>
     /// An open interval of an original acquisition. Prefix-floor allocation keeps every integer
@@ -88,6 +88,10 @@ namespace SaltAndLedger.Simulation
         public long RealizedGrossMargin => checked(SalesRevenue - CostOfGoodsSold);
         public long ConstructionExpenditure { get; }
         public long HeldInventoryCost { get; }
+        public long WagesPaid { get; }
+        public long OperatingSurplusAfterWages => checked(RealizedGrossMargin - WagesPaid);
+        public bool ShouldSerializeWagesPaid() => WagesPaid != 0;
+        public bool ShouldSerializeOperatingSurplusAfterWages() => WagesPaid != 0;
         public IReadOnlyDictionary<string, long> GrantedQuantities { get; }
         public IReadOnlyDictionary<string, long> PurchasedQuantities { get; }
         public IReadOnlyDictionary<string, long> SoldQuantities { get; }
@@ -97,10 +101,11 @@ namespace SaltAndLedger.Simulation
         internal CompanyFinancialSnapshot(string ownerId, long initialCash, long purchases, long revenue,
             long costOfGoodsSold, long construction, long heldCost, IDictionary<string, long> granted,
             IDictionary<string, long> purchased, IDictionary<string, long> sold, IDictionary<string, long> produced,
-            IDictionary<string, long> consumed, IDictionary<string, long> held)
+            IDictionary<string, long> consumed, IDictionary<string, long> held, long wagesPaid = 0)
         {
             OwnerId = ownerId; InitialCash = initialCash; InventoryPurchases = purchases; SalesRevenue = revenue;
             CostOfGoodsSold = costOfGoodsSold; ConstructionExpenditure = construction; HeldInventoryCost = heldCost;
+            WagesPaid = wagesPaid;
             GrantedQuantities = AccountingCollections.Dictionary(granted);
             PurchasedQuantities = AccountingCollections.Dictionary(purchased);
             SoldQuantities = AccountingCollections.Dictionary(sold);
@@ -320,6 +325,15 @@ namespace SaltAndLedger.Simulation
                 "facility:" + facilityId, "facility:" + facilityId, portId, null, 0, 0, 0, 0, null, facilityId,
                 "construction_completed", Array.Empty<EconomicGoodsMovement>(), Array.Empty<EconomicGoodsMovement>()));
         }
+        internal void PayWage(string ownerId, string facilityId, string portId, long amount)
+        {
+            if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
+            if (amount == 0) return;
+            companies[ownerId].Wages = checked(companies[ownerId].Wages + amount);
+            events.Add(Event(EconomicEventKind.Wage, ownerId, ownerId, "households:" + portId,
+                "facility:" + facilityId, null, portId, null, 0, amount, -amount, 0, null, facilityId,
+                "production_wage_expense", Array.Empty<EconomicGoodsMovement>(), Array.Empty<EconomicGoodsMovement>()));
+        }
         internal AccountingSnapshot Snapshot()
         {
             var inventory = stores.Values.Select(s => s.Snapshot()).ToArray();
@@ -407,7 +421,7 @@ namespace SaltAndLedger.Simulation
         {
             internal string Id { get; }
             internal long InitialCash { get; }
-            internal long Purchases, Revenue, CostOfGoodsSold, Construction;
+            internal long Purchases, Revenue, CostOfGoodsSold, Construction, Wages;
             internal readonly Dictionary<string, long> Granted = new Dictionary<string, long>(StringComparer.Ordinal);
             internal readonly Dictionary<string, long> Purchased = new Dictionary<string, long>(StringComparer.Ordinal);
             internal readonly Dictionary<string, long> Sold = new Dictionary<string, long>(StringComparer.Ordinal);
@@ -418,6 +432,7 @@ namespace SaltAndLedger.Simulation
             {
                 Purchases = before.InventoryPurchases; Revenue = before.SalesRevenue;
                 CostOfGoodsSold = before.CostOfGoodsSold; Construction = before.ConstructionExpenditure;
+                Wages = before.WagesPaid;
                 foreach (var value in before.GrantedQuantities) Granted.Add(value.Key, value.Value);
                 foreach (var value in before.PurchasedQuantities) Purchased.Add(value.Key, value.Value);
                 foreach (var value in before.SoldQuantities) Sold.Add(value.Key, value.Value);
@@ -434,7 +449,7 @@ namespace SaltAndLedger.Simulation
                     foreach (var good in store.Goods.Values) Add(held, good.GoodId, good.Quantity);
                 }
                 return new CompanyFinancialSnapshot(Id, InitialCash, Purchases, Revenue, CostOfGoodsSold,
-                    Construction, basis, Granted, Purchased, Sold, Produced, Consumed, held);
+                    Construction, basis, Granted, Purchased, Sold, Produced, Consumed, held, Wages);
             }
         }
     }

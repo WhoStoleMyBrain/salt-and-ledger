@@ -10,17 +10,21 @@ namespace SaltAndLedger.Simulation
         public int IntervalDays { get; }
         public int? OutputStockLimit { get; }
         public long FirstDueDay { get; }
+        public long WagePerBatch { get; }
+        public bool ShouldSerializeWagePerBatch() => WagePerBatch != 0;
 
         public ScheduledFacilityConfiguration(BuildingInstance instance, int intervalDays,
-            int? outputStockLimit = null, long? firstDueDay = null)
+            int? outputStockLimit = null, long? firstDueDay = null, long wagePerBatch = 0)
         {
             Instance = instance ?? throw new ArgumentNullException(nameof(instance));
             if (intervalDays <= 0) throw new ArgumentOutOfRangeException(nameof(intervalDays));
+            if (wagePerBatch < 0) throw new ArgumentOutOfRangeException(nameof(wagePerBatch));
             if (outputStockLimit < 0) throw new ArgumentOutOfRangeException(nameof(outputStockLimit));
             if (firstDueDay.HasValue && firstDueDay.Value < 1) throw new ArgumentOutOfRangeException(nameof(firstDueDay));
             IntervalDays = intervalDays;
             OutputStockLimit = outputStockLimit;
             FirstDueDay = firstDueDay ?? intervalDays;
+            WagePerBatch = wagePerBatch;
         }
     }
 
@@ -31,13 +35,23 @@ namespace SaltAndLedger.Simulation
         public int Quantity { get; }
         public int IntervalDays { get; }
         public long FirstDueDay { get; }
+        public ConsumptionKind Kind { get; }
+        public int PopulationPerUnit { get; }
+        public bool ShouldSerializeKind() => Kind != ConsumptionKind.Legacy;
+        public bool ShouldSerializePopulationPerUnit() => Kind != ConsumptionKind.Legacy;
 
         public ConsumptionConfiguration(string id, string goodId, int quantity, int intervalDays,
-            long? firstDueDay = null)
+            long? firstDueDay = null, ConsumptionKind kind = ConsumptionKind.Legacy, int populationPerUnit = 1)
         {
             RuntimeIdentifier.Validate(id, nameof(id));
             RuntimeIdentifier.Validate(goodId, nameof(goodId));
             if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity));
+            if (!Enum.IsDefined(typeof(ConsumptionKind), kind)) throw new ArgumentOutOfRangeException(nameof(kind));
+            if (populationPerUnit <= 0) throw new ArgumentOutOfRangeException(nameof(populationPerUnit));
+            if ((kind == ConsumptionKind.Essential && goodId != "bread") ||
+                (kind == ConsumptionKind.Luxury && goodId != "furniture") ||
+                (kind == ConsumptionKind.Municipal && goodId != "planks"))
+                throw new ArgumentException("Living needs must use Bread, Furniture or municipal Planks.", nameof(goodId));
             if (intervalDays <= 0) throw new ArgumentOutOfRangeException(nameof(intervalDays));
             if (firstDueDay.HasValue && firstDueDay.Value < 1) throw new ArgumentOutOfRangeException(nameof(firstDueDay));
             Id = id;
@@ -45,6 +59,7 @@ namespace SaltAndLedger.Simulation
             Quantity = quantity;
             IntervalDays = intervalDays;
             FirstDueDay = firstDueDay ?? intervalDays;
+            Kind = kind; PopulationPerUnit = populationPerUnit;
         }
     }
 
@@ -58,10 +73,12 @@ namespace SaltAndLedger.Simulation
         public string Role { get; }
         public IReadOnlyList<ScheduledFacilityConfiguration> Facilities { get; }
         public IReadOnlyList<ConsumptionConfiguration> Consumption { get; }
+        public SettlementConfiguration? Settlement { get; }
+        public bool ShouldSerializeSettlement() => Settlement != null;
 
         public RegionalPortConfiguration(PortConfiguration market, string name, int x, int y,
             IEnumerable<ScheduledFacilityConfiguration> facilities,
-            IEnumerable<ConsumptionConfiguration> consumption, string role = "")
+            IEnumerable<ConsumptionConfiguration> consumption, string role = "", SettlementConfiguration? settlement = null)
         {
             Market = market ?? throw new ArgumentNullException(nameof(market));
             if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("A port needs a name.", nameof(name));
@@ -83,6 +100,14 @@ namespace SaltAndLedger.Simulation
             X = x;
             Y = y;
             Role = role ?? throw new ArgumentNullException(nameof(role));
+            Settlement = settlement;
+            if (settlement == null && (configured.Any(f => f.WagePerBatch != 0) || demand.Any(c => c.Kind != ConsumptionKind.Legacy)))
+                throw new ArgumentException("Living wages and needs require a household sector.");
+            if (settlement != null && (demand.Count(c => c.Kind == ConsumptionKind.Essential) != 1 ||
+                demand.Any(c => c.Kind == ConsumptionKind.Legacy)))
+                throw new ArgumentException("A living town needs one essential Bread rule and explicitly classified needs.");
+            if (demand.Any(c => (c.Kind == ConsumptionKind.Essential || c.Kind == ConsumptionKind.Luxury) &&
+                !market.Quotes.ContainsKey(c.GoodId))) throw new ArgumentException("Household purchases need a retail quote.");
             Facilities = Array.AsReadOnly(configured.OrderBy(f => f.Instance.Priority)
                 .ThenBy(f => f.Instance.Id, StringComparer.Ordinal).ToArray());
             Consumption = Array.AsReadOnly(demand.OrderBy(c => c.Id, StringComparer.Ordinal).ToArray());

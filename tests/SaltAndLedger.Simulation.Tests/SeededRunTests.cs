@@ -36,7 +36,7 @@ public sealed class SeededRunTests
         Assert.Equal("sandbox/industrial_consortium/ascension0/classic", classic.ComparisonGroup);
         Assert.Throws<ArgumentException>(() => new RunIdentity("missing", RunScenario.MerchantCharter));
         Assert.Throws<ArgumentException>(() => new RunIdentity(null, "missing"));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new RunIdentity(null, RunScenario.MerchantCharter, (RunWorldMode)2));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RunIdentity(null, RunScenario.MerchantCharter, (RunWorldMode)99));
         Assert.Throws<ArgumentOutOfRangeException>(() => new RunIdentity(null, RunScenario.MerchantCharter, difficulty: (RunDifficulty)2));
         Assert.Throws<ArgumentException>(() => new RunIdentity(null, RunScenario.MerchantCharter, seed: 1));
         Assert.Throws<ArgumentException>(() => new RunIdentity(null, RunScenario.MerchantCharter, RunWorldMode.Seeded));

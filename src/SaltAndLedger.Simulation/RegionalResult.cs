@@ -102,8 +102,21 @@ namespace SaltAndLedger.Simulation
         public int RequestedQuantity { get; }
         public int ConsumedQuantity { get; }
         public int UnmetQuantity => RequestedQuantity - ConsumedQuantity;
-        internal RegionalConsumption(string portId, ConsumptionConfiguration rule, int consumed)
-        { PortId = portId; RuleId = rule.Id; GoodId = rule.GoodId; RequestedQuantity = rule.Quantity; ConsumedQuantity = consumed; }
+        public ConsumptionKind Kind { get; }
+        public long Payment { get; }
+        public int UnmetStock { get; }
+        public int UnmetAffordability { get; }
+        public bool ShouldSerializeKind() => Kind != ConsumptionKind.Legacy;
+        public bool ShouldSerializePayment() => Kind != ConsumptionKind.Legacy;
+        public bool ShouldSerializeUnmetStock() => Kind != ConsumptionKind.Legacy;
+        public bool ShouldSerializeUnmetAffordability() => Kind != ConsumptionKind.Legacy;
+        internal RegionalConsumption(string portId, ConsumptionConfiguration rule, int consumed,
+            int? desired = null, long payment = 0, int unmetStock = 0, int unmetAffordability = 0)
+        {
+            PortId = portId; RuleId = rule.Id; GoodId = rule.GoodId; RequestedQuantity = desired ?? rule.Quantity;
+            ConsumedQuantity = consumed; Kind = rule.Kind; Payment = payment;
+            UnmetStock = unmetStock; UnmetAffordability = unmetAffordability;
+        }
     }
 
     public sealed class RegionalMovement
@@ -131,12 +144,17 @@ namespace SaltAndLedger.Simulation
         public IReadOnlyList<RegionalConstruction> Construction { get; }
         public IReadOnlyList<RegionalTransfer> Transfers { get; }
         public IReadOnlyList<EconomicEvent> EconomicEvents { get; }
+        public IReadOnlyList<CityCashTransfer> CashTransfers { get; }
+        public bool ShouldSerializeCashTransfers() => CashTransfers.Count != 0;
+        public IReadOnlyList<CityChange> CityChanges { get; }
+        public bool ShouldSerializeCityChanges() => CityChanges.Count != 0;
         internal RegionalResult(RegionalWorldSnapshot before, RegionalWorldSnapshot after,
             IEnumerable<RegionalTrade> trades, IEnumerable<RegionalProduction> production,
             IEnumerable<RegionalConsumption> consumption, IEnumerable<RegionalMovement> movements,
             IEnumerable<RegionalDecision> decisions, IEnumerable<RegionalWarehouseTrade> warehouseTrades,
             IEnumerable<RegionalPrivateProduction> privateProduction, IEnumerable<RegionalConstruction> construction,
-            IEnumerable<RegionalTransfer> transfers, IEnumerable<EconomicEvent> economicEvents)
+            IEnumerable<RegionalTransfer> transfers, IEnumerable<EconomicEvent> economicEvents,
+            IEnumerable<CityCashTransfer>? cashTransfers = null, IEnumerable<CityChange>? cityChanges = null)
         {
             Before = before; After = after;
             Trades = Array.AsReadOnly(trades.ToArray());
@@ -149,6 +167,8 @@ namespace SaltAndLedger.Simulation
             Construction = Array.AsReadOnly(construction.ToArray());
             Transfers = Array.AsReadOnly(transfers.ToArray());
             EconomicEvents = Array.AsReadOnly(economicEvents.ToArray());
+            CashTransfers = Array.AsReadOnly((cashTransfers ?? Array.Empty<CityCashTransfer>()).ToArray());
+            CityChanges = Array.AsReadOnly((cityChanges ?? Array.Empty<CityChange>()).ToArray());
         }
     }
 }

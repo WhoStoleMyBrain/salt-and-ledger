@@ -329,8 +329,17 @@ internal static class ArchipelagoExperiments
         {
             p.Id, p.Name, p.X, p.Y, p.Role, p.MarketCash, p.Inventory,
             Quotes = p.Quotes.Values.Select(q => new { q.GoodId, q.Pricing }).ToArray(),
-            Facilities = p.Facilities.Select(f => f.Configuration).ToArray(),
-            Consumption = p.Consumption.Select(c => c.Configuration).ToArray()
+            // Historical report schemas stay explicit as opt-in living configuration grows.
+            Facilities = p.Facilities.Select(f => new
+            {
+                f.Configuration.Instance, f.Configuration.IntervalDays,
+                f.Configuration.OutputStockLimit, f.Configuration.FirstDueDay
+            }).ToArray(),
+            Consumption = p.Consumption.Select(c => new
+            {
+                c.Configuration.Id, c.Configuration.GoodId, c.Configuration.Quantity,
+                c.Configuration.IntervalDays, c.Configuration.FirstDueDay
+            }).ToArray()
         }).ToArray(),
         Routes = snapshot.Routes,
         Ships = snapshot.Ships.Values.Select(s => new

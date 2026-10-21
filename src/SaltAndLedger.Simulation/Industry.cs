@@ -34,13 +34,17 @@ namespace SaltAndLedger.Simulation
         public int WarehouseCapacity { get; }
         public int? OutputStockLimit { get; }
         public IReadOnlyList<string> EligiblePortIds { get; }
+        public long WagePerBatch { get; }
+        public bool ShouldSerializeWagePerBatch() => WagePerBatch != 0;
         public IndustryBlueprint(string id, string buildingId, string recipeId, long constructionCost,
-            int intervalDays, int warehouseCapacity, IEnumerable<string> eligiblePortIds, int? outputStockLimit = null)
+            int intervalDays, int warehouseCapacity, IEnumerable<string> eligiblePortIds, int? outputStockLimit = null,
+            long wagePerBatch = 0)
         {
             RuntimeIdentifier.Validate(id, nameof(id));
             RuntimeIdentifier.Validate(buildingId, nameof(buildingId));
             RuntimeIdentifier.Validate(recipeId, nameof(recipeId));
             if (constructionCost <= 0) throw new ArgumentOutOfRangeException(nameof(constructionCost));
+            if (wagePerBatch < 0) throw new ArgumentOutOfRangeException(nameof(wagePerBatch));
             if (intervalDays <= 0) throw new ArgumentOutOfRangeException(nameof(intervalDays));
             if (warehouseCapacity <= 0) throw new ArgumentOutOfRangeException(nameof(warehouseCapacity));
             if (outputStockLimit < 0) throw new ArgumentOutOfRangeException(nameof(outputStockLimit));
@@ -52,6 +56,7 @@ namespace SaltAndLedger.Simulation
                 throw new ArgumentException("Eligible ports must be unique.");
             Id = id; BuildingId = buildingId; RecipeId = recipeId; ConstructionCost = constructionCost;
             IntervalDays = intervalDays; WarehouseCapacity = warehouseCapacity; OutputStockLimit = outputStockLimit;
+            WagePerBatch = wagePerBatch;
             EligiblePortIds = Array.AsReadOnly(ports.OrderBy(p => p, StringComparer.Ordinal).ToArray());
         }
     }
@@ -150,6 +155,8 @@ namespace SaltAndLedger.Simulation
         public long? ConstructionCompletedDay => IsOperational ? ConstructionCompletionDay : (long?)null;
         public int ConstructionDaysRemaining { get; }
         public long FirstProductionDay => checked(ConstructionCompletionDay + Blueprint.IntervalDays);
+        public long WagesPaid { get; }
+        public bool ShouldSerializeWagesPaid() => WagesPaid != 0;
         public long NextProductionDay { get; }
         public ScheduledProductionOutcome LastOutcome { get; }
         public IReadOnlyDictionary<string, int> Inventory { get; }
@@ -173,7 +180,7 @@ namespace SaltAndLedger.Simulation
             IndustryWaitReason procurementWaitReason, IndustryWaitReason salesWaitReason,
             bool isStarterGrant = false, string provenance = "constructed",
             FacilityConstructionStatus constructionStatus = FacilityConstructionStatus.Operational,
-            long? constructionCompletionDay = null, long? snapshotDay = null)
+            long? constructionCompletionDay = null, long? snapshotDay = null, long wagesPaid = 0)
         {
             Id = id; OwnerId = ownerId; PortId = portId; Blueprint = blueprint; Policy = policy;
             Enabled = enabled; CreatedDay = createdDay; NextProductionDay = nextProductionDay; LastOutcome = lastOutcome;
@@ -191,6 +198,7 @@ namespace SaltAndLedger.Simulation
             ProcurementWaitReason = procurementWaitReason; SalesWaitReason = salesWaitReason;
             IsStarterGrant = isStarterGrant; Provenance = provenance;
             ConstructionStatus = constructionStatus;
+            WagesPaid = wagesPaid;
             ConstructionCompletionDay = constructionCompletionDay ?? createdDay;
             ConstructionDaysRemaining = IsOperational ? 0 : checked((int)Math.Max(0,
                 ConstructionCompletionDay - (snapshotDay ?? createdDay)));

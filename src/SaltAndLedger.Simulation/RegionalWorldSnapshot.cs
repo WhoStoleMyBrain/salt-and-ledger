@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Numerics;
+using Newtonsoft.Json;
 
 namespace SaltAndLedger.Simulation
 {
-    public enum ScheduledProductionOutcome { NotDue, Disabled, Produced, InputShortage, OutputLimit, WarehouseCapacity, UnderConstruction }
+    public enum ScheduledProductionOutcome { NotDue, Disabled, Produced, InputShortage, OutputLimit, WarehouseCapacity, UnderConstruction, PayrollShortage }
 
     public sealed class ScheduledFacilitySnapshot
     {
@@ -29,13 +31,39 @@ namespace SaltAndLedger.Simulation
         public long NextDueDay { get; }
         public int LastUnmetQuantity { get; }
         public long TotalUnmetQuantity { get; }
+        public int LastDesiredQuantity { get; }
+        public int LastConsumedQuantity { get; }
+        public long LastPayment { get; }
+        public int LastUnmetStock { get; }
+        public int LastUnmetAffordability { get; }
+        public long TotalDesiredQuantity { get; }
+        public long TotalConsumedQuantity { get; }
+        public long TotalPayment { get; }
+        public long TotalUnmetStock { get; }
+        public long TotalUnmetAffordability { get; }
+        public bool ShouldSerializeLastDesiredQuantity() => Configuration.Kind != ConsumptionKind.Legacy;
+        public bool ShouldSerializeLastConsumedQuantity() => Configuration.Kind != ConsumptionKind.Legacy;
+        public bool ShouldSerializeLastPayment() => Configuration.Kind != ConsumptionKind.Legacy;
+        public bool ShouldSerializeLastUnmetStock() => Configuration.Kind != ConsumptionKind.Legacy;
+        public bool ShouldSerializeLastUnmetAffordability() => Configuration.Kind != ConsumptionKind.Legacy;
+        public bool ShouldSerializeTotalDesiredQuantity() => Configuration.Kind != ConsumptionKind.Legacy;
+        public bool ShouldSerializeTotalConsumedQuantity() => Configuration.Kind != ConsumptionKind.Legacy;
+        public bool ShouldSerializeTotalPayment() => Configuration.Kind != ConsumptionKind.Legacy;
+        public bool ShouldSerializeTotalUnmetStock() => Configuration.Kind != ConsumptionKind.Legacy;
+        public bool ShouldSerializeTotalUnmetAffordability() => Configuration.Kind != ConsumptionKind.Legacy;
         internal ConsumptionSnapshot(ConsumptionConfiguration configuration, long nextDueDay,
-            int lastUnmetQuantity, long totalUnmetQuantity)
+            int lastUnmetQuantity, long totalUnmetQuantity, int lastDesired = 0, int lastConsumed = 0,
+            long lastPayment = 0, int unmetStock = 0, int unmetAffordability = 0, long totalDesired = 0,
+            long totalConsumed = 0, long totalPayment = 0, long totalStock = 0, long totalAffordability = 0)
         {
             Configuration = configuration;
             NextDueDay = nextDueDay;
             LastUnmetQuantity = lastUnmetQuantity;
             TotalUnmetQuantity = totalUnmetQuantity;
+            LastDesiredQuantity = lastDesired; LastConsumedQuantity = lastConsumed; LastPayment = lastPayment;
+            LastUnmetStock = unmetStock; LastUnmetAffordability = unmetAffordability;
+            TotalDesiredQuantity = totalDesired; TotalConsumedQuantity = totalConsumed; TotalPayment = totalPayment;
+            TotalUnmetStock = totalStock; TotalUnmetAffordability = totalAffordability;
         }
     }
 
@@ -53,13 +81,17 @@ namespace SaltAndLedger.Simulation
         public IReadOnlyDictionary<string, MarketQuote> Quotes => Market.Quotes;
         public IReadOnlyList<ScheduledFacilitySnapshot> Facilities { get; }
         public IReadOnlyList<ConsumptionSnapshot> Consumption { get; }
+        public CitySnapshot? City { get; }
+        public bool ShouldSerializeCity() => City != null;
         internal RegionalPortSnapshot(RegionalPortConfiguration configuration, PortSnapshot market,
-            IEnumerable<ScheduledFacilitySnapshot> facilities, IEnumerable<ConsumptionSnapshot> consumption)
+            IEnumerable<ScheduledFacilitySnapshot> facilities, IEnumerable<ConsumptionSnapshot> consumption,
+            CitySnapshot? city = null)
         {
             Configuration = configuration;
             Market = market;
             Facilities = Array.AsReadOnly(facilities.ToArray());
             Consumption = Array.AsReadOnly(consumption.ToArray());
+            City = city;
         }
     }
 
@@ -115,6 +147,10 @@ namespace SaltAndLedger.Simulation
         public IReadOnlyDictionary<string, PrivateFacilitySnapshot> PrivateFacilities { get; }
         public ChallengeSnapshot? Challenge { get; }
         public AccountingSnapshot Accounting { get; }
+        [JsonIgnore]
+        public BigInteger TotalCash => Ports.Values.Aggregate(BigInteger.Zero,
+            (sum, port) => sum + port.MarketCash + (port.City?.HouseholdCash ?? 0)) +
+            Companies.Values.Aggregate(BigInteger.Zero, (sum, company) => sum + company.Cash);
         internal RegionalWorldSnapshot(long day, long revision, IEnumerable<RegionalPortSnapshot> ports,
             IEnumerable<RegionalShipSnapshot> ships, IEnumerable<SeaRoute> routes,
             IEnumerable<CompanySnapshot> companies, IEnumerable<IndustryBlueprint> industryBlueprints,
@@ -160,6 +196,15 @@ namespace SaltAndLedger.Simulation
         {
             var port = Ports[portId];
             return port.Quotes[goodId].AtStock(port.Inventory[goodId]);
+        }
+
+        /// <summary>Current-state retail proposal; no schedule, reservation or future-income promise.</summary>
+        public RegionalConsumption PreviewHouseholdConsumption(string portId, string ruleId)
+        {
+            var port = Ports[portId];
+            var city = port.City ?? throw new InvalidOperationException("This historical town has no household account.");
+            var rule = port.Configuration.Consumption.Single(c => c.Id == ruleId);
+            return LivingRetail.Preview(port.Configuration, city, rule, port.Quotes, port.Inventory, port.MarketCash);
         }
 
         /// <summary>Dates only: eligibility, funds and site uniqueness are still checked when ordering.</summary>
