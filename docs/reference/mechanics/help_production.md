@@ -14,6 +14,8 @@ A private factory consumes and produces only within its own storage\. A successf
 
 Daily ship actions occur before procurement and production\. Operational private procurement is followed by public production, private production, private sales, scheduled consumption, voyage progress and due construction completion\. Fresh output cannot be loaded by an earlier ship action in that same daily operation\. Pending factories skip their automatic phases even on completion day\.
 
+In Living Cities, a successful public batch pays the configured wage from market cash to local households; a private batch pays from its company\. Insufficient payroll blocks the whole batch and keeps it due\. Blocked, disabled, input\-starved and pending batches pay nothing\. After retail, city observations and population reviews occur before voyages and construction completion\.
+
 ## Related entries
 
 - [Owning a factory](../mechanics/help_factories.md)

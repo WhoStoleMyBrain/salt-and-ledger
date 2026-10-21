@@ -6,21 +6,24 @@ title: "Seeded worlds and exact retries"
 
 # Seeded worlds and exact retries
 
-Change geography while preserving the same four\-town economy\.
+Choose geography\-only v1 or Living Cities v2 economic roles, then retry the exact run identity\.
 
 Fixed / Classic Archipelago retains the original map positions and authored sea distances\. Seeded Archipelago moves the existing four towns, preserving their IDs, industries, markets, NPCs, initial goods and cash, ship speeds, demand and challenge deadlines\. No seed receives secret assistance\.
 
 Enter an ASCII integer from \-2147483648 through 2147483647, with an optional leading plus or minus and no spaces or separators\. Generator version 1 uses a fixed integer algorithm with bounded slot placement and jitter\. Its six direct distances derive from the same coordinates shown in the preview and map\. Ordinary speed\-100 ships take three to seven days per direct voyage\.
 
-Record the seed and generator version together with challenge, charter and ascension\. That complete identity determines the initial run under the current scenario definitions\. Retry Same World restores it, including original funds, stock, cargo, policies, facilities and clocks, and clears the host journal\. It does not preserve accumulated progress\.
+Record the world mode, seed and generator version together with challenge, charter, ascension and Living Cities pricing hypothesis\. That complete identity determines the initial run under current scenario definitions\. Retry Same World restores original funds, stock, cargo, policies, facilities and clocks and clears the host journal\. It does not preserve accumulated progress\.
 
 Randomize seed or New World / Reroll explicitly chooses a different draft seed in the host, previews it and waits for a separate start\. Menus, encyclopedia and text settings cannot accidentally reroll\. A valid navigable layout does not guarantee that any unchanged route policy will win\.
+
+Living Cities version 2 uses the same geography stream plus a separate bounded economy stream\. Four authored role packages permute food supply, processing, forest furniture and vulnerable coast across the existing towns, with different population, cash, stocks and private capabilities\. The forest furniture town has logging and furniture production but no Sawmill capability; it depends on imported Planks\. Structural production paths do not guarantee perpetual solvency or victory\.
 
 ## Related entries
 
 - [Ascension 1: Slow Foundations](../mechanics/help_ascension.md)
 - [Challenges and run outcomes](../mechanics/help_challenges.md)
 - [Starting company charters](../mechanics/help_charters.md)
+- [Living city accounts and wages](../mechanics/help_city_accounts.md)
 - [Results and scoring](../mechanics/help_scoring.md)
 - [Shipping and voyages](../mechanics/help_shipping.md)
 

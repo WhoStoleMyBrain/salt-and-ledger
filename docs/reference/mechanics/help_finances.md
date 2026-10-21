@@ -14,7 +14,7 @@ Inventory purchases are cash outflows, while held inventory cost describes the p
 
 The ledger identifies committed transactions, transfers, production, and grants with their company, store, commodity, quantity, time, and relevant cash or cost\. The visible journal is bounded; authoritative lifetime summaries remain available after old detail entries leave the display\.
 
-Reports do not supply speculative resale values for factories, ships, or unsold stock\. Gross margin is not net profit after unmodeled labor, operating costs, depreciation, or taxes\.
+Reports do not supply speculative resale values for factories, ships or unsold stock\. Material gross margin remains revenue minus FIFO material cost\. Living Cities separately reports all actual wages paid and operating surplus after wages: material margin minus those wages, including wages for output still held\. This period measure is not full net profit after travel, depreciation, overhead or taxes\.
 
 ## Related entries
 

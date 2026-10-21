@@ -10,7 +10,7 @@ Choose one presentation scale for every ArchipelagoLab screen\.
 
 Settings offers Compact, Default, Large and Extra Large text throughout gameplay, map labels, trade, industry, automation, ledger, encyclopedia, setup, pause and results\. Default body text is 17 pixels; Large and Extra Large use 21 and 25\. Compact uses 14 for a deliberately denser presentation\.
 
-Panels wrap and scroll internally as text grows\. Buttons, numeric fields, tables and hit targets adjust with the text rather than using a paint\-only zoom\. Scroll the contents of long panels to reach secondary details, while preserving the primary actions and close controls\.
+The primary sidebar groups Overview, Market and Controls into tabs and keeps ordinary actions separate\. City Economy opens paused detail; industry advanced rules are collapsible\. Panels wrap and scroll internally where text grows\. Buttons, numeric fields and hit targets adjust with text rather than using paint\-only zoom; long documents and advanced configuration intentionally retain scrolling\.
 
 Changing text size is passive: it does not advance time, change revision, spend cash, alter rules or reroll a seed\. The text preference is remembered locally through Unity PlayerPrefs for the application environment, across menus and fresh runs\. Other presentation settings last for the session\. This does not save an economic run or synchronize preferences between devices\.
 

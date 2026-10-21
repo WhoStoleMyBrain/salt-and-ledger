@@ -14,6 +14,8 @@ The industry summary shows status, next opportunity, missing inputs and local qu
 
 A charter may grant an initial facility or goods\. Those starter assets are grants, not purchases or construction payments during the run\. Starter facilities are already operational at both ascensions and retain their initial schedule\. Capital spending remains separate from material cost and sale margin\.
 
+Living Cities has town\-specific construction eligibility\. An industry may be absent and also impossible to build locally\. Cash alone cannot override this restriction; use the eligible\-town list and import missing inputs through real trades or shipping\.
+
 ## Related entries
 
 - [Ascension 1: Slow Foundations](../mechanics/help_ascension.md)

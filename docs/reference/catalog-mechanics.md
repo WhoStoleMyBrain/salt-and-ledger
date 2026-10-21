@@ -8,6 +8,9 @@ These explanations are shared with the offline in-game encyclopedia. For exact d
 - [Cargo and storage capacity](mechanics/help_capacity.md) — Every physical item uses one unit of ship or private storage capacity\.
 - [Challenges and run outcomes](mechanics/help_challenges.md) — A challenge ends in victory, deadline defeat, or confirmed voluntary abandonment\.
 - [Starting company charters](mechanics/help_charters.md) — Choose one replacement starting package with understandable tradeoffs\.
+- [Living city accounts and wages](mechanics/help_city_accounts.md) — Household money, market liquidity and company cash have separate owners\.
+- [Food, furniture and municipal use](mechanics/help_city_needs.md) — Different consumers need different goods on explicit schedules\.
+- [Population, prosperity and recovery](mechanics/help_city_welfare.md) — Sustained paid food and purchasing power shape bounded city welfare\.
 - [Historical inventory cost](mechanics/help_cost_basis.md) — Held goods carry actual acquisition or input\-material expenditure through their journey\.
 - [Owning a factory](mechanics/help_factories.md) — Invest cash in a fixed recipe and a finite private stockpile\.
 - [Financial reports and the ledger](mechanics/help_finances.md) — Separate cash, revenue, attributed costs, realized margin, and capital\.
@@ -20,6 +23,6 @@ These explanations are shared with the offline in-game encyclopedia. For exact d
 - [Production and scheduling](mechanics/help_production.md) — Complete canonical recipes run at explicitly scheduled economic days\.
 - [Text size and readable controls](mechanics/help_readability.md) — Choose one presentation scale for every ArchipelagoLab screen\.
 - [Results and scoring](mechanics/help_scoring.md) — Read the explicit score breakdown alongside the actual economy\.
-- [Seeded worlds and exact retries](mechanics/help_seeded_worlds.md) — Change geography while preserving the same four\-town economy\.
+- [Seeded worlds and exact retries](mechanics/help_seeded_worlds.md) — Choose geography\-only v1 or Living Cities v2 economic roles, then retry the exact run identity\.
 - [Shipping and voyages](mechanics/help_shipping.md) — Goods travel aboard a real ship between directly connected towns\.
 - [Buying and selling](mechanics/help_trading.md) — Exchange goods with a town using the company's finite cash account\.

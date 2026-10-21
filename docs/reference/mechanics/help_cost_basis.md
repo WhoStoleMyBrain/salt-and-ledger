@@ -14,7 +14,7 @@ A lot's cost is allocated by exact cumulative integer shares\. Taking a slice re
 
 Production removes the historical material cost of its consumed inputs and allocates that total across actual output units in stable commodity order\. Finished goods therefore carry their input\-material cost\. Transfers keep that cost without creating revenue\.
 
-Starter grants retain explicit grant provenance and zero purchased expenditure\. That is not their market value\. Input\-free extraction can have zero modeled material expenditure\. Labor, depreciation, and travel costs are not simulated and must not be inferred as zero total economic cost\.
+Starter grants retain explicit grant provenance and zero purchased expenditure\. That is not market value\. Living Cities production wages are immediately expensed separately, not added to FIFO material basis\. Depreciation, travel and other overhead remain unmodeled; zero material basis is not zero total economic cost\.
 
 ## Related entries
 

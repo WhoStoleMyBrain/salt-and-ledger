@@ -39,12 +39,13 @@
       "paragraphs": [
         "A town can have goods to sell but too little cash to buy your cargo. Your company likewise needs actual cash to procure inputs, buy cargo, or construct a facility.",
         "A blocked automated sale keeps unsold cargo aboard and explains the wait. Lowering a price limit cannot create buyer cash. Nothing silently replenishes stock or funds.",
-        "Consumption removes physical goods without a household payment. Extraction creates the recipe's goods, not money. Construction and trading move existing cash between companies and towns."
+        "Classic and seeded v1 consumption removes goods without payment. Living Cities v2 households instead pay exact retail prices from their separate finite cash account; municipal Plank use remains an unpaid physical sink. Extraction creates goods, not money. Wages, retail, construction and trading transfer existing cash between named accounts."
       ],
       "relatedIds": [
         "help_trading",
         "help_production",
-        "help_finances"
+        "help_finances",
+        "help_city_accounts"
       ]
     },
     {
@@ -69,7 +70,7 @@
       "paragraphs": [
         "Departing changes the ship's voyage immediately without spending a day. Advancing economic days progresses travel. After arrival is committed, manual dockside actions are available at the destination.",
         "Duration follows the route's distance and the ship's configured speed. Classic uses authored distances; seeded geography derives all six direct distances from the generated integer positions. Distances are abstract chart units, not coastline-aware sailing paths. Map drawing and playback speed never alter travel or economic calculations. You cannot trade or transfer while sailing.",
-        "There are currently no simulated fuel, wages, voyage fees, or transport losses. This means no modeled transport expenditure, not a claim that shipping has no real economic cost."
+        "There are currently no simulated ship-crew wages, fuel, voyage fees or transport losses. Living Cities models production wages only. Unmodeled transport expenditure is not a claim that shipping has no real economic cost."
       ],
       "relatedIds": [
         "help_capacity",
@@ -99,7 +100,8 @@
       "paragraphs": [
         "A recipe lists its actual input and output quantities. Transformation requires every input. Extraction has no tradeable inputs and creates its configured output. Canonical recipe pages describe quantities; the active scenario supplies intervals and limits.",
         "A private factory consumes and produces only within its own storage. A successful batch schedules the next opportunity one interval later. Missing inputs, disabled production, or full output storage keep the batch due without accumulating catch-up batches.",
-        "Daily ship actions occur before procurement and production. Operational private procurement is followed by public production, private production, private sales, scheduled consumption, voyage progress and due construction completion. Fresh output cannot be loaded by an earlier ship action in that same daily operation. Pending factories skip their automatic phases even on completion day."
+        "Daily ship actions occur before procurement and production. Operational private procurement is followed by public production, private production, private sales, scheduled consumption, voyage progress and due construction completion. Fresh output cannot be loaded by an earlier ship action in that same daily operation. Pending factories skip their automatic phases even on completion day.",
+        "In Living Cities, a successful public batch pays the configured wage from market cash to local households; a private batch pays from its company. Insufficient payroll blocks the whole batch and keeps it due. Blocked, disabled, input-starved and pending batches pay nothing. After retail, city observations and population reviews occur before voyages and construction completion."
       ],
       "relatedIds": [
         "help_procurement",
@@ -114,7 +116,8 @@
       "paragraphs": [
         "The active scenario lists blueprints, eligible towns, construction payments, intervals and storage limits. Construction pays the local market once and creates empty owned storage. Ascension 0 is immediately operational; Ascension 1 new player sites complete after two economic days. The first batch is eligible one full production interval after completion, with inputs and capacity still required.",
         "The industry summary shows status, next opportunity, missing inputs and local quotes, real expenditure and physical shipping waits. A recommended setup prepares a visible policy draft; only Apply commits it. Keep local output sales disabled, or retain an appropriate reserve, when a ship should transport finished goods. Detailed rules remain available.",
-        "A charter may grant an initial facility or goods. Those starter assets are grants, not purchases or construction payments during the run. Starter facilities are already operational at both ascensions and retain their initial schedule. Capital spending remains separate from material cost and sale margin."
+        "A charter may grant an initial facility or goods. Those starter assets are grants, not purchases or construction payments during the run. Starter facilities are already operational at both ascensions and retain their initial schedule. Capital spending remains separate from material cost and sale margin.",
+        "Living Cities has town-specific construction eligibility. An industry may be absent and also impossible to build locally. Cash alone cannot override this restriction; use the eligible-town list and import missing inputs through real trades or shipping."
       ],
       "relatedIds": [
         "help_production",
@@ -165,7 +168,7 @@
         "Stock uses first-in, first-out acquisition lots in receipt order within each store and commodity. Several purchases at different prices remain distinguishable. A partial sale releases the earliest available slices at that store; transferred slices join the end of the destination queue with their original cost and provenance. Current market quotes never rewrite historical cost.",
         "A lot's cost is allocated by exact cumulative integer shares. Taking a slice releases the difference between the cumulative shares at its end and start. Split transfers preserve that original interval, so slicing cannot manufacture or lose cost through rounding.",
         "Production removes the historical material cost of its consumed inputs and allocates that total across actual output units in stable commodity order. Finished goods therefore carry their input-material cost. Transfers keep that cost without creating revenue.",
-        "Starter grants retain explicit grant provenance and zero purchased expenditure. That is not their market value. Input-free extraction can have zero modeled material expenditure. Labor, depreciation, and travel costs are not simulated and must not be inferred as zero total economic cost."
+        "Starter grants retain explicit grant provenance and zero purchased expenditure. That is not market value. Living Cities production wages are immediately expensed separately, not added to FIFO material basis. Depreciation, travel and other overhead remain unmodeled; zero material basis is not zero total economic cost."
       ],
       "relatedIds": [
         "help_finances",
@@ -182,7 +185,7 @@
         "Sale revenue is actual money received. Cost of goods sold is the historical basis released by those sales. Realized gross margin is revenue minus that attributed cost. Unsold cargo and warehouse goods retain their basis instead of becoming realized profit.",
         "Inventory purchases are cash outflows, while held inventory cost describes the purchased or manufactured goods still owned. Construction is separate capital spending, not another cargo purchase or a recurring charge on every manufactured unit.",
         "The ledger identifies committed transactions, transfers, production, and grants with their company, store, commodity, quantity, time, and relevant cash or cost. The visible journal is bounded; authoritative lifetime summaries remain available after old detail entries leave the display.",
-        "Reports do not supply speculative resale values for factories, ships, or unsold stock. Gross margin is not net profit after unmodeled labor, operating costs, depreciation, or taxes."
+        "Reports do not supply speculative resale values for factories, ships or unsold stock. Material gross margin remains revenue minus FIFO material cost. Living Cities separately reports all actual wages paid and operating surplus after wages: material margin minus those wages, including wages for output still held. This period measure is not full net profit after travel, depreciation, overhead or taxes."
       ],
       "relatedIds": [
         "help_cost_basis",
@@ -215,7 +218,8 @@
         "Run setup states the objective, deadline, and required cash. The supply charter counts signed net target-market sales minus purchases by your company. Buying back and reselling that market's goods cannot create delivery credit; merely arriving or transferring stock does not count.",
         "Regional relief measures real scheduled consumption fulfilled in the configured towns. It is regional performance, not a claim that your company alone supplied every consumed item. An enterprise objective combines attributed financial performance with actual private production.",
         "The complete economic operation finishes before the objective is evaluated. Success or deadline failure then freezes further economic actions and opens results. The final daily operation can succeed before the deadline failure check.",
-        "Sandbox has no victory deadline. An active run can be deliberately abandoned with confirmation. No run survives application restart: there is no persistent save or cloud recovery system."
+        "Sandbox has no victory deadline. An active run can be deliberately abandoned with confirmation. No run survives application restart: there is no persistent save or cloud recovery system.",
+        "City Recovery in Living Cities measures six recent scheduled paid Bread opportunities at the vulnerable town. It requires at least 90 percent fulfillment against the greater of current and starting-population need, population at least its starting value, prosperity at least 55 and company cash at least 100 by day 90. Deliveries alone do not count; regional public/NPC contributions may help. A shrinking population cannot lower the baseline denominator."
       ],
       "relatedIds": [
         "help_charters",
@@ -230,7 +234,7 @@
       "description": "Read the explicit score breakdown alongside the actual economy.",
       "paragraphs": [
         "Results identify the challenge, charter, world mode, seed and generator version, ascension, outcome, completed day, objective progress, cash, actual revenue, attributed cost and margin, capital spending, factories, produced goods, deliveries, and remaining holdings.",
-        "Score combines four capped components: up to 500 objective points in proportion to completed progress; 1,000 points for victory; 10 points per remaining deadline day on victory, capped at 600; and one solvency point per 10 cash, capped at 100. Fractional points round down. Enterprise Ambition uses the lower of its production and margin progress for objective points. Total score cannot exceed 2,200; repeated transaction count earns no separate points.",
+        "Score combines four capped components: up to 500 objective points in proportion to completed progress; 1,000 points for victory; 10 points per remaining deadline day on victory, capped at 600; and one solvency point per 10 cash, capped at 100. Fractional points round down. Enterprise Ambition uses the lower of its production and margin progress for objective points. Total score cannot exceed 2,200; repeated transaction count earns no separate points. City Recovery objective progress is the lower of paid baseline-protected fulfillment and completion of its six-opportunity observation window; victory also checks population, prosperity and cash.",
         "Compare results only within the same challenge, starting charter, ascension and exact world identity. Different seeds are not equivalent leaderboard placements, and packages have different endowments. Retry Same World restores the original configuration; New World / Reroll changes the draft seed and previews it before a separate start."
       ],
       "relatedIds": [
@@ -244,7 +248,7 @@
       "name": "Menus, pause, and the encyclopedia",
       "description": "Inspect, pause, and begin another run without accidentally advancing the economy.",
       "paragraphs": [
-        "Start from the main menu, choose New Run or unlimited Sandbox, then review the challenge, charter, Classic or seeded world preview, and Ascension 0 or 1. Setup, seed editing and reference browsing do not advance economic time or reroll a started world.",
+        "Start from the main menu, choose New Run or unlimited Sandbox, then review the challenge, charter, Classic, seeded v1 or Living Cities v2 preview, and Ascension 0 or 1. Setup, seed editing and reference browsing do not advance economic time or reroll a started world.",
         "Escape first closes the active trade or industry overlay. From the encyclopedia it returns to the parent screen. During ordinary gameplay it opens pause; from pause it resumes unless a confirmation is active.",
         "Restart, abandonment, return to menu, and exit protect an active run with confirmation where progress would be discarded. Exit closes the standalone game. No hidden saved session or persistent Continue option is promised.",
         "The encyclopedia is available from the main menu, run setup, and pause menu. Browse a category, search names or descriptions, follow related entries, and use Back to return. All recipe facts are generated from the same content the simulation loads and work offline. Settings offers four game-wide text sizes without changing the world."
@@ -261,19 +265,21 @@
     {
       "id": "help_seeded_worlds",
       "name": "Seeded worlds and exact retries",
-      "description": "Change geography while preserving the same four-town economy.",
+      "description": "Choose geography-only v1 or Living Cities v2 economic roles, then retry the exact run identity.",
       "paragraphs": [
         "Fixed / Classic Archipelago retains the original map positions and authored sea distances. Seeded Archipelago moves the existing four towns, preserving their IDs, industries, markets, NPCs, initial goods and cash, ship speeds, demand and challenge deadlines. No seed receives secret assistance.",
         "Enter an ASCII integer from -2147483648 through 2147483647, with an optional leading plus or minus and no spaces or separators. Generator version 1 uses a fixed integer algorithm with bounded slot placement and jitter. Its six direct distances derive from the same coordinates shown in the preview and map. Ordinary speed-100 ships take three to seven days per direct voyage.",
-        "Record the seed and generator version together with challenge, charter and ascension. That complete identity determines the initial run under the current scenario definitions. Retry Same World restores it, including original funds, stock, cargo, policies, facilities and clocks, and clears the host journal. It does not preserve accumulated progress.",
-        "Randomize seed or New World / Reroll explicitly chooses a different draft seed in the host, previews it and waits for a separate start. Menus, encyclopedia and text settings cannot accidentally reroll. A valid navigable layout does not guarantee that any unchanged route policy will win."
+        "Record the world mode, seed and generator version together with challenge, charter, ascension and Living Cities pricing hypothesis. That complete identity determines the initial run under current scenario definitions. Retry Same World restores original funds, stock, cargo, policies, facilities and clocks and clears the host journal. It does not preserve accumulated progress.",
+        "Randomize seed or New World / Reroll explicitly chooses a different draft seed in the host, previews it and waits for a separate start. Menus, encyclopedia and text settings cannot accidentally reroll. A valid navigable layout does not guarantee that any unchanged route policy will win.",
+        "Living Cities version 2 uses the same geography stream plus a separate bounded economy stream. Four authored role packages permute food supply, processing, forest furniture and vulnerable coast across the existing towns, with different population, cash, stocks and private capabilities. The forest furniture town has logging and furniture production but no Sawmill capability; it depends on imported Planks. Structural production paths do not guarantee perpetual solvency or victory."
       ],
       "relatedIds": [
         "help_shipping",
         "help_charters",
         "help_challenges",
         "help_ascension",
-        "help_scoring"
+        "help_scoring",
+        "help_city_accounts"
       ]
     },
     {
@@ -300,13 +306,65 @@
       "description": "Choose one presentation scale for every ArchipelagoLab screen.",
       "paragraphs": [
         "Settings offers Compact, Default, Large and Extra Large text throughout gameplay, map labels, trade, industry, automation, ledger, encyclopedia, setup, pause and results. Default body text is 17 pixels; Large and Extra Large use 21 and 25. Compact uses 14 for a deliberately denser presentation.",
-        "Panels wrap and scroll internally as text grows. Buttons, numeric fields, tables and hit targets adjust with the text rather than using a paint-only zoom. Scroll the contents of long panels to reach secondary details, while preserving the primary actions and close controls.",
+        "The primary sidebar groups Overview, Market and Controls into tabs and keeps ordinary actions separate. City Economy opens paused detail; industry advanced rules are collapsible. Panels wrap and scroll internally where text grows. Buttons, numeric fields and hit targets adjust with text rather than using paint-only zoom; long documents and advanced configuration intentionally retain scrolling.",
         "Changing text size is passive: it does not advance time, change revision, spend cash, alter rules or reroll a seed. The text preference is remembered locally through Unity PlayerPrefs for the application environment, across menus and fresh runs. Other presentation settings last for the session. This does not save an economic run or synchronize preferences between devices."
       ],
       "relatedIds": [
         "help_navigation",
         "help_trading",
         "help_factories",
+        "help_seeded_worlds"
+      ]
+    },
+    {
+      "id": "help_city_accounts",
+      "name": "Living city accounts and wages",
+      "description": "Household money, market liquidity and company cash have separate owners.",
+      "paragraphs": [
+        "Each Living Cities town has a public market account and an aggregate household account. Every company has one cash account. Their combined total is conserved after initialization; there is no daily allowance, bailout or hidden stock repair.",
+        "A successful public production batch moves its wage from market to households. Private production moves its wage from the owning company to households. For example, a wage of 10 moves market 40 to 30 and household 20 to 30; no money is created.",
+        "If households then buy Bread for an exact order total of 18, household cash becomes 12 and market cash 48. Only the purchased Bread is consumed. Actual quantities use marginal price totals, stock and affordability; a first-unit quote multiplied by quantity is not the bill.",
+        "Market insolvency can block your sale even when households still have money. Retail may later fund the market only if food exists, households can afford it and a need is due. Buying locally, exports and private employment can move real funds; none guarantees a recovery day.",
+        "Open City Economy for separate cash balances, actual wage and retail payments, due needs, food failure causes and next opportunities. A missing item and an unaffordable stocked item are different constraints."
+      ],
+      "relatedIds": [
+        "help_liquidity",
+        "help_city_needs",
+        "help_city_welfare",
+        "help_finances"
+      ]
+    },
+    {
+      "id": "help_city_needs",
+      "name": "Food, furniture and municipal use",
+      "description": "Different consumers need different goods on explicit schedules.",
+      "paragraphs": [
+        "Bread is the essential household good. Generated towns desire one unit per 20 residents every four days, rounding upward. Population 20 needs one; population 21 needs two. Actual retail buys the largest affordable available integer quantity, even if only part of the need can be met.",
+        "Essentials run before luxury purchases. Furniture is an infrequent durable household need: one per 80 residents every 24 days when sustained welfare enables it, rounding upward. Luxury spending reserves the exact current price of the next Bread need and cannot spend an unlimited future income.",
+        "Municipal Planks are a separate public own-use sink every 12 days. They move no cash to a fictional buyer. Grain, Flour and Logs are industrial inputs and traded goods, not household staples in this model.",
+        "Food coverage estimates physical stock divided by scheduled eligible household demand; it is not a guaranteed spending forecast. Goods without household demand show not applicable. Stock-only pricing remains the baseline. Experimental coverage pricing derives bounded stock targets from a seven-day need horizon constrained by actual household funds. Effective pricing parameters stay fixed until the next daily boundary; marginal bid/ask prices still respond to every inventory change."
+      ],
+      "relatedIds": [
+        "help_city_accounts",
+        "help_city_welfare",
+        "help_prices",
+        "help_production"
+      ]
+    },
+    {
+      "id": "help_city_welfare",
+      "name": "Population, prosperity and recovery",
+      "description": "Sustained paid food and purchasing power shape bounded city welfare.",
+      "paragraphs": [
+        "Prosperity is a 0 to 100 indicator, not a cash or price multiplier. Up to six recent scheduled food opportunities, including failures to buy, supply a paid-fulfillment share. Current household cash is compared with a reserve benchmark for the next Bread need, priced exactly using current parameters and a hypothetical shelf containing at least that need. This is not a future availability or price promise. Three parts fulfillment and one part purchasing power set the target; prosperity moves toward it by at most three points per observation.",
+        "Furniture demand turns on after three consecutive qualifying observations with prosperity at least 65 and full food plus an affordable next-need reserve. It turns off after three consecutive observations with prosperity at most 40 or purchasing power below 25 percent. This hysteresis prevents daily threshold flicker; demand remains subject to real stock and budgets.",
+        "Population reviews occur every 12 days after six food observations. At most one resident is gained after sustained adequate food and prosperity at least 65, or lost after sustained severe deprivation and prosperity at most 35. Generated bounds are 10 to 80. New population changes subsequent desired need, not past records.",
+        "A city can keep household money yet decline because food is absent; another may have food but no purchasing power. Production inputs, payroll, market buying power and transport can all stall a chain. The model has no guaranteed long-run equilibrium. The City Recovery challenge tests sustained real recovery on a declared baseline, not a one-time shipment."
+      ],
+      "relatedIds": [
+        "help_city_needs",
+        "help_city_accounts",
+        "help_challenges",
         "help_seeded_worlds"
       ]
     }

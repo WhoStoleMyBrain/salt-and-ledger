@@ -8,7 +8,7 @@ title: "Menus, pause, and the encyclopedia"
 
 Inspect, pause, and begin another run without accidentally advancing the economy\.
 
-Start from the main menu, choose New Run or unlimited Sandbox, then review the challenge, charter, Classic or seeded world preview, and Ascension 0 or 1\. Setup, seed editing and reference browsing do not advance economic time or reroll a started world\.
+Start from the main menu, choose New Run or unlimited Sandbox, then review the challenge, charter, Classic, seeded v1 or Living Cities v2 preview, and Ascension 0 or 1\. Setup, seed editing and reference browsing do not advance economic time or reroll a started world\.
 
 Escape first closes the active trade or industry overlay\. From the encyclopedia it returns to the parent screen\. During ordinary gameplay it opens pause; from pause it resumes unless a confirmation is active\.
 
