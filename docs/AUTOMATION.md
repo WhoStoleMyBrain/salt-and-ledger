@@ -161,6 +161,16 @@ Local warehouse transactions may be managed remotely, but the goods remain at th
 
 See [Commerce and industry](ENTERPRISE.md) for the tested defaults and historical comparison. Factory purchased-stock expenditure and sale revenue are cash flows. Task 1.7's company accounting separately follows actual acquisition basis through physical transfers, private manufacturing, held stock, and completed sales.
 
+## Living-city presets and financial waits
+
+Living Cities v2 uses the same policy evaluators and commands. Default routes resolve generated roles rather than historical Northport/Eastport names. `LivingCityScenario.MerchantPolicy` carries Bread from food source to vulnerable coast: target 10, minimum 4, buy ceiling 34, sell floor 26, purchase cap 300, reserve 100 and empty return. No policy edit changes household or market balances.
+
+The living bakery procurement preset targets four Flour at marginal ask at most 28 and four Logs at most 24, with company reserve 80; output stays private unless local sales are explicitly enabled. Completed bakery batches additionally pay wage 6. The industrial shipping preset uses the actual owned warehouse, by default in the processing town, and sends Bread to the vulnerable town: target eight, minimum two, source threshold four, sale floor 26, reserve 80 and empty return. Construction, procurement, wages, loading and voyages are real ordinary operations.
+
+Payroll shortage can stop output even with inputs present. Stock ceilings can stop public jobs and hence local household income. Resident purchases replenish market liquidity only by transferring actual household money for actual stocked goods. NPCs and the player face identical finite-market sale checks; neither gets a high-need exception. A correctly configured route may remain blocked indefinitely after money or goods stop circulating.
+
+The [living-city comparison](LIVING_CITIES.md) measures these prescribed merchant/industry strategies against idle play, both pricing hypotheses and both ascensions. Historical reports below retain their zero-wage, unpaid-consumption fixtures and original numbers.
+
 ## Industrial shipping between private stock and markets
 
 An industrial route assigns one ship to two directly connected ports. Each directional leg carries one chosen good and selects a source and destination operation:

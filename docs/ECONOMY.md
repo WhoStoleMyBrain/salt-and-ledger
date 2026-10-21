@@ -32,9 +32,9 @@ These legacy fixtures have no extraction, cash replenishment, external income, c
 | --- | --- |
 | Meaning of time and additional phases | Whether regional days and the explicit ship/procurement/production/sales/consumption/arrival phases create understandable decisions; legacy ticks remain abstract |
 | Price formation | Whether the tested stock-sensitive curves create understandable decisions; how reference values, depth, and production should be calibrated before considering demand |
-| Liquidity and money flows | Whether finite local markets and company accounts shared by ships/factories produce useful constraints; what future sources or sinks could keep scenarios viable |
-| Consumption | Whether physical scheduled sinks and visible unmet demand provide useful pressure before adding household finances |
-| Production cadence, allocation, and costs | Whether current regional intervals, input competition, construction costs, and fixed ordering create useful tradeoffs; whether labor or additional operating expenses earn their complexity |
+| Liquidity and money flows | Whether finite market, household and company accounts circulate enough actual money; identify deadlocks before proposing any explicit outside source/sink |
+| Consumption | Whether paid food/luxury demand, municipal own-use and separate stock/affordability failures create understandable pressure |
+| Production cadence, allocation, and costs | Whether current regional intervals, input competition, construction costs, and fixed ordering create useful tradeoffs; whether modeled production wages and still-unmodeled expenses create useful decisions |
 | Storage and transport | Whether finite private storage, item-count cargo capacity, and geographic voyage durations create understandable tradeoffs; whether additional constraints earn their complexity |
 | Market information | What is observable, how stale information is communicated, and whether discovery improves decisions |
 | Specialization | Whether trading and production each have useful advantages and vulnerabilities across scenarios |
@@ -171,7 +171,7 @@ The exact score is documented in [Mechanics](MECHANICS.md#starting-charters-outc
 
 FIFO receipt queues retain actual paid or material cost through partial trades, physical transfers, and production. Released cost and still-held basis reconcile to purchases; construction stays separate. The [accounting contract](MECHANICS.md#historical-inventory-costs-and-committed-events) defines exact remainder allocation and auditable committed events. Starter grants retain their origin rather than receiving a fabricated current-price basis.
 
-This supports attributed gross margin and an honest held-cost display. It does not supply wages, fuel, transport fees, labor productivity costs, depreciation, taxes, or a realizable ship/factory valuation. A sale of a granted good can have positive gross margin against zero paid basis without proving a superior return on total starting wealth. Keep endowments, physical holdings, liquidity, capital, and margin visible together.
+This supports attributed gross margin and an honest held-cost display. That historical measurement has no wages, fuel, transport fees, labor-productivity costs, depreciation, taxes or realizable ship/factory valuation. Living Cities separately records actual wages without changing material FIFO; operating surplus after wages is not full profit. A sale of a granted good can have positive gross margin against zero paid basis without proving a superior return on total starting wealth. Keep endowments, physical holdings, liquidity, capital, and margin visible together.
 
 Automation connects private warehouses to real shipping and ordinary markets, with measured manual-equivalent transitions and finite blocked cases in the [automation experiments](AUTOMATION.md). This reduces prescribed repetitive commands without improving prices, speed, or resource access. Actual player comprehension and enjoyable strategic choice still require observed playtesting.
 
@@ -203,6 +203,20 @@ Industrial Consortium's inherited bakery retains its historical schedule and gra
 
 The calibration proposal remains conservative: retain existing prices, recipes, capital and deadlines, then test one explicit pressure at a time in a future tuning task. Compare local-factory and shipping decisions under the same charter/seed/ascension and report both liquidity and held basis. Observe whether people understand the consequences before changing several economic parameters at once. Human play difficulty, enjoyment and longer-horizon sustainability remain unresolved.
 
+## Task 1.9: finite circulation and economic roles
+
+[Living Cities](LIVING_CITIES.md) adds an explicitly separate v2 experiment: town household accounts pay exact local retail asks; successful employers fund actual wages; population scales need; sustained meals and purchasing power affect prosperity and durable demand. Municipal Planks remain an own-use sink. A permutation of authored production/capability packages creates real import dependencies, while Classic and geography-only v1 retain their historical rules and report bytes.
+
+Every committed cash total includes companies, markets and households once. Private labor is expensed separately from material FIFO: `OperatingSurplusAfterWages` subtracts all wages paid from realized material margin, including wages for held output. This is an exact supported cash-cost measure, not full matched profit. No future wage income, credit, tax, depreciation, freight cost or subsidy is inferred.
+
+The normal experiment executes 36 one-year comparisons, two five-year idle controls, 18 recovery trials and nine controlled mechanisms. Real merchant and private-production strategies win all 12 active recovery cases; idle loses all six. In seed 42 at Ascension 0, StockOnly/Coverage merchant cash ends at 814/1,171 with 91/105 regional Bread consumed; constructed industry ends at 95/74 with 131/135 consumed. Greater player liquidity and greater regional welfare are distinct outcomes. The one coverage-target hypothesis changes behavior without resolving long-run finite-money pressure.
+
+The optional 25-seed deep sweep executes 300 three-year comparisons. All towns reach the population floor of 10 under those prescribed strategies, and 100 of 300 worlds have no market Bread left. Five- and ten-year seed-42 idle balances and stocks match: a processing market holds five Logs but only six cash against a ten-cash wage, while households still hold money. These are distribution/payroll stalls, not broken conservation, and do not prove that every possible manual recovery path fails. No hidden balancing rescue was applied.
+
+Controlled examples show both a closed wage→retail cycle (4,380 each over 365 days) and a hungry, wealthy household sector unable to fund its market-owned employer's missing one cash. They also demonstrate real retail recapitalization of a market, partial food purchases, durable demand switching off after deprivation despite remaining wealth, and population increasing desired food. The [detailed evidence](LIVING_CITIES.md#what-the-experiments-actually-show) distinguishes these mechanisms and records performance, exact strategy assumptions and limits.
+
+The next economic decision should address one measured failure at a time: whether players can recognize and deliberately redirect stranded money and goods, and whether a narrowly defined policy or production change sustains useful circulation without erasing finite risk. Current results support a coherent, inspectable prototype, not full balance or a promise of universal solvency.
+
 ## Hypotheses to test
 
 - Scarcity coupled with finite cash may create useful tradeoffs between immediate profit and maintaining a network's supply.
@@ -210,8 +224,8 @@ The calibration proposal remains conservative: retain existing prices, recipes, 
 - Clear reserve and trade limits may automate repetitive transactions while leaving route selection and specialization to the player.
 - Multiple viable objective solutions may support fair challenge without tailoring every scenario to the player's build.
 
-Test these with explicit scenarios, recorded assumptions, and comparable runs. Track measures such as stockouts, transaction failures, stranded cash, recoverability, and required player attention once the relevant systems exist. These measures are proposed experiment aids, not implemented instrumentation or accepted balance targets.
+Test these with explicit scenarios, recorded assumptions, and comparable runs. Current reports already record stockouts, affordability failures, account balances, waits and recovery outcomes. Required human attention and enjoyment still need observed playtesting; neither instrumentation nor deterministic victories establish accepted balance targets.
 
 ## Deferred
 
-Procedural economy generation, economic viability scoring, advanced competitors, political systems, piracy, and combat belong to later milestones. They should not require placeholder types or unused parameters in the current production sample.
+Task 1.9 implements constrained v2 role generation and explicit structural checks. Universal economic viability scoring, advanced competitors, city ownership, politics, piracy and combat remain future work. They should not require placeholder types or unused parameters in the current production sample.

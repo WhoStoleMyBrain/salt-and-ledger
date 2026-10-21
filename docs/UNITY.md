@@ -635,3 +635,92 @@ Each original acceptance item was checked individually after rereading `tasks/TA
 | 17 | Actual menu-to-terminal Unity play | Passed | Editor -42 victoryday 43/failureday60; final Mono seed 42 victory day 36, reproduced after retry. |
 | 18 | Synchronized help and website | Passed | Updated player-help,44 generated outputs, staged encyclopedia and final strict MkDocs/freshness checks. |
 | 19 | Tests, CI and explicit verification limits | Passed with disclosed limits | 80 Edit / 42 Play, bounded CI seed check and documentedMono runtime evidence. Native player character entry/post-console pointer-only coverage, player construction walkthrough and IL2CPP remain unverified. |
+
+## Task 1.9 living-city verification
+
+Verified on Windows on **2026-10-21** with Unity **6000.6.6f1**, official Unity CLI **1.0.0-beta.13** and the Unity Agent Plugin. The complete original specification was reread before the individual acceptance audit below. [Living Cities](LIVING_CITIES.md) documents the implemented economy, provisional parameters, measured outcomes and unresolved monetary problems. The [actual screenshot gallery](READABILITY_VERIFICATION.md#task-19-living-city-readability-verification) contains the reviewed views; [PLAYTEST](PLAYTEST.md#task-19-living-city-acceptance) provides repeatable local checks.
+
+### Executed checks
+
+| Check | Actual result |
+| --- | --- |
+| Locked restore and Release solution build | Passed; zero build warnings/errors. Initial sandbox network denial was resolved by running the authorized restore outside that restriction. |
+| Complete .NET simulation suite | **655 passed**, zero failed/skipped, 7 seconds. Includes hand-calculable retail/payroll/priority/rollback tests and historical regressions. |
+| Python tests | **54 passed**, zero failures. The exact required-help-topic assertion was extended for the three new articles, not weakened. |
+| Canonical data, generated help and staging | Six goods/buildings/recipes valid; **47 generated outputs** current; DLL, canonical content and encyclopedia prepared and freshness checked. |
+| Historical demos/reports | All **11** modes passed; all **six historical report files** remain byte-identical to HEAD. Explicit legacy serialization fields prevent new zero-valued properties from changing those reports. |
+| New living-city report | Normal generation and read-only `--check` passed: **65 cases / 19,561 primary world-days**. |
+| Optional deep sweep | **329 cases / 338,571 primary world-days** completed; excluded from normal CI. Includes 300 comparative 1,095-day runs and two 3,650-day idle cases. |
+| Official Unity Edit Mode | **84 passed**, zero failed/skipped, 3.08 seconds. |
+| Official Unity Play Mode | Final **48 passed**, zero failed/skipped, 86.48 seconds. Includes actual retail-funded sale permission, recovery victory/idle defeat/retry, geometry, industry/shipping, charters and Ascension regressions. |
+| Actual Editor rendering | **76 reviewed views** at 1366×768 and 1920×1080, all four scales; native input journeys recorded separately below. |
+| Windows x64 Mono development build | Final source built successfully, exit 0; executable launched, advanced frames, completed a real recovery run and exited through the game's confirmation. |
+| Documentation | Strict MkDocs and reference/staging freshness passed, including the final evidence record. No website publication was performed. |
+
+The first complete Play Mode run found an 11 px Default Overview overflow at 1366×768 (47/48 passed). Moving redundant industry counts into the secondary city view fixed it without reducing font size or weakening the fit assertion. Later captures corrected selected-tab styling and clarified initial/last-observed purchasing power. The final full suite above includes those changes.
+
+### Actual Editor input and city recovery
+
+Real Game-view character events entered invalid seed text, which disabled Begin, then **-42**, which restored the v2 preview. The actual dropdowns selected Living Cities, Merchant and Ascension 1. Quantity **3** plus Tab refreshed the live trade quote without advancing day/revision. A pointer click on another town through the trade modal left the selected town and snapshot unchanged; Escape dismissed the modal first. Character input used `GameView.SendEvent` through the official Pipeline because `simulate_key` is not a text-entry API.
+
+Enabling the merchant policy and Play reached a genuine **day-28 victory**: company cash **859**, material gross margin **306**, target population **25**, prosperity **56**, and **100% paid food across six observations**. No outcome or economic state was injected. See [seed entry](images/task19/task19-actual-seed-minus42.png), [trade input](images/task19/task19-actual-trade-input.png) and [victory](images/task19/task19-actual-victory-minus42.png).
+
+The visual matrix uses repeatable public host setup/navigation and real UI events. It is not 76 independent pointer-only playthroughs. At Default, Overview, Market and ordinary trading fit without a permanent whole-page scrollbar. Large/Extra Large retain readable text and intentional internal overflow; at 1366×768 the order controls follow the market table, with fixed Close/footer controls. Longer setup, city details, industry configuration, Ledger and encyclopedia content may scroll internally.
+
+### Actual final Windows player
+
+The final Mono executable was exercised with native Pipeline pointer/key controls at **1366×768 / Default**. Setup selected **Living Cities, seed 42, Merchant, Ascension 1, StockOnly pricing**. Opening city accounts, enabling the merchant route and Play produced a real **day-28 victory**: cash **664**, material gross margin **220**, score **2,166**, target population **20**, prosperity **56**, and **100% paid food across six observations**. Results froze mutation. Retry restored the same identity, **day 0 / revision 0 / cash 600** and cleared city history.
+
+The following liquidity check then used real Next day, automation, trade and Sell controls:
+
+| State | Market cash | Household cash | Observed permission/effect |
+| --- | ---: | ---: | --- |
+| Day 7, merchant has two retained Bread | 2 | 464 | Selling one Bread is blocked by market funds. |
+| Day 8, automation disabled before advancing | 41 | 425 | Actual household retail spends **39**; a one-Bread sale quoted at **37** becomes executable. |
+| Same day 8, after Sell | 4 | 425 | Sale commits without advancing the day; company cash becomes **746**, revision 11. |
+
+This is a manual sale after the day-8 retail commit. The separate headless automated example sells on day 9 because daily actor actions precede retail. Both use the same authoritative exact quote and market-funds check. [Blocked sale](images/task19/task19-player-liquidity-blocked.png), [funded quote](images/task19/task19-player-liquidity-funded.png), [committed sale](images/task19/task19-player-liquidity-sold.png), [city accounts](images/task19/task19-player-accounts-day8.png) and [victory](images/task19/task19-player-victory.png) record the actual player.
+
+Offline help, its Escape return, the city view, Ledger, return to gameplay, Pause and Exit were exercised. Escape canceled the first Exit confirmation and preserved the active day-8 run. Confirming Exit afterward invoked `Application.Quit()` and closed the process. No direct economic mutation or fabricated result was used for these journeys. Unlike the earlier Task 1.8 focus limitation, this final pointer-driven journey completed through confirmed Exit.
+
+### Diagnostics, provenance and verification limits
+
+The build retained **489 shader/compute warning matches** and **four licensing error records** (one validation record and three Code 404 records), while completing successfully with no C# diagnostic codes. The development player displayed an optional NV native-plugin architecture diagnostic. These messages were retained; no packages were removed to suppress them. Its diagnostic overlay was dismissed for readable captures.
+
+The runtime Pipeline does not expose Editor-only `wait_for` or `capture_game_view`. One attempted runtime `wait_for` logged a QA command error; verification then compared advancing frame counters and captured actual frames with `ScreenCapture.CaptureScreenshot` through the official evaluation path. An Editor helper also initially queried a misspelled host property after the input action; the corrected check and continued journey passed. These are recorded tooling errors, not successful tests or gameplay failures. The retained final player log contains no `NullReferenceException`, `InvalidOperationException` or `OverflowException`, and contains both the ready and exit markers.
+
+Of **187** compared repository inputs, **183 matched** the isolated build project exactly, including all host source/tests, scenes, staged simulation/content/help and manifests. The isolated Editor rewrote four settings files: URP global/runtime references and shader prefilters, project backend/define/background settings, and UnityConnect settings. They were not copied into the authored project. The isolated development Pipeline connection is deliberate QA configuration. The root Editor ended stopped, background execution restored to false, auto-tick disabled and text preference Default; authored `ProjectSettings.asset` has no QA-only diff. The pre-existing tutorial-package settings edit was preserved.
+
+Evidence includes `unity/Logs/task19-edit-tests.json`, `unity/Logs/task19-play-tests.json`, `.cache/task19-build-mono-final.log` and its provenance JSON, `.cache/task19-player-final.log`, `.cache/task19-player-interactions.jsonl`, `.cache/task19-unity-final-hashes.json` and `.cache/task19-regressions.json`. Temporary builds/raw logs remain ignored; **86 reviewed actual images** are versioned under `docs/images/task19/`. Raw logs may contain licensing data; share sanitized summaries.
+
+**Unverified:** arbitrary character typing in the standalone seed field; the full private-construction timeline manually repeated in this final player; all four scales/both resolutions in the standalone executable (the complete matrix was exercised in the Editor); IL2CPP, other platforms and distribution builds. Construction, automatic private employment/shipping, old charters and both ascensions have complete Editor/headless regression coverage. Local CI-equivalent checks passed, but no remote GitHub Actions run was triggered or observed. No persistent run save, universal seed victory or large-world scalability is claimed.
+
+For local repetition, prepare the project, run both official Unity suites, then follow the living-city [PLAYTEST](PLAYTEST.md#task-19-living-city-acceptance). Reproduce seed 42's day-7/day-8 liquidity sequence and recovery victory, check Classic/v1 selection and exact retry, then repeat keyboard input and construction in the intended player backend. Run the optional deep headless command from [Living Cities](LIVING_CITIES.md) separately from CI. When ready to publish these docs, explicitly rerun **Publish documentation**; Pages remains manual-only and was not changed or published here.
+
+### Definition of Done audit
+
+Each of the original 19 items was checked individually against code, tests, reports and actual rendering/input. “Passed” applies to the implemented scope and disclosed evidence, not every seed, platform or future economic policy.
+
+| # | Requirement | Result and concrete evidence |
+| --- | --- | --- |
+| 1 | Finite separate household accounts | Passed: nullable opt-in city state, checked nonnegative balances, exact all-account total on every commit; finite/zero-budget tests. |
+| 2 | Exact paid consumption and shortage causes | Passed: shared bounded quantity search and marginal calculator; full/partial/zero outcomes, explicit stock/funds fields, direct priority tests. |
+| 3 | Actual finite public/private wages | Passed: employer-funded successful batches only, payroll wait and atomic input preservation; public/private numerical fixtures and experiments. |
+| 4 | Complete accounts, FIFO, physical flows and rollback | Passed: market/household/company conservation, separate expensed labor, unchanged material FIFO, overflow/reentrancy/stale-reference tests and per-operation sweep reconciliation. |
+| 5 | Population changes actual demand slowly | Passed: integer ceiling demand, six-observation gate, 12-day reviews, ±1 limits and generated 10–80 bounds; first-change and threshold tests. |
+| 6 | Smoothed prosperity and durable demand | Passed: explicit fulfillment/budget formula, bounded movement and hysteresis; controlled Furniture purchases followed by withdrawal after food deprivation. |
+| 7 | Municipal own-use is distinct | Passed: partial physical Plank sink with zero retail transfer; dedicated committed fixture and labeled results/help. |
+| 8 | Transparent coverage-pricing comparison | Passed: one finite-budget seven-day target hypothesis, immutable daily parameters and shared exact prices; A/B reports, reversal/preview tests. It is not promoted as final balance. |
+| 9 | Identical player/NPC market liquidity | Passed: shared exact trade paths and finite-funds tests; actual player sale blocked at cash 2 then funded by retail 39. |
+| 10 | V2 geography and meaningful economic roles | Passed: unchanged v1 geography plus bounded independent 11-draw role stream; golden signatures, 258-seed structural sample and real import flows. |
+| 11 | Authoritative construction eligibility | Passed: blueprint validation rejects ineligible sites; every v2 world has logging/furniture without a local Sawmill capability and needs imported Planks. |
+| 12 | Preview and complete retryable identity | Passed: actual v2 setup/capability views, signed seed input, pricing/charter/ascension/version identity; Editor tests and actual player retry. |
+| 13 | Historical reproducibility | Passed: 11 legacy demo/report modes, six report hashes unchanged, Classic/v1 APIs and zero-wage/unpaid fixtures retained. |
+| 14 | Genuine recovery wins and losses | Passed: 12 active wins and six idle day-90 failures on declared worlds; Editor/player day-28 wins; sustained baseline-protected paid-food objective. |
+| 15 | Long-horizon accountable economic evidence | Passed: 65 normal and 329 deep cases, diagnostics for poverty/stock/liquidity/luxury/imports, per-operation cash/flow/FIFO audits and disclosed stalls. |
+| 16 | Readable city/trade UI | Passed: 76 reviewed Editor views at both resolutions/all scales, primary Default fit assertions, internal larger-text overflow, actual player liquidity controls. |
+| 17 | Industry/shipping, accounting, charters, ascensions and menus | Passed: full existing headless/Edit/Play regressions; actual player automation, Ledger, offline help, Escape, retry and confirmed Exit. Manual player construction remains a disclosed verification limit. |
+| 18 | Full suites, synchronized docs and honest verification | Passed with disclosed limits: 655 .NET / 54 Python / 84 Edit / 48 Play, generated/staged help, strict docs, final Mono build and actual input. Backend/platform limits above remain unverified. |
+| 19 | Implemented rules versus provisional economics | Passed: Living Cities records formulas, thresholds, A/B results, real recovery and long-run collapse. No bailout, balance or universal-winnability claim. |
+
+The next economic work should investigate the measured supply/payroll/circulation stalls with controlled policy comparisons. For seed 42 idle at day 1,825, all towns have population 10 and prosperity 25, households still hold money but markets hold no Bread; a processor with five Logs and market cash 6 cannot pay wage 10. All 300 deep comparative worlds reach the population floor by day 1,095 under the tested policies. These are important counterexamples, not proof that every possible manual recovery is impossible. Preserve them while comparing input distribution, employment and commercial routes before adding unrelated systems.

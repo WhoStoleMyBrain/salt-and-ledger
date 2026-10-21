@@ -1,6 +1,6 @@
 # Runs, company charters, and results
 
-Choose one handcrafted challenge, one starting company charter, Classic or seeded geography, and Ascension 0 or 1. Build a strategy using the same four-town economy. A run ends when its objective and cash requirement are met, its deadline expires, or you deliberately abandon it. Sandbox uses the same economic rules without a scored objective or deadline.
+Choose a world mode, its challenge or sandbox, one starting charter and Ascension 0/1. Classic and seeded-v1 preserve the historical economy. [Living Cities v2](LIVING_CITIES.md) adds generated roles, finite households, wages and one recovery objective over the same four towns and six goods. A run ends when its objective and cash requirement are met, its deadline expires, or you deliberately abandon it. Sandbox uses the same economic rules without a scored objective or deadline.
 
 The menu, setup, pause, reference, and results screens form the current Unity host's run flow. [Playtest](PLAYTEST.md) documents controls; [Unity integration](UNITY.md) distinguishes automated, actual Editor, and standalone-player verification. Runs exist only in application memory. There is no persistent save, unlock history, or recovery after closing the application.
 
@@ -16,7 +16,7 @@ Escape first cancels a confirmation, or closes the open trade/industry modal, wi
 
 ## Choose geography and difficulty
 
-**Fixed / Classic Archipelago** keeps the original authored coordinates and exact six sea distances. **Seeded Archipelago** moves the same four economic towns and derives all six direct distances from those integer coordinates. Enter an ASCII decimal seed from -2,147,483,648 through 2,147,483,647, optionally preceded by `+` or `-`, without spaces or separators. Randomization is an explicit host action; the selected seed is frozen when starting. The preview uses the same geography and routes as the actual run. Record seed, generator version, charter, challenge and ascension together.
+**Fixed / Classic Archipelago** keeps the original authored coordinates and exact six sea distances. **Seeded Archipelago** moves the same four economic towns and derives all six direct distances from those integer coordinates. Enter an ASCII decimal seed from -2,147,483,648 through 2,147,483,647, optionally preceded by `+` or `-`, without spaces or separators. Randomization is an explicit host action; the selected seed is frozen when starting. The preview uses the same geography and routes as the actual run. **Living Cities v2** additionally varies economic roles, population and explicit starting liquidity; its preview shows actual public industries and eligible private construction. Record mode, seed, generator version, charter, challenge, ascension and living pricing choice together.
 
 **Ascension 0: Normal** retains instant paid construction. **Ascension 1: Slow Foundations** charges the full cost at order, then waits two complete economic days before a newly purchased player facility becomes operational. A bakery ordered on day 0 completes after day 2's economic phases and first becomes production-eligible on day 4. Pending sites cannot automatically buy inputs, produce or sell outputs. Explicit local warehouse trading/storage and physically docked transfers remain legal. Inputs, enabled state, capacity and ordinary pricing still determine whether an eligible batch or trade succeeds.
 
@@ -28,6 +28,8 @@ Settings applies **Compact/Default/Large/Extra Large** text to every Archipelago
 
 Select exactly one charter before starting. It replaces the other packages; nothing stacks and there is no income or production multiplier. An active run cannot switch its charter. Retry initializes the same complete identity from scratch: challenge, charter, geography, seed/version and difficulty, with original accounts, stocks, cargo, policies, facilities, schedules and provenance. Host journal, clock/revision and playback reset to their initial state.
 
+The table records **historical Classic/v1 locations**. In Living Cities, Merchant and Independent instead start at the generated food-source town; Industrial's ship and granted bakery start together at the processing town. Assets, cash and grant quantities are unchanged. Setup shows the actual port.
+
 | Charter | Liquid cash | Ship and initial port | Granted goods/facilities | Opportunity and tradeoff |
 | --- | ---: | --- | --- | --- |
 | Merchant Company | 600 | 10-unit hold, Northport | None | Most immediate spending flexibility; a factory competes with shipment capital |
@@ -38,7 +40,7 @@ All three ships have speed **100** and use the same integer geographic routes. T
 
 ### Compare endowments rather than cash alone
 
-Initial local exact purchase previews provide a limited replacement-cost estimate for granted goods:
+Historical Classic/v1 initial local exact purchase previews provide the following limited replacement-cost estimates. Living Cities uses different actual local quotes; these figures must not be copied as its valuations:
 
 | Charter | Starting cash | Facility construction quote | Goods replacement quote | Comparable quoted components, excluding the ship |
 | --- | ---: | ---: | ---: | ---: |
@@ -50,9 +52,9 @@ These starting-snapshot previews are executable quote estimates, not money the c
 
 The Industrial Consortium has more installed capacity but less liquid cash and a smaller ship. Independent Traders trades liquidity for capacity and initially occupied cargo. These are provisional lateral choices, not equally valued competitive builds. The headless trials establish feasibility; observed play remains necessary to assess whether the tradeoffs are clear and useful.
 
-## Three handcrafted challenges
+## Three historical handcrafted challenges
 
-Each challenge uses the current map and has a **day-60 deadline** and a **100-cash minimum** at successful completion. Cash below 100 does not cause an immediate loss: the company can recover before the deadline. There is no automatic grant, restock, or subsidy.
+Each Classic/v1 challenge uses its selected map and has a **day-60 deadline** and a **100-cash minimum** at successful completion. Cash below 100 does not cause an immediate loss: the company can recover before the deadline. There is no automatic grant, restock, or subsidy.
 
 | Challenge | Required objective | What actually counts |
 | --- | --- | --- |
@@ -64,13 +66,21 @@ Coastal Supply retains a signed delivery counter. Buying Eastport Bread and sell
 
 Regional Relief measures **regional performance**, not personal attribution of every consumed unit. Arriving cargo and market sales alone grant no consumption progress. A scheduled demand event must actually remove stock. A partially stocked demand request consumes nothing under the existing all-or-nothing consumption rule.
 
-Enterprise Ambition counts the owner's private production, not public factories or simply holding purchased Bread. Its margin covers all company sales and includes the actual zero paid basis of granted goods; starter proceeds are not disguised as paid manufacturing costs. The production requirement prevents merely selling initial grants from meeting the whole objective. Construction spending is reported separately from material gross margin, and unmodeled wages, operating costs, and depreciation remain excluded.
+Enterprise Ambition counts the owner's private production, not public factories or simply holding purchased Bread. Its margin covers all company sales and includes the actual zero paid basis of granted goods; starter proceeds are not disguised as paid manufacturing costs. The production requirement prevents merely selling initial grants from meeting the whole objective. Construction spending is reported separately from material gross margin, and its historical zero-wage model excludes operating costs and depreciation.
+
+## Living Cities recovery
+
+Living Cities v2 offers **A City Back on Its Feet**, targeting the generated vulnerable coast rather than a hardcoded town name. By **day 90**, retain at least 100 company cash while the town achieves six recent paid Bread opportunities with at least 90% fulfillment, prosperity at least 55 and population at least its initial value. Each observation's required denominator is the larger of current and initial-population demand, so shrinking the town cannot create easier credit.
+
+This measures regional welfare: actual household purchases supported by public, NPC or player supply all count. Deliveries, unsold inventory and hypothetical purchasing power do not. A sustained stocked supply may serve several future needs, but a delivery never wins instantly. Setup previews the actual target and generated capabilities. See [Living Cities](LIVING_CITIES.md#identity-charter-and-recovery-objective) for merchant/industry wins, idle losses and finite-liquidity recovery.
+
+Living results include the exact pricing mode in identity/comparison groups and show actual wage expenditure separately from material margin. The same charter assets are retained, with their starting locations adapted to generated roles. Retry reproduces these conditions and clears the bounded host journal; it provides no in-run rescue.
 
 ### Completion, failure, and abandonment
 
 The simulation evaluates the objective after the entire authoritative operation, using its final cash and day. A successful instant command can finish a run without advancing time. On the deadline's final daily advance, ship actions, private procurement, production, sales, consumption, and voyages finish before the success/failure decision. An exceptional failure rolls back the entire operation, including any provisional progress.
 
-If all requirements are satisfied at or before the deadline, the state becomes `Succeeded`. Otherwise a committed day at the deadline becomes `Failed`. There is no extra manual action window after the day-60 failure. A deliberate abandonment produces `Abandoned` at the current day while retaining the actual financial and physical state. It grants no victory or time bonus.
+If all requirements are satisfied at or before the deadline, the state becomes `Succeeded`. Otherwise a committed day at the deadline becomes `Failed`. There is no extra manual action window after the configured deadline failure (day 60 historically, day 90 for City Recovery). A deliberate abandonment produces `Abandoned` at the current day while retaining the actual financial and physical state. It grants no victory or time bonus.
 
 All three terminal states reject further economic mutations and day advancement. Inspection and the encyclopedia remain available. Retry creates a new selected starting state; starting another run chooses a new configuration. Sandbox has no challenge terminal condition or score.
 
@@ -80,7 +90,7 @@ The completed result identifies the challenge, starting charter, mode, seed/gene
 
 - Inventory purchases and actual sale revenue.
 - Historical cost released by completed sales and realized material gross margin.
-- Construction expenditure.
+- Construction expenditure and, in Living Cities, actual wages and operating surplus after wages.
 - Remaining goods and their paid historical basis.
 - Granted and constructed facilities, actual private output, and net target-market supply.
 - Host-observed commands and automation usage when reported.
@@ -101,6 +111,7 @@ Objective:
   Regional Relief = progress_fraction(regional Bread consumed, 24)
   Enterprise      = min(progress_fraction(private Bread produced, 12),
                         progress_fraction(realized gross margin, 200))
+  City Recovery   = progress_fraction(sustained-window progress percent, 90)
 
 Victory = 1000 if Succeeded, otherwise 0
 Time    = 10 * min(60, max(0, deadline - completion day)) if Succeeded, otherwise 0
@@ -110,7 +121,7 @@ Total = Objective + Victory + Time + Solvency
 
 Failed and abandoned runs can retain partial objective and solvency points; those points do not turn them into victories. Every component is capped. Overproduction, additional sale volume, or repeated buy/sell loops cannot create unbounded points. Exact same-market pricing and signed Coastal Supply credit separately preserve the economic protections.
 
-Identified results belong to a **challenge/charter/ascension/exact-world comparison group**. Different seeds and difficulties are not equivalent leaderboard placements. Legacy identity-null APIs preserve the older challenge/charter field in historical reports only. Starting grants, facilities, ship capacity and strategies differ; scoring does not normalize an unmodeled ship valuation or claim perfect package balance.
+Identified results belong to a **challenge/charter/ascension/exact-world comparison group**. Different seeds, difficulties and living pricing modes are not equivalent leaderboard placements. Legacy identity-null APIs preserve the older challenge/charter field in historical reports only. Starting grants, facilities, ship capacity and strategies differ; scoring does not normalize an unmodeled ship valuation or claim perfect package balance.
 
 For example, the Merchant Company completes Coastal Supply on day 29 with 1,014 cash: **500 objective + 1,000 victory + 310 time + 100 solvency = 1,910**. The Industrial Consortium completes the same challenge on day 39 with 1,027 cash: **500 + 1,000 + 210 + 100 = 1,810**. The second result uses a different endowment and comparison group.
 
@@ -143,6 +154,6 @@ The separate [industrial logistics comparison](AUTOMATION.md#reproducible-indust
 
 ## Current limits and next questions
 
-There are no saves, persistent unlocks, additional ascensions, procedural economic roles, online rankings or automatic strategy search. All charters and both difficulty choices are available immediately. Finite liquidity, route length and unfavorable prices can still block an enterprise. A valid navigable generated map does not prove a particular policy wins. Changing a policy is a strategic choice, not a promise that any configuration can recover.
+Living Cities adds explicit v2 economic roles and a finite household prototype. There are no saves, persistent unlocks, further ascensions, online rankings, city ownership or automatic strategy search. All charters and both difficulty choices are available immediately. Finite liquidity, route length and unfavorable prices can still block an enterprise. A valid navigable generated map does not prove a particular policy wins. Changing a policy is a strategic choice, not a promise that any configuration can recover.
 
 The next design step is observed startup-to-results playtesting: can players understand the charter tradeoffs, configure a complete supply chain, distinguish sales from consumption, and explain their final cash and margin? Numerical feasibility and scoring reproducibility are necessary evidence, not a substitute for that observation.

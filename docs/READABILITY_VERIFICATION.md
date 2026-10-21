@@ -100,3 +100,52 @@ The result screens show seed -42, generator version 1 and Ascension 1, alongside
 ## Evidence boundaries
 
 Screenshots show actual Editor rendering at the requested pixel sizes. Automated geometry checks and runtime input sequences establish specific behavior, while independent human usability, every possible seeded label arrangement, other operating systems and IL2CPP remain outside this evidence. The Windows development player's actual build, launch, input flows and remaining graphics/plugin diagnostics are recorded separately in [Unity integration](UNITY.md#task-18-seeded-run-and-readability-verification). Local text-size persistence is a presentation preference; no run save or meta-progression was added.
+
+## Task 1.9 living-city readability verification
+
+Actual Unity 6000.6.6f1 Editor Game views captured on **2026-10-21** through the official Unity Agent Plugin/CLI. The final matrix contains **76 views**: nine screens × four text scales × two resolutions, plus four scrolled Large/Extra Large trade-order views. All were visually reviewed; the complete Play Mode suite also asserts resolved geometry and reachability. These captures use repeatable host setup and real UI navigation events; they are not 76 independent pointer-only playthroughs. Separate native-input journeys and standalone evidence are documented in [Unity verification](UNITY.md#task-19-living-city-verification).
+
+Default's Overview and Market fit without a permanent primary scrollbar at both resolutions; ordinary trade shows quantity, exact total and Buy/Sell together. Compact keeps the denser 14 px preference. Large/Extra Large preserve 21/25 px text, fixed primary actions and intentional internal scrolling. City details, long setup/results, ledger and advanced industry remain document/form screens with internal scrolling. No paint-only scaling or economic command implements text size.
+
+Visual verification fixed an 11 px Default summary overflow by moving redundant industry counts into details, shortened the pricing label, made the selected city tab distinct from keyboard focus, and replaced an unexplained initial 0% purchasing-power value with awaiting-first-observation wording. Later purchasing-power labels identify the last observed food-reserve benchmark. An initial screenshot-helper error retained the previous Industry tab for some accounts images; every final accounts image below explicitly selects People & money.
+
+### Living-city matrix: 1366×768
+
+| Screen | Compact | Default | Large | Extra Large |
+| --- | --- | --- | --- | --- |
+| Setup | [View](images/task19/task19-matrix-compact-1366-setup.png) | [View](images/task19/task19-matrix-default-1366-setup.png) | [View](images/task19/task19-matrix-large-1366-setup.png) | [View](images/task19/task19-matrix-xl-1366-setup.png) |
+| Town overview | [View](images/task19/task19-matrix-compact-1366-overview.png) | [View](images/task19/task19-matrix-default-1366-overview.png) | [View](images/task19/task19-matrix-large-1366-overview.png) | [View](images/task19/task19-matrix-xl-1366-overview.png) |
+| Market tab | [View](images/task19/task19-matrix-compact-1366-market.png) | [View](images/task19/task19-matrix-default-1366-market.png) | [View](images/task19/task19-matrix-large-1366-market.png) | [View](images/task19/task19-matrix-xl-1366-market.png) |
+| People and accounts | [View](images/task19/task19-matrix-compact-1366-accounts.png) | [View](images/task19/task19-matrix-default-1366-accounts.png) | [View](images/task19/task19-matrix-large-1366-accounts.png) | [View](images/task19/task19-matrix-xl-1366-accounts.png) |
+| Needs and coverage | [View](images/task19/task19-matrix-compact-1366-needs.png) | [View](images/task19/task19-matrix-default-1366-needs.png) | [View](images/task19/task19-matrix-large-1366-needs.png) | [View](images/task19/task19-matrix-xl-1366-needs.png) |
+| Industries and capabilities | [View](images/task19/task19-matrix-compact-1366-capabilities.png) | [View](images/task19/task19-matrix-default-1366-capabilities.png) | [View](images/task19/task19-matrix-large-1366-capabilities.png) | [View](images/task19/task19-matrix-xl-1366-capabilities.png) |
+| Ordinary trade | [View](images/task19/task19-matrix-compact-1366-trade.png) | [View](images/task19/task19-matrix-default-1366-trade.png) | [View](images/task19/task19-matrix-large-1366-trade.png) | [View](images/task19/task19-matrix-xl-1366-trade.png) |
+| Private industry | [View](images/task19/task19-matrix-compact-1366-industry.png) | [View](images/task19/task19-matrix-default-1366-industry.png) | [View](images/task19/task19-matrix-large-1366-industry.png) | [View](images/task19/task19-matrix-xl-1366-industry.png) |
+| Results | [View](images/task19/task19-matrix-compact-1366-results.png) | [View](images/task19/task19-matrix-default-1366-results.png) | [View](images/task19/task19-matrix-large-1366-results.png) | [View](images/task19/task19-matrix-xl-1366-results.png) |
+
+### Living-city matrix: 1920×1080
+
+| Screen | Compact | Default | Large | Extra Large |
+| --- | --- | --- | --- | --- |
+| Setup | [View](images/task19/task19-matrix-compact-1920-setup.png) | [View](images/task19/task19-matrix-default-1920-setup.png) | [View](images/task19/task19-matrix-large-1920-setup.png) | [View](images/task19/task19-matrix-xl-1920-setup.png) |
+| Town overview | [View](images/task19/task19-matrix-compact-1920-overview.png) | [View](images/task19/task19-matrix-default-1920-overview.png) | [View](images/task19/task19-matrix-large-1920-overview.png) | [View](images/task19/task19-matrix-xl-1920-overview.png) |
+| Market tab | [View](images/task19/task19-matrix-compact-1920-market.png) | [View](images/task19/task19-matrix-default-1920-market.png) | [View](images/task19/task19-matrix-large-1920-market.png) | [View](images/task19/task19-matrix-xl-1920-market.png) |
+| People and accounts | [View](images/task19/task19-matrix-compact-1920-accounts.png) | [View](images/task19/task19-matrix-default-1920-accounts.png) | [View](images/task19/task19-matrix-large-1920-accounts.png) | [View](images/task19/task19-matrix-xl-1920-accounts.png) |
+| Needs and coverage | [View](images/task19/task19-matrix-compact-1920-needs.png) | [View](images/task19/task19-matrix-default-1920-needs.png) | [View](images/task19/task19-matrix-large-1920-needs.png) | [View](images/task19/task19-matrix-xl-1920-needs.png) |
+| Industries and capabilities | [View](images/task19/task19-matrix-compact-1920-capabilities.png) | [View](images/task19/task19-matrix-default-1920-capabilities.png) | [View](images/task19/task19-matrix-large-1920-capabilities.png) | [View](images/task19/task19-matrix-xl-1920-capabilities.png) |
+| Ordinary trade | [View](images/task19/task19-matrix-compact-1920-trade.png) | [View](images/task19/task19-matrix-default-1920-trade.png) | [View](images/task19/task19-matrix-large-1920-trade.png) | [View](images/task19/task19-matrix-xl-1920-trade.png) |
+| Private industry | [View](images/task19/task19-matrix-compact-1920-industry.png) | [View](images/task19/task19-matrix-default-1920-industry.png) | [View](images/task19/task19-matrix-large-1920-industry.png) | [View](images/task19/task19-matrix-xl-1920-industry.png) |
+| Results | [View](images/task19/task19-matrix-compact-1920-results.png) | [View](images/task19/task19-matrix-default-1920-results.png) | [View](images/task19/task19-matrix-large-1920-results.png) | [View](images/task19/task19-matrix-xl-1920-results.png) |
+
+### Larger-text order controls and actual money flows
+
+At 1366×768 the Large/Extra Large order form follows the market table within the trade body. Scrolling reaches the exact quote and action; Close/footer remain fixed. At 1920×1080 the same controls fit side by side.
+
+| Evidence | 1366×768 | 1920×1080 |
+| --- | --- | --- |
+| Large trade order | [View](images/task19/task19-matrix-large-1366-trade-order.png) | [View](images/task19/task19-matrix-large-1920-trade-order.png) |
+| Extra Large trade order | [View](images/task19/task19-matrix-xl-1366-trade-order.png) | [View](images/task19/task19-matrix-xl-1920-trade-order.png) |
+
+The final Windows Mono player's real pointer-driven liquidity sequence is visible in [blocked day-7 sale](images/task19/task19-player-liquidity-blocked.png), [retail-funded day-8 quote](images/task19/task19-player-liquidity-funded.png), [committed sale](images/task19/task19-player-liquidity-sold.png) and [day-8 city accounts](images/task19/task19-player-accounts-day8.png). Market cash 2 cannot pay; households then spend 39 on Bread, enabling a sale for 37 without advancing another day. The [day-28 victory](images/task19/task19-player-victory.png) shows six actual food observations and qualified identity/financial results. [Offline help](images/task19/task19-player-offline-help.png) and [Ledger](images/task19/task19-player-ledger.png) were opened through the player's controls.
+
+Editor [typed seed −42](images/task19/task19-actual-seed-minus42.png), [typed quantity 3/modal blocking](images/task19/task19-actual-trade-input.png) and [actual day-28 victory](images/task19/task19-actual-victory-minus42.png) supplement the matrix. See the dated Unity record for exact assertions, player/backend limits and retained development diagnostics. No image is a mockup or retouched UI.

@@ -6,9 +6,9 @@ This sequence describes planned work, not completed features or a fixed delivery
 | --- | --- | --- |
 | 0 | Project foundation, small architecture, automated tests, canonical content, and documentation pipeline | Implemented |
 | 0.5 | .NET 10 toolchain and minimal Unity integration using the existing simulation | Implemented; verification scope in [Unity integration](UNITY.md) |
-| 1 | Deterministic simulation, finite markets, shipping, automation, private industry, and a living economy slice | Tasks 1.1 through 1.7 add six goods, four towns, private factories, industrial logistics, and historical material-cost attribution |
+| 1 | Deterministic simulation, finite markets, shipping, automation, private industry, and a living economy slice | Tasks 1.1–1.9 add six goods, four towns, factories/logistics, material FIFO and opt-in household finance/welfare |
 | 2 | Scenario objectives, time limits, and replayable runs | Three handcrafted challenges, starting companies, terminal results and capped scoring; Task 1.8 adds exact world retry |
-| 3 | Constrained procedural world generation with economic viability checks | Task 1.8 adds geography-only four-town seed generation and bounded experiments; procedural economic roles remain deferred |
+| 3 | Constrained procedural world generation with economic viability checks | Task 1.8 preserves geography-only v1; Task 1.9 adds opt-in v2 role/capability packages and long-horizon structural/economic experiments |
 | 4 | Modifiers, curses, difficulty levels, and challenge combinations | Task 1.8 adds selectable Ascension 0/1; broader modifiers remain deferred |
 | 5 | Lateral meta progression through starting packages, alternative production capabilities, and new economic problems | Three replacement starting packages available immediately; persistent unlocks and broader progression remain planned |
 | 6+ | Advanced competitors, piracy, political systems, optional combat, and other features justified by gameplay testing | Deferred |
@@ -97,13 +97,21 @@ Ascension 1 delays new player construction by two complete days after payment, w
 
 Four layout-aware text scales cover ArchipelagoLab, with a 17 px Default body and local presentation-preference persistence. Industry summaries and visible recommended drafts help explain stock gaps, timing, policies, real costs and physical delivery waits. [Seeded runs](SEEDED_RUNS.md) records generation constraints and experiment methodology; [Unity integration](UNITY.md) separates actual Editor/player verification from headless checks. Generated-world validity and benchmark performance are evidence for a later tuning pass, not proof of universal strategy viability or human usability.
 
+## Task 1.9: living cities and economic specialization
+
+Implemented as explicit opt-in v2: one finite household account per town; exact paid Bread/Furniture consumption with separate stock/funds shortfalls; wages paid only for completed funded public/private batches; bounded population/prosperity and durable-demand hysteresis; generated complementary industries and authoritative private eligibility; and a day-90 sustained city-recovery challenge. Private wages are expensed separately from historical material FIFO. Classic, geography-only v1, old challenges, Ascension 0/1 and golden reports remain regression fixtures.
+
+The [living-city report](LIVING_CITIES.md) compares 36 one-year worlds, two five-year controls, 18 recovery trials and nine controlled diagnoses. Its optional deep sweep extends 25 seeds to 300 three-year comparisons and two ten-year controls. Real merchant and manufacturing/employment choices achieve recovery victories, while long-run worlds expose food-distribution and payroll deadlocks despite conserved cash. Those failures are evidence to investigate, not justification for hidden support or claims of full balance.
+
+Town UI exposes separate household/market money, wages, needs, population/prosperity and capabilities while grouping detail away from ordinary trade controls. Actual Editor/player rendering, interactions and remaining verification limits belong to [Unity integration](UNITY.md), not the numerical report. Pages remains manual-only.
+
 ## Recommended next milestone: observed playtesting
 
 Proposed next assignment: observe players from application startup through a completed result without source-code explanations. Ask them to select a charter, interpret the objective and bulk execution price, choose between a shipment and a factory, configure an entire industrial route, and diagnose a blocked shipment. Have them use the encyclopedia and explain the difference between liquid cash, granted assets, held basis, sale revenue, material margin, and construction spending.
 
 Record whether ownership, actual consumption versus delivery, route stage, deadlines, abandonment, and retry are understandable. Compare attention required by merchant and industrial approaches without treating fewer commands as proof of enjoyment. Review whether Independent Traders' larger hold and Industrial Consortium's lower liquidity create meaningful choices under different objectives.
 
-Pair observed confusion with focused presentation fixes, then extend deterministic seeded liquidity and industry-policy observations. Investigate input shortages, output price floors, unsold goods, construction delays, voyage distances and capital opportunity costs before changing balance or scoring. Do not add more ascensions, extra commodities, procedural economic roles, household finance or random risk merely to keep activity running. Human playtesting and resulting revisions remain a proposed assignment, not completed user-research evidence.
+Pair observed confusion with focused presentation fixes, then isolate one finite-circulation or distribution change against the measured five-/ten-year stalls under prescribed policies. Investigate the unfunded employer with wealthy households, stock ceilings that stop wages, input shortages, unsold food, price floors and capital opportunity costs before changing several parameters. Retain the old accounting, recovery and idle-control evidence. Use the now-implemented household finance and role specialization to diagnose failures; do not add more ascensions, commodities, fleets, rescue income or random risk merely to keep activity running. Human playtesting and resulting revisions remain a proposed assignment, not completed user-research evidence.
 
 ## Other follow-up work
 
@@ -111,4 +119,4 @@ Pair observed confusion with focused presentation fixes, then extend determinist
 2. **Calibrate the enterprise network and run choices.** Vary existing construction costs, procurement limits, source thresholds, production/consumption schedules, sale floors, and finite initial liquidity. Keep all challenge/charter feasibility and idle-failure checks. Distinguish temporary stock shortage, distribution failure, policy blockage, and liquidity exhaustion without introducing hidden money. Do not normalize scores across packages using an invented ship value.
 3. **Measure simulation cost before enlarging the world.** Snapshot copying and result allocation favor clear atomicity. Live cost lots depend on held acquisitions; bounded event journals do not imply a constant bound on all inventory-lot counts. Extend representative performance/allocation measurements before adding larger maps or fleets.
 
-These follow-ups are proposals, not selected final economic rules. Keep randomness confined to the explicit versioned geography contract until another mechanic has its own approved scope and reproducible design.
+These follow-ups are proposals, not selected final economic rules. Keep randomness confined to explicit versioned geography/economic initialization until another mechanic has its own approved scope and reproducible design.

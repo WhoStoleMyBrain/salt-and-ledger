@@ -2,25 +2,28 @@
 
 A single-player maritime trading and economic strategy game intended for Unity 6. The long-term focus is building, optimizing, and automating trading networks within a simulated economy, inspired by Port Royale 2, Patrician 2, Antimatter Dimensions, and economic roguelikes.
 
-This repository contains **Task 1.8's seeded run foundation**: choose Classic or a reproducible four-town archipelago, one of three starting charters/challenges, and Ascension 0 or 1. Six canonical goods, finite markets, private factories, physical shipping and FIFO material accounting still share one portable simulation. Four game-wide text scales cover the Unity run flow, trading, industry and offline encyclopedia. Bootstrap, TradingLab and historical fixed scenarios remain compatibility fixtures.
+This repository contains **Task 1.9's Living Cities economy**: finite household and market accounts, actual retail purchases and production wages, changing population/prosperity, generated industrial specialization and a sustained city-recovery challenge. Six canonical goods, four towns, private factories, physical shipping and FIFO material accounting share one portable simulation. Choose Living Cities v2 or the preserved Classic/geography-only v1 worlds, one of three charters and Ascension 0/1. Four text scales cover the Unity run flow, trading, city inspection, industry and offline encyclopedia. Bootstrap, TradingLab and all historical reports remain compatibility fixtures.
 
 ## Play the living archipelago
 
 Run `python tools/generate_docs.py` and `python tools/prepare_unity.py` to stage the simulation, canonical content and encyclopedia. Open `unity/` in Unity **6000.6.6f1**, open **`Assets/Scenes/ArchipelagoLab.unity`**, and press Play. New Run and Sandbox open setup: review the charter, challenge, world preview and ascension before starting paused on day 0. Seeded worlds accept signed 32-bit integer seeds; copy the seed and record generator version, charter, challenge and ascension to reproduce a run. **Retry Same World** preserves all those choices; **New World / Reroll** changes the draft seed and returns to preview before starting.
 
+**Living Cities** also previews population, household purchasing power, production roles and eligible private industries. Its complete identity includes StockOnly/Coverage pricing. Town selection distinguishes market cash, household money, paid food needs, wages and prosperity. A market unable to buy your cargo may later receive actual resident retail payments; this requires stocked goods and funded residents, not a guaranteed bailout. See [Living Cities](docs/LIVING_CITIES.md) for exact rules, numerical examples, generation and observed outcomes.
+
 Settings offers **Compact, Default, Large and Extra Large** text throughout ArchipelagoLab. Default body text is 17 px, with 21/25 px Large/Extra Large options and responsive scrolling. This presentation preference is remembered locally through Unity PlayerPrefs; worlds and economic progress are not saved. See [Seeded runs](docs/SEEDED_RUNS.md) for generation/timing contracts and [Unity verification](docs/UNITY.md) for the actual resolutions, interactions and platform checks performed.
 
 Select Ledger and right-click a town, or use its visible Trade action, to open the centered trading overlay. Compare town stock and cargo, adjust quantity, and inspect exact totals and average execution prices. Local trades happen immediately; remote views explain the docking requirement. Opening trade pauses playback. **Next day**, **Play/Pause**, and **1×/3×/10×** control economic playback.
 
-Select a town to construct or manage private industry. Ascension 0 builds immediately. Ascension 1 pays immediately but completes new player sites after two economic days; a day-0 bakery completes on day 2 and first becomes eligible to produce on day 4, with inputs and capacity still required. Granted starter factories are already built. Industry summaries show status, timing, inputs, real expenditure and shipping waits; preview a recommended procurement draft before explicitly applying it. Transfers require physical docking and preserve ownership and cost basis. The Ledger separates cash, revenue, released/held basis, realized material margin and capital spending.
+Select a town to construct or manage private industry. Ascension 0 builds immediately. Ascension 1 pays immediately but completes new player sites after two economic days; a day-0 bakery completes on day 2 and first becomes eligible to produce on day 4, with inputs and capacity still required. Granted starter factories are already built. Industry summaries show status, timing, inputs, real expenditure and shipping waits; preview a recommended procurement draft before explicitly applying it. Transfers require physical docking and preserve ownership and cost basis. The Ledger separates cash, revenue, released/held basis, realized material margin, capital spending and actual living-city wages.
 
-The **Coastal Supply Charter** requires 24 net Bread supplied to Eastport, **Regional Relief** measures 24 Bread actually consumed across towns, and **Enterprise Ambition** requires private output plus attributed margin. Each has a day-60 deadline and a 100-cash solvency condition; sandbox has no deadline. Escape respects open overlays before opening the pause menu. Completed runs freeze, show an auditable score and allow retry or another setup. Runs are in memory only.
+Historical Classic/v1 runs offer the **Coastal Supply Charter**, **Regional Relief** and **Enterprise Ambition**, with their preserved day-60 objectives. Living Cities offers **A City Back on Its Feet**: by day 90 restore at least 90% paid Bread fulfillment across six scheduled opportunities, preserve initial population, reach prosperity 55 and retain 100 company cash. Sandbox has no deadline. Escape respects open overlays before opening pause. Completed runs freeze, show an auditable score and allow exact retry. Runs are in memory only.
 
 ```text
 dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --runs
 dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --runs --check
 dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --industrial-logistics --check
 dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --seeded-runs --check
+dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --living-cities --check
 ```
 
 The preserved **Classic/Ascension 0** complete-run report demonstrates all nine charter/challenge pairings and nine idle failures, with per-operation financial reconciliation. Merchant and industrial charters complete the main supply challenge on days 29 and 39 respectively. Those fixed-world measurements are not guarantees for every seed or policy. The separate [seeded experiment](docs/SEEDED_RUNS.md) examines geography and construction pressure without hidden economic assistance. Read [Runs and charters](docs/RUNS.md), [Player guide](docs/PLAYER_GUIDE.md), [Playtest](docs/PLAYTEST.md), and the actual [Unity verification record](docs/UNITY.md).
@@ -166,6 +169,7 @@ dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/co
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --industrial-logistics --check
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --runs --check
 dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --seeded-runs --check
+dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --living-cities --check
 python -m unittest discover -s tests/python -v
 python tools/validate_data.py
 python tools/generate_docs.py --check
@@ -174,7 +178,7 @@ python tools/prepare_unity.py
 python tools/prepare_unity.py --check
 ```
 
-The documentation `--check` verifies committed reference files without rewriting them. When content changes, regenerate documentation, review it, and commit it with the data. The Unity preparation `--check` verifies local staged assets against source and output hashes. GitHub Actions runs these standalone checks; Editor and player verification remain separate.
+The documentation `--check` verifies committed reference files without rewriting them. When content changes, regenerate documentation, review it, and commit it with the data. The Unity preparation `--check` verifies local staged assets against source and output hashes. GitHub Actions runs these standalone checks; Editor and player verification remain separate. Publishing remains manual: after the reviewed changes reach `main`, run GitHub Actions **Publish documentation** when ready. Validation alone does not update the published site.
 
 For an intentional NuGet dependency change, run `dotnet restore SaltAndLedger.sln --force-evaluate`, review the changed `packages.lock.json` files, and rerun verification. Keep Unity's `Packages/manifest.json` and `Packages/packages-lock.json` together when changing UPM dependencies.
 

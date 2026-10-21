@@ -279,3 +279,29 @@ Use snapshot dates/status and a shared timing preview for host feedback, plus st
 Replace the partial large-menu/reference toggle with four game-wide ArchipelagoLab text scales. Inherited root tokens control body/caption/headings and related control/table/map dimensions; responsive wrapping and internal scrolling maintain access to actions. Avoid a global visual transform that enlarges painting while leaving layout or hit targets behind.
 
 Keep this preference in a small presentation helper with no simulation commands. Save only the scale through ordinary local PlayerPrefs and retain it across screen transitions and fresh runs. Other display settings remain session-only; there is no economic save or cloud preference service. Test world-state invariance separately from real runtime geometry, keyboard and pointer interaction.
+
+## ADR 031: Close the living-city money cycle inside the regional owner
+
+**Status:** Implemented for Task 1.9; financial conservation is a correctness contract, wages and welfare parameters are provisional economic assumptions.
+
+Give each living port one aggregate household cash account, distinct from market and company accounts. Actual successful production transfers finite employer money to households; exact retail transfers household money back to the market and consumes only paid goods. No timed allowance, subsidy or outside balancing account exists. Municipal own-use remains a separately labeled unpaid physical sink. Keep all state and every checked transfer inside the existing atomic, revisioned owner.
+
+Use the shared exact price and bounded quantity calculators for household purchases, with essential priority, partial fulfillment and separate stock/funds shortfalls. Production without full payroll funding cannot complete. Retain material FIFO unchanged and expense private wages separately; report material margin and cumulative surplus after all wages, including labor for still-held output. Do not call this a matched full-cost profit or invent freight/depreciation.
+
+Observe at most six food opportunities and small counters, smooth bounded prosperity, apply durable-demand hysteresis and review population slowly. The recovery challenge uses actual paid food with an initial-population denominator and retained population, so deprivation cannot make the objective easier. All outcomes remain regional welfare rather than falsely attributed player-only delivery.
+
+## ADR 032: Version economic roles independently from historical geography
+
+**Status:** Implemented for Task 1.9; structural supply paths are guaranteed, strategy success and long-run solvency are not.
+
+Keep Classic and seeded-v1 economics unchanged. Living Cities v2 calls v1 geography exactly and uses a domain-separated eleven-draw integer stream to permute four authored role packages and bounded population/liquidity bands. Generate actual public facilities and authoritative private blueprint eligibility together. A forest-furniture town has logging and furniture making but cannot construct a Sawmill; actual imported Planks remain necessary. No strategy evaluation, rejection loop or hidden economic repair enters generation.
+
+Preview the same immutable configuration used to create the world. Adapt only charter locations to generated capabilities, retaining assets, cash and operational grants. Complete run identity includes version and living pricing choice, ensuring exact retry and distinct comparison groups. Mode-specific challenge lookup must not expand the historical challenge list used by old reports.
+
+## ADR 033: Compare one finite-coverage target through the existing price engine
+
+**Status:** Implemented experimental alternative for Task 1.9; StockOnly remains available and Coverage is not declared balanced.
+
+Use the existing immutable inventory-price model with a household-coverage target derived from seven days of expected opportunities and one finite actual household budget. Prioritize essentials, retain affordability, cap target quantities and leave industrial goods/reference prices/spreads unchanged. Do not multiply all prices by wealth or invent expected wages to fund a hypothetical need.
+
+Derive parameters at initialization and the daily boundary after welfare observation, then freeze them across instant trades. Previews, household retail, players, NPCs and factories share the same exact marginal mathematics. Historical snapshots retain their effective parameters, and same-day quote derivation cannot manufacture an immediate reversal gain. Measured A/B outcomes and long-run deadlocks remain evidence in [Living Cities](LIVING_CITIES.md), not reasons to introduce subsidies.
