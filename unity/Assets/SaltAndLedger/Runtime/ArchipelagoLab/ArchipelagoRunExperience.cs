@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 
 namespace SaltAndLedger.UnityHost
 {
-    public enum ArchipelagoScreen { Gameplay, MainMenu, Setup, Pause, Results, Encyclopedia, Settings, Ledger, Logistics }
+    public enum ArchipelagoScreen { Gameplay, MainMenu, Setup, Pause, Results, Encyclopedia, Settings, Ledger, Logistics, CityEconomy }
 
     public static class ArchipelagoApplicationExit
     {
@@ -77,6 +77,7 @@ namespace SaltAndLedger.UnityHost
                 "Industrial shipping", OpenLogistics);
             Button(Element<VisualElement>("contextScroll").contentContainer, "gameHelpButton",
                 "Encyclopedia / help", () => OpenSecondary(ArchipelagoScreen.Encyclopedia));
+            BuildCityEconomy();
         }
 
         private VisualElement CreateScreen(ArchipelagoScreen screen, string title, string subtitle = null)
@@ -128,6 +129,7 @@ namespace SaltAndLedger.UnityHost
             Element<TextField>("quantityField").SetValueWithoutNotify("2");
             Element<Foldout>("automationFoldout").SetValueWithoutNotify(false);
             Element<ScrollView>("contextScroll").scrollOffset = Vector2.zero;
+            SelectContextTab(0);
             ShowScreen(ArchipelagoScreen.Gameplay);
             Refresh();
             Element<Button>("playButton").Focus();
@@ -249,7 +251,7 @@ namespace SaltAndLedger.UnityHost
             Text(scroll, "resultFinances", "", "run-copy");
             Text(scroll, "resultAssets", "", "run-copy");
             Text(scroll, "resultOperations", "", "run-copy");
-            Text(scroll, null, "Realized gross margin deducts the paid material basis released by sales. Wages, transport operating costs, depreciation and asset resale values are not modeled. Grants have zero paid basis, not zero economic value. Compare scores only within the same challenge, charter, ascension and exact world identity. Different seeds are not equivalent leaderboard placements.", "run-footnote");
+            Text(scroll, null, "Material margin deducts FIFO material basis released by sales. Living Cities also reports all paid wages as a separate operating expense, including work whose output is still held. Transport operating costs, depreciation and asset resale are unmodeled. Grants have zero paid basis, not zero economic value. Compare scores within the same challenge, charter, ascension and exact world identity.", "run-footnote");
             var actions = Panel(screen, null, "run-actions row");
             Button(actions, "retryRunButton", "Retry Same World", () => BeginRun(Session.Identity), "primary");
             Button(actions, "resultsNewRunButton", "Change Setup", ChangeSetup);
@@ -300,11 +302,13 @@ namespace SaltAndLedger.UnityHost
 
         private void OpenSecondary(ArchipelagoScreen screen)
         {
+            if (screen == ArchipelagoScreen.CityEconomy) cityReturnScreen = Screen;
             secondaryParent = Screen;
             Session.Pause();
             ShowScreen(screen);
             if (screen == ArchipelagoScreen.Encyclopedia) RefreshEncyclopedia();
             if (screen == ArchipelagoScreen.Ledger) RefreshLedger();
+            if (screen == ArchipelagoScreen.CityEconomy) RefreshCityEconomy();
         }
 
         public void HandleCancel()
@@ -312,6 +316,7 @@ namespace SaltAndLedger.UnityHost
             if (ConfirmationIsOpen) { CancelConfirmation(); return; }
             if (TradeIsOpen || IndustryIsOpen) { CloseModals(); return; }
             if (Screen == ArchipelagoScreen.Encyclopedia) { EncyclopediaBack(); return; }
+            if (Screen == ArchipelagoScreen.CityEconomy) { ShowScreen(cityReturnScreen); return; }
             if (Screen == ArchipelagoScreen.Settings || Screen == ArchipelagoScreen.Ledger || Screen == ArchipelagoScreen.Logistics)
             { ShowScreen(secondaryParent); return; }
             if (Screen == ArchipelagoScreen.Setup) { ShowScreen(ArchipelagoScreen.MainMenu); return; }
@@ -348,6 +353,16 @@ namespace SaltAndLedger.UnityHost
             var challenge = Session.Snapshot.Challenge;
             if (challenge == null) return "Sandbox · no deadline. Build your enterprise at your own pace.";
             var config = challenge.Configuration;
+            if (challenge.Recovery != null)
+            {
+                var recovery = challenge.Recovery;
+                return config.Title + " · " + challenge.Status + " · " + PortName(config.PortId) +
+                    "\nPaid food " + recovery.FulfillmentPercent + "% / " + config.RequiredQuantity + "% · observations " +
+                    recovery.Observations + "/" + recovery.RequiredObservations + " · prosperity " + recovery.Prosperity + "/" + recovery.MinimumProsperity +
+                    "\nPopulation " + recovery.Population + " / " + recovery.InitialPopulation + " minimum · " +
+                    Math.Max(0, config.DeadlineDay - Session.Snapshot.Day) + " days left · cash " + Session.Player.Cash + "/" + config.MinimumCash +
+                    "\n" + recovery.Reason;
+            }
             var measure = config.Kind == ChallengeKind.RegionalRelief ? "Bread consumed regionally" :
                 config.Kind == ChallengeKind.EnterpriseAmbition ? "Bread produced privately" : "Net Bread supplied to Eastport";
             return config.Title + " · " + challenge.Status + "\n" + measure + ": " + challenge.ObjectiveQuantity +

@@ -68,3 +68,6 @@
 #logisticsScroll .run-column .unity-base-field__label { width: auto; min-width: 0; max-width: 100%; flex-shrink: 0; margin-bottom: 4px; white-space: normal; text-overflow: clip; }
 #logisticsScroll .run-column .unity-toggle { flex-direction: row; }
 #logisticsScroll .run-column .unity-toggle__label { max-width: 85%; margin-bottom: 0; }
+.setup-city-cards { flex-direction: row; flex-wrap: wrap; }
+.setup-city-card { flex-grow: 1; flex-basis: 42%; min-width: 0; padding: 10px; margin: 5px; background-color: #142b36; border-radius: 5px; }
+.ui-narrow.ui-large-layout .setup-city-card { flex-basis: 100%; }

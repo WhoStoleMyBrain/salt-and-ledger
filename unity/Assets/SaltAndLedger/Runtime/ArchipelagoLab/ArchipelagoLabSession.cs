@@ -59,7 +59,7 @@ namespace SaltAndLedger.UnityHost
         public ContentCatalog Content { get; }
         public RegionalWorldSnapshot Snapshot => world.Snapshot();
         public RegionalShipSnapshot Player => Snapshot.Ships[ArchipelagoScenario.PlayerShipId];
-        public TradeRoutePolicy Policy => Player.Policy ?? EnterpriseScenario.MerchantPolicy();
+        public TradeRoutePolicy Policy => Player.Policy ?? RecommendedMerchantPolicy();
         public RegionalDecision CurrentDecision => world.EvaluateAutomation(Player.Id);
         public IReadOnlyList<ArchipelagoActivity> Activity => activityView;
         public string SelectedPortId { get; private set; }
@@ -341,6 +341,10 @@ namespace SaltAndLedger.UnityHost
 
         public RegionalDecision DecisionFor(string shipId) => world.EvaluateAutomation(shipId);
 
+        public TradeRoutePolicy RecommendedMerchantPolicy() => Identity?.WorldMode == RunWorldMode.LivingCities
+            ? LivingCityScenario.MerchantPolicy(LivingCityGeneration.Generate(Identity.Seed.Value, Identity.GeneratorVersion, Identity.LivingPricingMode))
+            : EnterpriseScenario.MerchantPolicy();
+
         private void Observe(RegionalResult result)
         {
             if (!ReferenceEquals(result.Before, result.After) && result.After.Day == result.Before.Day &&
@@ -395,9 +399,34 @@ namespace SaltAndLedger.UnityHost
                 lastReasons[key] = reason;
             }
             foreach (var consumption in result.Consumption)
-                Add(consumption.PortId, null, result.After.Ports[consumption.PortId].Name +
-                    (consumption.UnmetQuantity > 0 ? ": unmet demand " + consumption.UnmetQuantity : ": consumed " + consumption.ConsumedQuantity) +
-                    " " + Content.GetGood(consumption.GoodId).Name + ".");
+            {
+                var port = result.After.Ports[consumption.PortId];
+                if (port.City == null)
+                {
+                    Add(port.Id, null, port.Name +
+                        (consumption.UnmetQuantity > 0 ? ": unmet demand " + consumption.UnmetQuantity : ": consumed " + consumption.ConsumedQuantity) +
+                        " " + Content.GetGood(consumption.GoodId).Name + ".");
+                    continue;
+                }
+                var need = port.Consumption.First(rule => rule.Configuration.Id == consumption.RuleId);
+                var key = "city-need/" + port.Id + "/" + need.Configuration.Id;
+                var reason = need.LastConsumedQuantity + "/" + need.LastDesiredQuantity + "/" + need.LastUnmetStock + "/" + need.LastUnmetAffordability;
+                if (need.LastConsumedQuantity > 0 || !lastReasons.TryGetValue(key, out var previous) || previous != reason)
+                    Add(port.Id, null, port.Name + ": " + need.LastConsumedQuantity + "/" + need.LastDesiredQuantity + " " +
+                        Content.GetGood(consumption.GoodId).Name +
+                        (need.Configuration.Kind == ConsumptionKind.Municipal ? " municipal own-use" : " consumed; households paid " + Number(need.LastPayment)) +
+                        "; unmet stock " + need.LastUnmetStock + ", funds " + need.LastUnmetAffordability + ".");
+                lastReasons[key] = reason;
+            }
+            foreach (var port in result.After.Ports.Values.Where(p => p.City != null))
+            {
+                var prior = result.Before.Ports[port.Id].City;
+                if (prior == null) continue;
+                if (port.City.Population != prior.Population)
+                    Add(port.Id, null, port.Name + ": population " + prior.Population + " → " + port.City.Population + ". " + port.City.ProsperityReason);
+                if (port.City.LuxuryEnabled != prior.LuxuryEnabled)
+                    Add(port.Id, null, port.Name + ": durable Furniture demand " + (port.City.LuxuryEnabled ? "eligible after sustained prosperity." : "suspended after sustained hardship."));
+            }
             foreach (var movement in result.Movements)
             {
                 if (movement.Kind != ShipMovementKind.Departure && movement.Kind != ShipMovementKind.Arrival) continue;
@@ -431,6 +460,7 @@ namespace SaltAndLedger.UnityHost
                 case ScheduledProductionOutcome.InputShortage: return "waiting for inputs";
                 case ScheduledProductionOutcome.OutputLimit: return "waiting for output stock space";
                 case ScheduledProductionOutcome.WarehouseCapacity: return "waiting for private warehouse capacity";
+                case ScheduledProductionOutcome.PayrollShortage: return "waiting for employer payroll funds; no unpaid batch";
                 default: return outcome.ToString();
             }
         }

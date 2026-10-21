@@ -23,7 +23,7 @@ namespace SaltAndLedger.UnityHost
             var world = Panel(worldRow, null, "run-column run-card");
             Text(world, null, "YOUR WORLD", "run-eyebrow");
             var mode = new DropdownField("World type", new System.Collections.Generic.List<string>
-                { "Fixed / Classic Archipelago", "Seeded Archipelago" }, 0) { name = "worldModePicker" };
+                { "Fixed / Classic Archipelago", "Seeded Archipelago · v1 geography", "Living Cities · v2 economy" }, 0) { name = "worldModePicker" };
             world.Add(mode);
             var seed = new TextField("Seed") { name = "seedField", value = "42" };
             world.Add(seed);
@@ -35,13 +35,21 @@ namespace SaltAndLedger.UnityHost
                 { "Ascension 0: Normal", "Ascension 1: Slow Foundations" }, 0) { name = "difficultyPicker" };
             world.Add(difficulty);
             Text(world, "setupDifficulty", "", "run-copy");
-            Text(world, null, "Exactly four towns and the same authored economy. Only geography varies. Seed syntax: optional + or − followed by ASCII digits, from −2147483648 to 2147483647; no spaces.", "run-footnote");
+            var pricing = new DropdownField("Living pricing", new System.Collections.Generic.List<string>
+                { "Stock-sensitive baseline", "Coverage target hypothesis" }, 0) { name = "livingPricingPicker" };
+            world.Add(pricing);
+            Text(world, "setupEconomyDescription", "", "run-footnote");
+            Text(world, null, "Seed syntax: optional + or − followed by ASCII digits, from −2147483648 to 2147483647; no spaces.", "run-footnote");
             var preview = Panel(worldRow, null, "run-column run-card");
             Text(preview, null, "GEOGRAPHY PREVIEW", "run-eyebrow");
             Text(preview, "setupWorldIdentity", "", "run-objective");
             Text(preview, "setupCoordinates", "", "run-copy");
             Text(preview, "setupRoutes", "", "run-copy");
             Text(preview, null, "Distances are abstract units. Direct sea connections do not avoid coastlines. Travel estimates use the authoritative starting ship speed.", "run-footnote");
+            var cities = Panel(scroll, "setupCities", "run-card hidden");
+            Text(cities, null, "KNOWN CITY ECONOMIES", "run-eyebrow");
+            Text(cities, "setupRecoveryTown", "", "run-objective");
+            Panel(cities, "setupCityCards", "setup-city-cards");
             var columns = Panel(scroll, null, "run-columns");
             var objective = Panel(columns, null, "run-column run-card");
             Text(objective, null, "YOUR OBJECTIVE", "run-eyebrow");
@@ -72,6 +80,7 @@ namespace SaltAndLedger.UnityHost
             mode.RegisterValueChangedCallback(_ => RefreshSetup());
             seed.RegisterValueChangedCallback(_ => RefreshSetup());
             difficulty.RegisterValueChangedCallback(_ => RefreshSetup());
+            pricing.RegisterValueChangedCallback(_ => RefreshSetup());
             challenges.RegisterValueChangedCallback(_ => RefreshSetup());
             charters.RegisterValueChangedCallback(_ => RefreshSetup());
         }
@@ -79,13 +88,26 @@ namespace SaltAndLedger.UnityHost
         private string SetupChallengeId()
         {
             var index = Math.Max(0, Element<DropdownField>("challengePicker").index);
-            return index == 0 ? null : RunScenario.Challenges[index - 1].Id;
+            return index == 0 ? null : RunScenario.GetChallenges(SetupWorldMode())[index - 1].Id;
+        }
+
+        private RunWorldMode SetupWorldMode() => (RunWorldMode)Math.Max(0, Element<DropdownField>("worldModePicker").index);
+
+        private void RefreshSetupChallenges()
+        {
+            var picker = Element<DropdownField>("challengePicker");
+            var choices = new[] { "Unlimited sandbox" }.Concat(RunScenario.GetChallenges(SetupWorldMode()).Select(c => c.Name)).ToList();
+            if (picker.choices.SequenceEqual(choices)) return;
+            var previous = picker.value;
+            picker.choices = choices;
+            picker.SetValueWithoutNotify(choices.Contains(previous) ? previous : choices[1]);
         }
 
         private string SetupCharterId() => RunScenario.Charters[Math.Max(0, Element<DropdownField>("charterPicker").index)].Id;
 
         private void RefreshSetup()
         {
+            RefreshSetupChallenges();
             var id = SetupChallengeId();
             var challenge = id == null ? null : RunScenario.GetChallenge(id);
             var charter = RunScenario.GetCharter(SetupCharterId());
@@ -94,11 +116,13 @@ namespace SaltAndLedger.UnityHost
             SetText("setupDeadline", challenge == null ? "Unlimited sandbox." :
                 "Deadline: day " + challenge.Configuration.DeadlineDay + " · Minimum cash: " + challenge.Configuration.MinimumCash +
                 "\nCompleting the objective wins immediately. Missing it at the deadline ends the run in defeat.");
-            SetText("setupCharterDescription", charter.Description);
-            SetText("setupAssets", charter.Endowment);
-            SetText("setupTradeoff", "Opportunity cost\n" + charter.Tradeoff);
-            var seeded = Element<DropdownField>("worldModePicker").index == 1;
+            var mode = SetupWorldMode();
+            var seeded = mode != RunWorldMode.Classic;
+            var living = mode == RunWorldMode.LivingCities;
             var difficulty = (RunDifficulty)Math.Max(0, Element<DropdownField>("difficultyPicker").index);
+            var pricing = (LivingPricingMode)Math.Max(0, Element<DropdownField>("livingPricingPicker").index);
+            Element<DropdownField>("livingPricingPicker").EnableInClassList("hidden", !living);
+            Element<VisualElement>("setupCities").EnableInClassList("hidden", !living);
             Element<TextField>("seedField").SetEnabled(seeded);
             var validSeed = SeededArchipelago.TryParseSeed(Element<TextField>("seedField").value, out var seed);
             var valid = !seeded || validSeed;
@@ -108,25 +132,60 @@ namespace SaltAndLedger.UnityHost
             SetText("setupDifficulty", difficulty == RunDifficulty.Normal
                 ? "New private facilities operate immediately; their first batch waits one normal production interval."
                 : "Pay the full cost at order. New private sites spend two complete days under construction, then wait a full production interval. No automatic purchases, sales or production while building. The Industrial Consortium's granted bakery is already operational and keeps its original schedule.");
-            setupIdentity = valid ? new RunIdentity(id, charter.Id, seeded ? RunWorldMode.Seeded : RunWorldMode.Classic,
-                seeded ? seed : (int?)null, difficulty) : null;
+            setupIdentity = valid ? new RunIdentity(id, charter.Id, mode,
+                seeded ? seed : (int?)null, difficulty, livingPricingMode: living ? pricing : LivingPricingMode.StockOnly) : null;
+            if (valid) charter = RunScenario.GetCharter(setupIdentity);
+            SetText("setupCharterDescription", charter.Description);
+            SetText("setupAssets", charter.Endowment);
+            SetText("setupTradeoff", "Opportunity cost\n" + charter.Tradeoff);
+            SetText("setupEconomyDescription", living
+                ? "Living Cities v2 varies geography, production roles, eligible private industries, population and initial finite accounts. Households pay for actual purchases; completed production pays wages. Economic viability is not guaranteed victory."
+                : "Historical economy: Classic keeps authored geography; seeded v1 changes geography only. Household finances, wages and population are not modeled.");
             SetText("setupWorldIdentity", valid ? WorldIdentityText(setupIdentity) : "Preview unavailable until the seed is valid.");
-            if (!valid) { SetText("setupCoordinates", ""); SetText("setupRoutes", ""); return; }
+            Element<VisualElement>("setupCityCards").Clear();
+            if (!valid) { SetText("setupCoordinates", ""); SetText("setupRoutes", ""); SetText("setupRecoveryTown", "Enter a valid seed to preview cities."); return; }
             var geography = RunScenario.PreviewGeography(setupIdentity);
             SetText("setupCoordinates", string.Join("\n", geography.Positions.Values.Select(p =>
                 PortName(p.PortId) + "  (" + p.X + ", " + p.Y + ")")));
             SetText("setupRoutes", string.Join("\n", geography.Routes.Select(route =>
                 PortName(route.OriginPortId) + " ↔ " + PortName(route.DestinationPortId) + ": " +
                 route.Distance + " units · " + route.DurationDays(RunScenario.StartingShipSpeed) + " days")));
+            if (living) RefreshSetupCities();
+        }
+
+        private void RefreshSetupCities()
+        {
+            var generation = LivingCityGeneration.Generate(setupIdentity.Seed.Value, setupIdentity.GeneratorVersion, setupIdentity.LivingPricingMode);
+            SetText("setupRecoveryTown", "Vulnerable recovery town: " + PortName(generation.RecoveryPortId) +
+                ". Regional paid meals count; a delivery alone does not complete the challenge.");
+            foreach (var port in generation.Ports)
+            {
+                var card = Panel(Element<VisualElement>("setupCityCards"), "setupCity_" + port.Id, "setup-city-card");
+                var allowed = generation.Blueprints.Where(b => b.EligiblePortIds.Contains(port.Id)).ToArray();
+                var absent = generation.Blueprints.Where(b => !b.EligiblePortIds.Contains(port.Id)).ToArray();
+                Text(card, null, port.Name + " · " + port.Role, "run-objective");
+                Text(card, null, "Population " + port.Settlement.InitialPopulation + " · prosperity " + port.Settlement.InitialProsperity +
+                    " / 100\nHousehold cash " + Number(port.Settlement.InitialHouseholdCash) + " · market cash " + Number(port.Market.InitialMarketCash), "run-copy");
+                Text(card, "setupCapabilities_" + port.Id, "Public: " + string.Join(", ", port.Facilities.Select(f => Session.Content.GetBuilding(f.Instance.BuildingId).Name)) +
+                    "\nCan build: " + string.Join(", ", allowed.Select(b => Session.Content.GetBuilding(b.BuildingId).Name)) +
+                    "\nUnavailable: " + string.Join(", ", absent.Select(b => Session.Content.GetBuilding(b.BuildingId).Name)), "run-copy");
+                Text(card, null, "Needs: " + string.Join("; ", port.Consumption.Select(c =>
+                    LivingCityPricing.DesiredQuantity(c, port.Settlement.InitialPopulation) + " " + Session.Content.GetGood(c.GoodId).Name +
+                    " / " + NeedKind(c.Kind) + " every " + c.IntervalDays + " days" + (c.Kind == ConsumptionKind.Luxury ? " if eligible" : ""))) +
+                    "\nFurniture still needs sustained eligibility and actual spending power.", "run-footnote");
+            }
         }
 
         private void LoadSetupIdentity(RunIdentity identity)
         {
+            var mode = Element<DropdownField>("worldModePicker");
+            mode.SetValueWithoutNotify(mode.choices[(int)identity.WorldMode]);
+            RefreshSetupChallenges();
             Element<DropdownField>("challengePicker").SetValueWithoutNotify(identity.ChallengeId == null ?
                 "Unlimited sandbox" : RunScenario.GetChallenge(identity.ChallengeId).Name);
             Element<DropdownField>("charterPicker").SetValueWithoutNotify(RunScenario.GetCharter(identity.CharterId).Name);
-            var mode = Element<DropdownField>("worldModePicker");
-            mode.SetValueWithoutNotify(mode.choices[(int)identity.WorldMode]);
+            var pricing = Element<DropdownField>("livingPricingPicker");
+            pricing.SetValueWithoutNotify(pricing.choices[(int)identity.LivingPricingMode]);
             if (identity.Seed.HasValue) Element<TextField>("seedField").SetValueWithoutNotify(identity.Seed.Value.ToString(CultureInfo.InvariantCulture));
             var difficulty = Element<DropdownField>("difficultyPicker");
             difficulty.SetValueWithoutNotify(difficulty.choices[identity.Ascension]);
@@ -176,7 +235,7 @@ namespace SaltAndLedger.UnityHost
             if (SeededArchipelago.TryParseSeed(Element<TextField>("seedField").value, out var previous) && next == previous)
                 next = previous == int.MaxValue ? int.MinValue : previous + 1;
             var mode = Element<DropdownField>("worldModePicker");
-            mode.SetValueWithoutNotify(mode.choices[1]);
+            if (mode.index == 0) mode.SetValueWithoutNotify(mode.choices[1]);
             Element<TextField>("seedField").SetValueWithoutNotify(next.ToString(CultureInfo.InvariantCulture));
             RefreshSetup();
         }
@@ -191,7 +250,9 @@ namespace SaltAndLedger.UnityHost
         {
             if (identity == null) return "Classic Archipelago · Ascension 0";
             return (identity.WorldMode == RunWorldMode.Classic ? "Fixed / Classic Archipelago" :
-                "Seed " + identity.Seed.Value.ToString(CultureInfo.InvariantCulture) + " · Generator v" + identity.GeneratorVersion) +
+                (identity.WorldMode == RunWorldMode.LivingCities ? "Living Cities · " : "") +
+                "Seed " + identity.Seed.Value.ToString(CultureInfo.InvariantCulture) + " · Generator v" + identity.GeneratorVersion +
+                (identity.WorldMode == RunWorldMode.LivingCities ? " · " + identity.LivingPricingMode + " pricing" : "")) +
                 " · Ascension " + identity.Ascension + (identity.Difficulty == RunDifficulty.SlowFoundations ? ": Slow Foundations" : ": Normal");
         }
     }

@@ -99,7 +99,7 @@ namespace SaltAndLedger.UnityHost
             Click("buyButton", () => Trade(TradeDirection.Buy));
             Click("sellButton", () => Trade(TradeDirection.Sell));
             Click("applyPolicyButton", ApplyPolicy);
-            Click("presetButton", () => Run(() => { Session.ApplyPolicy(EnterpriseScenario.MerchantPolicy()); LoadPolicy(); }));
+            Click("presetButton", () => Run(() => { Session.ApplyPolicy(Session.RecommendedMerchantPolicy()); LoadPolicy(); }));
             Click("runDocksideButton", () => Run(() => Session.RunDockside()));
             Element<Toggle>("automationToggle").RegisterValueChangedCallback(change =>
                 Run(() => Session.SetAutomationEnabled(change.newValue)));
@@ -241,8 +241,8 @@ namespace SaltAndLedger.UnityHost
             Element<VisualElement>("portContext").EnableInClassList("hidden", isShip);
             Element<VisualElement>("shipContext").EnableInClassList("hidden", !isShip);
 
+            RefreshPort();
             if (isShip) RefreshShip(snapshot.Ships[Session.SelectedShipId]);
-            else RefreshPort();
             RefreshPreviews();
             RefreshIndustry();
             RefreshChallenge();
@@ -253,6 +253,8 @@ namespace SaltAndLedger.UnityHost
             Element<Label>("statusLabel").EnableInClassList("error", statusIsError);
             RefreshModalStatus();
             RefreshRunExperience();
+            RefreshCityEconomy();
+            RefreshContextLayout();
         }
 
         private void RefreshNavigation()
@@ -268,12 +270,12 @@ namespace SaltAndLedger.UnityHost
                 text += "\nProposed: " + PortName(destination) + " · " + route.Distance + " distance units · " +
                     Session.Snapshot.TravelDays(ship.Id, destination) + " days at speed " + ship.Configuration.Speed + ".";
             }
-            else text += "\nSelect your ship, then a connected destination. Departure needs confirmation.";
             SetText("voyageLabel", text);
             var sail = Element<Button>("sailButton");
             sail.text = destination == null ? "Confirm voyage" : "Sail to " + PortName(destination);
             sail.SetEnabled(destination != null && ship.DockedPortId != null &&
                 destination != ship.DockedPortId && !ship.AutomationEnabled && !Session.IsChallengeEnded);
+            sail.EnableInClassList("hidden", destination == null);
         }
 
         private void RefreshPort()
@@ -324,7 +326,8 @@ namespace SaltAndLedger.UnityHost
                 " days · next day " + rule.NextDueDay + "\nLast unmet " + rule.LastUnmetQuantity +
                 " · cumulative unmet " + rule.TotalUnmetQuantity).ToArray();
             SetText("consumptionLabel", consumption.Length == 0 ? "No recurring local consumption." : string.Join("\n\n", consumption) +
-                "\nPhysical consumption removes stock. Household payments are not modeled.");
+                (port.City == null ? "\nHistorical physical consumption removes stock; household payments are not modeled."
+                    : "\nHousehold Bread/Furniture needs use real retail purchases. Municipal own-use removes market stock without self-payment. Inspect Needs & coverage for exact amounts and causes."));
             SetText("economySummaryLabel", port.Facilities.Count + " public industries · " +
                 Session.Snapshot.PrivateFacilities.Values.Count(f => f.OwnerId == Session.Player.OwnerId && f.PortId == port.Id) +
                 " private industries · " + port.Consumption.Count +

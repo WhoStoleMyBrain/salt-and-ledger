@@ -52,6 +52,7 @@ namespace SaltAndLedger.UnityHost
                 PrepareIndustryDraft(Session.Snapshot.PrivateFacilities[selectedFacilityId], RecommendedIndustryPolicy(
                     Session.Snapshot.PrivateFacilities[selectedFacilityId].Blueprint.Id), true,
                     "Recommended draft only. Review these limits, then Apply to authorize future purchases. Output stays private for shipping.");
+                Element<Foldout>("industryDraftFoldout").value = true;
             });
             Click("industryShippingButton", () =>
             {
@@ -89,6 +90,9 @@ namespace SaltAndLedger.UnityHost
                 SetChoices("blueprintDropdown", blueprintIds.Count == 0 ? new List<string> { "No eligible facilities" } :
                     blueprintIds.Select(id => Session.Content.GetBuilding(snapshot.IndustryBlueprints[id].BuildingId).Name).ToList());
             }
+            SetText("industryEligibilityLabel", "Eligible here: " + (eligible.Length == 0 ? "none" : string.Join(", ", eligible.Select(id =>
+                Session.Content.GetBuilding(snapshot.IndustryBlueprints[id].BuildingId).Name))) +
+                ". Other industries cannot be built here; all goods may still be traded. View City economy for public producers and missing inputs.");
             RefreshConstruction();
             var owned = snapshot.PrivateFacilities.Values.Where(f => f.OwnerId == Session.Player.OwnerId && f.PortId == portId)
                 .OrderBy(f => f.Id, StringComparer.Ordinal).ToArray();
@@ -112,18 +116,18 @@ namespace SaltAndLedger.UnityHost
                 "Capital paid " + Number(facility.IsStarterGrant ? 0 : facility.ConstructionCost) +
                 (facility.IsStarterGrant ? " · starter facility grant" : " · construction paid once at order") +
                 "\nLocal inventory purchases " + Number(facility.ProcurementCost) +
+                (facility.Blueprint.WagePerBatch > 0 ? " · paid wages " + Number(facility.WagesPaid) + " (separate operating expense)" : "") +
                 " · actual local sale revenue " + Number(facility.SalesRevenue) + "\nConsumed: " + QuantityTotals(facility.ConsumedQuantities) +
                 "\nProduced: " + QuantityTotals(facility.ProducedQuantities) +
                 "\nHeld material basis " + Number(snapshot.Accounting.Stores["facility:" + facility.Id].TotalCostBasis) +
-                ". Transferred inputs retain their original paid basis. These purchase and revenue totals are not profit; company realized material margin is in the Ledger.");
+                ". Transferred inputs retain their original paid basis. These purchase and revenue totals are not profit; material margin and any paid wages are separate in the Ledger.");
             SetText("facilityStateLabel", IndustryStatus(facility));
             SetText("facilityScheduleLabel", FacilitySchedule(facility));
             SetText("facilityInputStatusLabel", InputAvailability(facility));
             SetText("industryAppliedPolicyLabel", "APPLIED NOW\n" + (facility.Enabled ? "Production enabled" : "Production disabled") +
                 " · input buying " + (facility.Policy.ProcurementEnabled ? "on" : "off") +
                 " · local output sales " + (facility.Policy.SalesEnabled ? "on" : "off") +
-                "\nLast automatic input phase: " + WaitText(facility.ProcurementWaitReason) +
-                "; last output phase: " + WaitText(facility.SalesWaitReason));
+                "\nInput: " + WaitText(facility.ProcurementWaitReason) + "; output: " + WaitText(facility.SalesWaitReason));
             SetText("industryShippingLabel", FacilityShipping(facility));
             if (loadedPolicyFacilityId != selectedFacilityId) LoadIndustryPolicy(facility);
             Element<Button>("applyIndustryPolicy").SetEnabled(!Session.IsChallengeEnded);
@@ -165,6 +169,8 @@ namespace SaltAndLedger.UnityHost
                 "Its first batch is eligible one full " + blueprint.IntervalDays + "-day production interval after completion, if enabled and supplied. " +
                 "The full cost goes to this town once at order; the site starts empty. Manual storage and local trades remain available under ordinary ownership, capacity and docking rules. " +
                 "Inherited charter factories are already operational and keep their original schedule under either ascension.");
+            if (blueprint.WagePerBatch > 0)
+                SetText("constructionLabel", Element<Label>("constructionLabel").text + " · wage " + Number(blueprint.WagePerBatch) + " / completed batch");
             Element<Button>("constructButton").SetEnabled(!owned && Session.Player.Cash >= blueprint.ConstructionCost && !Session.IsChallengeEnded);
         }
 
@@ -172,6 +178,8 @@ namespace SaltAndLedger.UnityHost
         {
             if (!facility.IsOperational) return "UNDER CONSTRUCTION · " + facility.ConstructionDaysRemaining + " days remaining";
             if (!facility.Enabled) return "DISABLED · Apply an enabled operating policy to resume.";
+            if (facility.LastOutcome == ScheduledProductionOutcome.PayrollShortage)
+                return "PAYROLL BLOCKED · Company needs " + Number(facility.Blueprint.WagePerBatch) + " for a completed batch; no unpaid production.";
             var recipe = Session.Content.GetRecipe(facility.Blueprint.RecipeId);
             var missing = recipe.Inputs.Where(input => facility.Inventory[input.GoodId] < input.Quantity).ToArray();
             if (missing.Length > 0)
@@ -196,7 +204,7 @@ namespace SaltAndLedger.UnityHost
                 : (facility.IsStarterGrant ? "Already-built starter grant; no ascension construction delay.\n" : "Operational since day " + facility.ConstructionCompletionDay + ".\n") +
                     (facility.NextProductionDay <= Session.Snapshot.Day ? "Due since day " + facility.NextProductionDay + "; next day advance retries." :
                         "Next eligible batch: day " + facility.NextProductionDay + ".");
-            return schedule + "\nA schedule is an opportunity, not a guarantee: operation, inputs and storage must permit the batch.";
+            return schedule + (facility.Blueprint.WagePerBatch == 0 ? "" : "\nPayroll " + Number(facility.Blueprint.WagePerBatch) + " per completed batch.");
         }
 
         private string InputAvailability(PrivateFacilitySnapshot facility)
@@ -237,9 +245,10 @@ namespace SaltAndLedger.UnityHost
         private static bool LegUsesFacility(IndustrialRouteLeg leg, string id) =>
             leg != null && (leg.SourceFacilityId == id || leg.DestinationFacilityId == id);
 
-        private static IndustryPolicy RecommendedIndustryPolicy(string blueprintId)
+        private IndustryPolicy RecommendedIndustryPolicy(string blueprintId)
         {
-            var preset = EnterpriseScenario.DefaultIndustryPolicy(blueprintId);
+            var preset = Session.Identity?.WorldMode == RunWorldMode.LivingCities && blueprintId == EnterpriseScenario.BakeryBlueprint
+                ? LivingCityScenario.BakeryPolicy() : EnterpriseScenario.DefaultIndustryPolicy(blueprintId);
             return new IndustryPolicy(preset.ProcurementEnabled, false, preset.CashReserve, preset.Inputs, preset.Outputs);
         }
 

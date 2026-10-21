@@ -161,6 +161,7 @@ namespace SaltAndLedger.UnityHost.Tests
         public IEnumerator BothLegsPortsCommoditiesPricesAndBudgetsAreAppliedFromTheControls()
         {
             var before = controller.Session.Snapshot;
+            Click("contextControlsTab");
             root.Q<Foldout>("automationFoldout").value = true;
             root.Q<DropdownField>("routeOriginDropdown").value = "Westhaven";
             root.Q<DropdownField>("routeDestinationDropdown").value = "Eastport";
@@ -237,6 +238,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(root.Q<Label>("consumptionLabel").text, Does.Contain("cumulative unmet"));
             Assert.That(controller.Session.Activity.Any(item => item.Message.Contains("Harvest") || item.Message.Contains("consumed") ||
                 item.Message.Contains("unmet demand")), Is.True);
+            Click("contextControlsTab");
             root.Q<Foldout>("automationFoldout").value = true;
             Set("outBuy", "1");
             Click("applyPolicyButton");

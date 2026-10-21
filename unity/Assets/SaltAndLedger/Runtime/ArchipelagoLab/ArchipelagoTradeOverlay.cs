@@ -127,8 +127,9 @@ namespace SaltAndLedger.UnityHost
             SetText("tradeTitle", port.Name + "  /  " + ship.Name);
             SetText("tradeDay", "DAY " + Number(tradeSnapshot.Day));
             SetText("tradeHeader", (local ? "DOCKED" : "REMOTE MARKET") + "   ·   Company cash " + Number(ship.Cash) +
-                "   ·   Town liquidity " + Number(port.MarketCash) + "   ·   Cargo " + ship.CargoUnits + "/" + ship.CargoCapacity +
-                " (" + (ship.CargoCapacity - ship.CargoUnits) + " free)");
+                "   ·   Market cash " + Number(port.MarketCash) + "   ·   Cargo " + ship.CargoUnits + "/" + ship.CargoCapacity +
+                " (" + (ship.CargoCapacity - ship.CargoUnits) + " free)" +
+                (port.City == null ? "" : "\nHousehold cash " + Number(port.City.HouseholdCash) + " is separate. Only market cash can pay your sale."));
             SetText("tradeAvailabilityLabel", !ship.IsPlayer ? "NPC inspection only. Select your ship to trade or sail." :
                 Session.IsChallengeEnded ? "The charter has ended. Reset or start a new sandbox to continue." :
                 ship.AutomationEnabled ? "Disable your trade route before placing manual orders." :
@@ -167,7 +168,8 @@ namespace SaltAndLedger.UnityHost
                 row.Q<Label>("ask").text = quote.Ask.HasValue ? Number(quote.Ask.Value) : "—";
                 row.EnableInClassList("selected-good", goodId == SelectedGoodId());
             }
-            SetText("tradeGoodDescription", Session.Content.GetGood(SelectedGoodId()).Description);
+            SetText("tradeGoodDescription", Session.Content.GetGood(SelectedGoodId()).Description +
+                (port.City == null ? "" : "\nHousehold purchases can replenish market funds only when residents can afford real stocked goods. Future recovery and prices are not guaranteed."));
             var valid = int.TryParse(Element<TextField>("quantityField").value, NumberStyles.Integer,
                 CultureInfo.InvariantCulture, out var quantity) && quantity > 0;
             foreach (var direction in new[] { TradeDirection.Buy, TradeDirection.Sell })
@@ -224,7 +226,18 @@ namespace SaltAndLedger.UnityHost
                 SetText("challengeLabel", "SANDBOX · Build your enterprise at your own pace. No deadline.");
                 return;
             }
+            if (challenge.Recovery != null)
+            {
+                var recovery = challenge.Recovery;
+                SetText("challengeLabel", "CITY RECOVERY · " + PortName(challenge.Configuration.PortId) + " · " + challenge.Status +
+                    "\nPaid food " + recovery.FulfillmentPercent + "% / " + challenge.Configuration.RequiredQuantity + "% · " +
+                    recovery.Observations + "/" + recovery.RequiredObservations + " observations · prosperity " + recovery.Prosperity + "/" + recovery.MinimumProsperity +
+                    "\n" + Math.Max(0, challenge.Configuration.DeadlineDay - Session.Snapshot.Day) + " days left · Cash " + Session.Player.Cash + "/" + challenge.Configuration.MinimumCash);
+                Element<Label>("challengeLabel").tooltip = ObjectiveText();
+                return;
+            }
             SetText("challengeLabel", ObjectiveText());
+            Element<Label>("challengeLabel").tooltip = "";
         }
     }
 }

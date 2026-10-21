@@ -235,6 +235,7 @@
                 <ui:Foldout name="constructionRulesFoldout" text="Construction timing and charter grants" value="false" class="construction-rules">
                     <ui:ScrollView name="constructionRulesScroll" mode="Vertical" class="construction-rules-scroll">
                         <ui:Label name="constructionTimingLabel" class="help" />
+                        <ui:Label name="industryEligibilityLabel" class="help" />
                     </ui:ScrollView>
                 </ui:Foldout>
                 <ui:DropdownField name="facilityDropdown" label="Your facility" />
@@ -246,8 +247,11 @@
                         <ui:Label name="industryAppliedPolicyLabel" class="help" />
                         <ui:Button name="recommendIndustryPresetButton" text="Prepare recommended input draft" />
                         <ui:Label name="industryPolicyDraftLabel" class="industry-state" />
-                        <ui:Label name="industryPolicyPreviewLabel" class="help policy-preview" />
+                        <ui:Foldout name="industryDraftFoldout" text="Review proposed purchases and sales" value="false">
+                            <ui:Label name="industryPolicyPreviewLabel" class="help policy-preview" />
+                        </ui:Foldout>
                         <ui:Button name="applyIndustryPolicy" text="Apply operating policy" class="primary" />
+                        <ui:Foldout name="industryAdvancedFoldout" text="Inputs, shipping, limits and accounting" value="false">
                         <ui:Foldout name="industryShippingFoldout" text="Physical shipping connection" value="false">
                             <ui:Label name="industryShippingLabel" class="help" />
                             <ui:Button name="industryShippingButton" text="Connect / inspect industrial shipping" />
@@ -267,6 +271,7 @@
                         <ui:Foldout name="industryFinancesFoldout" text="Recipe and actual finances" value="false">
                             <ui:Label name="facilityRecipeLabel" class="summary" />
                             <ui:Label name="facilityStatsLabel" class="help" />
+                        </ui:Foldout>
                         </ui:Foldout>
                     </ui:ScrollView>
                     <ui:ScrollView name="industryStorageScroll" mode="Vertical" class="industry-storage">

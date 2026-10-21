@@ -134,6 +134,7 @@ namespace SaltAndLedger.UnityHost.Tests
         public IEnumerator IndustrialPanelConfiguresAnAutomaticSupplyVictoryAndReloadsAppliedDraft()
         {
             controller.BeginRun(RunScenario.CoastalChallenge, RunScenario.IndustrialCharter);
+            Click("contextControlsTab");
             Click("logisticsButton");
             Assert.That(root.Q<Toggle>("logisticsEnabled").enabledInHierarchy, Is.False);
             Click("logisticsProcurementButton");

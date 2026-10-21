@@ -51,6 +51,22 @@
 .context-panel { width: var(--sl-context); flex-shrink: 0; min-height: 0; background-color: #1a303b; border-radius: 7px; }
 .context-panel .unity-scroll-view__content-container { padding: 12px; }
 .context-panel .unity-scroll-view__content-viewport { min-width: 0; }
+.context-shell { padding: 10px; }
+.context-body { flex-grow: 1; min-height: 0; min-width: 0; }
+.context-shell .context-body > .unity-scroll-view__content-viewport > .unity-scroll-view__content-container { padding: 0 4px 0 0; }
+.context-tabs { flex-shrink: 0; margin-bottom: 7px; }
+.context-tabs .unity-button { font-size: var(--sl-caption); padding: 4px; }
+.context-shell .context-actions { flex-shrink: 0; margin: 8px 0 0 0; }
+.context-shell > .unity-button { flex-shrink: 0; margin-right: 0; }
+.context-tabs .unity-button.selected-tab, .city-tabs .unity-button.selected-tab { border-color: #ecd08e; background-color: #37635d; }
+.city-vitals { white-space: normal; font-size: var(--sl-emphasis); color: #ecd08e; margin: 4px 0 10px 0; }
+.city-funds { white-space: normal; font-size: var(--sl-body); color: #d6e6e3; background-color: #142c37; padding: 8px; margin: 0 0 8px 0; }
+.city-need { white-space: normal; font-size: var(--sl-body); color: #b7d8d2; margin: 4px 0 8px 0; }
+.context-overview > .unity-label { margin: 4px 0; }
+.city-tabs { flex-shrink: 0; margin-bottom: 10px; }
+.context-shell #portContext .commodity-row { padding-top: 3px; padding-bottom: 3px; }
+.context-shell #portContext .help { margin: 4px 0; }
+.ui-narrow .context-shell .selection-subtitle { margin-bottom: 5px; }
 .selection-title { font-size: var(--sl-heading); -unity-font-style: bold; color: #f0ce8e; margin: 0 0 4px 0; padding: 0; white-space: normal; }
 .selection-subtitle { font-size: var(--sl-caption); color: #b6cbca; white-space: normal; margin-bottom: 11px; }
 .summary { white-space: normal; font-size: var(--sl-body); margin: 5px 0; padding: 0; }

@@ -154,6 +154,7 @@ namespace SaltAndLedger.UnityHost.Tests
                 yield return Reachable("recommendIndustryPresetButton");
                 yield return Reachable("applyIndustryPolicy");
                 var industryBefore = controller.Session.Snapshot;
+                root.Q<Foldout>("industryAdvancedFoldout").value = true;
                 root.Q<Foldout>("industryDetailsFoldout").value = true;
                 yield return Reachable("procurementEnabled");
                 yield return Reachable("industryCashReserve");
@@ -172,6 +173,7 @@ namespace SaltAndLedger.UnityHost.Tests
                 yield return Reachable("warehouseSell");
                 Assert.That(root.panel.Pick(town.worldBound.center), Is.Not.SameAs(town), "Industry backdrop blocks the town marker.");
                 Cancel();
+                Click("contextControlsTab");
                 Click("logisticsButton");
                 yield return Reachable("applyLogisticsButton");
                 yield return Reachable("logisticsQuantity");

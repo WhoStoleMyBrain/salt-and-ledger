@@ -38,6 +38,8 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(root.Q<Label>("industryPolicyPreviewLabel").text, Does.Contain("Retain company cash 100"));
             Assert.That(root.Q<Label>("industryPolicyPreviewLabel").text, Does.Contain("Automatic local sales OFF"));
             Assert.That(controller.Session.Snapshot, Is.SameAs(before));
+            root.Q<Foldout>("industryAdvancedFoldout").value = true;
+            root.Q<Foldout>("industryDetailsFoldout").value = true;
             root.Q<TextField>("inputPrice_flour").value = "0";
             Assert.That(root.Q<Label>("industryPolicyPreviewLabel").text, Does.Contain("Incomplete draft"));
             Assert.That(controller.Session.Snapshot, Is.SameAs(before));
@@ -130,6 +132,8 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Contain("Capital paid 0"));
             Assert.That(root.Q<Label>("industryShippingLabel").text, Does.Contain("NO PHYSICAL SHIPPING LINK"));
             var before = controller.Session.Snapshot;
+            root.Q<Foldout>("industryAdvancedFoldout").value = true;
+            root.Q<Foldout>("industryShippingFoldout").value = true;
             Click("industryShippingButton");
             Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Logistics));
             Assert.That(controller.Session.Snapshot, Is.SameAs(before));
@@ -149,12 +153,16 @@ namespace SaltAndLedger.UnityHost.Tests
             controller.BeginRun(null, RunScenario.MerchantCharter);
             OpenBakeryInvestment(); Click("constructButton");
             Click("recommendIndustryPresetButton");
+            root.Q<Foldout>("industryAdvancedFoldout").value = true;
+            root.Q<Foldout>("industryDetailsFoldout").value = true;
             root.Q<TextField>("inputPrice_flour").value = "1";
             root.Q<TextField>("inputPrice_logs").value = "1";
             Click("applyIndustryPolicy"); Click("closeIndustryButton"); Click("nextDayButton"); Click("openIndustryButton");
             Assert.That(root.Q<Label>("facilityStateLabel").text, Does.Contain("PRICE-BLOCKED"));
             controller.BeginRun(null, RunScenario.IndustrialCharter);
             Click("openIndustryButton");
+            root.Q<Foldout>("industryAdvancedFoldout").value = true;
+            root.Q<Foldout>("industryDetailsFoldout").value = true;
             root.Q<Toggle>("procurementEnabled").value = false;
             root.Q<Toggle>("salesEnabled").value = true;
             root.Q<TextField>("outputPrice_bread").value = "999";

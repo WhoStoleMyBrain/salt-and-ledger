@@ -19,7 +19,7 @@ namespace SaltAndLedger.UnityHost
             Text(scroll, "ledgerFinances", "", "run-objective");
             Text(scroll, "ledgerAssets", "", "run-copy");
             Text(scroll, "ledgerOperations", "", "run-copy");
-            Text(scroll, null, "FIFO costing follows arrival at each stockpile. Partial lots retain exact integer remainders. Transfers keep basis and ownership; manufacture carries consumed material expenditure into output. Starter grants have zero paid basis. Wages, transport expenses, depreciation and resale value are not modeled.", "run-footnote");
+            Text(scroll, null, "FIFO costing follows arrival at each stockpile. Partial lots retain exact integer remainders. Transfers keep basis and ownership; manufacture carries consumed material expenditure into output. Starter grants have zero paid basis. Living Cities wages are expensed separately when paid, including work whose output is still held. Transport expenses, depreciation and resale value are not modeled.", "run-footnote");
             var history = new Foldout { name = "ledgerHistory", text = "Recent committed financial events · 200 maximum", value = false };
             scroll.Add(history);
             Panel(history, "ledgerEvents", "");
@@ -49,7 +49,7 @@ namespace SaltAndLedger.UnityHost
                 var facility = SelectedLogisticsFacility();
                 if (facility.Blueprint.Id != EnterpriseScenario.BakeryBlueprint)
                     throw new InvalidOperationException("This preset is for a bakery. Configure other recipes in Your industries.");
-                Session.ConfigureFacility(facility.Id, EnterpriseScenario.BakeryPolicy(false), true);
+                Session.ConfigureFacility(facility.Id, RecommendedIndustryPolicy(EnterpriseScenario.BakeryBlueprint), true);
                 SetText("logisticsDraft", "Bakery input procurement applied. Automatic local output sales are off, retaining bread for shipping.");
             }));
             Text(source, null, "Procurement and shipping are separate decisions. Configure precise input ceilings and factory output reserves in Your industries.", "run-footnote");
@@ -98,9 +98,14 @@ namespace SaltAndLedger.UnityHost
             var finance = Session.Snapshot.Accounting.Companies[Session.Player.OwnerId];
             return "LIQUID CASH  " + Number(Session.Player.Cash) + "\n" +
                 "Sale revenue  " + Number(finance.SalesRevenue) + "   ·   Inventory purchases  " + Number(finance.InventoryPurchases) +
-                "\nCost of goods sold  " + Number(finance.CostOfGoodsSold) + "   ·   Realized gross margin  " + Signed(finance.RealizedGrossMargin) +
+                "\nCost of goods sold  " + Number(finance.CostOfGoodsSold) +
+                (Session.Identity?.WorldMode == RunWorldMode.LivingCities ? "   ·   Realized material margin  " : "   ·   Realized gross margin  ") + Signed(finance.RealizedGrossMargin) +
                 "\nHeld inventory material basis  " + Number(finance.HeldInventoryCost) +
                 "   ·   Construction expenditure  " + Number(finance.ConstructionExpenditure) +
+                (Session.Identity?.WorldMode == RunWorldMode.LivingCities
+                    ? "\nPaid wages (operating expense)  " + Number(finance.WagesPaid) +
+                      "\nMaterial margin less all paid wages  " + Signed(finance.OperatingSurplusAfterWages) +
+                      "\nThis includes wages for unsold output; capital and unmodeled costs remain separate." : "") +
                 "\nStarting cash  " + Number(finance.InitialCash) + "   ·   Cash change  " + Signed(Session.CashChange);
         }
         private string AssetText()
@@ -179,6 +184,17 @@ namespace SaltAndLedger.UnityHost
         {
             if (logisticsFacilities.Count == 0) { RefreshLogisticsStatus(); return; }
             var facility = SelectedLogisticsFacility();
+            if (Session.Identity?.WorldMode == RunWorldMode.LivingCities && facility.Blueprint.Id == EnterpriseScenario.BakeryBlueprint)
+            {
+                var generation = LivingCityGeneration.Generate(Session.Identity.Seed.Value, Session.Identity.GeneratorVersion, Session.Identity.LivingPricingMode);
+                if (facility.PortId != generation.RecoveryPortId)
+                {
+                    LoadAppliedLogistics(LivingCityScenario.IndustrialPolicy(generation, facility.Id, facility.PortId));
+                    SetText("logisticsDraft", "Living Cities draft: ship private Bread to the vulnerable town using the scenario's stated limits. Apply to commit; current demand is not a promise of payment.");
+                    RefreshLogisticsStatus();
+                    return;
+                }
+            }
             var output = Session.Content.GetRecipe(facility.Blueprint.RecipeId).Outputs.First().GoodId;
             var quantity = Math.Min(8, Session.Player.CargoCapacity);
             SetIndex("logisticsGood", goodIds.IndexOf(output));
@@ -260,6 +276,12 @@ namespace SaltAndLedger.UnityHost
         private void RefreshLogisticsStatus()
         {
             if (Root.Q("logisticsStatus") == null) return;
+            var procurement = RecommendedIndustryPolicy(EnterpriseScenario.BakeryBlueprint);
+            SetText("logisticsProcurementPreview", "INPUT PRESET BEFORE APPLYING\n" +
+                string.Join("\n", procurement.Inputs.Select(rule => "Buy " + Session.Content.GetGood(rule.GoodId).Name +
+                    " toward " + rule.TargetQuantity + " units, worst marginal price at most " + Number(rule.MaxBuyPrice))) +
+                "\nRetain company cash " + Number(procurement.CashReserve) +
+                ". Local output sales stay off. Applying authorizes future daily purchases; it places no order now.");
             var ship = Session.Player;
             SetText("logisticsShipLabel", "Assigned ship: " + ship.Name + " · " + ship.CargoCapacity +
                 " cargo units · " + (ship.DockedPortId == null ? "sailing" : "docked at " + PortName(ship.DockedPortId)));
