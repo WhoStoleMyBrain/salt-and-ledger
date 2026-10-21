@@ -26,14 +26,22 @@ var checkSeeded = seededMode && args.Length > seededIndex && args[seededIndex] =
 if (checkSeeded) seededIndex++;
 var validSeeded = seededMode && args.Length <= seededIndex + 1 &&
     (args.Length <= seededIndex || !args[seededIndex].StartsWith("--", StringComparison.Ordinal));
+var livingMode = args.Length >= 2 && args[1] == "--living-cities";
+var livingIndex = 2;
+var deepLiving = livingMode && args.Length > livingIndex && args[livingIndex] == "--deep";
+if (deepLiving) livingIndex++;
+var checkLiving = livingMode && args.Length > livingIndex && args[livingIndex] == "--check";
+if (checkLiving) livingIndex++;
+var validLiving = livingMode && args.Length <= livingIndex + 1 &&
+    (args.Length <= livingIndex || !args[livingIndex].StartsWith("--", StringComparison.Ordinal));
 if (args.Length != 1 && !(worldMode && args.Length <= 3) && !marketMode && !shippingMode && !automationMode &&
     !(pricingMode && args.Length <= (checkPricing ? 4 : 3)) &&
     !(archipelagoMode && args.Length <= (checkArchipelago ? 4 : 3)) &&
     !(enterpriseMode && args.Length <= (checkEnterprise ? 4 : 3)) &&
     !(industrialMode && args.Length <= (checkIndustrial ? 4 : 3)) &&
-    !(runsMode && args.Length <= (checkRuns ? 4 : 3)) && !validSeeded)
+    !(runsMode && args.Length <= (checkRuns ? 4 : 3)) && !validSeeded && !validLiving)
 {
-    Console.Error.WriteLine("Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--world [initialLogs] | --market | --pricing [--check] [output.json] | --shipping | --automation | --archipelago [--check] [output.json] | --enterprise [--check] [output.json] | --industrial-logistics [--check] [output.json] | --runs [--check] [output.json] | --seeded-runs [--deep] [--check] [output.json]]");
+    Console.Error.WriteLine("Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--world [initialLogs] | --market | --pricing [--check] [output.json] | --shipping | --automation | --archipelago [--check] [output.json] | --enterprise [--check] [output.json] | --industrial-logistics [--check] [output.json] | --runs [--check] [output.json] | --seeded-runs [--deep] [--check] [output.json] | --living-cities [--deep] [--check] [output.json]]");
     return 1;
 }
 
@@ -48,6 +56,8 @@ if (worldMode && args.Length == 3 &&
 try
 {
     var content = ContentLoader.Load(File.ReadAllText(args[0]));
+    if (livingMode)
+        return LivingCityExperiments.Run(content, args.Length > livingIndex ? args[livingIndex] : null, checkLiving, deepLiving);
     if (seededMode)
         return SeededRunExperiments.Run(content, args.Length > seededIndex ? args[seededIndex] : null, checkSeeded, deepSeeded);
     if (industrialMode)
