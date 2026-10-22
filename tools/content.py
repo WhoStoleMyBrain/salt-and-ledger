@@ -59,9 +59,13 @@ def validate_content(content: object, schema_path: Path = DEFAULT_SCHEMA) -> dic
     if type(content["schemaVersion"]) is not int:
         raise ContentError("schemaVersion must be an integer JSON token")
 
+    extension = content.get("expandingEconomy")
+    if extension is not None and type(extension["version"]) is not int:
+        raise ContentError("expandingEconomy.version must be an integer JSON token")
+    scopes = [content] if extension is None else [content, extension]
     ids = set()
     for kind in ("goods", "buildings", "recipes"):
-        for entity in content[kind]:
+        for entity in (entity for scope in scopes for entity in scope[kind]):
             entity_id = entity["id"]
             if ID_PATTERN.fullmatch(entity_id) is None:
                 raise ContentError(f"Invalid {kind} ID: {entity_id!r}")
@@ -69,9 +73,17 @@ def validate_content(content: object, schema_path: Path = DEFAULT_SCHEMA) -> dic
                 raise ContentError(f"Duplicate global ID: {entity_id!r}")
             ids.add(entity_id)
 
-    goods = {good["id"] for good in content["goods"]}
-    buildings = {building["id"] for building in content["buildings"]}
-    for recipe in content["recipes"]:
+    goods = set()
+    buildings = set()
+    for scope in scopes:
+        goods.update(good["id"] for good in scope["goods"])
+        buildings.update(building["id"] for building in scope["buildings"])
+        _validate_recipes(scope["recipes"], goods, buildings)
+    return content
+
+
+def _validate_recipes(recipes: list[dict], goods: set[str], buildings: set[str]) -> None:
+    for recipe in recipes:
         if recipe["buildingId"] not in buildings:
             raise ContentError(f"Recipe {recipe['id']!r}: unknown building {recipe['buildingId']!r}")
         for side in ("inputs", "outputs"):
@@ -85,7 +97,15 @@ def validate_content(content: object, schema_path: Path = DEFAULT_SCHEMA) -> dic
                 if type(ingredient["quantity"]) is not int:
                     raise ContentError(f"Recipe {recipe['id']!r} {side}: quantity must be an integer JSON token")
                 seen.add(good_id)
-    return content
+
+
+def expanding_content(content: dict) -> dict:
+    """Explicit merged view for v3/reference only; loading keeps legacy collections intact."""
+    extension = content.get("expandingEconomy")
+    if extension is None:
+        return content
+    return {"schemaVersion": content["schemaVersion"],
+            **{kind: content[kind] + extension[kind] for kind in ("goods", "buildings", "recipes")}}
 
 
 def load_content(path: Path = DEFAULT_SOURCE) -> dict:

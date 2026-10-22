@@ -4,7 +4,7 @@ import unittest
 
 from jsonschema import Draft202012Validator
 
-from tools.content import ContentError, DEFAULT_SCHEMA, DEFAULT_SOURCE, load_content, parse_json, validate_content
+from tools.content import ContentError, DEFAULT_SCHEMA, DEFAULT_SOURCE, expanding_content, load_content, parse_json, validate_content
 
 
 class ContentValidationTests(unittest.TestCase):
@@ -30,6 +30,30 @@ class ContentValidationTests(unittest.TestCase):
         self.assertEqual("sawmill", recipe["buildingId"])
         self.assertEqual([{"goodId": "logs", "quantity": 2}], recipe["inputs"])
         self.assertEqual([{"goodId": "planks", "quantity": 1}], recipe["outputs"])
+
+    def test_v3_catalog_is_explicit_and_preserves_original_definitions(self):
+        content = load_content()
+        expanded = expanding_content(content)
+        self.assertEqual(6, len(content["goods"]))
+        self.assertEqual(7, len(expanded["goods"]))
+        self.assertEqual(8, len(expanded["buildings"]))
+        self.assertIs(content["goods"][0], expanded["goods"][0])
+        self.assertEqual("silver", expanded["goods"][-1]["id"])
+        self.assertEqual("extraction", expanded["recipes"][-1]["kind"])
+        self.assertNotIn("royal_mint", {recipe["buildingId"] for recipe in expanded["recipes"]})
+
+    def test_extension_is_fully_validated_and_cannot_change_base_references(self):
+        for version in (2, 4, 3.0, True, None):
+            self.assert_invalid(lambda data: data["expandingEconomy"].__setitem__("version", version))
+        self.assert_invalid(lambda data: data["expandingEconomy"]["goods"][0].__setitem__("id", "logs"))
+        self.assert_invalid(lambda data: data["expandingEconomy"]["recipes"][0]["outputs"][0].__setitem__("quantity", 1.0))
+        self.assert_invalid(lambda data: data["expandingEconomy"]["recipes"][0]["outputs"][0].__setitem__("goodId", "missing"))
+        self.assert_invalid(lambda data: data["expandingEconomy"].__setitem__("typo", 1))
+        self.assert_invalid(lambda data: data["recipes"][0]["inputs"][0].__setitem__("goodId", "silver"))
+
+    def test_legacy_document_without_extension_remains_valid(self):
+        self.content.pop("expandingEconomy")
+        self.assertIs(self.content, expanding_content(validate_content(self.content)))
 
     def test_required_collections_are_nonempty(self):
         for kind in ("goods", "buildings", "recipes"):

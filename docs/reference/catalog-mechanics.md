@@ -11,9 +11,13 @@ These explanations are shared with the offline in-game encyclopedia. For exact d
 - [Living city accounts and wages](mechanics/help_city_accounts.md) — Household money, market liquidity and company cash have separate owners\.
 - [Food, furniture and municipal use](mechanics/help_city_needs.md) — Different consumers need different goods on explicit schedules\.
 - [Population, prosperity and recovery](mechanics/help_city_welfare.md) — Sustained paid food and purchasing power shape bounded city welfare\.
+- [Company Value and operating results](mechanics/help_company_value.md) — Reference holdings, liquidity and realized earnings are different measures\.
 - [Historical inventory cost](mechanics/help_cost_basis.md) — Held goods carry actual acquisition or input\-material expenditure through their journey\.
+- [Fractional goods and exact coins](mechanics/help_exact_units.md) — V3 households buy proportional quantities while ships carry whole cargo units\.
+- [Expanding production chains](mechanics/help_expanding_industry.md) — Invest in real capacity and inspect the next finite bottleneck\.
 - [Owning a factory](mechanics/help_factories.md) — Invest cash in a fixed recipe and a finite private stockpile\.
 - [Financial reports and the ledger](mechanics/help_finances.md) — Separate cash, revenue, attributed costs, realized margin, and capital\.
+- [Commission and direct a fleet](mechanics/help_fleet_expansion.md) — Up to three owned ships share cash but keep separate cargo and routes\.
 - [Industrial shipping automation](mechanics/help_industrial_routes.md) — Connect owned production to physical transport and a chosen destination\.
 - [Market liquidity](mechanics/help_liquidity.md) — Stock and money are separate finite limits\.
 - [Menus, pause, and the encyclopedia](mechanics/help_navigation.md) — Inspect, pause, and begin another run without accidentally advancing the economy\.
@@ -22,6 +26,8 @@ These explanations are shared with the offline in-game encyclopedia. For exact d
 - [Private procurement and local sales](mechanics/help_procurement.md) — Maintain chosen inputs and sell chosen surplus through ordinary local trades\.
 - [Production and scheduling](mechanics/help_production.md) — Complete canonical recipes run at explicitly scheduled economic days\.
 - [Text size and readable controls](mechanics/help_readability.md) — Choose one presentation scale for every ArchipelagoLab screen\.
+- [External trade and the public Royal Mint](mechanics/help_royal_economy.md) — Finite outside purchases import cash; bounded Silver\-backed issuance creates it\.
+- [Save, Continue and exact retry](mechanics/help_saves.md) — Local explicit saves preserve an economic run; retry starts its identity fresh\.
 - [Results and scoring](mechanics/help_scoring.md) — Read the explicit score breakdown alongside the actual economy\.
 - [Seeded worlds and exact retries](mechanics/help_seeded_worlds.md) — Choose geography\-only v1 or Living Cities v2 economic roles, then retry the exact run identity\.
 - [Shipping and voyages](mechanics/help_shipping.md) — Goods travel aboard a real ship between directly connected towns\.

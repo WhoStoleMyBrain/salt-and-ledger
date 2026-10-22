@@ -8,7 +8,7 @@ title: "Living city accounts and wages"
 
 Household money, market liquidity and company cash have separate owners\.
 
-Each Living Cities town has a public market account and an aggregate household account\. Every company has one cash account\. Their combined total is conserved after initialization; there is no daily allowance, bailout or hidden stock repair\.
+Each living town has a public market account and an aggregate household account\. Every company has one cash account\. Living Cities v2 conserves their combined total after initialization\. V3 additionally has a public treasury and finite external authority: external commerce transfers existing money across the regional boundary, and only an explicit Silver\-backed Mint exchange creates new currency\. There is no daily allowance or hidden stock repair\.
 
 A successful public production batch moves its wage from market to households\. Private production moves its wage from the owning company to households\. For example, a wage of 10 moves market 40 to 30 and household 20 to 30; no money is created\.
 

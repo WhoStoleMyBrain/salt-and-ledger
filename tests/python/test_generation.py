@@ -47,10 +47,22 @@ class ReferenceGenerationTests(unittest.TestCase):
         self.assertIn("No tradeable inputs.", recipe)
         self.assertIn("| [Logs](../goods/logs.md) | 2 |", recipe)
         original = copy.deepcopy(self.content)
+        original.pop("expandingEconomy")
         original["recipes"] = original["recipes"][:1]
         original["buildings"] = original["buildings"][:1]
         legacy = json.loads(render_outputs(validate_content(original))[ENCYCLOPEDIA_PATH])
         self.assertEqual("transformation", legacy["recipes"][0]["kind"])
+
+    def test_v3_scope_is_explicit_in_web_and_offline_reference(self):
+        outputs = render_outputs(self.content, self.help)
+        encyclopedia = json.loads(outputs[ENCYCLOPEDIA_PATH])
+        silver = next(item for item in encyclopedia["goods"] if item["id"] == "silver")
+        self.assertEqual(["mine_silver"], silver["producedByRecipeIds"])
+        self.assertIn("Available only in Expanding Economy ruleset v3.", silver["paragraphs"])
+        self.assertIn("Content scope: Expanding Economy v3 only", outputs[Path("docs/reference/goods/silver.md")].decode())
+        mint = next(item for item in encyclopedia["buildings"] if item["id"] == "royal_mint")
+        self.assertEqual([], mint["recipeIds"])
+        self.assertIn("not a private factory", mint["description"])
 
     def test_all_generated_markdown_links_resolve(self):
         outputs = render_outputs(self.content, self.help)

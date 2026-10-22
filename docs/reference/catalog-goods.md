@@ -8,5 +8,6 @@
 - [Grain](goods/grain.md) — Harvested grain milled into flour for the food supply chain\.
 - [Logs](goods/logs.md) — Unprocessed timber used by the sample sawmill recipe\.
 - [Planks](goods/planks.md) — Sawn timber produced by the sample sawmill recipe\.
+- [Silver](goods/silver.md) — A physical precious metal extracted in v3 and shipped to the public Royal Mint\. Surrendered Silver is retained in the monetary reserve\.
 
 [Production chains](chains.md) · [All content](index.md)

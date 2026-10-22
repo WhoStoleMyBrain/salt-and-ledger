@@ -72,6 +72,32 @@ public sealed class ContentLoaderTests
     }
 
     [Fact]
+    public void ExpandingCatalogRequiresExplicitSelectionAndRetainsCanonicalObjects()
+    {
+        var baseline = ContentLoader.Load(CanonicalJson());
+        var expanded = baseline.ForExpandingEconomy();
+        Assert.False(baseline.IsExpandingEconomy);
+        Assert.True(expanded.IsExpandingEconomy);
+        Assert.Equal(6, baseline.Goods.Count);
+        Assert.Equal(7, expanded.Goods.Count);
+        Assert.Equal(8, expanded.Buildings.Count);
+        Assert.Same(baseline.GetGood("bread"), expanded.GetGood("bread"));
+        Assert.Same(baseline.GetRecipe("bake_bread"), expanded.GetRecipe("bake_bread"));
+        Assert.Same(expanded, expanded.ForExpandingEconomy());
+        Assert.Throws<KeyNotFoundException>(() => baseline.GetGood("silver"));
+        Assert.Equal(RecipeKind.Extraction, expanded.GetRecipe("mine_silver").Kind);
+        Assert.DoesNotContain(expanded.Recipes, recipe => recipe.BuildingId == "royal_mint");
+    }
+
+    [Fact]
+    public void LegacyDocumentCannotSilentlyOptIntoAbsentContent()
+    {
+        var baseline = ContentLoader.Load(Change(root => root.Property("expandingEconomy")!.Remove()));
+        Assert.Equal(6, baseline.Goods.Count);
+        Assert.Throws<InvalidOperationException>(() => baseline.ForExpandingEconomy());
+    }
+
+    [Fact]
     public void DefinitionsCannotBeMutatedThroughCollectionCasts()
     {
         var catalog = ContentLoader.Load(CanonicalJson());
@@ -102,6 +128,14 @@ public sealed class ContentLoaderTests
     {
         var mutations = new Dictionary<string, Action<JObject>>
         {
+            ["extension version"] = root => root["expandingEconomy"]!["version"] = 4,
+            ["extension floating version"] = root => root["expandingEconomy"]!["version"] = 3.0,
+            ["extension null"] = root => root["expandingEconomy"] = null,
+            ["extension unknown field"] = root => root["expandingEconomy"]!["typo"] = 1,
+            ["extension duplicate global id"] = root => root["expandingEconomy"]!["goods"]![0]!["id"] = "logs",
+            ["extension unknown output"] = root => root["expandingEconomy"]!["recipes"]![0]!["outputs"]![0]!["goodId"] = "missing",
+            ["extension fractional quantity"] = root => root["expandingEconomy"]!["recipes"]![0]!["outputs"]![0]!["quantity"] = 1.5,
+            ["base recipe depends on extension"] = root => root["recipes"]![0]!["inputs"]![0]!["goodId"] = "silver",
             ["unknown root field"] = root => root["productionSpeed"] = 1,
             ["missing schema version"] = root => root.Property("schemaVersion")!.Remove(),
             ["unsupported schema version"] = root => root["schemaVersion"] = 2,

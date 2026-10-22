@@ -29,12 +29,13 @@ namespace SaltAndLedger.UnityHost.Tests
         public void StagedReferenceResolvesAllCanonicalEntriesAndRelatedLinks()
         {
             var catalog = EncyclopediaCatalog.Load(generatedJson, content);
+            var referenceContent = content.ForExpandingEconomy();
             Assert.That(catalog.Search("goods", "").Select(e => e.Id),
-                Is.EquivalentTo(content.Goods.Select(g => g.Id)));
+                Is.EquivalentTo(referenceContent.Goods.Select(g => g.Id)));
             Assert.That(catalog.Search("buildings", "").Select(e => e.Id),
-                Is.EquivalentTo(content.Buildings.Select(b => b.Id)));
+                Is.EquivalentTo(referenceContent.Buildings.Select(b => b.Id)));
             Assert.That(catalog.Search("recipes", "").Select(e => e.Id),
-                Is.EquivalentTo(content.Recipes.Select(r => r.Id)));
+                Is.EquivalentTo(referenceContent.Recipes.Select(r => r.Id)));
             Assert.That(catalog.Search("mechanics", "").Count, Is.GreaterThanOrEqualTo(12));
             foreach (var entry in catalog.Entries.Values)
             {
@@ -43,7 +44,7 @@ namespace SaltAndLedger.UnityHost.Tests
                 foreach (var related in entry.RelatedIds)
                     Assert.That(catalog.Entries.ContainsKey(related), Is.True, entry.Id + " -> " + related);
             }
-            foreach (var recipe in content.Recipes)
+            foreach (var recipe in referenceContent.Recipes)
             {
                 var expected = recipe.Inputs.Concat(recipe.Outputs).Select(q => q.GoodId)
                     .Append(recipe.BuildingId).Distinct().ToArray();

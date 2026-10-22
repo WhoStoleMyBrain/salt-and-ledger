@@ -4,73 +4,193 @@
   "description": "Backward-compatible version 1 evolution: an omitted recipe kind means transformation; explicit extraction requires no inputs. Loaders also check globally unique IDs, references, duplicate ingredients, and integer tokens.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "goods", "buildings", "recipes"],
+  "required": [
+    "schemaVersion",
+    "goods",
+    "buildings",
+    "recipes"
+  ],
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 1 },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
     "goods": {
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/entity" }
+      "items": {
+        "$ref": "#/$defs/entity"
+      }
     },
     "buildings": {
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/entity" }
+      "items": {
+        "$ref": "#/$defs/entity"
+      }
     },
     "recipes": {
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/recipe" }
+      "items": {
+        "$ref": "#/$defs/recipe"
+      }
+    },
+    "expandingEconomy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "goods",
+        "buildings",
+        "recipes"
+      ],
+      "properties": {
+        "version": {
+          "type": "integer",
+          "const": 3
+        },
+        "goods": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/entity"
+          }
+        },
+        "buildings": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/entity"
+          }
+        },
+        "recipes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/recipe"
+          }
+        }
+      }
     }
   },
   "$defs": {
-    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
-    "text": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
     "entity": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "name", "description"],
+      "required": [
+        "id",
+        "name",
+        "description"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/id" },
-        "name": { "$ref": "#/$defs/text" },
-        "description": { "$ref": "#/$defs/text" }
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "$ref": "#/$defs/text"
+        },
+        "description": {
+          "$ref": "#/$defs/text"
+        }
       }
     },
     "ingredient": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["goodId", "quantity"],
+      "required": [
+        "goodId",
+        "quantity"
+      ],
       "properties": {
-        "goodId": { "$ref": "#/$defs/id" },
-        "quantity": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
+        "goodId": {
+          "$ref": "#/$defs/id"
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
       }
     },
     "recipe": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "name", "description", "buildingId", "inputs", "outputs"],
+      "required": [
+        "id",
+        "name",
+        "description",
+        "buildingId",
+        "inputs",
+        "outputs"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/id" },
-        "name": { "$ref": "#/$defs/text" },
-        "description": { "$ref": "#/$defs/text" },
-        "buildingId": { "$ref": "#/$defs/id" },
-        "kind": { "type": "string", "enum": ["transformation", "extraction"] },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "$ref": "#/$defs/text"
+        },
+        "description": {
+          "$ref": "#/$defs/text"
+        },
+        "buildingId": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "transformation",
+            "extraction"
+          ]
+        },
         "inputs": {
           "type": "array",
-          "items": { "$ref": "#/$defs/ingredient" }
+          "items": {
+            "$ref": "#/$defs/ingredient"
+          }
         },
         "outputs": {
           "type": "array",
           "minItems": 1,
-          "items": { "$ref": "#/$defs/ingredient" }
+          "items": {
+            "$ref": "#/$defs/ingredient"
+          }
         }
       },
       "if": {
-        "required": ["kind"],
-        "properties": { "kind": { "const": "extraction" } }
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "kind": {
+            "const": "extraction"
+          }
+        }
       },
-      "then": { "properties": { "inputs": { "maxItems": 0 } } },
-      "else": { "properties": { "inputs": { "minItems": 1 } } }
+      "then": {
+        "properties": {
+          "inputs": {
+            "maxItems": 0
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "inputs": {
+            "minItems": 1
+          }
+        }
+      }
     }
   }
 }

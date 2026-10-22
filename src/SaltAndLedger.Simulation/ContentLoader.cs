@@ -49,12 +49,28 @@ namespace SaltAndLedger.Simulation
                 throw new ContentValidationException("Invalid content JSON: " + exception.Message, exception);
             }
 
-            RequireProperties(root, "$", "schemaVersion", "goods", "buildings", "recipes");
+            if (root.Property("expandingEconomy", StringComparison.Ordinal) == null)
+                RequireProperties(root, "$", "schemaVersion", "goods", "buildings", "recipes");
+            else
+                RequireProperties(root, "$", "schemaVersion", "goods", "buildings", "recipes", "expandingEconomy");
             if (RequireInteger(root["schemaVersion"], "$.schemaVersion") != 1)
                 throw Invalid("$.schemaVersion", "must be 1");
 
             var ids = new HashSet<string>(StringComparer.Ordinal);
+            var baseCatalog = ReadDefinitions(root, ids);
+            if (root["expandingEconomy"] == null) return baseCatalog;
+            var extension = RequireObject(root["expandingEconomy"]!);
+            RequireProperties(extension, extension.Path, "version", "goods", "buildings", "recipes");
+            if (RequireInteger(extension["version"], extension.Path + ".version") != 3)
+                throw Invalid(extension.Path + ".version", "must be 3");
+            var expanded = ReadDefinitions(extension, ids, baseCatalog);
+            return new ContentCatalog(baseCatalog.Goods, baseCatalog.Buildings, baseCatalog.Recipes, expanded);
+        }
+
+        private static ContentCatalog ReadDefinitions(JObject root, HashSet<string> ids, ContentCatalog? baseline = null)
+        {
             var goods = new List<GoodDefinition>();
+            if (baseline != null) goods.AddRange(baseline.Goods);
             foreach (var token in RequireArray(root["goods"], "$.goods"))
             {
                 var item = RequireObject(token);
@@ -63,6 +79,7 @@ namespace SaltAndLedger.Simulation
             }
 
             var buildings = new List<BuildingDefinition>();
+            if (baseline != null) buildings.AddRange(baseline.Buildings);
             foreach (var token in RequireArray(root["buildings"], "$.buildings"))
             {
                 var item = RequireObject(token);
@@ -71,6 +88,7 @@ namespace SaltAndLedger.Simulation
             }
 
             var recipes = new List<RecipeDefinition>();
+            if (baseline != null) recipes.AddRange(baseline.Recipes);
             foreach (var token in RequireArray(root["recipes"], "$.recipes"))
             {
                 var item = RequireObject(token);
@@ -96,7 +114,7 @@ namespace SaltAndLedger.Simulation
                     if (!goodIds.Contains(quantity.GoodId))
                         throw Invalid(recipe.Id, "references unknown good '" + quantity.GoodId + "'");
             }
-            return new ContentCatalog(goods, buildings, recipes);
+            return new ContentCatalog(goods, buildings, recipes, isExpandingEconomy: baseline != null);
         }
 
         private static void ValidateJsonSyntax(string json)

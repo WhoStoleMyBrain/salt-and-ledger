@@ -8,11 +8,11 @@ title: "Menus, pause, and the encyclopedia"
 
 Inspect, pause, and begin another run without accidentally advancing the economy\.
 
-Start from the main menu, choose New Run or unlimited Sandbox, then review the challenge, charter, Classic, seeded v1 or Living Cities v2 preview, and Ascension 0 or 1\. Setup, seed editing and reference browsing do not advance economic time or reroll a started world\.
+Start from the main menu, choose New Run or unlimited Sandbox, then review the challenge, charter, Classic, seeded v1, Living Cities v2 or Expanding Economy v3 preview, and Ascension 0 or 1\. Setup, seed editing and reference browsing do not advance economic time or reroll a started world\.
 
 Escape first closes the active trade or industry overlay\. From the encyclopedia it returns to the parent screen\. During ordinary gameplay it opens pause; from pause it resumes unless a confirmation is active\.
 
-Restart, abandonment, return to menu, and exit protect an active run with confirmation where progress would be discarded\. Exit closes the standalone game\. No hidden saved session or persistent Continue option is promised\.
+Restart, abandonment, return to menu, and exit protect unsaved active progress with confirmation\. Exit closes the standalone game\. Save explicitly before leaving; Continue or Load restores a valid local saved run, while Retry Same World creates its initial state again\.
 
 The encyclopedia is available from the main menu, run setup, and pause menu\. Browse a category, search names or descriptions, follow related entries, and use Back to return\. All recipe facts are generated from the same content the simulation loads and work offline\. Settings offers four game\-wide text sizes without changing the world\.
 

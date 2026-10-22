@@ -45,6 +45,8 @@ namespace SaltAndLedger.UnityHost
         public static EncyclopediaCatalog Load(string json, ContentCatalog content)
         {
             if (content == null) throw new ArgumentNullException(nameof(content));
+            // Reference includes every explicitly scoped canonical entry; selecting a run still controls its actual inventory catalog.
+            if (content.HasExpandingEconomy) content = content.ForExpandingEconomy();
             var document = JObject.Parse(json, new JsonLoadSettings { DuplicatePropertyNameHandling = DuplicatePropertyNameHandling.Error });
             if (document["formatVersion"]?.Type != JTokenType.Integer || (int)document["formatVersion"] != FormatVersion ||
                 document["sourceSchemaVersion"]?.Type != JTokenType.Integer || (int)document["sourceSchemaVersion"] != content.SchemaVersion ||

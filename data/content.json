@@ -118,5 +118,43 @@
       "inputs": [{ "goodId": "planks", "quantity": 2 }],
       "outputs": [{ "goodId": "furniture", "quantity": 1 }]
     }
-  ]
+  ],
+  "expandingEconomy": {
+    "version": 3,
+    "goods": [
+      {
+        "id": "silver",
+        "name": "Silver",
+        "description": "A physical precious metal extracted in v3 and shipped to the public Royal Mint. Surrendered Silver is retained in the monetary reserve."
+      }
+    ],
+    "buildings": [
+      {
+        "id": "silver_mine",
+        "name": "Silver Mine",
+        "description": "An eligible v3 extraction site producing Silver in complete batches, subject to actual payroll and storage limits."
+      },
+      {
+        "id": "royal_mint",
+        "name": "Royal Mint",
+        "description": "The unique public v3 institution commissioned by a company. It accepts physically delivered Silver into a reserve and issues bounded currency to the supplier and treasury. It is not a private factory or a Company Value asset."
+      }
+    ],
+    "recipes": [
+      {
+        "id": "mine_silver",
+        "name": "Mine Silver",
+        "description": "Extract one Silver in a complete batch. The scenario controls real wages, cadence, eligibility and output limits.",
+        "buildingId": "silver_mine",
+        "kind": "extraction",
+        "inputs": [],
+        "outputs": [
+          {
+            "goodId": "silver",
+            "quantity": 1
+          }
+        ]
+      }
+    ]
+  }
 }

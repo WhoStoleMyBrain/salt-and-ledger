@@ -7,6 +7,7 @@
 - [Harvest logs](recipes/harvest_logs.md) — Create two logs in one resource\-extraction batch\. Scheduling and stock limits belong to the scenario\.
 - [Make furniture](recipes/make_furniture.md) — Manufacture one furniture from two planks\.
 - [Mill flour](recipes/mill_flour.md) — Mill two grain into one flour\.
+- [Mine Silver](recipes/mine_silver.md) — Extract one Silver in a complete batch\. The scenario controls real wages, cadence, eligibility and output limits\.
 - [Saw planks](recipes/saw_planks.md) — Convert logs into planks in one sample production batch\.
 
 [Production chains](chains.md) · [All content](index.md)

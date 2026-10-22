@@ -11,4 +11,5 @@ Every relationship below is generated from canonical recipe inputs and outputs. 
 | [Lumber Camp](buildings/lumber_camp.md) | [Harvest logs](recipes/harvest_logs.md) | No tradeable inputs → 2 [Logs](goods/logs.md) |
 | [Furniture Workshop](buildings/furniture_workshop.md) | [Make furniture](recipes/make_furniture.md) | 2 [Planks](goods/planks.md) → 1 [Furniture](goods/furniture.md) |
 | [Mill](buildings/mill.md) | [Mill flour](recipes/mill_flour.md) | 2 [Grain](goods/grain.md) → 1 [Flour](goods/flour.md) |
+| [Silver Mine](buildings/silver_mine.md) | [Mine Silver](recipes/mine_silver.md) | No tradeable inputs → 1 [Silver](goods/silver.md) |
 | [Sawmill](buildings/sawmill.md) | [Saw planks](recipes/saw_planks.md) | 2 [Logs](goods/logs.md) → 1 [Planks](goods/planks.md) |

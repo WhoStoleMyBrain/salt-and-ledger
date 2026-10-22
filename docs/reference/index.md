@@ -17,6 +17,7 @@ Recipe quantities are canonical. Construction prices, production intervals, star
 - [Grain](goods/grain.md)
 - [Logs](goods/logs.md)
 - [Planks](goods/planks.md)
+- [Silver](goods/silver.md)
 
 ## Buildings
 
@@ -25,7 +26,9 @@ Recipe quantities are canonical. Construction prices, production intervals, star
 - [Furniture Workshop](buildings/furniture_workshop.md)
 - [Lumber Camp](buildings/lumber_camp.md)
 - [Mill](buildings/mill.md)
+- [Royal Mint](buildings/royal_mint.md)
 - [Sawmill](buildings/sawmill.md)
+- [Silver Mine](buildings/silver_mine.md)
 
 ## Recipes
 
@@ -34,6 +37,7 @@ Recipe quantities are canonical. Construction prices, production intervals, star
 - [Harvest logs](recipes/harvest_logs.md)
 - [Make furniture](recipes/make_furniture.md)
 - [Mill flour](recipes/mill_flour.md)
+- [Mine Silver](recipes/mine_silver.md)
 - [Saw planks](recipes/saw_planks.md)
 
 ## Player mechanics

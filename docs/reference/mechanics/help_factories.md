@@ -16,6 +16,8 @@ A charter may grant an initial facility or goods\. Those starter assets are gran
 
 Living Cities has town\-specific construction eligibility\. An industry may be absent and also impossible to build locally\. Cash alone cannot override this restriction; use the eligible\-town list and import missing inputs through real trades or shipping\.
 
+V3 makes Farms, Lumber Camps, Mills, Sawmills, Bakeries, Furniture Workshops and Silver Mines constructible somewhere, with eligibility visible before purchase\. Multiple separate sites of the same eligible kind are allowed\. A second Mill still needs Grain, paid labor, storage and customers; no construction creates free inputs\. The public Royal Mint is commissioned separately and is never a private blueprint\.
+
 ## Related entries
 
 - [Ascension 1: Slow Foundations](../mechanics/help_ascension.md)

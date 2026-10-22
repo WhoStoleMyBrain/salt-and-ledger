@@ -23,6 +23,10 @@ def main() -> int:
         f"Validated {len(content['goods'])} goods, "
         f"{len(content['buildings'])} buildings, {len(content['recipes'])} recipes."
     )
+    if "expandingEconomy" in content:
+        extension = content["expandingEconomy"]
+        print(f"Validated v3 extension: {len(extension['goods'])} good, "
+              f"{len(extension['buildings'])} buildings, {len(extension['recipes'])} recipe.")
     return 0
 
 

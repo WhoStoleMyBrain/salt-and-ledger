@@ -4,7 +4,7 @@ from pathlib import Path
 
 from jsonschema import Draft202012Validator
 
-from tools.content import ContentError, ID_PATTERN, ROOT, parse_json
+from tools.content import ContentError, ID_PATTERN, ROOT, expanding_content, parse_json
 
 DEFAULT_HELP = ROOT / "data/player-help.json"
 DEFAULT_HELP_SCHEMA = ROOT / "data/player-help.schema.json"
@@ -12,6 +12,7 @@ DEFAULT_HELP_SCHEMA = ROOT / "data/player-help.schema.json"
 
 def validate_player_help(value: object, content: dict,
                          schema_path: Path = DEFAULT_HELP_SCHEMA) -> dict:
+    content = expanding_content(content)
     schema = parse_json(schema_path.read_text(encoding="utf-8"))
     Draft202012Validator.check_schema(schema)
     errors = sorted(Draft202012Validator(schema).iter_errors(value),

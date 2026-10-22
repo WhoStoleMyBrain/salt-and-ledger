@@ -78,15 +78,21 @@ namespace SaltAndLedger.Simulation
         private readonly Dictionary<string, GoodDefinition> goodsById;
         private readonly Dictionary<string, BuildingDefinition> buildingsById;
         private readonly Dictionary<string, RecipeDefinition> recipesById;
+        private readonly ContentCatalog? expandingCatalog;
 
         public int SchemaVersion => 1;
         public IReadOnlyList<GoodDefinition> Goods { get; }
         public IReadOnlyList<BuildingDefinition> Buildings { get; }
         public IReadOnlyList<RecipeDefinition> Recipes { get; }
+        public bool IsExpandingEconomy { get; }
+        public bool HasExpandingEconomy => IsExpandingEconomy || expandingCatalog != null;
 
         internal ContentCatalog(IEnumerable<GoodDefinition> goods, IEnumerable<BuildingDefinition> buildings,
-            IEnumerable<RecipeDefinition> recipes)
+            IEnumerable<RecipeDefinition> recipes, ContentCatalog? expandingCatalog = null,
+            bool isExpandingEconomy = false)
         {
+            this.expandingCatalog = expandingCatalog;
+            IsExpandingEconomy = isExpandingEconomy;
             Goods = Array.AsReadOnly(goods.ToArray());
             Buildings = Array.AsReadOnly(buildings.ToArray());
             Recipes = Array.AsReadOnly(recipes.ToArray());
@@ -98,5 +104,9 @@ namespace SaltAndLedger.Simulation
         public GoodDefinition GetGood(string id) => goodsById[id];
         public BuildingDefinition GetBuilding(string id) => buildingsById[id];
         public RecipeDefinition GetRecipe(string id) => recipesById[id];
+
+        /// <summary>Select the validated v3 extension without changing historical catalog enumeration.</summary>
+        public ContentCatalog ForExpandingEconomy() => IsExpandingEconomy ? this : expandingCatalog
+            ?? throw new InvalidOperationException("The canonical Expanding Economy content extension is missing.");
     }
 }

@@ -18,6 +18,8 @@ Randomize seed or New World / Reroll explicitly chooses a different draft seed i
 
 Living Cities version 2 uses the same geography stream plus a separate bounded economy stream\. Four authored role packages permute food supply, processing, forest furniture and vulnerable coast across the existing towns, with different population, cash, stocks and private capabilities\. The forest furniture town has logging and furniture production but no Sawmill capability; it depends on imported Planks\. Structural production paths do not guarantee perpetual solvency or victory\.
 
+Expanding Economy v3 reuses exactly the same seed geography and economic role permutation, while explicitly selecting fractional goods, new monetary rules, expandable industry and fleets\. Content and reference\-valuation versions belong to its identity\. A v2 identity is never silently treated as v3\.
+
 ## Related entries
 
 - [Ascension 1: Slow Foundations](../mechanics/help_ascension.md)

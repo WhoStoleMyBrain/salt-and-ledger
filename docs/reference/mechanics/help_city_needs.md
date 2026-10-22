@@ -8,9 +8,9 @@ title: "Food, furniture and municipal use"
 
 Different consumers need different goods on explicit schedules\.
 
-Bread is the essential household good\. Generated towns desire one unit per 20 residents every four days, rounding upward\. Population 20 needs one; population 21 needs two\. Actual retail buys the largest affordable available integer quantity, even if only part of the need can be met\.
+Bread is the essential household good, due every four days\. Living Cities v2 rounds one Bread per 20 residents upward: population 20 needs one and 21 needs two\. Expanding Economy v3 uses exact proportional quantities instead: population 10 needs 0\.50, 15 needs 0\.75, 20 needs 1\.00, 21 needs 1\.05 and 30 needs 1\.50 Bread\. Retail buys only actual affordable stock\.
 
-Essentials run before luxury purchases\. Furniture is an infrequent durable household need: one per 80 residents every 24 days when sustained welfare enables it, rounding upward\. Luxury spending reserves the exact current price of the next Bread need and cannot spend an unlimited future income\.
+Essentials run before luxuries\. Furniture is an infrequent durable household need: one per 80 residents every 24 days when sustained welfare enables it\. V2 rounds upward; v3 is proportional with exact residual carry\. Luxury spending reserves the exact current price of the next Bread need and cannot spend an unlimited future income\.
 
 Municipal Planks are a separate public own\-use sink every 12 days\. They move no cash to a fictional buyer\. Grain, Flour and Logs are industrial inputs and traded goods, not household staples in this model\.
 

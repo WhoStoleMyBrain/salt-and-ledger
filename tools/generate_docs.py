@@ -10,7 +10,7 @@ from pathlib import Path
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from tools.content import ContentError, DEFAULT_SOURCE, ROOT, load_content
+from tools.content import ContentError, DEFAULT_SOURCE, ROOT, expanding_content, load_content
 from tools.player_help import DEFAULT_HELP, load_player_help, validate_player_help
 
 REFERENCE_DIRECTORY = Path("docs/reference")
@@ -36,6 +36,9 @@ def _links(entities: list[dict], kind: str) -> list[str]:
 
 def render_outputs(content: dict, player_help: dict | None = None) -> dict[Path, bytes]:
     """Render already-validated content; ordering and bytes do not depend on source order."""
+    extension_ids = {item["id"] for kind in ("goods", "buildings", "recipes")
+                     for item in content.get("expandingEconomy", {}).get(kind, [])}
+    content = expanding_content(content)
     groups = {kind: sorted(content[kind], key=lambda item: item["id"]) for kind in ("goods", "buildings", "recipes")}
     goods = {item["id"]: item for item in groups["goods"]}
     buildings = {item["id"]: item for item in groups["buildings"]}
@@ -92,6 +95,8 @@ def render_outputs(content: dict, player_help: dict | None = None) -> dict[Path,
                 f"ID: `{entity_id}`", "",
                 _text(item["description"]), "",
             ]
+            if entity_id in extension_ids:
+                page.extend(["**Content scope: Expanding Economy v3 only.** Historical worlds retain their original catalog.", ""])
             if kind == "goods":
                 consumed_by = [recipe for recipe in recipes if any(entry["goodId"] == entity_id for entry in recipe["inputs"])]
                 produced_by = [recipe for recipe in recipes if any(entry["goodId"] == entity_id for entry in recipe["outputs"])]
@@ -155,6 +160,8 @@ def render_outputs(content: dict, player_help: dict | None = None) -> dict[Path,
                     return " + ".join(f"{ingredient['quantity']} [{_text(goods[ingredient['goodId']]['name'])}](goods/{ingredient['goodId']}.md)"
                                       for ingredient in sorted(item[side], key=lambda ingredient: ingredient["goodId"]))
                 chains.append(f"| [{_text(building['name'])}](buildings/{building['id']}.md) | [{_text(item['name'])}](recipes/{entity_id}.md) | {chain_side('inputs') or 'No tradeable inputs'} → {chain_side('outputs')} |")
+            if entity_id in extension_ids:
+                reference["paragraphs"].insert(0, "Available only in Expanding Economy ruleset v3.")
             page.extend(["## Related entries", "", *related_links(reference["relatedIds"]), "",
                          "[Production chains](../chains.md) · [All content](../index.md)", ""])
             outputs[REFERENCE_DIRECTORY / kind / f"{entity_id}.md"] = _page(page, item["name"])

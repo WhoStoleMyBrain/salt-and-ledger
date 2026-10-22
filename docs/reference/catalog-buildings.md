@@ -7,6 +7,8 @@
 - [Furniture Workshop](buildings/furniture_workshop.md) — A building that manufactures furniture from planks\.
 - [Lumber Camp](buildings/lumber_camp.md) — A resource\-producing building that extracts logs without tradeable inputs\.
 - [Mill](buildings/mill.md) — A building that processes grain into flour\.
+- [Royal Mint](buildings/royal_mint.md) — The unique public v3 institution commissioned by a company\. It accepts physically delivered Silver into a reserve and issues bounded currency to the supplier and treasury\. It is not a private factory or a Company Value asset\.
 - [Sawmill](buildings/sawmill.md) — A building that can use the logs\-to\-planks recipe\.
+- [Silver Mine](buildings/silver_mine.md) — An eligible v3 extraction site producing Silver in complete batches, subject to actual payroll and storage limits\.
 
 [Production chains](chains.md) · [All content](index.md)
