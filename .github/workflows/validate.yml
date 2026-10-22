@@ -11,7 +11,8 @@ permissions:
 jobs:
   headless:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Normal v3 reports add measured replay time; exhaustive sweeps remain opt-in.
+    timeout-minutes: 20
     env:
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"
       DOTNET_NOLOGO: "1"
@@ -71,6 +72,11 @@ jobs:
       - name: Verify living-city accounts and long-horizon report
         # Three v2 seeds, pricing A/B, both ascensions, 365-day strategies and finite diagnostic worlds.
         run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --living-cities --check
+      - name: Verify expanding economy and exact continuation
+        # The full v3 seed/policy/development matrix is bounded; deep sweeps remain opt-in.
+        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --expanding-economy --check
+      - name: Verify monetary reinvestment experiment
+        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --expanding-economy --reinvestment --check
       - name: Prepare Unity integration assets
         run: python tools/prepare_unity.py
       - name: Check Unity integration asset freshness

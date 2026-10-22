@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -34,14 +34,24 @@ var checkLiving = livingMode && args.Length > livingIndex && args[livingIndex] =
 if (checkLiving) livingIndex++;
 var validLiving = livingMode && args.Length <= livingIndex + 1 &&
     (args.Length <= livingIndex || !args[livingIndex].StartsWith("--", StringComparison.Ordinal));
+var expandingMode = args.Length >= 2 && args[1] == "--expanding-economy";
+var expandingIndex = 2;
+var reinvestmentExpanding = expandingMode && args.Length > expandingIndex && args[expandingIndex] == "--reinvestment";
+if (reinvestmentExpanding) expandingIndex++;
+var deepExpanding = expandingMode && args.Length > expandingIndex && args[expandingIndex] == "--deep";
+if (deepExpanding) expandingIndex++;
+var checkExpanding = expandingMode && args.Length > expandingIndex && args[expandingIndex] == "--check";
+if (checkExpanding) expandingIndex++;
+var validExpanding = expandingMode && args.Length <= expandingIndex + 1 &&
+    (args.Length <= expandingIndex || !args[expandingIndex].StartsWith("--", StringComparison.Ordinal));
 if (args.Length != 1 && !(worldMode && args.Length <= 3) && !marketMode && !shippingMode && !automationMode &&
     !(pricingMode && args.Length <= (checkPricing ? 4 : 3)) &&
     !(archipelagoMode && args.Length <= (checkArchipelago ? 4 : 3)) &&
     !(enterpriseMode && args.Length <= (checkEnterprise ? 4 : 3)) &&
     !(industrialMode && args.Length <= (checkIndustrial ? 4 : 3)) &&
-    !(runsMode && args.Length <= (checkRuns ? 4 : 3)) && !validSeeded && !validLiving)
+    !(runsMode && args.Length <= (checkRuns ? 4 : 3)) && !validSeeded && !validLiving && !validExpanding)
 {
-    Console.Error.WriteLine("Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--world [initialLogs] | --market | --pricing [--check] [output.json] | --shipping | --automation | --archipelago [--check] [output.json] | --enterprise [--check] [output.json] | --industrial-logistics [--check] [output.json] | --runs [--check] [output.json] | --seeded-runs [--deep] [--check] [output.json] | --living-cities [--deep] [--check] [output.json]]");
+    Console.Error.WriteLine("Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--world [initialLogs] | --market | --pricing [--check] [output.json] | --shipping | --automation | --archipelago [--check] [output.json] | --enterprise [--check] [output.json] | --industrial-logistics [--check] [output.json] | --runs [--check] [output.json] | --seeded-runs [--deep] [--check] [output.json] | --living-cities [--deep] [--check] [output.json] | --expanding-economy [--reinvestment] [--deep] [--check] [output.json]]");
     return 1;
 }
 
@@ -56,6 +66,9 @@ if (worldMode && args.Length == 3 &&
 try
 {
     var content = ContentLoader.Load(File.ReadAllText(args[0]));
+    if (expandingMode)
+        return ExpandingEconomyExperiments.Run(content, args.Length > expandingIndex ? args[expandingIndex] : null,
+            checkExpanding, deepExpanding, reinvestmentExpanding);
     if (livingMode)
         return LivingCityExperiments.Run(content, args.Length > livingIndex ? args[livingIndex] : null, checkLiving, deepLiving);
     if (seededMode)

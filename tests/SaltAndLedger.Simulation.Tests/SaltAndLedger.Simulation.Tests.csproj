@@ -14,6 +14,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <ProjectReference Include="../../src/SaltAndLedger.Simulation/SaltAndLedger.Simulation.csproj" />
+    <Compile Include="../../samples/SaltAndLedger.Demo/ExpandingEconomyExperiments.cs" Link="Experiments/ExpandingEconomyExperiments.cs" />
     <None Include="../../data/content.json" Link="content.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
