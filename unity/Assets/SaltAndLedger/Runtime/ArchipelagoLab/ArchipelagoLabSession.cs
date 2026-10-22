@@ -35,6 +35,7 @@ namespace SaltAndLedger.UnityHost
         public const double SecondsPerDay = 1.5;
 
         private RegionalWorldState world;
+        private readonly ContentCatalog baseContent;
         private readonly List<ArchipelagoActivity> activity = new List<ArchipelagoActivity>();
         private readonly ReadOnlyCollection<ArchipelagoActivity> activityView;
         private readonly Dictionary<string, string> lastReasons = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -56,9 +57,15 @@ namespace SaltAndLedger.UnityHost
         public bool ChallengeMode { get; private set; }
         public bool IsChallengeEnded => Snapshot.Challenge != null && Snapshot.Challenge.Status != ChallengeStatus.Active;
 
-        public ContentCatalog Content { get; }
+        public ContentCatalog Content { get; private set; }
+        public ContentCatalog CanonicalContent => baseContent;
         public RegionalWorldSnapshot Snapshot => world.Snapshot();
-        public RegionalShipSnapshot Player => Snapshot.Ships[ArchipelagoScenario.PlayerShipId];
+        public string ActivePlayerShipId { get; private set; } = ArchipelagoScenario.PlayerShipId;
+        public RegionalShipSnapshot Player => Snapshot.Ships[ActivePlayerShipId];
+        public IReadOnlyList<RegionalShipSnapshot> OwnedShips => Array.AsReadOnly(Snapshot.Ships.Values
+            .Where(s => s.IsPlayer && s.OwnerId == Player.OwnerId).OrderBy(s => s.Id, StringComparer.Ordinal).ToArray());
+        public long? LastSavedRevision { get; private set; }
+        public bool HasUnsavedChanges => configuredRun && LastSavedRevision != Snapshot.Revision;
         public TradeRoutePolicy Policy => Player.Policy ?? RecommendedMerchantPolicy();
         public RegionalDecision CurrentDecision => world.EvaluateAutomation(Player.Id);
         public IReadOnlyList<ArchipelagoActivity> Activity => activityView;
@@ -71,11 +78,15 @@ namespace SaltAndLedger.UnityHost
         public double PlaybackInterval => SecondsPerDay / PlaybackSpeed;
         public string LastStatus { get; private set; }
         public long CashChange => checked(Player.Cash - initialPlayerCash);
-        public long? ClosedCashProfit => hasPlayerTrade && Player.CargoUnits == 0 && Snapshot.PrivateFacilities.Count == 0 ? CashChange : (long?)null;
+        // Compatibility for the original shipping-only lab. V3 cash includes capital and public
+        // monetary receipts; its UI uses attributed material margin and operating surplus instead.
+        public long? ClosedCashProfit => Snapshot.Economy == null && hasPlayerTrade &&
+            OwnedShips.All(ship => ship.CargoUnits == 0) && Snapshot.PrivateFacilities.Count == 0 ? CashChange : (long?)null;
 
         public ArchipelagoLabSession(ContentCatalog content, bool challenge = false, bool legacyScenario = false)
         {
-            Content = content ?? throw new ArgumentNullException(nameof(content));
+            baseContent = content ?? throw new ArgumentNullException(nameof(content));
+            Content = baseContent;
             this.legacyScenario = legacyScenario;
             ChallengeMode = challenge;
             activityView = activity.AsReadOnly();
@@ -84,11 +95,21 @@ namespace SaltAndLedger.UnityHost
 
         public void Reset()
         {
-            var replacement = configuredRun ? RunScenario.Create(Content, Identity) :
-                legacyScenario ? ArchipelagoScenario.Create(Content) : EnterpriseScenario.Create(Content, ChallengeMode);
+            var replacement = configuredRun ? RunScenario.Create(baseContent, Identity) :
+                legacyScenario ? ArchipelagoScenario.Create(baseContent) : EnterpriseScenario.Create(baseContent, ChallengeMode);
+            InstallWorld(replacement, false);
+        }
+
+        private void InstallWorld(RegionalWorldState replacement, bool loaded)
+        {
             world = replacement;
-            initialPlayerCash = Player.Cash;
-            hasPlayerTrade = false;
+            Content = replacement.Snapshot().RunIdentity?.WorldMode == RunWorldMode.ExpandingEconomy
+                ? baseContent.ForExpandingEconomy() : baseContent;
+            ActivePlayerShipId = ArchipelagoScenario.PlayerShipId;
+            initialPlayerCash = Snapshot.Accounting.Companies[Player.OwnerId].InitialCash;
+            hasPlayerTrade = Snapshot.Accounting.Companies[Player.OwnerId].SalesRevenue > 0 ||
+                Snapshot.Accounting.Companies[Player.OwnerId].InventoryPurchases > 0;
+            LastSavedRevision = loaded ? Snapshot.Revision : (long?)null;
             SelectedPortId = Player.DockedPortId ?? ArchipelagoScenario.North;
             SelectedShipId = null;
             PendingDestinationId = null;
@@ -102,7 +123,8 @@ namespace SaltAndLedger.UnityHost
             PlayerInputs = 0;
             AutomatedActions = 0;
             lastReasons.Clear();
-            LastStatus = "New archipelago. Paused on day 0. Select a port to inspect, or your ship to plan a voyage.";
+            LastStatus = loaded ? "Saved run restored exactly on day " + Snapshot.Day + ". Playback is paused." :
+                "New archipelago. Paused on day 0. Select a port to inspect, or your ship to plan a voyage.";
             Add(null, null, LastStatus);
         }
 
@@ -120,12 +142,35 @@ namespace SaltAndLedger.UnityHost
         public void StartRun(RunIdentity identity)
         {
             if (identity == null) throw new ArgumentNullException(nameof(identity));
+            var replacement = RunScenario.Create(baseContent, identity);
             Identity = identity;
             CharterId = identity.CharterId;
             ChallengeId = identity.ChallengeId;
             ChallengeMode = identity.ChallengeId != null;
             configuredRun = true;
-            Reset();
+            InstallWorld(replacement, false);
+        }
+
+        public string SaveText() => WorldSaveCodec.Save(world);
+
+        public void MarkSaved()
+        {
+            if (!configuredRun) throw new InvalidOperationException("Start a configured run before saving.");
+            LastSavedRevision = Snapshot.Revision;
+            LastStatus = "Saved locally on day " + Snapshot.Day + ". This run can be continued from its saved revision.";
+        }
+
+        public void LoadSaveText(string json)
+        {
+            // Parsing and all semantic checks finish before even host selection or playback changes.
+            var replacement = WorldSaveCodec.Load(baseContent, json);
+            var identity = replacement.Snapshot().RunIdentity;
+            Identity = identity;
+            CharterId = identity.CharterId;
+            ChallengeId = identity.ChallengeId;
+            ChallengeMode = identity.ChallengeId != null;
+            configuredRun = true;
+            InstallWorld(replacement, true);
         }
 
         public RegionalResult AbandonRun()
@@ -175,6 +220,8 @@ namespace SaltAndLedger.UnityHost
         {
             var ship = Snapshot.Ships[shipId];
             SelectedShipId = ship.Id;
+            if (ship.IsPlayer && ship.OwnerId == Snapshot.Ships[ArchipelagoScenario.PlayerShipId].OwnerId)
+                ActivePlayerShipId = ship.Id;
             NavigationArmed = ship.IsPlayer;
             PendingDestinationId = null;
             if (ship.DockedPortId != null) SelectedPortId = ship.DockedPortId;
@@ -253,8 +300,8 @@ namespace SaltAndLedger.UnityHost
             Observe(result);
             var trade = result.Trades[0].Trade;
             LastStatus = trade.Outcome == TradeOutcome.Traded
-                ? (direction == TradeDirection.Buy ? "Bought " : "Sold ") + trade.ExecutedQuantity + " " +
-                  Content.GetGood(goodId).Name + " for " + Number(trade.ExecutedAmount) +
+                ? (direction == TradeDirection.Buy ? "Bought " : "Sold ") + Quantity(trade.ExecutedQuantity) + " " +
+                  Content.GetGood(goodId).Name + " for " + Coins(trade.ExecutedAmount) +
                   ". Still day " + Number(Snapshot.Day) + "."
                 : "Trade rejected: " + TradingLabText.Outcome(trade.Outcome) + ". No economic state or day changed.";
             return result;
@@ -300,6 +347,13 @@ namespace SaltAndLedger.UnityHost
         {
             Pause();
             var facilityId = Player.OwnerId + "_" + SelectedPortId + "_" + blueprintId;
+            if (Snapshot.Economy != null)
+            {
+                var prefix = facilityId;
+                var suffix = 1;
+                while (Snapshot.PrivateFacilities.ContainsKey(facilityId))
+                    facilityId = prefix + "_" + (++suffix).ToString(CultureInfo.InvariantCulture);
+            }
             var result = world.ConstructFacility(Player.OwnerId, SelectedPortId, blueprintId, facilityId);
             Observe(result);
             LastStatus = result.After.PrivateFacilities.TryGetValue(facilityId, out var site)
@@ -323,7 +377,7 @@ namespace SaltAndLedger.UnityHost
             Observe(result);
             LastStatus = ReferenceEquals(result.Before, result.After)
                 ? "Transfer rejected: check source stock and destination capacity. Nothing changed."
-                : "Transferred " + quantity + " " + Content.GetGood(goodId).Name + ". Ownership, cash and day unchanged.";
+                : "Transferred " + Quantity(quantity) + " " + Content.GetGood(goodId).Name + ". Ownership, cash and day unchanged.";
             return result;
         }
 
@@ -341,15 +395,39 @@ namespace SaltAndLedger.UnityHost
 
         public RegionalDecision DecisionFor(string shipId) => world.EvaluateAutomation(shipId);
 
-        public TradeRoutePolicy RecommendedMerchantPolicy() => Identity?.WorldMode == RunWorldMode.LivingCities
-            ? LivingCityScenario.MerchantPolicy(LivingCityGeneration.Generate(Identity.Seed.Value, Identity.GeneratorVersion, Identity.LivingPricingMode))
-            : EnterpriseScenario.MerchantPolicy();
+        public TradeRoutePolicy RecommendedMerchantPolicy() => Identity?.WorldMode == RunWorldMode.ExpandingEconomy
+            ? ExpandingEconomyScenario.MerchantPolicy(ExpandingEconomyGeneration.Generate(Identity.Seed.Value,
+                Identity.GeneratorVersion, Identity.LivingPricingMode))
+            : Identity?.WorldMode == RunWorldMode.LivingCities
+                ? LivingCityScenario.MerchantPolicy(LivingCityGeneration.Generate(Identity.Seed.Value, Identity.GeneratorVersion, Identity.LivingPricingMode))
+                : EnterpriseScenario.MerchantPolicy();
+
+        public RegionalResult CommissionMint() => Development(() => world.CommissionMint(Player.OwnerId));
+        public RegionalResult CommissionShip() => Development(() => world.CommissionShip(Player.OwnerId, SelectedPortId));
+        public RegionalResult MintSilver() => Development(() => world.MintSilver(Player.Id, Snapshot.Economy.Configuration.SilverPerBatch));
+        public RegionalResult FulfillContract(string contractId, int quantity) =>
+            Development(() => world.FulfillExternalContract(Player.Id, contractId, quantity));
+        public RegionalResult SupplyPublicWorks(int quantity) => Development(() => world.SupplyPublicWorks(Player.Id, quantity));
+
+        private RegionalResult Development(Func<RegionalResult> action)
+        {
+            Pause();
+            var result = action();
+            Observe(result);
+            LastStatus = result.Development.Count == 0 ? "No development action committed." : result.Development.Last().Reason;
+            return result;
+        }
+
+        public string Quantity(long subunits) => ((decimal)subunits / Snapshot.QuantityScale).ToString("0.####", CultureInfo.InvariantCulture);
+        public string Coins(long subunits) => ((decimal)subunits / Snapshot.MoneyScale).ToString("0.####", CultureInfo.InvariantCulture);
+        public int WholeOrderQuantity(int units) => checked(units * Snapshot.QuantityScale);
 
         private void Observe(RegionalResult result)
         {
             if (!ReferenceEquals(result.Before, result.After) && result.After.Day == result.Before.Day &&
                 result.Decisions.Count == 0) PlayerInputs++;
-            AutomatedActions += result.Decisions.Count(d => d.ShipId == Player.Id &&
+            AutomatedActions += result.Decisions.Count(d => result.After.Ships[d.ShipId].IsPlayer &&
+                result.After.Ships[d.ShipId].OwnerId == Player.OwnerId &&
                 (d.Detail?.Trade != null || d.Detail?.Departure != null ||
                  d.IndustrialDetail?.Transfer != null || d.IndustrialDetail?.Trade != null ||
                  d.IndustrialDetail?.Departure != null));
@@ -368,7 +446,7 @@ namespace SaltAndLedger.UnityHost
                 else if (facility.BatchesProduced > prior.BatchesProduced)
                     Add(facility.PortId, null, "Your " + Content.GetBuilding(facility.Blueprint.BuildingId).Name + " completed a batch into private storage.");
             }
-            if (result.Movements.Any(movement => movement.ShipId == ArchipelagoScenario.PlayerShipId &&
+            if (result.Movements.Any(movement => movement.ShipId == Player.Id &&
                 (movement.Kind == ShipMovementKind.Departure || movement.Kind == ShipMovementKind.Arrival)))
                 PendingDestinationId = null;
             foreach (var item in result.Trades)
@@ -380,9 +458,9 @@ namespace SaltAndLedger.UnityHost
                 if (ship.IsPlayer && trade.Direction == TradeDirection.Sell)
                     shipDeliveries[trade.GoodId] = checked((shipDeliveries.TryGetValue(trade.GoodId, out var delivered) ? delivered : 0) + trade.ExecutedQuantity);
                 Add(item.PortId, item.ShipId, ship.Name + " " +
-                    (trade.Direction == TradeDirection.Buy ? "bought " : "delivered ") + trade.ExecutedQuantity +
+                    (trade.Direction == TradeDirection.Buy ? "bought " : "delivered ") + Quantity(trade.ExecutedQuantity) +
                     " " + Content.GetGood(trade.GoodId).Name + " at " + result.After.Ports[item.PortId].Name +
-                    " for " + Number(trade.ExecutedAmount) + ".");
+                    " for " + Coins(trade.ExecutedAmount) + ".");
             }
             foreach (var production in result.Production)
             {
@@ -391,7 +469,7 @@ namespace SaltAndLedger.UnityHost
                 if (production.Outcome == ScheduledProductionOutcome.Produced)
                     Add(production.PortId, null, result.After.Ports[production.PortId].Name + ": " +
                         Content.GetRecipe(production.RecipeId).Name + " (" + string.Join(", ", production.Changes.Select(
-                            change => (change.Delta > 0 ? "+" : "") + change.Delta + " " + Content.GetGood(change.GoodId).Name)) + ").");
+                            change => (change.Delta > 0 ? "+" : "") + Quantity(change.Delta) + " " + Content.GetGood(change.GoodId).Name)) + ").");
                 else if (production.Outcome != ScheduledProductionOutcome.NotDue &&
                     (!lastReasons.TryGetValue(key, out var previous) || previous != reason))
                     Add(production.PortId, null, result.After.Ports[production.PortId].Name + ": " +
@@ -412,10 +490,10 @@ namespace SaltAndLedger.UnityHost
                 var key = "city-need/" + port.Id + "/" + need.Configuration.Id;
                 var reason = need.LastConsumedQuantity + "/" + need.LastDesiredQuantity + "/" + need.LastUnmetStock + "/" + need.LastUnmetAffordability;
                 if (need.LastConsumedQuantity > 0 || !lastReasons.TryGetValue(key, out var previous) || previous != reason)
-                    Add(port.Id, null, port.Name + ": " + need.LastConsumedQuantity + "/" + need.LastDesiredQuantity + " " +
+                    Add(port.Id, null, port.Name + ": " + Quantity(need.LastConsumedQuantity) + "/" + Quantity(need.LastDesiredQuantity) + " " +
                         Content.GetGood(consumption.GoodId).Name +
-                        (need.Configuration.Kind == ConsumptionKind.Municipal ? " municipal own-use" : " consumed; households paid " + Number(need.LastPayment)) +
-                        "; unmet stock " + need.LastUnmetStock + ", funds " + need.LastUnmetAffordability + ".");
+                        (need.Configuration.Kind == ConsumptionKind.Municipal ? " municipal own-use" : " consumed; households paid " + Coins(need.LastPayment)) +
+                        "; unmet stock " + Quantity(need.LastUnmetStock) + ", funds " + Quantity(need.LastUnmetAffordability) + ".");
                 lastReasons[key] = reason;
             }
             foreach (var port in result.After.Ports.Values.Where(p => p.City != null))
@@ -442,6 +520,9 @@ namespace SaltAndLedger.UnityHost
                     Add(null, decision.ShipId, result.After.Ships[decision.ShipId].Name + ": " + reason);
                 lastReasons[key] = reason;
             }
+            foreach (var development in result.Development)
+                Add(development.PortId, development.AssetId, development.Kind + ": " + development.Reason +
+                    (development.Payment == 0 ? "" : " Amount " + Coins(development.Payment) + "."));
         }
 
         private void Add(string portId, string shipId, string message)

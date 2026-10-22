@@ -41,8 +41,9 @@ namespace SaltAndLedger.UnityHost
                 var index = Element<DropdownField>("blueprintDropdown").index;
                 if (index < 0 || index >= blueprintIds.Count) throw new InvalidOperationException("Choose an eligible investment.");
                 var id = blueprintIds[index];
+                var before = new HashSet<string>(Session.Snapshot.PrivateFacilities.Keys);
                 Session.Construct(id);
-                selectedFacilityId = Session.Player.OwnerId + "_" + Session.SelectedPortId + "_" + id;
+                selectedFacilityId = Session.Snapshot.PrivateFacilities.Keys.FirstOrDefault(key => !before.Contains(key)) ?? selectedFacilityId;
                 loadedPolicyFacilityId = null;
             }));
             Click("applyIndustryPolicy", ApplyIndustryPolicy);
@@ -81,7 +82,7 @@ namespace SaltAndLedger.UnityHost
             if (!IndustryIsOpen) return;
             var snapshot = Session.Snapshot;
             var portId = Session.SelectedPortId;
-            SetText("industryTitle", PortName(portId) + " · company cash " + Number(Session.Player.Cash));
+            SetText("industryTitle", PortName(portId) + " · company cash " + Money(Session.Player.Cash));
             var eligible = snapshot.IndustryBlueprints.Values.Where(b => b.EligiblePortIds.Contains(portId))
                 .OrderBy(b => b.Id, StringComparer.Ordinal).Select(b => b.Id).ToArray();
             if (!blueprintIds.SequenceEqual(eligible))
@@ -100,7 +101,7 @@ namespace SaltAndLedger.UnityHost
             if (!facilityIds.Contains(selectedFacilityId)) selectedFacilityId = facilityIds.FirstOrDefault();
             var field = Element<DropdownField>("facilityDropdown");
             field.choices = owned.Length == 0 ? new List<string> { "No private facilities here" } :
-                owned.Select(f => Session.Content.GetBuilding(f.Blueprint.BuildingId).Name).ToList();
+                owned.Select(f => Session.Content.GetBuilding(f.Blueprint.BuildingId).Name + " [" + f.Id + "]").ToList();
             field.SetValueWithoutNotify(field.choices[Math.Max(0, facilityIds.IndexOf(selectedFacilityId))]);
             field.SetEnabled(owned.Length > 0);
             Element<VisualElement>("facilityBody").EnableInClassList("hidden", owned.Length == 0);
@@ -111,15 +112,15 @@ namespace SaltAndLedger.UnityHost
             SetText("facilityRecipeLabel", Session.Content.GetBuilding(facility.Blueprint.BuildingId).Name + " · private production\n" +
                 (recipe.Inputs.Count == 0 ? "Natural extraction" : Quantities(recipe.Inputs)) + " → " + Quantities(recipe.Outputs) +
                 "\nOne batch every " + facility.Blueprint.IntervalDays + " days" +
-                (facility.Blueprint.OutputStockLimit.HasValue ? " · output ceiling " + facility.Blueprint.OutputStockLimit.Value : ""));
+                (facility.Blueprint.OutputStockLimit.HasValue ? " · output ceiling " + Q(facility.Blueprint.OutputStockLimit.Value) : ""));
             SetText("facilityStatsLabel", "Age " + (snapshot.Day - facility.CreatedDay) + " days · " + facility.BatchesProduced + " batches\n" +
-                "Capital paid " + Number(facility.IsStarterGrant ? 0 : facility.ConstructionCost) +
+                "Capital paid " + Money(facility.IsStarterGrant ? 0 : facility.ConstructionCost) +
                 (facility.IsStarterGrant ? " · starter facility grant" : " · construction paid once at order") +
-                "\nLocal inventory purchases " + Number(facility.ProcurementCost) +
-                (facility.Blueprint.WagePerBatch > 0 ? " · paid wages " + Number(facility.WagesPaid) + " (separate operating expense)" : "") +
-                " · actual local sale revenue " + Number(facility.SalesRevenue) + "\nConsumed: " + QuantityTotals(facility.ConsumedQuantities) +
+                "\nLocal inventory purchases " + Money(facility.ProcurementCost) +
+                (facility.Blueprint.WagePerBatch > 0 ? " · paid wages " + Money(facility.WagesPaid) + " (separate operating expense)" : "") +
+                " · actual local sale revenue " + Money(facility.SalesRevenue) + "\nConsumed: " + QuantityTotals(facility.ConsumedQuantities) +
                 "\nProduced: " + QuantityTotals(facility.ProducedQuantities) +
-                "\nHeld material basis " + Number(snapshot.Accounting.Stores["facility:" + facility.Id].TotalCostBasis) +
+                "\nHeld material basis " + Money(snapshot.Accounting.Stores["facility:" + facility.Id].TotalCostBasis) +
                 ". Transferred inputs retain their original paid basis. These purchase and revenue totals are not profit; material margin and any paid wages are separate in the Ledger.");
             SetText("facilityStateLabel", IndustryStatus(facility));
             SetText("facilityScheduleLabel", FacilitySchedule(facility));
@@ -146,7 +147,7 @@ namespace SaltAndLedger.UnityHost
                 return;
             }
             var blueprint = Session.Snapshot.IndustryBlueprints[blueprintIds[index]];
-            var owned = Session.Snapshot.PrivateFacilities.Values.Any(f => f.OwnerId == Session.Player.OwnerId &&
+            var owned = Session.Snapshot.Economy == null && Session.Snapshot.PrivateFacilities.Values.Any(f => f.OwnerId == Session.Player.OwnerId &&
                 f.PortId == Session.SelectedPortId && f.Blueprint.Id == blueprint.Id);
             ConstructionSchedule schedule;
             try { schedule = Session.Snapshot.PreviewConstructionSchedule(Session.Player.OwnerId, blueprint.Id); }
@@ -157,9 +158,9 @@ namespace SaltAndLedger.UnityHost
                 return;
             }
             var delayed = schedule.DelayDays > 0;
-            SetText("constructionLabel", owned ? "Already owned here · storage " + blueprint.WarehouseCapacity +
+            SetText("constructionLabel", owned ? "Already owned here · storage " + Q(blueprint.WarehouseCapacity) +
                 "\nInspect its actual status and schedule below." :
-                "Pay " + Number(blueprint.ConstructionCost) + " now · storage " + blueprint.WarehouseCapacity +
+                "Pay " + Money(blueprint.ConstructionCost) + " now · storage " + Q(blueprint.WarehouseCapacity) +
                 "\n" + (delayed ? "Ready day " + schedule.CompletionDay : "Operational immediately") +
                 " · first batch eligible day " + schedule.FirstProductionDay +
                 (Session.Player.Cash < blueprint.ConstructionCost ? " · insufficient company cash" : ""));
@@ -170,7 +171,7 @@ namespace SaltAndLedger.UnityHost
                 "The full cost goes to this town once at order; the site starts empty. Manual storage and local trades remain available under ordinary ownership, capacity and docking rules. " +
                 "Inherited charter factories are already operational and keep their original schedule under either ascension.");
             if (blueprint.WagePerBatch > 0)
-                SetText("constructionLabel", Element<Label>("constructionLabel").text + " · wage " + Number(blueprint.WagePerBatch) + " / completed batch");
+                SetText("constructionLabel", Element<Label>("constructionLabel").text + " · wage " + Money(blueprint.WagePerBatch) + " / completed batch");
             Element<Button>("constructButton").SetEnabled(!owned && Session.Player.Cash >= blueprint.ConstructionCost && !Session.IsChallengeEnded);
         }
 
@@ -178,22 +179,12 @@ namespace SaltAndLedger.UnityHost
         {
             if (!facility.IsOperational) return "UNDER CONSTRUCTION · " + facility.ConstructionDaysRemaining + " days remaining";
             if (!facility.Enabled) return "DISABLED · Apply an enabled operating policy to resume.";
-            if (facility.LastOutcome == ScheduledProductionOutcome.PayrollShortage)
-                return "PAYROLL BLOCKED · Company needs " + Number(facility.Blueprint.WagePerBatch) + " for a completed batch; no unpaid production.";
-            var recipe = Session.Content.GetRecipe(facility.Blueprint.RecipeId);
-            var missing = recipe.Inputs.Where(input => facility.Inventory[input.GoodId] < input.Quantity).ToArray();
-            if (missing.Length > 0)
-                return "INPUT-STARVED · " + string.Join(", ", missing.Select(input =>
-                    Number(input.Quantity - facility.Inventory[input.GoodId]) + " " + Session.Content.GetGood(input.GoodId).Name + " missing")) +
-                    (facility.ProcurementWaitReason == IndustryWaitReason.BuyPriceLimit ? "\nPRICE-BLOCKED at the last automatic input phase." : "");
-            if (facility.LastOutcome == ScheduledProductionOutcome.WarehouseCapacity)
-                return "WAREHOUSE-FULL at the last production opportunity · transfer or sell stock, then retry on a day advance.";
-            if (facility.LastOutcome == ScheduledProductionOutcome.OutputLimit)
-                return "OUTPUT LIMIT reached at the last production opportunity · move or sell output to make room.";
-            return "OPERATIONAL · " + ArchipelagoLabSession.FacilityStatus(facility.LastOutcome) +
+            var predicted = Session.Snapshot.PreviewFacilityProduction(facility.Id, Session.Content);
+            return "CURRENT STOCK/FUNDS: " + (predicted == ScheduledProductionOutcome.Produced ? "Ready with current stocks/funds" : ArchipelagoLabSession.FacilityStatus(predicted)) +
+                "\nBefore next-day procurement and other actors. Last attempt: " + ArchipelagoLabSession.FacilityStatus(facility.LastOutcome) +
                 (facility.Policy.SalesEnabled && facility.SalesWaitReason != IndustryWaitReason.None &&
                     facility.SalesWaitReason != IndustryWaitReason.ReserveRetained
-                    ? "\nLocal sale waiting: " + WaitText(facility.SalesWaitReason) : "");
+                    ? "\nLast local sale wait: " + WaitText(facility.SalesWaitReason) : "");
         }
 
         private string FacilitySchedule(PrivateFacilitySnapshot facility)
@@ -204,7 +195,7 @@ namespace SaltAndLedger.UnityHost
                 : (facility.IsStarterGrant ? "Already-built starter grant; no ascension construction delay.\n" : "Operational since day " + facility.ConstructionCompletionDay + ".\n") +
                     (facility.NextProductionDay <= Session.Snapshot.Day ? "Due since day " + facility.NextProductionDay + "; next day advance retries." :
                         "Next eligible batch: day " + facility.NextProductionDay + ".");
-            return schedule + (facility.Blueprint.WagePerBatch == 0 ? "" : "\nPayroll " + Number(facility.Blueprint.WagePerBatch) + " per completed batch.");
+            return schedule + (facility.Blueprint.WagePerBatch == 0 ? "" : "\nPayroll " + Money(facility.Blueprint.WagePerBatch) + " per completed batch.");
         }
 
         private string InputAvailability(PrivateFacilitySnapshot facility)
@@ -213,11 +204,12 @@ namespace SaltAndLedger.UnityHost
             if (recipe.Inputs.Count == 0) return "This extraction recipe needs no traded inputs.";
             return "INPUTS FOR ONE BATCH\n" + string.Join("\n", recipe.Inputs.Select(input =>
             {
-                var missing = Math.Max(0, input.Quantity - facility.Inventory[input.GoodId]);
+                var required = checked(input.Quantity * Session.Snapshot.QuantityScale);
+                var missing = Math.Max(0, required - facility.Inventory[input.GoodId]);
                 var market = Session.Snapshot.Ports[facility.PortId];
                 var quote = Session.Snapshot.GetMarketQuote(facility.PortId, input.GoodId);
-                var text = Session.Content.GetGood(input.GoodId).Name + ": private " + facility.Inventory[input.GoodId] + "/" + input.Quantity +
-                    " · missing " + missing + " · town stock " + market.Inventory[input.GoodId] +
+                var text = Session.Content.GetGood(input.GoodId).Name + ": private " + Q(facility.Inventory[input.GoodId]) + "/" + Q(required) +
+                    " · missing " + Q(missing) + " · town stock " + Q(market.Inventory[input.GoodId]) +
                     " · next buy " + (quote.Ask.HasValue ? Number(quote.Ask.Value) : "unavailable");
                 if (missing == 0) return text;
                 try
@@ -225,7 +217,7 @@ namespace SaltAndLedger.UnityHost
                     var preview = Session.Snapshot.PreviewWarehouseTrade(facility.OwnerId, facility.Id,
                         new TradeCommand(TradeDirection.Buy, input.GoodId, missing));
                     return text + "\nManual missing-input order: " + (preview.Outcome == TradeOutcome.Traded
-                        ? "exact " + Number(preview.TotalAmount) + " for " + missing + "." : WarehouseTradeOutcome(preview.Outcome) + ".");
+                        ? "exact " + Money(preview.TotalAmount) + " for " + Q(missing) + "." : WarehouseTradeOutcome(preview.Outcome) + ".");
                 }
                 catch (OverflowException) { return text + "\nMissing-input order exceeds financial bounds."; }
             })) + "\nEach quote is independent and read-only. Automatic buying also respects its applied limits and cash reserve.";
@@ -238,7 +230,7 @@ namespace SaltAndLedger.UnityHost
             var connected = route != null && (LegUsesFacility(route.Outbound, facility.Id) || LegUsesFacility(route.ReturnLeg, facility.Id));
             if (!connected) return "NO PHYSICAL SHIPPING LINK\n" + ship.Name + " does not currently use this warehouse. Open Industrial shipping, choose this source, review a draft and Apply; enablement is separate.";
             return "PHYSICAL SHIPPING · " + ship.Name + "\n" + (ship.AutomationEnabled ? "Enabled" : "Disabled") +
-                " · stage " + ship.IndustrialStage + " · cargo " + ship.CargoUnits + "/" + ship.CargoCapacity +
+                " · stage " + ship.IndustrialStage + " · cargo " + Q(ship.CargoUnits) + "/" + Q(ship.CargoCapacity) +
                 "\n" + Session.CurrentDecision.Reason + "\n" + PortName(route.OriginPortId) + " ↔ " + PortName(route.DestinationPortId);
         }
 
@@ -247,6 +239,21 @@ namespace SaltAndLedger.UnityHost
 
         private IndustryPolicy RecommendedIndustryPolicy(string blueprintId)
         {
+            if (Session.Snapshot.Economy != null)
+            {
+                if (blueprintId == EnterpriseScenario.BakeryBlueprint) return ExpandingEconomyScenario.BakeryPolicy();
+                if (blueprintId == ExpandingEconomyGeneration.MillBlueprint)
+                {
+                    var mill = ExpandingEconomyScenario.MillPolicy(false);
+                    return new IndustryPolicy(true, false, mill.CashReserve, mill.Inputs, mill.Outputs);
+                }
+                var blueprint = Session.Snapshot.IndustryBlueprints[blueprintId];
+                var recipe = Session.Content.GetRecipe(blueprint.RecipeId);
+                return new IndustryPolicy(recipe.Inputs.Count > 0, false, 80L * Session.Snapshot.MoneyScale,
+                    recipe.Inputs.Select(input => new InputStockRule(input.GoodId,
+                        checked(input.Quantity * 4 * Session.Snapshot.QuantityScale), 50)),
+                    recipe.Outputs.Select(output => new OutputSaleRule(output.GoodId, 0, 1)));
+            }
             var preset = Session.Identity?.WorldMode == RunWorldMode.LivingCities && blueprintId == EnterpriseScenario.BakeryBlueprint
                 ? LivingCityScenario.BakeryPolicy() : EnterpriseScenario.DefaultIndustryPolicy(blueprintId);
             return new IndustryPolicy(preset.ProcurementEnabled, false, preset.CashReserve, preset.Inputs, preset.Outputs);
@@ -269,13 +276,13 @@ namespace SaltAndLedger.UnityHost
             Element<Toggle>("facilityEnabled").SetValueWithoutNotify(enabled);
             Element<Toggle>("procurementEnabled").SetValueWithoutNotify(policy.ProcurementEnabled);
             Element<Toggle>("salesEnabled").SetValueWithoutNotify(policy.SalesEnabled);
-            Element<TextField>("industryCashReserve").SetValueWithoutNotify(Number(policy.CashReserve));
+            Element<TextField>("industryCashReserve").SetValueWithoutNotify(Money(policy.CashReserve));
             var recipe = Session.Content.GetRecipe(facility.Blueprint.RecipeId);
             var inputs = Element<VisualElement>("inputPolicyRows"); inputs.Clear();
             foreach (var input in recipe.Inputs)
             {
                 var rule = policy.Inputs.FirstOrDefault(r => r.GoodId == input.GoodId);
-                inputs.Add(PolicyRule(input.GoodId, "input", "Target stock", rule?.TargetQuantity ?? input.Quantity,
+                inputs.Add(PolicyRule(input.GoodId, "input", "Target stock", rule?.TargetQuantity ?? checked(input.Quantity * Session.Snapshot.QuantityScale),
                     "Buy ≤ per unit", rule?.MaxBuyPrice ?? 1));
             }
             var outputs = Element<VisualElement>("outputPolicyRows"); outputs.Clear();
@@ -293,7 +300,7 @@ namespace SaltAndLedger.UnityHost
         {
             var container = new VisualElement(); container.AddToClassList("policy-rule");
             var label = new Label(Session.Content.GetGood(goodId).Name); label.AddToClassList("policy-rule-name"); container.Add(label);
-            var quantityField = new TextField(quantityLabel) { name = prefix + "Target_" + goodId, value = Number(quantity) };
+            var quantityField = new TextField(quantityLabel) { name = prefix + "Target_" + goodId, value = Q(quantity) };
             var priceField = new TextField(priceLabel) { name = prefix + "Price_" + goodId, value = Number(price) };
             quantityField.RegisterValueChangedCallback(_ => IndustryDraftChanged());
             priceField.RegisterValueChangedCallback(_ => IndustryDraftChanged());
@@ -314,11 +321,11 @@ namespace SaltAndLedger.UnityHost
             var facility = Session.Snapshot.PrivateFacilities[selectedFacilityId];
             var recipe = Session.Content.GetRecipe(facility.Blueprint.RecipeId);
             var inputs = recipe.Inputs.Select(input => new InputStockRule(input.GoodId,
-                ReadInt("inputTarget_" + input.GoodId, "Input target", true), ReadLong("inputPrice_" + input.GoodId, "Buy limit", false))).ToArray();
+                ReadIndustryQuantity("inputTarget_" + input.GoodId, "Input target", true), ReadLong("inputPrice_" + input.GoodId, "Buy limit", false))).ToArray();
             var outputs = recipe.Outputs.Select(output => new OutputSaleRule(output.GoodId,
-                ReadInt("outputTarget_" + output.GoodId, "Output reserve", true), ReadLong("outputPrice_" + output.GoodId, "Sell floor", false))).ToArray();
+                ReadIndustryQuantity("outputTarget_" + output.GoodId, "Output reserve", true), ReadLong("outputPrice_" + output.GoodId, "Sell floor", false))).ToArray();
             return new IndustryPolicy(Element<Toggle>("procurementEnabled").value, Element<Toggle>("salesEnabled").value,
-                ReadLong("industryCashReserve", "Cash reserve", true), inputs, outputs);
+                ReadIndustryMoney("industryCashReserve", "Cash reserve", true), inputs, outputs);
         }
 
         private void RefreshIndustryDraftPreview()
@@ -331,14 +338,14 @@ namespace SaltAndLedger.UnityHost
                 {
                     "REVIEW BEFORE APPLYING",
                     Element<Toggle>("facilityEnabled").value ? "Production enabled; batches still require inputs and space." : "Production disabled.",
-                    "Retain company cash " + Number(draft.CashReserve) + "."
+                    "Retain company cash " + Money(draft.CashReserve) + "."
                 };
                 if (draft.ProcurementEnabled)
-                    lines.AddRange(draft.Inputs.Select(rule => "Buy " + Session.Content.GetGood(rule.GoodId).Name + " toward " + rule.TargetQuantity +
+                    lines.AddRange(draft.Inputs.Select(rule => "Buy " + Session.Content.GetGood(rule.GoodId).Name + " toward " + Q(rule.TargetQuantity) +
                         " private units; worst marginal unit at most " + Number(rule.MaxBuyPrice) + "."));
                 else lines.Add("Automatic input purchases OFF.");
                 if (draft.SalesEnabled)
-                    lines.AddRange(draft.Outputs.Select(rule => "Sell " + Session.Content.GetGood(rule.GoodId).Name + " above " + rule.ReserveQuantity +
+                    lines.AddRange(draft.Outputs.Select(rule => "Sell " + Session.Content.GetGood(rule.GoodId).Name + " above " + Q(rule.ReserveQuantity) +
                         " retained units; worst marginal unit at least " + Number(rule.MinSellPrice) + "."));
                 else lines.Add("Automatic local sales OFF. Output stays in private storage until a manual trade or physical route moves it.");
                 lines.Add("No order or day is spent by this preview. Apply sets future daily permissions; it does not buy inputs now.");
@@ -370,8 +377,8 @@ namespace SaltAndLedger.UnityHost
             warehouseSnapshot = Session.Snapshot;
             var facility = warehouseSnapshot.PrivateFacilities[selectedFacilityId];
             var player = Session.Player;
-            SetText("storageCapacityLabel", "Your ship " + player.CargoUnits + "/" + player.CargoCapacity +
-                "   ·   Private warehouse " + facility.StoredUnits + "/" + facility.Capacity + "   ·   Public market separate");
+            SetText("storageCapacityLabel", "Selected ship " + player.Name + " " + Q(player.CargoUnits) + "/" + Q(player.CargoCapacity) +
+                "   ·   Private warehouse " + Q(facility.StoredUnits) + "/" + Q(facility.Capacity) + "   ·   Public market separate");
             var rows = Element<VisualElement>("storageRows"); rows.Clear();
             foreach (var goodId in goodIds)
             {
@@ -379,20 +386,22 @@ namespace SaltAndLedger.UnityHost
                 var name = new Label(Session.Content.GetGood(goodId).Name); name.AddToClassList("trade-good-name"); row.Add(name);
                 foreach (var quantity in new[] { player.Cargo[goodId], facility.Inventory[goodId], warehouseSnapshot.Ports[facility.PortId].Inventory[goodId] })
                 {
-                    var cell = new Label(Number(quantity)); cell.AddToClassList("storage-cell"); row.Add(cell);
+                    var cell = new Label(Q(quantity)); cell.AddToClassList("storage-cell"); row.Add(cell);
                 }
                 rows.Add(row);
             }
             var good = goodIds[Math.Max(0, Element<DropdownField>("storageGoodDropdown").index)];
-            var valid = int.TryParse(Element<TextField>("storageQuantity").value, NumberStyles.Integer, CultureInfo.InvariantCulture,
-                out var amount) && amount > 0;
+            SetText("storageSelectedStock", Session.Content.GetGood(good).Name + " · ship " + Q(player.Cargo[good]) +
+                " · private " + Q(facility.Inventory[good]) + " · public " + Q(warehouseSnapshot.Ports[facility.PortId].Inventory[good]));
+            var valid = TryIndustryQuantity("storageQuantity", out var amount);
+            var whole = valid && amount % warehouseSnapshot.QuantityScale == 0;
             var local = player.DockedPortId == facility.PortId && !player.AutomationEnabled && !Session.IsChallengeEnded;
             SetText("transferAvailabilityLabel", Session.IsChallengeEnded ? "The charter has ended. Start a new scenario to move or trade goods." :
-                local ? "Docked locally: move your own cargo without buying or selling." :
+                local ? "Docked locally: whole-unit ship transfers; local warehouse trades may use fractional quantities." :
                 player.AutomationEnabled ? "Disable the ship route before moving cargo manually." :
                 "Ship transfers require docking at " + PortName(facility.PortId) + ". Local warehouse trading is separate.");
-            Element<Button>("shipToWarehouse").SetEnabled(local && valid && player.Cargo[good] >= amount && facility.Capacity - facility.StoredUnits >= amount);
-            Element<Button>("warehouseToShip").SetEnabled(local && valid && facility.Inventory[good] >= amount && player.CargoCapacity - player.CargoUnits >= amount);
+            Element<Button>("shipToWarehouse").SetEnabled(local && whole && player.Cargo[good] >= amount && facility.Capacity - facility.StoredUnits >= amount);
+            Element<Button>("warehouseToShip").SetEnabled(local && whole && facility.Inventory[good] >= amount && player.CargoCapacity - player.CargoUnits >= amount);
             foreach (var direction in new[] { TradeDirection.Buy, TradeDirection.Sell })
             {
                 var prefix = direction == TradeDirection.Buy ? "warehouseBuy" : "warehouseSell";
@@ -402,7 +411,7 @@ namespace SaltAndLedger.UnityHost
                 {
                     preview = valid ? warehouseSnapshot.PreviewWarehouseTrade(player.OwnerId, facility.Id, new TradeCommand(direction, good, amount)) : null;
                     text = preview?.Price == null ? (preview == null ? "Enter a positive quantity." : WarehouseTradeOutcome(preview.Outcome)) :
-                        "Exact " + Number(preview.TotalAmount) + " · average " + AverageExecutionPrice(preview) +
+                        "Exact " + Money(preview.TotalAmount) + " · average " + AverageExecutionPrice(preview) +
                         "\n" + (preview.Outcome == TradeOutcome.Traded ? "Local transfer of ownership" : WarehouseTradeOutcome(preview.Outcome));
                 }
                 catch (OverflowException) { text = "Quantity exceeds financial bounds."; }
@@ -416,12 +425,12 @@ namespace SaltAndLedger.UnityHost
             TradingLabText.Outcome(outcome);
 
         private void TransferStorage(TransferDirection direction) => Run(() => Session.Transfer(selectedFacilityId, direction,
-            goodIds[Element<DropdownField>("storageGoodDropdown").index], ReadInt("storageQuantity", "Transfer quantity", false)));
+            goodIds[Element<DropdownField>("storageGoodDropdown").index], ReadIndustryQuantity("storageQuantity", "Transfer quantity", false)));
 
         private void TradeStorage(TradeDirection direction)
         {
             Run(() => Session.WarehouseTrade(selectedFacilityId, direction, goodIds[Element<DropdownField>("storageGoodDropdown").index],
-                ReadInt("storageQuantity", "Trade quantity", false), warehouseSnapshot));
+                ReadIndustryQuantity("storageQuantity", "Trade quantity", false), warehouseSnapshot));
             RefreshStorage();
         }
 
@@ -429,8 +438,40 @@ namespace SaltAndLedger.UnityHost
         {
             var positive = values.Where(pair => pair.Value > 0).ToArray();
             return positive.Length == 0 ? "none" : string.Join(", ", positive.Select(pair =>
-                Number(pair.Value) + " " + Session.Content.GetGood(pair.Key).Name));
+                Q(pair.Value) + " " + Session.Content.GetGood(pair.Key).Name));
         }
+
+        private int ReadIndustryQuantity(string name, string label, bool allowZero)
+        {
+            var value = ReadScaledAmount(name, label, allowZero, Session.Snapshot.QuantityScale);
+            if (value > int.MaxValue) throw new ArgumentException(label + " exceeds the supported stock bound.");
+            return (int)value;
+        }
+
+        private long ReadIndustryMoney(string name, string label, bool allowZero) =>
+            ReadScaledAmount(name, label, allowZero, Session.Snapshot.MoneyScale);
+
+        private long ReadScaledAmount(string name, string label, bool allowZero, int scale)
+        {
+            if (!decimal.TryParse(Element<TextField>(name).value,
+                NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var value) ||
+                value < 0 || (!allowZero && value == 0))
+                throw new ArgumentException(label + " needs a " + (allowZero ? "nonnegative" : "positive") + " amount.");
+            var scaled = checked(value * scale);
+            if (scaled != decimal.Truncate(scaled) || scaled > long.MaxValue)
+                throw new ArgumentException(label + " exceeds the exact quantity/currency precision or bound.");
+            return checked((long)scaled);
+        }
+
+        private bool TryIndustryQuantity(string name, out int amount)
+        {
+            try { amount = ReadIndustryQuantity(name, "Quantity", false); return true; }
+            catch (ArgumentException) { amount = 0; return false; }
+            catch (OverflowException) { amount = 0; return false; }
+        }
+
+        private int ReadWholeCargo(string name, string label, bool allowZero) =>
+            checked(ReadInt(name, label, allowZero) * Session.Snapshot.QuantityScale);
 
         private static string WaitText(IndustryWaitReason reason) => System.Text.RegularExpressions.Regex.Replace(reason.ToString(), "([a-z])([A-Z])", "$1 $2").ToLowerInvariant();
     }

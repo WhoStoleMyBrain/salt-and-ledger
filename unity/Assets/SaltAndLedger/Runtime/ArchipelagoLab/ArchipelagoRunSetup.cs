@@ -23,7 +23,7 @@ namespace SaltAndLedger.UnityHost
             var world = Panel(worldRow, null, "run-column run-card");
             Text(world, null, "YOUR WORLD", "run-eyebrow");
             var mode = new DropdownField("World type", new System.Collections.Generic.List<string>
-                { "Fixed / Classic Archipelago", "Seeded Archipelago · v1 geography", "Living Cities · v2 economy" }, 0) { name = "worldModePicker" };
+                { "Fixed / Classic Archipelago", "Seeded Archipelago · v1 geography", "Living Cities · v2 economy", "Expanding Economy · v3" }, 0) { name = "worldModePicker" };
             world.Add(mode);
             var seed = new TextField("Seed") { name = "seedField", value = "42" };
             world.Add(seed);
@@ -114,11 +114,13 @@ namespace SaltAndLedger.UnityHost
             SetText("setupChallengeDescription", challenge?.Description ?? "Finite markets without a deadline or scored objective.");
             SetText("setupObjective", challenge?.Objective ?? "Explore, invest and automate at your own pace.");
             SetText("setupDeadline", challenge == null ? "Unlimited sandbox." :
-                "Deadline: day " + challenge.Configuration.DeadlineDay + " · Minimum cash: " + challenge.Configuration.MinimumCash +
+                "Deadline: day " + challenge.Configuration.DeadlineDay + " · Minimum cash: " +
+                (challenge.Configuration.MinimumCash / (SetupWorldMode() == RunWorldMode.ExpandingEconomy ? 10000 : 1)) +
                 "\nCompleting the objective wins immediately. Missing it at the deadline ends the run in defeat.");
             var mode = SetupWorldMode();
             var seeded = mode != RunWorldMode.Classic;
-            var living = mode == RunWorldMode.LivingCities;
+            var expanding = mode == RunWorldMode.ExpandingEconomy;
+            var living = mode == RunWorldMode.LivingCities || expanding;
             var difficulty = (RunDifficulty)Math.Max(0, Element<DropdownField>("difficultyPicker").index);
             var pricing = (LivingPricingMode)Math.Max(0, Element<DropdownField>("livingPricingPicker").index);
             Element<DropdownField>("livingPricingPicker").EnableInClassList("hidden", !living);
@@ -138,7 +140,7 @@ namespace SaltAndLedger.UnityHost
             SetText("setupCharterDescription", charter.Description);
             SetText("setupAssets", charter.Endowment);
             SetText("setupTradeoff", "Opportunity cost\n" + charter.Tradeoff);
-            SetText("setupEconomyDescription", living
+            SetText("setupEconomyDescription", expanding ? "Expanding Economy v3: exact fractional paid needs, seven buildable industries, up to three ships, finite outside trade, public Silver-backed Mint and Company Value. No automatic subsidies. Save explicitly to continue locally." : living
                 ? "Living Cities v2 varies geography, production roles, eligible private industries, population and initial finite accounts. Households pay for actual purchases; completed production pays wages. Economic viability is not guaranteed victory."
                 : "Historical economy: Classic keeps authored geography; seeded v1 changes geography only. Household finances, wages and population are not modeled.");
             SetText("setupWorldIdentity", valid ? WorldIdentityText(setupIdentity) : "Preview unavailable until the seed is valid.");
@@ -155,22 +157,30 @@ namespace SaltAndLedger.UnityHost
 
         private void RefreshSetupCities()
         {
-            var generation = LivingCityGeneration.Generate(setupIdentity.Seed.Value, setupIdentity.GeneratorVersion, setupIdentity.LivingPricingMode);
+            var expanding = setupIdentity.WorldMode == RunWorldMode.ExpandingEconomy;
+            var v3 = expanding ? ExpandingEconomyGeneration.Generate(setupIdentity.Seed.Value, setupIdentity.GeneratorVersion, setupIdentity.LivingPricingMode) : null;
+            var generation = expanding ? v3.SourceRoles : LivingCityGeneration.Generate(setupIdentity.Seed.Value, setupIdentity.GeneratorVersion, setupIdentity.LivingPricingMode);
+            var ports = expanding ? v3.Ports : generation.Ports;
+            var blueprints = expanding ? v3.Blueprints : generation.Blueprints;
+            var content = expanding ? Session.Content.ForExpandingEconomy() : Session.Content;
+            var scale = expanding ? 10000m : 1m;
+            string Units(long amount) => (amount / scale).ToString("0.####", CultureInfo.InvariantCulture);
             SetText("setupRecoveryTown", "Vulnerable recovery town: " + PortName(generation.RecoveryPortId) +
                 ". Regional paid meals count; a delivery alone does not complete the challenge.");
-            foreach (var port in generation.Ports)
+            foreach (var port in ports)
             {
                 var card = Panel(Element<VisualElement>("setupCityCards"), "setupCity_" + port.Id, "setup-city-card");
-                var allowed = generation.Blueprints.Where(b => b.EligiblePortIds.Contains(port.Id)).ToArray();
-                var absent = generation.Blueprints.Where(b => !b.EligiblePortIds.Contains(port.Id)).ToArray();
+                var allowed = blueprints.Where(b => b.EligiblePortIds.Contains(port.Id)).ToArray();
+                var absent = blueprints.Where(b => !b.EligiblePortIds.Contains(port.Id)).ToArray();
                 Text(card, null, port.Name + " · " + port.Role, "run-objective");
                 Text(card, null, "Population " + port.Settlement.InitialPopulation + " · prosperity " + port.Settlement.InitialProsperity +
-                    " / 100\nHousehold cash " + Number(port.Settlement.InitialHouseholdCash) + " · market cash " + Number(port.Market.InitialMarketCash), "run-copy");
-                Text(card, "setupCapabilities_" + port.Id, "Public: " + string.Join(", ", port.Facilities.Select(f => Session.Content.GetBuilding(f.Instance.BuildingId).Name)) +
-                    "\nCan build: " + string.Join(", ", allowed.Select(b => Session.Content.GetBuilding(b.BuildingId).Name)) +
-                    "\nUnavailable: " + string.Join(", ", absent.Select(b => Session.Content.GetBuilding(b.BuildingId).Name)), "run-copy");
+                    " / 100\nHousehold cash " + Units(port.Settlement.InitialHouseholdCash) + " · market cash " + Units(port.Market.InitialMarketCash), "run-copy");
+                Text(card, "setupCapabilities_" + port.Id, "Public: " + string.Join(", ", port.Facilities.Select(f => content.GetBuilding(f.Instance.BuildingId).Name)) +
+                    "\nCan build: " + string.Join(", ", allowed.Select(b => content.GetBuilding(b.BuildingId).Name)) +
+                    "\nUnavailable: " + string.Join(", ", absent.Select(b => content.GetBuilding(b.BuildingId).Name)) +
+                    (expanding && port.Id == v3.MintPortId ? "\nPublic Mint and shipwright service harbor" : ""), "run-copy");
                 Text(card, null, "Needs: " + string.Join("; ", port.Consumption.Select(c =>
-                    LivingCityPricing.DesiredQuantity(c, port.Settlement.InitialPopulation) + " " + Session.Content.GetGood(c.GoodId).Name +
+                    Units(LivingCityPricing.DesiredQuantity(c, port.Settlement.InitialPopulation)) + " " + content.GetGood(c.GoodId).Name +
                     " / " + NeedKind(c.Kind) + " every " + c.IntervalDays + " days" + (c.Kind == ConsumptionKind.Luxury ? " if eligible" : ""))) +
                     "\nFurniture still needs sustained eligibility and actual spending power.", "run-footnote");
             }
@@ -250,9 +260,9 @@ namespace SaltAndLedger.UnityHost
         {
             if (identity == null) return "Classic Archipelago · Ascension 0";
             return (identity.WorldMode == RunWorldMode.Classic ? "Fixed / Classic Archipelago" :
-                (identity.WorldMode == RunWorldMode.LivingCities ? "Living Cities · " : "") +
+                (identity.WorldMode == RunWorldMode.ExpandingEconomy ? "Expanding Economy · " : identity.WorldMode == RunWorldMode.LivingCities ? "Living Cities · " : "") +
                 "Seed " + identity.Seed.Value.ToString(CultureInfo.InvariantCulture) + " · Generator v" + identity.GeneratorVersion +
-                (identity.WorldMode == RunWorldMode.LivingCities ? " · " + identity.LivingPricingMode + " pricing" : "")) +
+                (identity.WorldMode == RunWorldMode.LivingCities || identity.WorldMode == RunWorldMode.ExpandingEconomy ? " · " + identity.LivingPricingMode + " pricing" : "")) +
                 " · Ascension " + identity.Ascension + (identity.Difficulty == RunDifficulty.SlowFoundations ? ": Slow Foundations" : ": Normal");
         }
     }

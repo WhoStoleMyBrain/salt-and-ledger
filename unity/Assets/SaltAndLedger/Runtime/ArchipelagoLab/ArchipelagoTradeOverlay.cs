@@ -111,7 +111,7 @@ namespace SaltAndLedger.UnityHost
         {
             if (tradeShipId == null) return;
             var maximum = Session.Snapshot.MaximumTradeQuantity(tradeShipId, Session.SelectedPortId, direction, SelectedGoodId());
-            SetQuantity(maximum);
+            SetQuantity(maximum / Session.Snapshot.QuantityScale);
             if (maximum == 0) Validation("No executable " + (direction == TradeDirection.Buy ? "purchase" : "sale") +
                 " is available with the current stock, cash and capacity.");
         }
@@ -126,10 +126,10 @@ namespace SaltAndLedger.UnityHost
             var canControl = ship.IsPlayer && !ship.AutomationEnabled && !Session.IsChallengeEnded;
             SetText("tradeTitle", port.Name + "  /  " + ship.Name);
             SetText("tradeDay", "DAY " + Number(tradeSnapshot.Day));
-            SetText("tradeHeader", (local ? "DOCKED" : "REMOTE MARKET") + "   ·   Company cash " + Number(ship.Cash) +
-                "   ·   Market cash " + Number(port.MarketCash) + "   ·   Cargo " + ship.CargoUnits + "/" + ship.CargoCapacity +
-                " (" + (ship.CargoCapacity - ship.CargoUnits) + " free)" +
-                (port.City == null ? "" : "\nHousehold cash " + Number(port.City.HouseholdCash) + " is separate. Only market cash can pay your sale."));
+            SetText("tradeHeader", (local ? "DOCKED" : "REMOTE MARKET") + "   ·   Company cash " + Money(ship.Cash) +
+                "   ·   Market cash " + Money(port.MarketCash) + "   ·   Cargo " + Q(ship.CargoUnits) + "/" + Q(ship.CargoCapacity) +
+                " (" + Q(ship.CargoCapacity - ship.CargoUnits) + " free)" +
+                (port.City == null ? "" : "\nHousehold cash " + Money(port.City.HouseholdCash) + " is separate. Only market cash can pay your sale."));
             SetText("tradeAvailabilityLabel", !ship.IsPlayer ? "NPC inspection only. Select your ship to trade or sail." :
                 Session.IsChallengeEnded ? "The charter has ended. Reset or start a new sandbox to continue." :
                 ship.AutomationEnabled ? "Disable your trade route before placing manual orders." :
@@ -162,8 +162,8 @@ namespace SaltAndLedger.UnityHost
             {
                 var row = rows.Q<Button>("tradeGood_" + goodId);
                 var quote = tradeSnapshot.GetMarketQuote(port.Id, goodId);
-                row.Q<Label>("town").text = Number(port.Inventory[goodId]);
-                row.Q<Label>("ship").text = Number(ship.Cargo[goodId]);
+                row.Q<Label>("town").text = Q(port.Inventory[goodId]);
+                row.Q<Label>("ship").text = Q(ship.Cargo[goodId]);
                 row.Q<Label>("bid").text = quote.Bid.HasValue ? Number(quote.Bid.Value) : "—";
                 row.Q<Label>("ask").text = quote.Ask.HasValue ? Number(quote.Ask.Value) : "—";
                 row.EnableInClassList("selected-good", goodId == SelectedGoodId());
@@ -179,7 +179,7 @@ namespace SaltAndLedger.UnityHost
                 string text;
                 try
                 {
-                    preview = valid ? tradeSnapshot.PreviewTrade(ship.Id, port.Id, new TradeCommand(direction, SelectedGoodId(), quantity)) : null;
+                    preview = valid ? tradeSnapshot.PreviewTrade(ship.Id, port.Id, new TradeCommand(direction, SelectedGoodId(), Session.WholeOrderQuantity(quantity))) : null;
                     text = preview == null ? "Enter a positive whole quantity." : DetailedTradeText(preview, ship.Cash, ship.CargoUnits, ship.CargoCapacity);
                 }
                 catch (OverflowException) { text = "This quantity exceeds the supported financial bounds. Choose a smaller order."; }
@@ -194,15 +194,15 @@ namespace SaltAndLedger.UnityHost
         public static string AverageExecutionPrice(TradeAttempt preview) => preview.Price == null || preview.Quantity <= 0
             ? "—" : ((decimal)preview.TotalAmount / preview.Quantity).ToString("0.00", CultureInfo.InvariantCulture);
 
-        private static string DetailedTradeText(TradeAttempt preview, long cash, long units, int capacity)
+        private string DetailedTradeText(TradeAttempt preview, long cash, long units, int capacity)
         {
             if (preview.Price == null) return TradingLabText.Outcome(preview.Outcome) + ".";
-            var text = "Total " + Number(preview.TotalAmount) + "   ·   Average " + AverageExecutionPrice(preview) + " / unit" +
+            var text = "Total " + Money(preview.TotalAmount) + "   ·   Average " + AverageExecutionPrice(preview) + " / unit" +
                 "\nFirst " + Number(preview.Price.FirstMarginalPrice) + "  →  last " + Number(preview.Price.LastMarginalPrice);
             if (preview.Outcome != TradeOutcome.Traded) return text + "\n" + TradingLabText.Outcome(preview.Outcome);
             var buying = preview.Direction == TradeDirection.Buy;
-            return text + "\nAfter: cash " + Number(buying ? checked(cash - preview.TotalAmount) : checked(cash + preview.TotalAmount)) +
-                "   ·   cargo " + (buying ? units + preview.Quantity : units - preview.Quantity) + "/" + capacity;
+            return text + "\nAfter: cash " + Money(buying ? checked(cash - preview.TotalAmount) : checked(cash + preview.TotalAmount)) +
+                "   ·   cargo " + Q(buying ? units + preview.Quantity : units - preview.Quantity) + "/" + Q(capacity);
         }
 
         private void RefreshModalStatus()
@@ -224,6 +224,14 @@ namespace SaltAndLedger.UnityHost
             if (challenge == null)
             {
                 SetText("challengeLabel", "SANDBOX · Build your enterprise at your own pace. No deadline.");
+                return;
+            }
+            if (Session.Snapshot.Economy != null)
+            {
+                var progress = ExpandingChallenges.Progress(Session.Snapshot);
+                SetText("challengeLabel", challenge.Configuration.Title + " · " + challenge.Status + " · " + progress.Percent + "%\n" +
+                    Math.Max(0, challenge.Configuration.DeadlineDay - Session.Snapshot.Day) + " days remaining · Cash " + Money(Session.Player.Cash));
+                Element<Label>("challengeLabel").tooltip = ObjectiveText();
                 return;
             }
             if (challenge.Recovery != null)

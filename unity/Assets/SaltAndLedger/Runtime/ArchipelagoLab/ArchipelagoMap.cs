@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using SaltAndLedger.Simulation;
 using UnityEngine;
@@ -47,6 +48,7 @@ namespace SaltAndLedger.UnityHost
                 var previous = snapshot;
                 snapshot = next;
                 if (ports.Count == 0) CreateMarkers();
+                SynchronizeShipMarkers();
                 foreach (var ship in snapshot.Ships.Values)
                 {
                     var point = ShipPosition(ship);
@@ -69,18 +71,19 @@ namespace SaltAndLedger.UnityHost
             {
                 ships[ship.Id].EnableInClassList("selected-marker", ship.Id == selectedShipId);
                 ships[ship.Id].tooltip = ship.Name + " · " + (ship.IsPlayer ? "Your ship" : "NPC merchant") +
-                    "\n" + ship.CargoUnits + "/" + ship.CargoCapacity + " cargo" +
+                    "\n" + Quantity(ship.CargoUnits) + "/" + Quantity(ship.CargoCapacity) + " cargo" +
                     (ship.DockedPortId != null ? "\nDocked at " + snapshot.Ports[ship.DockedPortId].Name :
                         "\nTo " + snapshot.Ports[ship.DestinationPortId].Name + " · " + ship.RemainingTravelDays + " days remain");
             }
-            var player = snapshot.Ships.Values.Single(ship => ship.IsPlayer);
+            var player = selectedShipId != null && snapshot.Ships.TryGetValue(selectedShipId, out var selected) && selected.IsPlayer
+                ? selected : snapshot.Ships.Values.Where(ship => ship.IsPlayer).OrderBy(ship => ship.Id, StringComparer.Ordinal).First();
             for (var index = 0; index < snapshot.Routes.Count; index++)
             {
                 var route = snapshot.Routes[index];
                 distanceLabels[index].text = route.Distance + " units · " + route.DurationDays(player.Configuration.Speed) + "d";
                 distanceLabels[index].tooltip = snapshot.Ports[route.OriginPortId].Name + " — " +
                     snapshot.Ports[route.DestinationPortId].Name + ": " + route.Distance + " abstract distance units; " +
-                    route.DurationDays(player.Configuration.Speed) + " days in your ship. Direct sea connection; no coastline pathfinding.";
+                    route.DurationDays(player.Configuration.Speed) + " days in " + player.Name + ". Direct sea connection; no coastline pathfinding.";
             }
             ArrangeMarkers();
             MarkDirtyRepaint();
@@ -113,25 +116,9 @@ namespace SaltAndLedger.UnityHost
                 ports.Add(id, button);
                 Add(button);
             }
-            var index = 0;
-            foreach (var ship in snapshot.Ships.Values.OrderBy(ship => ship.Id, StringComparer.Ordinal))
-            {
-                var id = ship.Id;
-                var button = new Button(() => ShipSelected?.Invoke(id))
-                {
-                    name = "ship_" + id,
-                    text = ship.IsPlayer ? "▲ P" : "▲ " + (++index)
-                };
-                button.AddToClassList("ship-marker");
-                button.RegisterCallback<GeometryChangedEvent>(_ => ArrangeMarkers());
-                button.AddToClassList(ship.IsPlayer ? "player-marker" : "npc-marker");
-                ships.Add(id, button);
-                Add(button);
-            }
             foreach (var route in snapshot.Routes)
             {
-                var player = snapshot.Ships.Values.Single(ship => ship.IsPlayer);
-                var label = new Label(route.DurationDays(player.Configuration.Speed) + " days") { pickingMode = PickingMode.Ignore };
+                var label = new Label { pickingMode = PickingMode.Ignore };
                 label.AddToClassList("route-distance");
                 label.RegisterCallback<GeometryChangedEvent>(_ => ArrangeMarkers());
                 distanceLabels.Add(label);
@@ -139,6 +126,34 @@ namespace SaltAndLedger.UnityHost
                 Insert(0, label);
             }
         }
+
+        private void SynchronizeShipMarkers()
+        {
+            foreach (var id in ships.Keys.Where(id => !snapshot.Ships.ContainsKey(id)).ToArray())
+            {
+                ships[id].RemoveFromHierarchy(); ships.Remove(id);
+                fromPositions.Remove(id); toPositions.Remove(id); displayedPositions.Remove(id);
+            }
+            var npcIndex = 0;
+            var playerIndex = 0;
+            foreach (var ship in snapshot.Ships.Values.OrderBy(ship => ship.Id, StringComparer.Ordinal))
+            {
+                var id = ship.Id;
+                if (!ships.TryGetValue(id, out var button))
+                {
+                    button = new Button(() => ShipSelected?.Invoke(id)) { name = "ship_" + id };
+                    button.AddToClassList("ship-marker");
+                    button.RegisterCallback<GeometryChangedEvent>(_ => ArrangeMarkers());
+                    ships.Add(id, button); Add(button);
+                }
+                button.EnableInClassList("player-marker", ship.IsPlayer);
+                button.EnableInClassList("npc-marker", !ship.IsPlayer);
+                button.text = ship.IsPlayer ? "▲ P" + (++playerIndex == 1 ? "" : playerIndex.ToString(CultureInfo.InvariantCulture))
+                    : "▲ " + (++npcIndex).ToString(CultureInfo.InvariantCulture);
+            }
+        }
+
+        private string Quantity(int quantity) => ((decimal)quantity / snapshot.QuantityScale).ToString("0.####", CultureInfo.InvariantCulture);
 
         private Vector2 ShipPosition(RegionalShipSnapshot ship)
         {

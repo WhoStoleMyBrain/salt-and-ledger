@@ -9,6 +9,7 @@ namespace SaltAndLedger.UnityHost
     public sealed partial class ArchipelagoLabController
     {
         private readonly List<string> logisticsFacilities = new List<string>();
+        private readonly List<string> logisticsShips = new List<string>();
 
         private void BuildLedgerAndLogistics()
         {
@@ -19,8 +20,8 @@ namespace SaltAndLedger.UnityHost
             Text(scroll, "ledgerFinances", "", "run-objective");
             Text(scroll, "ledgerAssets", "", "run-copy");
             Text(scroll, "ledgerOperations", "", "run-copy");
-            Text(scroll, null, "FIFO costing follows arrival at each stockpile. Partial lots retain exact integer remainders. Transfers keep basis and ownership; manufacture carries consumed material expenditure into output. Starter grants have zero paid basis. Living Cities wages are expensed separately when paid, including work whose output is still held. Transport expenses, depreciation and resale value are not modeled.", "run-footnote");
-            var history = new Foldout { name = "ledgerHistory", text = "Recent committed financial events · 200 maximum", value = false };
+            Text(scroll, null, "FIFO costing follows arrival at each stockpile. Partial lots retain exact integer remainders. Transfers keep basis and ownership; manufacture carries consumed material expenditure into output. Starter grants have zero paid basis. Living wages are expensed separately when paid, including work whose output is still held. V3 Company Value uses stable reference values, not promised liquidation proceeds. Transport expenses and depreciation are not modeled.", "run-footnote");
+            var history = new Foldout { name = "ledgerHistory", text = "This session's recent financial events · 200 maximum", value = false };
             scroll.Add(history);
             Panel(history, "ledgerEvents", "");
             Button(ledger, "ledgerBackButton", "Back", () => ShowScreen(secondaryParent));
@@ -31,6 +32,14 @@ namespace SaltAndLedger.UnityHost
             body.AddToClassList("run-content-scroll"); logistics.Add(body);
             Text(body, "logisticsShipLabel", "", "run-objective");
             Dropdown(body, "logisticsShip", "Assigned player ship", new List<string> { Session.Player.Name });
+            Element<DropdownField>("logisticsShip").RegisterValueChangedCallback(_ => Run(() =>
+            {
+                var index = Element<DropdownField>("logisticsShip").index;
+                if (index < 0 || index >= logisticsShips.Count) return;
+                Session.SelectShip(logisticsShips[index]);
+                LoadPolicy();
+                LoadSelectedShipLogistics();
+            }));
             var columns = Panel(body, null, "run-columns");
             var source = Panel(columns, null, "run-column run-card");
             Dropdown(source, "logisticsFacility", "Source warehouse", new List<string> { "No owned warehouses" });
@@ -38,11 +47,11 @@ namespace SaltAndLedger.UnityHost
             Field(source, "logisticsQuantity", "Load up to", "8");
             Field(source, "logisticsReserve", "Leave in source storage", "0");
             Button(source, "logisticsPresetButton", "Bakery shipping preset", LoadLogisticsPreset);
-            var procurementPreview = EnterpriseScenario.BakeryPolicy(false);
+            var procurementPreview = RecommendedIndustryPolicy(EnterpriseScenario.BakeryBlueprint);
             Text(source, "logisticsProcurementPreview", "INPUT PRESET BEFORE APPLYING\n" +
                 string.Join("\n", procurementPreview.Inputs.Select(rule => "Buy " + Session.Content.GetGood(rule.GoodId).Name +
-                    " toward " + rule.TargetQuantity + " units, worst marginal price at most " + Number(rule.MaxBuyPrice))) +
-                "\nRetain company cash " + Number(procurementPreview.CashReserve) +
+                    " toward " + Q(rule.TargetQuantity) + " units, worst marginal price at most " + Number(rule.MaxBuyPrice))) +
+                "\nRetain company cash " + Money(procurementPreview.CashReserve) +
                 ". Local output sales stay off. Applying authorizes future daily purchases; it places no order now.", "run-footnote");
             Button(source, "logisticsProcurementButton", "Apply bakery input procurement", () => Run(() =>
             {
@@ -95,18 +104,36 @@ namespace SaltAndLedger.UnityHost
 
         private string FinancialText()
         {
-            var finance = Session.Snapshot.Accounting.Companies[Session.Player.OwnerId];
-            return "LIQUID CASH  " + Number(Session.Player.Cash) + "\n" +
-                "Sale revenue  " + Number(finance.SalesRevenue) + "   ·   Inventory purchases  " + Number(finance.InventoryPurchases) +
-                "\nCost of goods sold  " + Number(finance.CostOfGoodsSold) +
-                (Session.Identity?.WorldMode == RunWorldMode.LivingCities ? "   ·   Realized material margin  " : "   ·   Realized gross margin  ") + Signed(finance.RealizedGrossMargin) +
-                "\nHeld inventory material basis  " + Number(finance.HeldInventoryCost) +
-                "   ·   Construction expenditure  " + Number(finance.ConstructionExpenditure) +
-                (Session.Identity?.WorldMode == RunWorldMode.LivingCities
-                    ? "\nPaid wages (operating expense)  " + Number(finance.WagesPaid) +
-                      "\nMaterial margin less all paid wages  " + Signed(finance.OperatingSurplusAfterWages) +
-                      "\nThis includes wages for unsold output; capital and unmodeled costs remain separate." : "") +
-                "\nStarting cash  " + Number(finance.InitialCash) + "   ·   Cash change  " + Signed(Session.CashChange);
+            var snapshot = Session.Snapshot;
+            var finance = snapshot.Accounting.Companies[Session.Player.OwnerId];
+            var living = snapshot.Ports.Values.Any(port => port.City != null);
+            var value = snapshot.Economy == null ? null : snapshot.CompanyValue(Session.Player.OwnerId);
+            return "LIQUID CASH  " + Money(Session.Player.Cash) +
+                (value == null ? "" : "   |   COMPANY VALUE  " + Money(value.Total) +
+                    "   |   CHANGE  " + SignedMoney(value.Change)) + "\n" +
+                "Sale revenue  " + Money(finance.SalesRevenue) + "   |   Inventory purchases  " + Money(finance.InventoryPurchases) +
+                "\nCost of goods sold  " + Money(finance.CostOfGoodsSold) +
+                (living ? "   |   Realized material margin  " : "   |   Realized gross margin  ") + SignedMoney(finance.RealizedGrossMargin) +
+                "\nHeld inventory material basis  " + Money(finance.HeldInventoryCost) +
+                "   |   Construction expenditure  " + Money(finance.ConstructionExpenditure) +
+                (living ? "\nPaid wages (operating expense)  " + Money(finance.WagesPaid) +
+                    "\nOPERATING SURPLUS AFTER WAGES  " + SignedMoney(finance.OperatingSurplusAfterWages) +
+                    "\nThis subtracts wages for unsold output too; capital and unmodeled costs remain separate." : "") +
+                (value == null ? "" : "\nMint supplier receipts  " + Money(finance.MintReceipts) +
+                    "   |   Surrendered Silver material basis  " + Money(finance.MintMaterialCost) +
+                    "\nPublic Mint commissioning paid  " + Money(finance.PublicCommissionExpenditure) +
+                    ". Issuance receipts are separate from trading margin and operating surplus.") +
+                "\nStarting cash  " + Money(finance.InitialCash) + "   |   Cash change  " + SignedMoney(Session.CashChange);
+        }
+        private string ValueText()
+        {
+            if (Session.Snapshot.Economy == null) return "";
+            var value = Session.Snapshot.CompanyValue(Session.Player.OwnerId);
+            return "REFERENCE COMPANY VALUE\nCash " + Money(value.Cash) + " + owned goods " + Money(value.Goods) +
+                " + completed ships " + Money(value.Ships) + " + operational factories " + Money(value.Facilities) +
+                " + paid construction in progress " + Money(value.PendingCapital) + " = " + Money(value.Total) +
+                "\nStarting value " + Money(value.InitialValue) + " | change " + SignedMoney(value.Change) +
+                "\nStable reference prices; buyers and liquidation proceeds are not guaranteed. Starter gifts count at reference value with zero paid basis. Public Mint, treasury, markets, households and other companies are excluded. FIFO paid basis is not added again.\n\n";
         }
         private string AssetText()
         {
@@ -114,16 +141,16 @@ namespace SaltAndLedger.UnityHost
             var finance = snapshot.Accounting.Companies[Session.Player.OwnerId];
             var stores = snapshot.Accounting.Stores.Values.Where(s => s.OwnerId == Session.Player.OwnerId);
             var facilities = snapshot.PrivateFacilities.Values.Where(f => f.OwnerId == Session.Player.OwnerId).ToArray();
-            return "HELD GOODS\n" + QuantityTotals(finance.HeldInventoryQuantities) +
+            return ValueText() + "HELD GOODS\n" + QuantityTotals(finance.HeldInventoryQuantities) +
                 "\n\nSTOCKPILES\n" + string.Join("\n", stores.Select(s =>
-                    (s.StoreId.StartsWith("ship:", StringComparison.Ordinal) ? "Ship " + Session.Player.Name :
+                    (s.StoreId.StartsWith("ship:", StringComparison.Ordinal) ? "Ship " + snapshot.Ships[s.StoreId.Substring(5)].Name :
                         "Private " + Session.Content.GetBuilding(snapshot.PrivateFacilities[s.StoreId.Substring(9)].Blueprint.BuildingId).Name +
                         " at " + PortName(snapshot.PrivateFacilities[s.StoreId.Substring(9)].PortId)) +
-                    " · " + s.TotalUnits + " units · basis " + Number(s.TotalCostBasis) +
+                    " · " + Q(s.TotalUnits) + " units · basis " + Money(s.TotalCostBasis) +
                     "\n" + (s.Goods.Count == 0 ? "Empty" : string.Join("; ", s.Goods.Values.Select(g =>
-                        g.Quantity + " " + Session.Content.GetGood(g.GoodId).Name + " · basis " + Number(g.CostBasis)))))) +
+                        Q(g.Quantity) + " " + Session.Content.GetGood(g.GoodId).Name + " · basis " + Money(g.CostBasis)))))) +
                 "\n\nOWNED FACTORIES  " + facilities.Length + "\n" + (facilities.Length == 0 ? "None" :
-                    string.Join("\n", facilities.Select(f => Session.Content.GetBuilding(f.Blueprint.BuildingId).Name + " at " +
+                    string.Join("\n", facilities.Select(f => Session.Content.GetBuilding(f.Blueprint.BuildingId).Name + " [" + f.Id + "] at " +
                         PortName(f.PortId) + (f.IsStarterGrant ? " · operational starter grant" :
                             " · ordered day " + f.OrderedDay + (f.IsOperational ? " · completed day " + f.ConstructionCompletedDay :
                             " · under construction, completes day " + f.ConstructionCompletionDay)) +
@@ -135,8 +162,8 @@ namespace SaltAndLedger.UnityHost
             var finance = Session.Snapshot.Accounting.Companies[Session.Player.OwnerId];
             return "PRODUCTION\n" + QuantityTotals(finance.ProducedQuantities) +
                 "\nInputs consumed: " + QuantityTotals(finance.ConsumedQuantities) +
-                "\nGoods sold to public markets (ship and warehouse): " + QuantityTotals(finance.SoldQuantities) +
-                "\nShip deliveries to public markets: " + QuantityTotals(Session.ShipDeliveries) +
+                "\nGoods sold to markets or authorized procurement: " + QuantityTotals(finance.SoldQuantities) +
+                "\n\nSINCE START / LOAD OF THIS SESSION\nShip deliveries to public markets: " + QuantityTotals(Session.ShipDeliveries) +
                 "\nCommitted instant player commands: " + Session.PlayerInputs + " · Automated player trade/transfer/departure decisions: " + Session.AutomatedActions +
                 "\n\n" + ObjectiveText();
         }
@@ -149,29 +176,36 @@ namespace SaltAndLedger.UnityHost
             foreach (var item in Session.Journal)
                 Text(list, null, "Day " + item.Day + " / revision " + item.Revision + " · " + item.Kind +
                     (item.GoodId == null ? item.RecipeId == null ? "" : " · " + Session.Content.GetRecipe(item.RecipeId).Name :
-                        " · " + item.Quantity + " " + Session.Content.GetGood(item.GoodId).Name) +
-                    "\nCash " + Signed(item.CompanyCashDelta) + " · attributed basis " + item.AllocatedCost +
+                        " · " + Q(item.Quantity) + " " + Session.Content.GetGood(item.GoodId).Name) +
+                    "\nCash " + SignedMoney(item.CompanyCashDelta) + " · attributed basis " + Money(item.AllocatedCost) +
                     (item.PortId == null ? "" : " · " + PortName(item.PortId)) +
                     "\n" + (item.SourceStoreId ?? "Grant") + " → " + (item.DestinationStoreId ?? "—"), "ledger-event");
-            if (Session.Journal.Count == 0) Text(list, null, "No committed financial transactions in this run yet. Starter assets are recorded as grants in the summary.", "run-copy");
+            if (Session.Journal.Count == 0) Text(list, null, "No financial events recorded since this session started or loaded. Lifetime totals and starter grants remain in the summary.", "run-copy");
         }
 
         private void OpenLogistics()
         {
+            secondaryParents[ArchipelagoScreen.Logistics] = Screen;
             secondaryParent = Screen;
             Session.Pause();
             var owned = Session.Snapshot.PrivateFacilities.Values.Where(f => f.OwnerId == Session.Player.OwnerId).ToArray();
             logisticsFacilities.Clear(); logisticsFacilities.AddRange(owned.Select(f => f.Id));
-            var names = owned.Select(f => Session.Content.GetBuilding(f.Blueprint.BuildingId).Name + " · " + PortName(f.PortId)).ToList();
+            var names = owned.Select(f => Session.Content.GetBuilding(f.Blueprint.BuildingId).Name + " [" + f.Id + "] at " + PortName(f.PortId)).ToList();
             if (names.Count == 0) names.Add("Construct a private facility first");
             SetChoices("logisticsFacility", names);
             SetChoices("logisticsDestinationFacility", names);
+            LoadSelectedShipLogistics();
+            ShowScreen(ArchipelagoScreen.Logistics);
+            RefreshLogisticsStatus();
+        }
+
+        private void LoadSelectedShipLogistics()
+        {
             var applied = Session.Player.IndustrialPolicy;
             if (applied != null && applied.Outbound.SourceKind == IndustrialEndpointKind.Warehouse &&
                 logisticsFacilities.Contains(applied.Outbound.SourceFacilityId))
                 LoadAppliedLogistics(applied);
             else LoadLogisticsPreset();
-            ShowScreen(ArchipelagoScreen.Logistics);
             RefreshLogisticsStatus();
         }
         private PrivateFacilitySnapshot SelectedLogisticsFacility()
@@ -184,6 +218,17 @@ namespace SaltAndLedger.UnityHost
         {
             if (logisticsFacilities.Count == 0) { RefreshLogisticsStatus(); return; }
             var facility = SelectedLogisticsFacility();
+            if (Session.Snapshot.Economy != null && facility.Blueprint.Id == EnterpriseScenario.BakeryBlueprint)
+            {
+                var generation = ExpandingEconomyGeneration.Generate(Session.Identity.Seed.Value, pricingMode: Session.Identity.LivingPricingMode);
+                if (facility.PortId != generation.RecoveryPortId)
+                {
+                    LoadAppliedLogistics(ExpandingEconomyScenario.IndustrialPolicy(generation, facility.Id, facility.PortId));
+                    SetText("logisticsDraft", "V3 draft: ship whole units of private Bread to the recovery town. Apply to this selected ship only; future sales still need real buyer funds.");
+                    RefreshLogisticsStatus();
+                    return;
+                }
+            }
             if (Session.Identity?.WorldMode == RunWorldMode.LivingCities && facility.Blueprint.Id == EnterpriseScenario.BakeryBlueprint)
             {
                 var generation = LivingCityGeneration.Generate(Session.Identity.Seed.Value, Session.Identity.GeneratorVersion, Session.Identity.LivingPricingMode);
@@ -196,7 +241,7 @@ namespace SaltAndLedger.UnityHost
                 }
             }
             var output = Session.Content.GetRecipe(facility.Blueprint.RecipeId).Outputs.First().GoodId;
-            var quantity = Math.Min(8, Session.Player.CargoCapacity);
+            var quantity = Math.Min(8, Session.Player.CargoCapacity / Session.Snapshot.QuantityScale);
             SetIndex("logisticsGood", goodIds.IndexOf(output));
             SetIndex("logisticsReturnGood", goodIds.IndexOf("flour"));
             SetIndex("logisticsDestination", portIds.IndexOf(facility.PortId == EnterpriseScenario.East ? EnterpriseScenario.West : EnterpriseScenario.East));
@@ -218,12 +263,12 @@ namespace SaltAndLedger.UnityHost
             SetIndex("logisticsDeliveryKind", leg.DestinationKind == IndustrialEndpointKind.Warehouse ? 1 : 0);
             var destinationFacility = leg.DestinationFacilityId ?? policy.ReturnLeg?.SourceFacilityId;
             SetIndex("logisticsDestinationFacility", logisticsFacilities.IndexOf(destinationFacility));
-            SetField("logisticsQuantity", leg.MaximumShipmentQuantity);
-            SetField("logisticsMinimum", leg.MinimumShipmentQuantity);
-            SetField("logisticsReserve", leg.WarehouseReserve);
-            SetField("logisticsThreshold", leg.MinimumSourceStock);
+            SetQuantityField("logisticsQuantity", leg.MaximumShipmentQuantity);
+            SetQuantityField("logisticsMinimum", leg.MinimumShipmentQuantity);
+            SetQuantityField("logisticsReserve", leg.WarehouseReserve);
+            SetQuantityField("logisticsThreshold", leg.MinimumSourceStock);
             SetField("logisticsSellFloor", leg.MinimumSellPrice);
-            SetField("logisticsCashReserve", policy.CashReserve);
+            SetMoneyField("logisticsCashReserve", policy.CashReserve);
             Element<Toggle>("logisticsAllowEmpty").SetValueWithoutNotify(policy.AllowEmptyReturn);
             var back = policy.ReturnLeg;
             SetIndex("logisticsReturnMode", back == null ? 0 : back.SourceKind == IndustrialEndpointKind.Warehouse
@@ -232,11 +277,11 @@ namespace SaltAndLedger.UnityHost
             if (back != null)
             {
                 SetIndex("logisticsReturnGood", goodIds.IndexOf(back.GoodId));
-                SetField("logisticsReturnQuantity", back.MaximumShipmentQuantity);
+                SetQuantityField("logisticsReturnQuantity", back.MaximumShipmentQuantity);
                 SetField("logisticsReturnBuy", back.MaximumBuyPrice);
                 SetField("logisticsReturnSell", back.MinimumSellPrice);
-                SetField("logisticsReturnBudget", back.MaximumPurchaseExpenditure);
-                SetField("logisticsReturnReserve", back.WarehouseReserve);
+                SetMoneyField("logisticsReturnBudget", back.MaximumPurchaseExpenditure);
+                SetQuantityField("logisticsReturnReserve", back.WarehouseReserve);
             }
             SetText("logisticsDraft", "Showing the applied industrial route. Edit and Apply to replace it; opening this panel changes nothing.");
         }
@@ -247,10 +292,10 @@ namespace SaltAndLedger.UnityHost
             var destinationWarehouse = Element<DropdownField>("logisticsDeliveryKind").index == 1;
             var destinationFacility = logisticsFacilities[Math.Max(0, Element<DropdownField>("logisticsDestinationFacility").index)];
             var outbound = new IndustrialRouteLeg(goodIds[Element<DropdownField>("logisticsGood").index],
-                ReadInt("logisticsQuantity", "Shipment quantity", false), ReadInt("logisticsMinimum", "Minimum shipment", false),
+                ReadWholeCargo("logisticsQuantity", "Shipment quantity", false), ReadWholeCargo("logisticsMinimum", "Minimum shipment", false),
                 IndustrialEndpointKind.Warehouse, destinationWarehouse ? IndustrialEndpointKind.Warehouse : IndustrialEndpointKind.Market,
                 source.Id, destinationWarehouse ? destinationFacility : null,
-                ReadInt("logisticsThreshold", "Source threshold", true), ReadInt("logisticsReserve", "Warehouse reserve", true),
+                ReadWholeCargo("logisticsThreshold", "Source threshold", true), ReadWholeCargo("logisticsReserve", "Warehouse reserve", true),
                 minimumSellPrice: ReadLong("logisticsSellFloor", "Sale floor", false));
             var mode = Element<DropdownField>("logisticsReturnMode").index;
             IndustrialRouteLeg returnLeg = null;
@@ -259,17 +304,17 @@ namespace SaltAndLedger.UnityHost
                 var fromWarehouse = mode >= 3;
                 var toWarehouse = mode == 1 || mode == 3;
                 returnLeg = new IndustrialRouteLeg(goodIds[Element<DropdownField>("logisticsReturnGood").index],
-                    ReadInt("logisticsReturnQuantity", "Return quantity", false), 1,
+                    ReadWholeCargo("logisticsReturnQuantity", "Return quantity", false), Session.Snapshot.QuantityScale,
                     fromWarehouse ? IndustrialEndpointKind.Warehouse : IndustrialEndpointKind.Market,
                     toWarehouse ? IndustrialEndpointKind.Warehouse : IndustrialEndpointKind.Market,
                     fromWarehouse ? destinationFacility : null, toWarehouse ? source.Id : null,
-                    warehouseReserve: fromWarehouse ? ReadInt("logisticsReturnReserve", "Return reserve", true) : 0,
+                    warehouseReserve: fromWarehouse ? ReadWholeCargo("logisticsReturnReserve", "Return reserve", true) : 0,
                     maximumBuyPrice: ReadLong("logisticsReturnBuy", "Return buy ceiling", false),
                     minimumSellPrice: ReadLong("logisticsReturnSell", "Return sale floor", false),
-                    maximumPurchaseExpenditure: ReadLong("logisticsReturnBudget", "Return purchase cap", false));
+                    maximumPurchaseExpenditure: ReadIndustryMoney("logisticsReturnBudget", "Return purchase cap", false));
             }
             Session.ApplyIndustrialPolicy(new IndustrialRoutePolicy(source.PortId, destination, outbound, returnLeg,
-                ReadLong("logisticsCashReserve", "Cash reserve", true), Element<Toggle>("logisticsAllowEmpty").value),
+                ReadIndustryMoney("logisticsCashReserve", "Cash reserve", true), Element<Toggle>("logisticsAllowEmpty").value),
                 Session.Player.AutomationEnabled);
             SetText("logisticsDraft", "Shipping policy applied. Enable automation to execute at day boundaries, or run dockside actions explicitly.");
         });
@@ -279,11 +324,17 @@ namespace SaltAndLedger.UnityHost
             var procurement = RecommendedIndustryPolicy(EnterpriseScenario.BakeryBlueprint);
             SetText("logisticsProcurementPreview", "INPUT PRESET BEFORE APPLYING\n" +
                 string.Join("\n", procurement.Inputs.Select(rule => "Buy " + Session.Content.GetGood(rule.GoodId).Name +
-                    " toward " + rule.TargetQuantity + " units, worst marginal price at most " + Number(rule.MaxBuyPrice))) +
-                "\nRetain company cash " + Number(procurement.CashReserve) +
+                    " toward " + Q(rule.TargetQuantity) + " units, worst marginal price at most " + Number(rule.MaxBuyPrice))) +
+                "\nRetain company cash " + Money(procurement.CashReserve) +
                 ". Local output sales stay off. Applying authorizes future daily purchases; it places no order now.");
             var ship = Session.Player;
-            SetText("logisticsShipLabel", "Assigned ship: " + ship.Name + " · " + ship.CargoCapacity +
+            var ownedShips = Session.Snapshot.Ships.Values.Where(item => item.OwnerId == ship.OwnerId)
+                .OrderBy(item => item.Id, StringComparer.Ordinal).ToArray();
+            logisticsShips.Clear(); logisticsShips.AddRange(ownedShips.Select(item => item.Id));
+            var selector = Element<DropdownField>("logisticsShip");
+            selector.choices = ownedShips.Select(item => item.Name + " [" + item.Id + "]").ToList();
+            selector.SetValueWithoutNotify(selector.choices[logisticsShips.IndexOf(ship.Id)]);
+            SetText("logisticsShipLabel", "Assigned ship: " + ship.Name + " · " + Q(ship.CargoCapacity) +
                 " cargo units · " + (ship.DockedPortId == null ? "sailing" : "docked at " + PortName(ship.DockedPortId)));
             var decision = Session.CurrentDecision;
             SetText("logisticsStatus", (ship.IndustrialPolicy == null ? "No industrial shipping policy assigned." :
@@ -301,6 +352,8 @@ namespace SaltAndLedger.UnityHost
         }
         private static void Field(VisualElement parent, string name, string label, string value) =>
             parent.Add(new TextField(label) { name = name, value = value });
+        private void SetQuantityField(string name, long value) => Element<TextField>(name).SetValueWithoutNotify(Q(value));
+        private void SetMoneyField(string name, long value) => Element<TextField>(name).SetValueWithoutNotify(Money(value));
         private void SetField(string name, long value) => Element<TextField>(name).SetValueWithoutNotify(Number(value));
         private static void Dropdown(VisualElement parent, string name, string label, List<string> choices)
         {

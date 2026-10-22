@@ -16,6 +16,7 @@ namespace SaltAndLedger.UnityHost
         private readonly List<string> shipIds = new List<string>();
         private string status;
         private bool statusIsError;
+        private string policyShipId;
 
         public ArchipelagoLabSession Session { get; private set; }
         public VisualElement Root { get; private set; }
@@ -129,27 +130,28 @@ namespace SaltAndLedger.UnityHost
 
         private void LoadPolicy()
         {
+            policyShipId = Session.Player.Id;
             var policy = Session.Policy;
             SetIndex("routeOriginDropdown", portIds.IndexOf(policy.OriginPortId));
             SetIndex("routeDestinationDropdown", portIds.IndexOf(policy.DestinationPortId));
             SetIndex("outGoodDropdown", goodIds.IndexOf(policy.Outbound.GoodId));
             LoadLeg("out", policy.Outbound);
             SetIndex("returnGoodDropdown", policy.ReturnLeg == null ? 0 : goodIds.IndexOf(policy.ReturnLeg.GoodId) + 1);
-            LoadLeg("return", policy.ReturnLeg ?? new RouteLeg(goodIds.First(id => id != policy.Outbound.GoodId), 1, 1, 1, 1));
+            LoadLeg("return", policy.ReturnLeg ?? new RouteLeg(goodIds.First(id => id != policy.Outbound.GoodId), Session.Snapshot.QuantityScale, Session.Snapshot.QuantityScale, 1, 1));
             Element<VisualElement>("returnFields").SetEnabled(policy.ReturnLeg != null);
-            Element<TextField>("cashReserveField").SetValueWithoutNotify(Number(policy.CashReserve));
+            Element<TextField>("cashReserveField").SetValueWithoutNotify(Money(policy.CashReserve));
             Element<Toggle>("emptyReturnToggle").SetValueWithoutNotify(policy.AllowEmptyReturn);
             SetText("policyDraftLabel", "Applied route. Limits use the worst marginal unit and the exact full purchase total.");
         }
 
         private void LoadLeg(string prefix, RouteLeg leg)
         {
-            Element<TextField>(prefix + "MaxQty").SetValueWithoutNotify(Number(leg.MaxPurchaseQuantity));
-            Element<TextField>(prefix + "MinQty").SetValueWithoutNotify(Number(leg.MinShipmentQuantity));
+            Element<TextField>(prefix + "MaxQty").SetValueWithoutNotify(Q(leg.MaxPurchaseQuantity));
+            Element<TextField>(prefix + "MinQty").SetValueWithoutNotify(Q(leg.MinShipmentQuantity));
             Element<TextField>(prefix + "Buy").SetValueWithoutNotify(Number(leg.MaxBuyPrice));
             Element<TextField>(prefix + "Sell").SetValueWithoutNotify(Number(leg.MinSellPrice));
             Element<TextField>(prefix + "Budget").SetValueWithoutNotify(
-                leg.MaxPurchaseExpenditure == long.MaxValue ? "" : Number(leg.MaxPurchaseExpenditure));
+                leg.MaxPurchaseExpenditure == long.MaxValue ? "" : Money(leg.MaxPurchaseExpenditure));
         }
 
         private void SetIndex(string name, int index)
@@ -174,14 +176,14 @@ namespace SaltAndLedger.UnityHost
                 var emptyReturn = Element<Toggle>("emptyReturnToggle").value;
                 if (returnLeg == null && !emptyReturn)
                     throw new ArgumentException("A route without return purchases must allow an empty return.");
-                var reserve = ReadLong("cashReserveField", "Cash reserve", true);
+                var reserve = checked(ReadLong("cashReserveField", "Cash reserve", true) * Session.Snapshot.MoneyScale);
                 Run(() =>
                 {
                     Session.ApplyPolicy(new TradeRoutePolicy(origin, destination, outbound, returnLeg, reserve, emptyReturn));
                     LoadPolicy();
                 });
             }
-            catch (ArgumentException exception) { Validation(exception.Message); }
+            catch (Exception exception) when (exception is ArgumentException || exception is OverflowException) { Validation(exception.Message); }
         }
 
         private RouteLeg ReadLeg(string prefix, string goodId)
@@ -193,8 +195,8 @@ namespace SaltAndLedger.UnityHost
             var buy = ReadLong(prefix + "Buy", "Maximum buying price", false);
             var sell = ReadLong(prefix + "Sell", "Minimum selling price", false);
             var budget = string.IsNullOrWhiteSpace(Element<TextField>(prefix + "Budget").value)
-                ? long.MaxValue : ReadLong(prefix + "Budget", "Purchase expenditure cap", false);
-            return new RouteLeg(goodId, (int)maximum, (int)minimum, buy, sell, budget);
+                ? long.MaxValue : checked(ReadLong(prefix + "Budget", "Purchase expenditure cap", false) * Session.Snapshot.MoneyScale);
+            return new RouteLeg(goodId, Session.WholeOrderQuantity((int)maximum), Session.WholeOrderQuantity((int)minimum), buy, sell, budget);
         }
 
         private long ReadLong(string name, string label, bool allowZero)
@@ -216,17 +218,27 @@ namespace SaltAndLedger.UnityHost
             Run(() =>
             {
                 if (tradeShipId != Session.Player.Id) throw new InvalidOperationException("NPC markets are inspection only.");
-                Session.Trade(direction, SelectedGoodId(), quantity, tradeSnapshot);
+                Session.Trade(direction, SelectedGoodId(), Session.WholeOrderQuantity(quantity), tradeSnapshot);
             });
             RefreshTradeOverlay();
         }
 
         private void Refresh()
         {
+            RefreshRunChoices();
             var snapshot = Session.Snapshot;
             var player = Session.Player;
+            if (policyShipId != player.Id) LoadPolicy();
             SetText("dayLabel", "DAY " + Number(snapshot.Day));
-            SetText("cashLabel", "Cash " + Number(player.Cash) + "  ·  cargo " + player.CargoUnits + "/" + player.CargoCapacity);
+            SetText("cashLabel", "Cash " + Money(player.Cash) + "  ·  cargo " + Q(player.CargoUnits) + "/" + Q(player.CargoCapacity));
+            if (snapshot.Economy != null)
+            {
+                var value = snapshot.CompanyValue(player.OwnerId);
+                SetText("cashLabel", "Cash " + Money(player.Cash) + " · Value " + Money(value.Total));
+                Element<Label>("cashLabel").tooltip = "Reference Company Value; not liquidation proceeds. Change " + SignedMoney(value.Change) +
+                    " · operating surplus after wages " + SignedMoney(snapshot.Accounting.Companies[player.OwnerId].OperatingSurplusAfterWages) + ". Open Company or Ledger for the breakdown.";
+            }
+            else Element<Label>("cashLabel").tooltip = "";
             SetText("playbackLabel", Session.IsPlaying ? "Playing " + Session.PlaybackSpeed + "×" : "Paused");
             Element<Button>("playButton").SetEnabled(!Session.IsPlaying && !Session.IsChallengeEnded);
             Element<Button>("nextDayButton").SetEnabled(!Session.IsChallengeEnded);
@@ -255,6 +267,7 @@ namespace SaltAndLedger.UnityHost
             RefreshRunExperience();
             RefreshCityEconomy();
             RefreshContextLayout();
+            RefreshDevelopment();
         }
 
         private void RefreshNavigation()
@@ -283,7 +296,7 @@ namespace SaltAndLedger.UnityHost
             var port = Session.Snapshot.Ports[Session.SelectedPortId];
             SetText("selectionTitle", port.Name);
             SetText("selectionSubtitle", port.Role);
-            SetText("marketCashLabel", "Market cash " + Number(port.MarketCash));
+            SetText("marketCashLabel", "Market cash " + Money(port.MarketCash));
             var rows = Element<VisualElement>("marketRows");
             rows.Clear();
             foreach (var goodId in goodIds)
@@ -294,7 +307,7 @@ namespace SaltAndLedger.UnityHost
                 var name = new Label(Session.Content.GetGood(goodId).Name) { tooltip = Session.Content.GetGood(goodId).Description };
                 name.AddToClassList("commodity-name");
                 row.Add(name);
-                AddCell(row, Number(port.Inventory[goodId]));
+                AddCell(row, Q(port.Inventory[goodId]));
                 AddCell(row, price.Bid.HasValue ? Number(price.Bid.Value) : "—");
                 AddCell(row, price.Ask.HasValue ? Number(price.Ask.Value) : "—");
                 rows.Add(row);
@@ -310,21 +323,21 @@ namespace SaltAndLedger.UnityHost
                 var recipe = Session.Content.GetRecipe(building.RecipeId);
                 var inputs = recipe.Inputs.Count == 0 ? "Natural extraction; no tradeable inputs" : Quantities(recipe.Inputs);
                 var availability = recipe.Inputs.Count == 0 ? "" : "\nInputs now: " +
-                    string.Join(", ", recipe.Inputs.Select(input => port.Inventory[input.GoodId] + "/" + input.Quantity +
+                    string.Join(", ", recipe.Inputs.Select(input => Q(port.Inventory[input.GoodId]) + "/" + input.Quantity +
                         " " + Session.Content.GetGood(input.GoodId).Name));
                 industries.Add(Session.Content.GetBuilding(building.BuildingId).Name + " · " + recipe.Name + "\n" +
                     inputs + " → " + Quantities(recipe.Outputs) + "\nEvery " + configuration.IntervalDays +
                     " days · " + (facility.NextDueDay <= Session.Snapshot.Day
                         ? "due since day " + facility.NextDueDay + "; retries on the next day when enabled"
                         : "next opportunity day " + facility.NextDueDay) +
-                    (configuration.OutputStockLimit.HasValue ? " · output ceiling " + configuration.OutputStockLimit.Value : "") +
+                    (configuration.OutputStockLimit.HasValue ? " · output ceiling " + Q(configuration.OutputStockLimit.Value) : "") +
                     "\n" + (facility.Enabled ? ArchipelagoLabSession.FacilityStatus(facility.LastOutcome) : "Disabled") + availability);
             }
             SetText("productionLabel", industries.Count == 0 ? "No production facilities." : string.Join("\n\n", industries));
-            var consumption = port.Consumption.Select(rule => rule.Configuration.Quantity + " " +
+            var consumption = port.Consumption.Select(rule => Q(rule.Configuration.PreviewDemand(port.City?.Population ?? 0, rule.DemandRemainder).Quantity) + " " +
                 Session.Content.GetGood(rule.Configuration.GoodId).Name + " every " + rule.Configuration.IntervalDays +
-                " days · next day " + rule.NextDueDay + "\nLast unmet " + rule.LastUnmetQuantity +
-                " · cumulative unmet " + rule.TotalUnmetQuantity).ToArray();
+                " days · next day " + rule.NextDueDay + "\nLast unmet " + Q(rule.LastUnmetQuantity) +
+                " · cumulative unmet " + Q(rule.TotalUnmetQuantity)).ToArray();
             SetText("consumptionLabel", consumption.Length == 0 ? "No recurring local consumption." : string.Join("\n\n", consumption) +
                 (port.City == null ? "\nHistorical physical consumption removes stock; household payments are not modeled."
                     : "\nHousehold Bread/Furniture needs use real retail purchases. Municipal own-use removes market stock without self-payment. Inspect Needs & coverage for exact amounts and causes."));
@@ -336,7 +349,7 @@ namespace SaltAndLedger.UnityHost
             {
                 var pricing = quote.Pricing;
                 return Session.Content.GetGood(quote.GoodId).Name + (pricing == null ? ": fixed quotes" :
-                    ": " + pricing.Model + ", reference " + pricing.ReferencePrice + ", target stock " + pricing.TargetStock +
+                    ": " + pricing.Model + ", reference " + pricing.ReferencePrice + ", target stock " + Q(pricing.TargetStock) +
                     ", sensitivity " + pricing.Sensitivity + ", bounds " + pricing.MinPrice + "–" + pricing.MaxPrice +
                     ", spread " + pricing.Spread);
             })) + "\nTarget stock is a pricing parameter. It does not refill the market.");
@@ -352,16 +365,16 @@ namespace SaltAndLedger.UnityHost
             SetText("shipStateLabel", ship.DockedPortId != null ? "Docked at " + PortName(ship.DockedPortId) :
                 "Sailing " + PortName(ship.OriginPortId) + " → " + PortName(ship.DestinationPortId) +
                 "\n" + ship.RemainingTravelDays + " of " + ship.VoyageDurationDays + " days remaining");
-            SetText("shipCargoLabel", "Cargo " + ship.CargoUnits + "/" + ship.CargoCapacity + "\n" +
-                string.Join(", ", goodIds.Select(id => ship.Cargo[id] + " " + Session.Content.GetGood(id).Name)) +
-                "\nTrader cash " + Number(ship.Cash));
+            SetText("shipCargoLabel", "Cargo " + Q(ship.CargoUnits) + "/" + Q(ship.CargoCapacity) + "\n" +
+                string.Join(", ", goodIds.Select(id => Q(ship.Cargo[id]) + " " + Session.Content.GetGood(id).Name)) +
+                "\nShared company cash " + Money(ship.Cash));
             var policy = ship.Policy;
             SetText("shipPolicyLabel", policy == null ? "No route policy." : PortName(policy.OriginPortId) + " → " +
                 PortName(policy.DestinationPortId) + "\nOutbound " + LegText(policy.Outbound) +
                 "\nReturn " + (policy.ReturnLeg == null ? "none" : LegText(policy.ReturnLeg)) +
-                "\nMinimum source stock: " + ship.Configuration.MinimumOriginStock +
-                "; return source stock: " + ship.Configuration.MinimumReturnStock +
-                "\nReserve " + Number(policy.CashReserve) + (policy.AllowEmptyReturn ? " · empty return allowed" : " · loaded return only"));
+                "\nMinimum source stock: " + Q(ship.Configuration.MinimumOriginStock) +
+                "; return source stock: " + Q(ship.Configuration.MinimumReturnStock) +
+                "\nReserve " + Money(policy.CashReserve) + (policy.AllowEmptyReturn ? " · empty return allowed" : " · loaded return only"));
             var decision = Session.DecisionFor(ship.Id);
             SetText("shipDecisionLabel", DecisionText(decision));
             SetText("shipControlLabel", ship.IsPlayer ? "You may disable your route and trade or plan a voyage manually." :
@@ -374,15 +387,15 @@ namespace SaltAndLedger.UnityHost
         {
             Element<Toggle>("automationToggle").SetValueWithoutNotify(Session.Player.AutomationEnabled);
             SetText("decisionLabel", DecisionText(Session.CurrentDecision));
-            SetText("activeRouteLabel", (Session.Player.IndustrialPolicy != null ? "Industrial shipping · " : "") +
+            SetText("activeRouteLabel", Session.Player.Name + " · " + (Session.Player.IndustrialPolicy != null ? "Industrial shipping · " : "") +
                 PortName(Session.Player.IndustrialPolicy?.OriginPortId ?? Session.Policy.OriginPortId) + " ↔ " +
                 PortName(Session.Player.IndustrialPolicy?.DestinationPortId ?? Session.Policy.DestinationPortId) +
                 " · " + (Session.Player.AutomationEnabled ? "enabled" : "manual control"));
             Element<Button>("runDocksideButton").SetEnabled(Session.Player.AutomationEnabled && !Session.IsChallengeEnded);
             var finance = Session.Snapshot.Accounting.Companies[Session.Player.OwnerId];
-            SetText("profitLabel", "Cash change " + Signed(Session.CashChange) +
-                "\nRealized material gross margin " + Signed(finance.RealizedGrossMargin) +
-                " · held material basis " + Number(finance.HeldInventoryCost) +
+            SetText("profitLabel", "Cash change " + SignedMoney(Session.CashChange) +
+                "\nRealized material gross margin " + SignedMoney(finance.RealizedGrossMargin) +
+                " · held material basis " + Money(finance.HeldInventoryCost) +
                 "\nGrants have zero paid basis. Construction and unmodeled operating costs are separate; see the Ledger.");
         }
 
@@ -408,7 +421,7 @@ namespace SaltAndLedger.UnityHost
                 ? (actor.IsPlayer ? "Manual control" : "Automation disabled") + "\n" + decision.Reason
                 : TradingLabText.Stage(decision.Stage) + " · " + TradingLabText.Action(decision.Action) + "\n" + decision.Reason;
             if (decision.Preview != null)
-                text += "\n" + decision.SelectedQuantity + " " + Session.Content.GetGood(decision.Preview.GoodId).Name +
+                text += "\n" + Q(decision.SelectedQuantity) + " " + Session.Content.GetGood(decision.Preview.GoodId).Name +
                     " · " + PreviewText(decision.Preview) + "\n" + QuantityExplanation(decision);
             if (decision.Detail?.Departure != null)
                 text += "\nDestination: " + PortName(decision.Detail.Departure.DestinationPortId) + ".";
@@ -436,10 +449,10 @@ namespace SaltAndLedger.UnityHost
             }
             else if (preview.Quantity >= ship.Cargo[preview.GoodId])
                 return "This sells all carried units of this commodity.";
-            if (preview.Quantity == int.MaxValue) return "The public quantity bound has been reached.";
+            if (preview.Quantity > int.MaxValue - Session.Snapshot.QuantityScale) return "The public quantity bound has been reached.";
             // Explain one larger proposal using the authoritative preview, never a price formula.
             var larger = decision.Before.PreviewTrade(ship.Id, portId,
-                new TradeCommand(preview.Direction, preview.GoodId, preview.Quantity + 1));
+                new TradeCommand(preview.Direction, preview.GoodId, preview.Quantity + Session.Snapshot.QuantityScale));
             if (larger.Price != null)
             {
                 if (preview.Direction == TradeDirection.Buy && larger.Price.LastMarginalPrice > leg.MaxBuyPrice)
@@ -458,13 +471,13 @@ namespace SaltAndLedger.UnityHost
         }
 
         private string LegText(RouteLeg leg) => Session.Content.GetGood(leg.GoodId).Name + " " +
-            leg.MinShipmentQuantity + "–" + leg.MaxPurchaseQuantity + " · buy ≤ " + leg.MaxBuyPrice +
-            " · sell ≥ " + leg.MinSellPrice + (leg.MaxPurchaseExpenditure == long.MaxValue ? "" : " · spend ≤ " + leg.MaxPurchaseExpenditure);
+            Q(leg.MinShipmentQuantity) + "–" + Q(leg.MaxPurchaseQuantity) + " · buy ≤ " + leg.MaxBuyPrice +
+            " · sell ≥ " + leg.MinSellPrice + (leg.MaxPurchaseExpenditure == long.MaxValue ? "" : " · spend ≤ " + Money(leg.MaxPurchaseExpenditure));
         private string Quantities(IEnumerable<RecipeQuantity> values) =>
             string.Join(", ", values.Select(value => value.Quantity + " " + Session.Content.GetGood(value.GoodId).Name));
-        private static string PreviewText(TradeAttempt preview) => preview.Price == null ?
+        private string PreviewText(TradeAttempt preview) => preview.Price == null ?
             TradingLabText.Outcome(preview.Outcome) + "." :
-            "Exact total " + Number(preview.TotalAmount) + " · first " + Number(preview.Price.FirstMarginalPrice) +
+            "Exact total " + Money(preview.TotalAmount) + " · first " + Number(preview.Price.FirstMarginalPrice) +
             " / last " + Number(preview.Price.LastMarginalPrice) +
             (preview.Outcome == TradeOutcome.Traded ? "" : "\n" + TradingLabText.Outcome(preview.Outcome));
         private string SelectedGoodId() => goodIds[Math.Max(0, Element<DropdownField>("goodDropdown").index)];
@@ -472,6 +485,10 @@ namespace SaltAndLedger.UnityHost
         private string PortName(string id) => Session.Snapshot.Ports[id].Name;
         private static string Number(long value) => value.ToString(CultureInfo.InvariantCulture);
         private static string Signed(long value) => (value > 0 ? "+" : "") + Number(value);
+        private string Q(long value) => Session.Quantity(value);
+        private string Money(long value) => Session.Coins(value);
+        private string Money(System.Numerics.BigInteger value) => ((decimal)value / Session.Snapshot.MoneyScale).ToString("0.####", CultureInfo.InvariantCulture);
+        private string SignedMoney(long value) => (value > 0 ? "+" : "") + Money(value);
         private T Element<T>(string name) where T : VisualElement => Root.Q<T>(name) ??
             throw new InvalidOperationException("Archipelago UI element missing: " + name);
         private void SetText(string name, string value) => Element<Label>(name).text = value;
@@ -493,6 +510,8 @@ namespace SaltAndLedger.UnityHost
             }
             catch (ArgumentException exception) { Validation(exception.Message); }
             catch (InvalidOperationException exception) { Validation(exception.Message); }
+            catch (Exception exception) when (exception is WorldSaveException || exception is System.IO.IOException ||
+                exception is UnauthorizedAccessException || exception is OverflowException) { Validation(exception.Message); }
             catch (Exception exception) { ReportException(exception); }
         }
 

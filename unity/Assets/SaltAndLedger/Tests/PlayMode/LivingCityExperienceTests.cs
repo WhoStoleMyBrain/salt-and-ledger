@@ -33,7 +33,7 @@ namespace SaltAndLedger.UnityHost.Tests
             var before = controller.Session.Snapshot;
             Click("newRunButton");
             var mode = root.Q<DropdownField>("worldModePicker");
-            Assert.That(mode.choices.Count, Is.EqualTo(3));
+            Assert.That(mode.choices.Count, Is.EqualTo(4));
             mode.value = mode.choices[2];
             root.Q<TextField>("seedField").value = "-42";
             var pricing = root.Q<DropdownField>("livingPricingPicker"); pricing.value = pricing.choices[1];

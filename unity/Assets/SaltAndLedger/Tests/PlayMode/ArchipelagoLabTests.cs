@@ -99,7 +99,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(root.Q<Label>("productionLabel").text, Does.Contain("Lumber Camp"));
             Click("ship_" + ArchipelagoScenario.TimberShipId);
             Assert.That(root.Q<Label>("selectionSubtitle").text, Does.Contain("NPC"));
-            Assert.That(root.Q<Label>("shipCargoLabel").text, Does.Contain("Trader cash"));
+            Assert.That(root.Q<Label>("shipCargoLabel").text, Does.Contain("Shared company cash"));
             Click("openTradeButton");
             Assert.That(root.Q<Label>("tradeAvailabilityLabel").text, Does.Contain("NPC inspection"));
             Assert.That(root.Q<Button>("buyButton").enabledInHierarchy, Is.False);

@@ -65,7 +65,7 @@ namespace SaltAndLedger.UnityHost.Tests
             var preview = controller.Session.Snapshot.PreviewWarehouseTrade(facility.OwnerId, facility.Id,
                 new TradeCommand(TradeDirection.Buy, "flour", 1));
             var ask = controller.Session.Snapshot.GetMarketQuote(facility.PortId, "flour").Ask.Value;
-            Assert.That(root.Q<Label>("facilityStateLabel").text, Does.Contain("INPUT-STARVED"));
+            Assert.That(root.Q<Label>("facilityStateLabel").text, Does.Contain("CURRENT STOCK/FUNDS: scheduled; not due yet"));
             Assert.That(root.Q<Label>("facilityInputStatusLabel").text, Does.Contain("next buy " + ask));
             Assert.That(root.Q<Label>("facilityInputStatusLabel").text, Does.Contain("exact " + preview.TotalAmount + " for 1"));
             root.Q<DropdownField>("storageGoodDropdown").value = "Flour";
@@ -158,7 +158,8 @@ namespace SaltAndLedger.UnityHost.Tests
             root.Q<TextField>("inputPrice_flour").value = "1";
             root.Q<TextField>("inputPrice_logs").value = "1";
             Click("applyIndustryPolicy"); Click("closeIndustryButton"); Click("nextDayButton"); Click("openIndustryButton");
-            Assert.That(root.Q<Label>("facilityStateLabel").text, Does.Contain("PRICE-BLOCKED"));
+            Assert.That(root.Q<Label>("facilityStateLabel").text, Does.Contain("CURRENT STOCK/FUNDS: waiting for inputs"));
+            Assert.That(root.Q<Label>("industryAppliedPolicyLabel").text, Does.Contain("buy price limit"));
             controller.BeginRun(null, RunScenario.IndustrialCharter);
             Click("openIndustryButton");
             root.Q<Foldout>("industryAdvancedFoldout").value = true;

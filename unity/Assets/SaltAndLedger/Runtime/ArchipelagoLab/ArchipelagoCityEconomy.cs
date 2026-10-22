@@ -151,26 +151,26 @@ namespace SaltAndLedger.UnityHost
                 "\n\nNOT ELIGIBLE HERE\n" + (missing.Length == 0 ? "All configured blueprints are available." : string.Join(", ", missing.Select(b => Session.Content.GetBuilding(b.BuildingId).Name))) +
                 "\nEligibility is enforced by the simulation. Missing capability never prevents ordinary trade or supplies free inputs.");
             SetText("cityIndustriesDetail", "PUBLIC EMPLOYERS\n" + (port.Facilities.Count == 0 ? "None" : string.Join("\n\n", port.Facilities.Select(f =>
-                Session.Content.GetBuilding(f.Configuration.Instance.BuildingId).Name + " · wage " + Number(f.Configuration.WagePerBatch) +
-                " per completed batch · " + ArchipelagoLabSession.FacilityStatus(f.LastOutcome) +
+                Session.Content.GetBuilding(f.Configuration.Instance.BuildingId).Name + " · wage " + Money(f.Configuration.WagePerBatch) +
+                " per completed batch; last attempt: " + ArchipelagoLabSession.FacilityStatus(f.LastOutcome) +
                 "\nNext opportunity day " + f.NextDueDay + ". " + PublicInputStatus(port, f)))));
             SetText("cityPrivateDetail", "PRIVATE EMPLOYERS\n" + (privateSites.Length == 0 ? "None" : string.Join("\n\n", privateSites.Select(f =>
                 Session.Content.GetBuilding(f.Blueprint.BuildingId).Name + " · owner " + f.OwnerId +
-                " · wage " + Number(f.Blueprint.WagePerBatch) + " per completed batch · paid " + Number(f.WagesPaid) +
+                " · wage " + Money(f.Blueprint.WagePerBatch) + " per completed batch · paid " + Money(f.WagesPaid) +
                 "\n" + IndustryStatus(f)))));
             SetText("cityTradeConstraints", "IMPORT DEPENDENCIES\n" + string.Join("\n", goodIds.Where(id => !publicGoods.Contains(id)).Select(id =>
-                Session.Content.GetGood(id).Name + ": public stock " + port.Inventory[id] + "; no existing public producer.")) +
-                "\n\nMarket cash " + Number(port.MarketCash) + ". All player and NPC sales need this account to fund their exact bid total. " +
+                Session.Content.GetGood(id).Name + ": public stock " + Q(port.Inventory[id]) + "; no existing public producer.")) +
+                "\n\nMarket cash " + Money(port.MarketCash) + ". All player and NPC sales need this account to fund their exact bid total. " +
                 "Buying locally transfers actual company cash into this market. Shipping requires the real dock, cargo and voyage.");
             if (city == null)
             {
                 SetText("cityVitalsLabel", "Historical economy");
-                SetText("cityFundsLabel", "Market cash " + Number(port.MarketCash));
+                SetText("cityFundsLabel", "Market cash " + Money(port.MarketCash));
                 SetText("cityFoodLabel", "Population and household funds are not modeled.");
                 SetText("cityReasonLabel", "Classic and seeded v1 preserve their original physical demand and unpaid production.");
                 SetText("cityPopulationDetail", "Historical fixture · no population account");
                 SetText("cityProsperityDetail", "Prosperity and household welfare are not modeled in this run.");
-                SetText("cityMarketAccount", Number(port.MarketCash) + " cash");
+                SetText("cityMarketAccount", Money(port.MarketCash) + " cash");
                 SetText("cityHouseholdAccount", "Not modeled");
                 SetText("cityCashFlows", "This legacy mode preserves its original finite company/market money model. Household payments and production wages are disabled.");
                 SetText("cityNeedsDetail", Element<Label>("consumptionLabel").text);
@@ -181,9 +181,9 @@ namespace SaltAndLedger.UnityHost
             var food = port.Consumption.FirstOrDefault(rule => rule.Configuration.Kind == ConsumptionKind.Essential);
             var direction = city.PopulationDelta > 0 ? "growing" : city.PopulationDelta < 0 ? "declining" : "stable";
             SetText("cityVitalsLabel", "Population " + city.Population + " · " + direction + "\nProsperity " + city.Prosperity + " / 100");
-            SetText("cityFundsLabel", "Market cash  " + Number(port.MarketCash) + "\nHousehold cash  " + Number(city.HouseholdCash));
+            SetText("cityFundsLabel", "Market cash  " + Money(port.MarketCash) + "\nHousehold cash  " + Money(city.HouseholdCash));
             SetText("cityFoodLabel", food == null ? "No essential need configured." :
-                "Last food: " + food.LastConsumedQuantity + "/" + food.LastDesiredQuantity + " paid\nUnmet: stock " + food.LastUnmetStock + " · funds " + food.LastUnmetAffordability);
+                "Last food: " + Q(food.LastConsumedQuantity) + "/" + Q(food.LastDesiredQuantity) + " paid\nUnmet: stock " + Q(food.LastUnmetStock) + " · funds " + Q(food.LastUnmetAffordability));
             SetText("cityReasonLabel", city.ProsperityReason);
             SetText("cityPopulationDetail", "Population " + city.Population + " · " + direction +
                 "\nStarted with " + city.InitialPopulation + "; latest review change " + Signed(city.PopulationDelta) + " on day " + city.LastDemographicDay + ".");
@@ -192,17 +192,17 @@ namespace SaltAndLedger.UnityHost
                 (city.FoodWindow.Count == 0 ? "Purchasing power: awaiting first food observation." :
                     "Purchasing power at last food observation: " + city.PurchasingPowerPercent + "% of the food reserve benchmark.") +
                 "\nFurniture demand " + (city.LuxuryEnabled ? "eligible" : "suspended") + ". Sustained conditions determine eligibility; one good day is not a population boom.");
-            SetText("cityMarketAccount", Number(port.MarketCash) + " cash");
-            SetText("cityHouseholdAccount", Number(city.HouseholdCash) + " cash");
-            SetText("cityCashFlows", "ACTUAL CASH TRANSFERS\nWages received: " + Number(city.LastWagesReceived) + " latest day · " + Number(city.TotalWagesReceived) +
-                " total\nRetail paid to market: " + Number(city.LastRetailSpend) + " latest day · " + Number(city.TotalRetailSpend) +
+            SetText("cityMarketAccount", Money(port.MarketCash) + " cash");
+            SetText("cityHouseholdAccount", Money(city.HouseholdCash) + " cash");
+            SetText("cityCashFlows", "ACTUAL CASH TRANSFERS\nWages received: " + Money(city.LastWagesReceived) + " latest day · " + Money(city.TotalWagesReceived) +
+                " total\nRetail paid to market: " + Money(city.LastRetailSpend) + " latest day · " + Money(city.TotalRetailSpend) +
                 " total\nPrivate employers pay from their company account; public employers pay from this market. Each successful retail purchase moves household cash into this market and consumes real goods.");
             SetText("cityNeedsDetail", string.Join("\n\n", port.Consumption.Select(rule =>
                 NeedKind(rule.Configuration.Kind) + " · " + Session.Content.GetGood(rule.Configuration.GoodId).Name +
-                "\nCurrent scheduled need " + LivingCityPricing.DesiredQuantity(rule.Configuration, city.Population) +
+                "\nCurrent scheduled need " + Q(rule.Configuration.PreviewDemand(city.Population, rule.DemandRemainder).Quantity) +
                 (rule.Configuration.Kind == ConsumptionKind.Luxury && !city.LuxuryEnabled ? " nominal units; currently suspended" : " units per opportunity") +
-                "\nLast due: desired " + rule.LastDesiredQuantity + " · consumed " + rule.LastConsumedQuantity + " · paid " + Number(rule.LastPayment) +
-                "\nUnmet: missing stock " + rule.LastUnmetStock + " · unaffordable stocked units " + rule.LastUnmetAffordability +
+                "\nLast due: desired " + Q(rule.LastDesiredQuantity) + " · consumed " + Q(rule.LastConsumedQuantity) + " · paid " + Money(rule.LastPayment) +
+                "\nUnmet: missing stock " + Q(rule.LastUnmetStock) + " · unaffordable stocked units " + Q(rule.LastUnmetAffordability) +
                 "\nNext due day " + rule.NextDueDay + " · interval " + rule.Configuration.IntervalDays + " days")));
             SetText("cityCoverageDetail", "HOUSEHOLD DAYS OF SUPPLY\n" + string.Join("\n", goodIds.Select(id =>
             {
@@ -217,8 +217,8 @@ namespace SaltAndLedger.UnityHost
         {
             var recipe = Session.Content.GetRecipe(facility.Configuration.Instance.RecipeId);
             if (recipe.Inputs.Count == 0) return "Natural extraction; no traded inputs.";
-            return string.Join("; ", recipe.Inputs.Select(q => Session.Content.GetGood(q.GoodId).Name + " " + port.Inventory[q.GoodId] + "/" + q.Quantity +
-                (port.Inventory[q.GoodId] < q.Quantity ? " missing input" : " in stock")));
+            return string.Join("; ", recipe.Inputs.Select(q => Session.Content.GetGood(q.GoodId).Name + " " + Q(port.Inventory[q.GoodId]) + "/" + Q(checked(q.Quantity * Session.Snapshot.QuantityScale)) +
+                (port.Inventory[q.GoodId] < checked(q.Quantity * Session.Snapshot.QuantityScale) ? " missing input" : " in stock")));
         }
 
         private static string NeedKind(ConsumptionKind kind)

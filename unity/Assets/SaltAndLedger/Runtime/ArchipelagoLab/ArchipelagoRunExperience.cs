@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 
 namespace SaltAndLedger.UnityHost
 {
-    public enum ArchipelagoScreen { Gameplay, MainMenu, Setup, Pause, Results, Encyclopedia, Settings, Ledger, Logistics, CityEconomy }
+    public enum ArchipelagoScreen { Gameplay, MainMenu, Setup, Pause, Results, Encyclopedia, Settings, Ledger, Logistics, CityEconomy, Development, Saves }
 
     public static class ArchipelagoApplicationExit
     {
@@ -23,6 +23,7 @@ namespace SaltAndLedger.UnityHost
         private readonly Dictionary<ArchipelagoScreen, VisualElement> screens = new Dictionary<ArchipelagoScreen, VisualElement>();
         private VisualElement navigationRoot;
         private ArchipelagoScreen secondaryParent;
+        private readonly Dictionary<ArchipelagoScreen, ArchipelagoScreen> secondaryParents = new Dictionary<ArchipelagoScreen, ArchipelagoScreen>();
         private Action confirmedAction;
         private RegionalWorldSnapshot presentedResult;
         private bool resumePlayback;
@@ -41,6 +42,7 @@ namespace SaltAndLedger.UnityHost
             BuildSettings();
             BuildEncyclopedia();
             BuildLedgerAndLogistics();
+            BuildDevelopment();
             Text(navigationRoot, "navigationStatus", "", "run-copy error");
             var confirmation = Panel(Root.Q("archipelagoLab"), "confirmationBackdrop", "run-confirmation hidden");
             var card = Panel(confirmation, "confirmationCard", "run-confirmation-card");
@@ -72,6 +74,7 @@ namespace SaltAndLedger.UnityHost
             Button(identityDetails, "copyRunSeedButton", "Copy seed", () => CopySeed(Session.Identity));
             var bar = Element<VisualElement>("topBar");
             Button(bar, "ledgerButton", "Ledger", () => OpenSecondary(ArchipelagoScreen.Ledger));
+            Button(bar, "royalServicesButton", "Company", () => OpenSecondary(ArchipelagoScreen.Development));
             Button(bar, "menuButton", "Menu", OpenPauseMenu);
             Button(Element<VisualElement>("contextScroll").contentContainer, "logisticsButton",
                 "Industrial shipping", OpenLogistics);
@@ -101,6 +104,8 @@ namespace SaltAndLedger.UnityHost
             Text(copy, null, "A COMPANY. A SHIP. AN OPEN HORIZON.", "run-eyebrow");
             Text(copy, null, "Trade across a living archipelago. Build an industry, connect its supply lines, and decide what your company will become.", "run-introduction");
             Button(copy, "newRunButton", "New Run", () => OpenSetup(false), "primary run-menu-button");
+            Button(copy, "continueRunButton", "Continue saved voyage", ContinueSavedRun, "run-menu-button");
+            Button(copy, "menuSavesButton", "Local save slots", OpenSaveSlots, "run-menu-button");
             Button(copy, "sandboxMenuButton", "Sandbox", () => OpenSetup(true), "run-menu-button");
             Button(copy, "menuEncyclopediaButton", "Encyclopedia", () => OpenSecondary(ArchipelagoScreen.Encyclopedia), "run-menu-button");
             Button(copy, "menuSettingsButton", "Settings", () => OpenSecondary(ArchipelagoScreen.Settings), "run-menu-button");
@@ -108,7 +113,7 @@ namespace SaltAndLedger.UnityHost
             var art = new HarborIllustration();
             art.AddToClassList("run-title-art");
             layout.Add(art);
-            Text(screen, null, "Handcrafted voyages · finite markets · meaningful choices\nRuns live only in this application session. There is no persistent save or recovery.", "run-footnote");
+            Text(screen, null, "Handcrafted voyages · finite markets · meaningful choices\nSave explicitly to a local slot. No automatic or cloud saves.", "run-footnote");
         }
 
         public void BeginRun(string challengeId, string charterId) => BeginRun(new RunIdentity(challengeId, charterId));
@@ -117,6 +122,7 @@ namespace SaltAndLedger.UnityHost
         {
             CloseModals();
             Session.StartRun(identity);
+            RefreshRunChoices();
             LoadSetupIdentity(identity);
             HasActiveRun = true;
             presentedResult = null;
@@ -144,6 +150,8 @@ namespace SaltAndLedger.UnityHost
             var card = Panel(pauseScroll, null, "run-pause-card run-card");
             Text(card, "pauseSummary", "", "run-copy");
             Button(card, "resumeButton", "Resume", ResumeGame, "primary run-menu-button");
+            Button(card, "pauseSavesButton", "Save / Load", OpenSaveSlots, "run-menu-button");
+            Button(card, "pauseCompanyButton", "Company & royal services", () => OpenSecondary(ArchipelagoScreen.Development), "run-menu-button");
             Button(card, "pauseEncyclopediaButton", "Encyclopedia", () => OpenSecondary(ArchipelagoScreen.Encyclopedia), "run-menu-button");
             Button(card, "pauseLedgerButton", "Company ledger", () => OpenSecondary(ArchipelagoScreen.Ledger), "run-menu-button");
             Button(card, "pauseSettingsButton", "Settings", () => OpenSecondary(ArchipelagoScreen.Settings), "run-menu-button");
@@ -164,9 +172,10 @@ namespace SaltAndLedger.UnityHost
             Session.Pause();
             CloseModals();
             SetText("pauseSummary", RunScenario.GetCharter(Session.CharterId).Name + " · Day " + Session.Snapshot.Day +
-                " · Cash " + Number(Session.Player.Cash) + "\n" +
+                " · Cash " + Money(Session.Player.Cash) + "\n" +
                 (Session.Snapshot.Challenge?.Configuration.Title ?? "Unlimited sandbox") + "\n" + WorldIdentityText(Session.Identity));
             Element<Button>("abandonRunButton").EnableInClassList("hidden", Session.Snapshot.Challenge == null);
+            Element<Button>("pauseCompanyButton").EnableInClassList("hidden", Session.Snapshot.Economy == null);
             ShowScreen(ArchipelagoScreen.Pause);
             Element<Button>("resumeButton").Focus();
             Refresh();
@@ -181,13 +190,13 @@ namespace SaltAndLedger.UnityHost
         }
 
         private void RequestRestart() => Confirm("Retry Same World?",
-            "Discard progress and restore this exact world, seed, ascension, challenge and starting charter. Runs are not saved.",
+            "Start fresh with this exact world, seed, ascension, challenge and starting charter. Local saves are unchanged. " + LeaveProgressText,
             () => BeginRun(Session.Identity));
 
         private void RequestMainMenu()
         {
             if (HasActiveRun && !Session.IsChallengeEnded)
-                Confirm("Return to Main Menu?", "The active run will be discarded. This application does not save or recover unfinished runs.",
+                Confirm("Return to Main Menu?", LeaveProgressText,
                     ReturnToMainMenu);
             else ReturnToMainMenu();
         }
@@ -204,7 +213,7 @@ namespace SaltAndLedger.UnityHost
         private void RequestExit()
         {
             if (HasActiveRun && !Session.IsChallengeEnded)
-                Confirm("Exit Salt & Ledger?", "Your active run will be lost. There is no persistent save.", ExitGame);
+                Confirm("Exit Salt & Ledger?", LeaveProgressText, ExitGame);
             else ExitGame();
         }
         private void ExitGame()
@@ -258,6 +267,7 @@ namespace SaltAndLedger.UnityHost
             Button(actions, "resultsRerollButton", "New World / Reroll", RerollWorld);
             Button(actions, "resultsMenuButton", "Main Menu", ReturnToMainMenu);
             Button(actions, "resultsHelpButton", "Encyclopedia", () => OpenSecondary(ArchipelagoScreen.Encyclopedia));
+            Button(actions, "resultsSaveButton", "Save result", OpenSaveSlots);
         }
 
         private void PresentResults()
@@ -303,12 +313,14 @@ namespace SaltAndLedger.UnityHost
         private void OpenSecondary(ArchipelagoScreen screen)
         {
             if (screen == ArchipelagoScreen.CityEconomy) cityReturnScreen = Screen;
+            if (screen != Screen) secondaryParents[screen] = Screen;
             secondaryParent = Screen;
             Session.Pause();
             ShowScreen(screen);
             if (screen == ArchipelagoScreen.Encyclopedia) RefreshEncyclopedia();
             if (screen == ArchipelagoScreen.Ledger) RefreshLedger();
             if (screen == ArchipelagoScreen.CityEconomy) RefreshCityEconomy();
+            if (screen == ArchipelagoScreen.Development) RefreshDevelopment();
         }
 
         public void HandleCancel()
@@ -317,7 +329,8 @@ namespace SaltAndLedger.UnityHost
             if (TradeIsOpen || IndustryIsOpen) { CloseModals(); return; }
             if (Screen == ArchipelagoScreen.Encyclopedia) { EncyclopediaBack(); return; }
             if (Screen == ArchipelagoScreen.CityEconomy) { ShowScreen(cityReturnScreen); return; }
-            if (Screen == ArchipelagoScreen.Settings || Screen == ArchipelagoScreen.Ledger || Screen == ArchipelagoScreen.Logistics)
+            if (Screen == ArchipelagoScreen.Settings || Screen == ArchipelagoScreen.Ledger || Screen == ArchipelagoScreen.Logistics ||
+                Screen == ArchipelagoScreen.Development || Screen == ArchipelagoScreen.Saves)
             { ShowScreen(secondaryParent); return; }
             if (Screen == ArchipelagoScreen.Setup) { ShowScreen(ArchipelagoScreen.MainMenu); return; }
             if (Screen == ArchipelagoScreen.Pause) { ResumeGame(); return; }
@@ -327,6 +340,7 @@ namespace SaltAndLedger.UnityHost
         private void ShowScreen(ArchipelagoScreen screen)
         {
             Screen = screen;
+            if (secondaryParents.TryGetValue(screen, out var parent)) secondaryParent = parent;
             if (screen != ArchipelagoScreen.Gameplay) Session?.Pause();
             navigationRoot.EnableInClassList("hidden", screen == ArchipelagoScreen.Gameplay);
             foreach (var pair in screens) pair.Value.EnableInClassList("hidden", pair.Key != screen);
@@ -353,6 +367,12 @@ namespace SaltAndLedger.UnityHost
             var challenge = Session.Snapshot.Challenge;
             if (challenge == null) return "Sandbox · no deadline. Build your enterprise at your own pace.";
             var config = challenge.Configuration;
+            if (Session.Snapshot.Economy != null)
+            {
+                var progress = ExpandingChallenges.Progress(Session.Snapshot);
+                return config.Title + " · " + challenge.Status + " · " + progress.Percent + "% · day " + Session.Snapshot.Day + "/" + config.DeadlineDay +
+                    "\n" + string.Join(" · ", progress.Components.Select(c => c.Key + " " + c.Value + "%"));
+            }
             if (challenge.Recovery != null)
             {
                 var recovery = challenge.Recovery;

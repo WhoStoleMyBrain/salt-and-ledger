@@ -181,7 +181,7 @@
                             <ui:Label text="BUY / ASK" class="trade-cell" />
                         </ui:VisualElement>
                         <ui:VisualElement name="tradeGoodsRows" />
-                        <ui:Label text="Quotes are for the next unit. Bulk execution follows each stock change. Select a commodity to see the exact full order." class="help" />
+                        <ui:Label text="Marginal quotes are coins per whole unit. The exact order total follows the stock-sensitive curve; it can differ from quantity × first quote." class="help" />
                         <ui:Label name="tradeGoodDescription" class="trade-description" />
                     </ui:VisualElement>
                     <ui:VisualElement class="trade-order">
@@ -276,17 +276,11 @@
                     </ui:ScrollView>
                     <ui:ScrollView name="industryStorageScroll" mode="Vertical" class="industry-storage">
                         <ui:Label name="storageCapacityLabel" class="summary" />
-                        <ui:VisualElement class="storage-row storage-header">
-                            <ui:Label text="COMMODITY" class="trade-good-name" />
-                            <ui:Label text="YOUR SHIP" class="storage-cell" />
-                            <ui:Label text="PRIVATE" class="storage-cell" />
-                            <ui:Label text="PUBLIC" class="storage-cell" />
-                        </ui:VisualElement>
-                        <ui:VisualElement name="storageRows" />
                         <ui:VisualElement class="row storage-input">
                             <ui:DropdownField name="storageGoodDropdown" label="Good" />
                             <ui:TextField name="storageQuantity" label="Qty" value="1" />
                         </ui:VisualElement>
+                        <ui:Label name="storageSelectedStock" class="summary" />
                         <ui:Label name="transferAvailabilityLabel" class="help" />
                         <ui:VisualElement class="row">
                             <ui:Button name="shipToWarehouse" text="Ship → private storage" />
@@ -305,6 +299,15 @@
                             </ui:VisualElement>
                         </ui:VisualElement>
                         <ui:Label text="Local facility trades can be managed remotely. Goods stay at this town; moving them elsewhere requires your ship." class="help" />
+                        <ui:Foldout name="storageAllGoods" text="All commodity stocks" value="false">
+                            <ui:VisualElement class="storage-row storage-header">
+                                <ui:Label text="COMMODITY" class="trade-good-name" />
+                                <ui:Label text="YOUR SHIP" class="storage-cell" />
+                                <ui:Label text="PRIVATE" class="storage-cell" />
+                                <ui:Label text="PUBLIC" class="storage-cell" />
+                            </ui:VisualElement>
+                            <ui:VisualElement name="storageRows" />
+                        </ui:Foldout>
                     </ui:ScrollView>
                 </ui:VisualElement>
                 <ui:Label name="industryStatusLabel" class="modal-status" />

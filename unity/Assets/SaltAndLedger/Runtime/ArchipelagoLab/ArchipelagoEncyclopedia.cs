@@ -95,8 +95,8 @@ namespace SaltAndLedger.UnityHost
             foreach (var paragraph in entry.Paragraphs) Text(detail, null, paragraph, "run-copy");
             if (HasActiveRun && entry.Category == "buildings")
                 foreach (var blueprint in Session.Snapshot.IndustryBlueprints.Values.Where(b => b.BuildingId == id))
-                    Text(detail, null, "Current run blueprint: " + blueprint.ConstructionCost + " construction cash · one batch every " +
-                        blueprint.IntervalDays + " days · storage " + blueprint.WarehouseCapacity + " units.\nEligible towns: " +
+                    Text(detail, null, "Current run blueprint: " + Money(blueprint.ConstructionCost) + " construction cash · one batch every " +
+                        blueprint.IntervalDays + " days · storage " + Q(blueprint.WarehouseCapacity) + " units.\nEligible towns: " +
                         string.Join(", ", blueprint.EligiblePortIds.Select(PortName)), "run-copy");
             if (entry.RelatedIds.Count > 0)
             {
