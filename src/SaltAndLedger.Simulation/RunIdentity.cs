@@ -3,7 +3,7 @@ using System.Globalization;
 
 namespace SaltAndLedger.Simulation
 {
-    public enum RunWorldMode { Classic, Seeded, LivingCities }
+    public enum RunWorldMode { Classic, Seeded, LivingCities, ExpandingEconomy }
     public enum RunDifficulty { Normal = 0, SlowFoundations = 1 }
 
     /// <summary>Immutable setup retained by snapshots, retries and result comparison groups.</summary>
@@ -16,20 +16,26 @@ namespace SaltAndLedger.Simulation
         public int GeneratorVersion { get; }
         public RunDifficulty Difficulty { get; }
         public LivingPricingMode LivingPricingMode { get; }
-        public bool ShouldSerializeLivingPricingMode() => WorldMode == RunWorldMode.LivingCities;
+        public bool ShouldSerializeLivingPricingMode() => WorldMode == RunWorldMode.LivingCities || WorldMode == RunWorldMode.ExpandingEconomy;
+        public int ContentVersion => WorldMode == RunWorldMode.ExpandingEconomy ? 3 : 1;
+        public int ValuationVersion => WorldMode == RunWorldMode.ExpandingEconomy ? 1 : 0;
+        public bool ShouldSerializeContentVersion() => WorldMode == RunWorldMode.ExpandingEconomy;
+        public bool ShouldSerializeValuationVersion() => WorldMode == RunWorldMode.ExpandingEconomy;
         public int Ascension => (int)Difficulty;
         public int ConstructionDelayDays => Difficulty == RunDifficulty.SlowFoundations ? 2 : 0;
         public string ComparisonGroup => (ChallengeId ?? "sandbox") + "/" + CharterId + "/ascension" +
             Ascension.ToString(CultureInfo.InvariantCulture) + "/" +
             (WorldMode == RunWorldMode.Classic ? "classic" :
-                (WorldMode == RunWorldMode.LivingCities ? "living-v" : "seeded-v") +
+                (WorldMode == RunWorldMode.ExpandingEconomy ? "expanding-v" : WorldMode == RunWorldMode.LivingCities ? "living-v" : "seeded-v") +
                 GeneratorVersion.ToString(CultureInfo.InvariantCulture) + "-seed" +
                 Seed!.Value.ToString(CultureInfo.InvariantCulture) +
-                (WorldMode == RunWorldMode.LivingCities ? "-" + LivingPricingMode.ToString().ToLowerInvariant() : ""));
+                (ShouldSerializeLivingPricingMode() ? "-" + LivingPricingMode.ToString().ToLowerInvariant() : "") +
+                (WorldMode == RunWorldMode.ExpandingEconomy ? "-content3-value1" : ""));
 
         public RunIdentity(string? challengeId, string charterId, RunWorldMode worldMode = RunWorldMode.Classic,
             int? seed = null, RunDifficulty difficulty = RunDifficulty.Normal, int? generatorVersion = null,
-            LivingPricingMode livingPricingMode = LivingPricingMode.StockOnly)
+            LivingPricingMode livingPricingMode = LivingPricingMode.StockOnly,
+            int? contentVersion = null, int? valuationVersion = null)
         {
             if (challengeId != null) RunScenario.GetChallenge(challengeId);
             RunScenario.GetCharter(charterId);
@@ -40,14 +46,21 @@ namespace SaltAndLedger.Simulation
             if ((worldMode != RunWorldMode.Classic) != seed.HasValue)
                 throw new ArgumentException("Seeded worlds require a seed; Classic worlds have no seed.", nameof(seed));
             if (!Enum.IsDefined(typeof(LivingPricingMode), livingPricingMode) ||
-                (worldMode != RunWorldMode.LivingCities && livingPricingMode != LivingPricingMode.StockOnly))
+                (worldMode != RunWorldMode.LivingCities && worldMode != RunWorldMode.ExpandingEconomy && livingPricingMode != LivingPricingMode.StockOnly))
                 throw new ArgumentOutOfRangeException(nameof(livingPricingMode));
             if (challengeId == RunScenario.RecoveryChallenge && worldMode != RunWorldMode.LivingCities)
                 throw new ArgumentException("City Recovery requires a Living Cities world.", nameof(challengeId));
+            if (challengeId != null && RunScenario.IsExpandingChallenge(challengeId) != (worldMode == RunWorldMode.ExpandingEconomy))
+                throw new ArgumentException("Expanding Economy uses its own v3 objectives.", nameof(challengeId));
             var supportedVersion = worldMode == RunWorldMode.Classic ? 0 :
-                worldMode == RunWorldMode.Seeded ? SeededArchipelago.CurrentVersion : LivingCityGeneration.CurrentVersion;
+                worldMode == RunWorldMode.Seeded ? SeededArchipelago.CurrentVersion :
+                worldMode == RunWorldMode.LivingCities ? LivingCityGeneration.CurrentVersion : ExpandingEconomyGeneration.CurrentVersion;
             if (generatorVersion.HasValue && generatorVersion.Value != supportedVersion)
                 throw new ArgumentOutOfRangeException(nameof(generatorVersion), "Unsupported map generator version.");
+            if (contentVersion.HasValue && contentVersion.Value != (worldMode == RunWorldMode.ExpandingEconomy ? 3 : 1))
+                throw new ArgumentOutOfRangeException(nameof(contentVersion), "Unsupported content version.");
+            if (valuationVersion.HasValue && valuationVersion.Value != (worldMode == RunWorldMode.ExpandingEconomy ? 1 : 0))
+                throw new ArgumentOutOfRangeException(nameof(valuationVersion), "Unsupported valuation version.");
             ChallengeId = challengeId;
             CharterId = charterId;
             WorldMode = worldMode;

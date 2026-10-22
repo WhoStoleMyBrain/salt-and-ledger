@@ -52,6 +52,9 @@ namespace SaltAndLedger.Simulation
         public const string ReliefChallenge = "regional_relief";
         public const string AmbitionChallenge = "enterprise_ambition";
         public const string RecoveryChallenge = "city_recovery";
+        public const string SustainableChallenge = "sustainable_provisioning";
+        public const string NetworkChallenge = "industrial_network";
+        public const string RoyalChallenge = "royal_commission";
         public const int StartingShipSpeed = 100;
 
         public static IReadOnlyList<StartingCharter> Charters { get; } = Array.AsReadOnly(new[]
@@ -100,6 +103,9 @@ namespace SaltAndLedger.Simulation
         public static StartingCharter GetCharter(RunIdentity identity)
         {
             if (identity == null) throw new ArgumentNullException(nameof(identity));
+            if (identity.WorldMode == RunWorldMode.ExpandingEconomy)
+                return ExpandingEconomyScenario.GetCharter(ExpandingEconomyGeneration.Generate(identity.Seed!.Value,
+                    identity.GeneratorVersion, identity.LivingPricingMode), identity.CharterId);
             return identity.WorldMode == RunWorldMode.LivingCities
                 ? LivingCityScenario.GetCharter(LivingCityGeneration.Generate(identity.Seed!.Value,
                     identity.GeneratorVersion, identity.LivingPricingMode), identity.CharterId)
@@ -109,7 +115,8 @@ namespace SaltAndLedger.Simulation
         public static IReadOnlyList<RunChallenge> GetChallenges(RunWorldMode mode)
         {
             if (!Enum.IsDefined(typeof(RunWorldMode), mode)) throw new ArgumentOutOfRangeException(nameof(mode));
-            return mode == RunWorldMode.LivingCities ? LivingChallenges : Challenges;
+            return mode == RunWorldMode.ExpandingEconomy ? ExpandingChallenges.Definitions :
+                mode == RunWorldMode.LivingCities ? LivingChallenges : Challenges;
         }
 
         private static IReadOnlyList<RunChallenge> LivingChallenges { get; } = Array.AsReadOnly(new[]
@@ -119,12 +126,16 @@ namespace SaltAndLedger.Simulation
                 "Meet at least 90% of Bread needs over six due opportunities, preserve the initial population, reach prosperity 55, and retain 100 company cash by day 90. The target follows the vulnerable town role.")
         });
 
-        public static RunChallenge GetChallenge(string id) => Challenges.Concat(LivingChallenges).SingleOrDefault(c => c.Id == id)
+        public static bool IsExpandingChallenge(string id) => id == SustainableChallenge || id == NetworkChallenge || id == RoyalChallenge;
+
+        public static RunChallenge GetChallenge(string id) => Challenges.Concat(LivingChallenges)
+            .Concat(ExpandingChallenges.Definitions).SingleOrDefault(c => c.Id == id)
             ?? throw new ArgumentException("Unknown challenge: " + id, nameof(id));
 
         public static RegionalWorldState Create(ContentCatalog content, string? challengeId, string charterId)
         {
-            if (challengeId == RecoveryChallenge) throw new ArgumentException("City Recovery requires a Living Cities identity.", nameof(challengeId));
+            if (challengeId == RecoveryChallenge || (challengeId != null && IsExpandingChallenge(challengeId)))
+                throw new ArgumentException("Versioned objectives require a complete run identity.", nameof(challengeId));
             return EnterpriseScenario.CreateRun(content, challengeId == null ? null : GetChallenge(challengeId).Configuration,
                 GetCharter(charterId));
         }
@@ -133,6 +144,8 @@ namespace SaltAndLedger.Simulation
             bool reverseConfiguration = false)
         {
             if (identity == null) throw new ArgumentNullException(nameof(identity));
+            if (identity.WorldMode == RunWorldMode.ExpandingEconomy)
+                return ExpandingEconomyScenario.Create(content, identity, reverseConfiguration);
             if (identity.WorldMode == RunWorldMode.LivingCities)
                 return LivingCityScenario.Create(content, identity, reverseConfiguration);
             return EnterpriseScenario.CreateRun(content,
@@ -143,6 +156,9 @@ namespace SaltAndLedger.Simulation
         public static ArchipelagoGeography PreviewGeography(RunIdentity identity)
         {
             if (identity == null) throw new ArgumentNullException(nameof(identity));
+            if (identity.WorldMode == RunWorldMode.ExpandingEconomy)
+                return ExpandingEconomyGeneration.Generate(identity.Seed!.Value, identity.GeneratorVersion,
+                    identity.LivingPricingMode).Geography;
             return identity.WorldMode == RunWorldMode.Classic ? ArchipelagoGeography.Classic :
                 identity.WorldMode == RunWorldMode.LivingCities ?
                     LivingCityGeneration.Generate(identity.Seed!.Value, identity.GeneratorVersion,
@@ -213,7 +229,7 @@ namespace SaltAndLedger.Simulation
             VictoryScore = Challenge.Status == ChallengeStatus.Succeeded ? 1000 : 0;
             TimeScore = Challenge.Status == ChallengeStatus.Succeeded
                 ? (int)Math.Min(60L, Math.Max(0, Challenge.Configuration.DeadlineDay - snapshot.Day)) * 10 : 0;
-            SolvencyScore = (int)Math.Min(100L, Cash / 10);
+            SolvencyScore = (int)Math.Min(100L, Cash / (identity?.WorldMode == RunWorldMode.ExpandingEconomy ? 100000 : 10));
         }
 
         private static int Fraction(long value, long target, int maximum) =>

@@ -58,6 +58,9 @@ namespace SaltAndLedger.Simulation
         private static void ValidateLeg(RegionalWorldSnapshot snapshot, RegionalShipSnapshot ship,
             IndustrialRouteLeg leg, string source, string destination)
         {
+            if (leg.MinimumShipmentQuantity % snapshot.QuantityScale != 0 ||
+                leg.MaximumShipmentQuantity % snapshot.QuantityScale != 0)
+                throw new ArgumentException("Ship route quantities must be whole cargo units.", nameof(leg));
             // Cargo contains every canonical good. A private transfer needs no public market quote.
             _ = ship.Cargo[leg.GoodId];
             if (leg.SourceKind == IndustrialEndpointKind.Market) _ = snapshot.Ports[source].Quotes[leg.GoodId];
@@ -98,7 +101,7 @@ namespace SaltAndLedger.Simulation
             int quantity;
             if (leg.SourceKind == IndustrialEndpointKind.Warehouse)
             {
-                quantity = Math.Min(maximum, Math.Max(0, sourceStock - leg.WarehouseReserve));
+                quantity = WholeQuantity(snapshot, Math.Min(maximum, Math.Max(0, sourceStock - leg.WarehouseReserve)));
                 if ((long)cargo + quantity < leg.MinimumShipmentQuantity)
                     return AcquisitionWait(snapshot, ship, policy, outbound,
                         "Available private stock after its " + leg.WarehouseReserve + "-unit reserve cannot fill the minimum shipment.");
@@ -112,6 +115,7 @@ namespace SaltAndLedger.Simulation
             quantity = TradeQuantityCalculator.Maximum(market.Quotes[leg.GoodId], TradeDirection.Buy,
                 sourceStock, cargo, market.MarketCash, ship.Cash, ship.CargoCapacity - ship.CargoUnits,
                 maximum, leg.MaximumBuyPrice, effectiveReserve);
+            quantity = WholeQuantity(snapshot, quantity);
             if ((long)cargo + quantity < leg.MinimumShipmentQuantity)
                 return AcquisitionWait(snapshot, ship, policy, outbound,
                     PurchaseWaitReason(market, ship, policy, leg, leg.MinimumShipmentQuantity - cargo));
@@ -133,7 +137,7 @@ namespace SaltAndLedger.Simulation
             if (leg.DestinationKind == IndustrialEndpointKind.Warehouse)
             {
                 var facility = snapshot.PrivateFacilities[leg.DestinationFacilityId!];
-                var quantity = Math.Min(cargo, facility.Capacity - facility.StoredUnits);
+                var quantity = WholeQuantity(snapshot, Math.Min(cargo, facility.Capacity - facility.StoredUnits));
                 if (quantity == 0)
                     return Decision(snapshot, ship, IndustrialRouteAction.Wait,
                         "The destination warehouse is full; unsent cargo remains aboard.");
@@ -148,8 +152,9 @@ namespace SaltAndLedger.Simulation
             var sellQuantity = TradeQuantityCalculator.Maximum(market.Quotes[leg.GoodId], TradeDirection.Sell,
                 market.Inventory[leg.GoodId], cargo, market.MarketCash, ship.Cash,
                 ship.CargoCapacity - ship.CargoUnits, cargo, leg.MinimumSellPrice);
+            sellQuantity = WholeQuantity(snapshot, sellQuantity);
             if (sellQuantity == 0)
-                return Decision(snapshot, ship, IndustrialRouteAction.Wait, SaleWaitReason(market, ship, leg));
+                return Decision(snapshot, ship, IndustrialRouteAction.Wait, SaleWaitReason(market, ship, leg, snapshot.QuantityScale));
             var command = new TradeCommand(TradeDirection.Sell, leg.GoodId, sellQuantity);
             var preview = snapshot.PreviewTrade(ship.Id, destination, command);
             return Decision(snapshot, ship, IndustrialRouteAction.Sell,
@@ -176,17 +181,23 @@ namespace SaltAndLedger.Simulation
             return "The receiving market cash account has insufficient numeric headroom for the minimum shipment.";
         }
 
-        private static string SaleWaitReason(RegionalPortSnapshot port, RegionalShipSnapshot ship, IndustrialRouteLeg leg)
+        private static string SaleWaitReason(RegionalPortSnapshot port, RegionalShipSnapshot ship,
+            IndustrialRouteLeg leg, int quantityStep)
         {
             var stock = port.Inventory[leg.GoodId];
             var quote = port.Quotes[leg.GoodId];
-            if (stock == int.MaxValue) return "The receiving market has no inventory space; cargo is retained.";
-            if (!TradeQuantityCalculator.MeetsPrice(quote, TradeDirection.Sell, stock, 1, leg.MinimumSellPrice))
+            if (int.MaxValue - stock < quantityStep) return quantityStep == 1 ?
+                "The receiving market has no inventory space; cargo is retained." :
+                "The receiving market has no space for a whole cargo unit; cargo is retained.";
+            if (!TradeQuantityCalculator.MeetsPrice(quote, TradeDirection.Sell, stock, quantityStep, leg.MinimumSellPrice))
                 return "Current marginal bids are below the selling floor; cargo is retained.";
-            if (!quote.FitsBudget(TradeDirection.Sell, stock, 1, port.MarketCash))
+            if (!quote.FitsBudget(TradeDirection.Sell, stock, quantityStep, port.MarketCash))
                 return "The destination market cannot pay for another unit; cargo is retained.";
             return "The company cash account has insufficient numeric headroom; cargo is retained.";
         }
+
+        private static int WholeQuantity(RegionalWorldSnapshot snapshot, int quantity) =>
+            quantity - quantity % snapshot.QuantityScale;
 
         private static IndustrialRouteDecision AcquisitionWait(RegionalWorldSnapshot snapshot, RegionalShipSnapshot ship,
             IndustrialRoutePolicy policy, bool outbound, string reason)

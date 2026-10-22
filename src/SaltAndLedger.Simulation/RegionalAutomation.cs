@@ -55,7 +55,7 @@ namespace SaltAndLedger.Simulation
                     "The ship is outside this route. Pause and sail to a route port, or apply a different route.");
             var projected = Project(snapshot, shipId, policy);
             var detail = RoutePolicyEvaluator.Evaluate(projected, policy, true,
-                ship.Configuration.MinimumOriginStock, ship.Configuration.MinimumReturnStock);
+                ship.Configuration.MinimumOriginStock, ship.Configuration.MinimumReturnStock, snapshot.QuantityScale);
             if (detail.Reason == AutomationReason.SourceStockThreshold)
             {
                 var threshold = detail.Stage == AutomationStage.OutboundLoading
@@ -70,7 +70,8 @@ namespace SaltAndLedger.Simulation
         {
             snapshot.GetRoute(policy.OriginPortId, policy.DestinationPortId);
             // Disabled evaluation still validates canonical commodities and quotes.
-            RoutePolicyEvaluator.Evaluate(Project(snapshot, shipId, policy), policy, false);
+            RoutePolicyEvaluator.Evaluate(Project(snapshot, shipId, policy), policy, false,
+                quantityStep: snapshot.QuantityScale);
         }
 
         private static MaritimeWorldSnapshot Project(RegionalWorldSnapshot snapshot, string shipId, TradeRoutePolicy policy)

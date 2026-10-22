@@ -18,9 +18,12 @@ namespace SaltAndLedger.Simulation
         public int MaximumPopulation { get; }
         public int DemographicIntervalDays { get; }
         public LivingPricingMode PricingMode { get; }
+        public int QuantityScale { get; }
+        public bool ShouldSerializeQuantityScale() => QuantityScale != 1;
         public SettlementConfiguration(int initialPopulation, long initialHouseholdCash,
             int initialProsperity = 50, int minimumPopulation = 10, int maximumPopulation = 120,
-            int demographicIntervalDays = 12, LivingPricingMode pricingMode = LivingPricingMode.StockOnly)
+            int demographicIntervalDays = 12, LivingPricingMode pricingMode = LivingPricingMode.StockOnly,
+            int quantityScale = 1)
         {
             if (minimumPopulation < 1 || maximumPopulation < minimumPopulation ||
                 initialPopulation < minimumPopulation || initialPopulation > maximumPopulation)
@@ -29,10 +32,11 @@ namespace SaltAndLedger.Simulation
             if (initialProsperity < 0 || initialProsperity > 100) throw new ArgumentOutOfRangeException(nameof(initialProsperity));
             if (demographicIntervalDays < 1) throw new ArgumentOutOfRangeException(nameof(demographicIntervalDays));
             if (!Enum.IsDefined(typeof(LivingPricingMode), pricingMode)) throw new ArgumentOutOfRangeException(nameof(pricingMode));
+            EconomicUnits.ValidateQuantityScale(quantityScale);
             InitialPopulation = initialPopulation; InitialHouseholdCash = initialHouseholdCash;
             InitialProsperity = initialProsperity; MinimumPopulation = minimumPopulation;
             MaximumPopulation = maximumPopulation; DemographicIntervalDays = demographicIntervalDays;
-            PricingMode = pricingMode;
+            PricingMode = pricingMode; QuantityScale = quantityScale;
         }
     }
 
@@ -176,10 +180,12 @@ namespace SaltAndLedger.Simulation
             if (Food.Count > CitySnapshot.FoodWindowCapacity) Food.RemoveAt(0);
             PurchasingPowerPercent = nextFoodCost <= 0 ? 100 : (int)BigInteger.Min(100, (BigInteger)Cash * 100 / nextFoodCost);
             var fulfillment = Snapshot().EssentialFulfillmentPercent;
-            var target = (3 * fulfillment + PurchasingPowerPercent) / 4;
+            var target = Configuration.QuantityScale == 1 ? (3 * fulfillment + PurchasingPowerPercent) / 4 :
+                ExactProsperityTarget(nextFoodCost);
             var difference = target - Prosperity;
             Prosperity += Math.Sign(difference) * Math.Min(3, (Math.Abs(difference) + 7) / 8);
-            var healthy = observation.ConsumedQuantity == observation.DesiredQuantity && PurchasingPowerPercent == 100;
+            var healthy = observation.ConsumedQuantity == observation.DesiredQuantity && PurchasingPowerPercent == 100 &&
+                (Configuration.QuantityScale == 1 || observation.DesiredQuantity > 0);
             Healthy = healthy ? Math.Min(6, Healthy + 1) : 0;
             Deprived = observation.ConsumedQuantity * 2L < observation.DesiredQuantity ? Math.Min(6, Deprived + 1) : 0;
             LuxuryReady = Prosperity >= 65 && healthy ? Math.Min(3, LuxuryReady + 1) : 0;
@@ -191,6 +197,17 @@ namespace SaltAndLedger.Simulation
                 observation.UnmetAffordability > 0 ? "Food stocked but household funds insufficient." :
                 PurchasingPowerPercent < 100 ? "Meals fulfilled; little household reserve for the next food need." :
                 "Paid food needs fulfilled with a reserve for the next opportunity.";
+        }
+        private int ExactProsperityTarget(BigInteger nextFoodCost)
+        {
+            var desired = Food.Sum(n => (long)n.DesiredQuantity);
+            var consumed = Food.Sum(n => (long)n.ConsumedQuantity);
+            var foodDenominator = BigInteger.Max(1, desired);
+            var powerDenominator = BigInteger.Max(1, nextFoodCost);
+            var powerNumerator = nextFoodCost <= 0 ? powerDenominator : BigInteger.Min(Cash, nextFoodCost);
+            // Combine exact food and reserve ratios before the sole final indicator rounding.
+            return (int)((300 * (BigInteger)consumed * powerDenominator +
+                100 * powerNumerator * foodDenominator) / (4 * foodDenominator * powerDenominator));
         }
         internal void ReviewPopulation(long day)
         {

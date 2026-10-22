@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 
 namespace SaltAndLedger.Simulation
 {
@@ -37,17 +38,22 @@ namespace SaltAndLedger.Simulation
         public long FirstDueDay { get; }
         public ConsumptionKind Kind { get; }
         public int PopulationPerUnit { get; }
+        public bool Proportional { get; }
         public bool ShouldSerializeKind() => Kind != ConsumptionKind.Legacy;
         public bool ShouldSerializePopulationPerUnit() => Kind != ConsumptionKind.Legacy;
+        public bool ShouldSerializeProportional() => Proportional;
 
         public ConsumptionConfiguration(string id, string goodId, int quantity, int intervalDays,
-            long? firstDueDay = null, ConsumptionKind kind = ConsumptionKind.Legacy, int populationPerUnit = 1)
+            long? firstDueDay = null, ConsumptionKind kind = ConsumptionKind.Legacy, int populationPerUnit = 1,
+            bool proportional = false)
         {
             RuntimeIdentifier.Validate(id, nameof(id));
             RuntimeIdentifier.Validate(goodId, nameof(goodId));
             if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity));
             if (!Enum.IsDefined(typeof(ConsumptionKind), kind)) throw new ArgumentOutOfRangeException(nameof(kind));
             if (populationPerUnit <= 0) throw new ArgumentOutOfRangeException(nameof(populationPerUnit));
+            if (proportional && kind != ConsumptionKind.Essential && kind != ConsumptionKind.Luxury)
+                throw new ArgumentException("Only household needs can be population proportional.", nameof(proportional));
             if ((kind == ConsumptionKind.Essential && goodId != "bread") ||
                 (kind == ConsumptionKind.Luxury && goodId != "furniture") ||
                 (kind == ConsumptionKind.Municipal && goodId != "planks"))
@@ -59,7 +65,25 @@ namespace SaltAndLedger.Simulation
             Quantity = quantity;
             IntervalDays = intervalDays;
             FirstDueDay = firstDueDay ?? intervalDays;
-            Kind = kind; PopulationPerUnit = populationPerUnit;
+            Kind = kind; PopulationPerUnit = populationPerUnit; Proportional = proportional;
+        }
+
+        /// <summary>
+        /// Computes one need without mutation. Proportional quantities carry the exact numerator
+        /// remainder across opportunities; legacy household needs retain their whole-unit ceiling.
+        /// </summary>
+        public ConsumptionDemand PreviewDemand(int population, int remainder = 0)
+        {
+            if (population < 0) throw new ArgumentOutOfRangeException(nameof(population));
+            if (remainder < 0 || remainder >= PopulationPerUnit || (!Proportional && remainder != 0))
+                throw new ArgumentOutOfRangeException(nameof(remainder));
+            if (Kind == ConsumptionKind.Legacy || Kind == ConsumptionKind.Municipal)
+                return new ConsumptionDemand(Quantity, 0);
+            var numerator = (BigInteger)Quantity * population;
+            if (!Proportional)
+                return new ConsumptionDemand(checked((int)((numerator + PopulationPerUnit - 1) / PopulationPerUnit)), 0);
+            var quantity = BigInteger.DivRem(numerator + remainder, PopulationPerUnit, out var residual);
+            return new ConsumptionDemand(checked((int)quantity), (int)residual);
         }
     }
 

@@ -11,7 +11,7 @@ namespace SaltAndLedger.Simulation
         Abandoned
     }
 
-    public enum ChallengeKind { CoastalSupply, RegionalRelief, EnterpriseAmbition, CityRecovery }
+    public enum ChallengeKind { CoastalSupply, RegionalRelief, EnterpriseAmbition, CityRecovery, SustainableProvisioning, IndustrialNetwork, RoyalCommission }
 
     /// <summary>A configured objective evaluated on the regional world's own day.</summary>
     public sealed class ChallengeConfiguration
@@ -113,6 +113,7 @@ namespace SaltAndLedger.Simulation
         public CityRecoveryProgress? Recovery { get; }
         public bool ShouldSerializeRecovery() => Recovery != null;
         public long ObjectiveQuantity => Configuration.Kind == ChallengeKind.RegionalRelief ? RegionalConsumedQuantity :
+            ExpandingChallenges.IsExpanding(Configuration.Kind) ? ProducedQuantity :
             Configuration.Kind == ChallengeKind.EnterpriseAmbition ? ProducedQuantity :
             Configuration.Kind == ChallengeKind.CityRecovery ? Recovery?.ProgressPercent ?? 0 : DeliveredQuantity;
 
@@ -142,7 +143,7 @@ namespace SaltAndLedger.Simulation
         {
             var configuration = snapshot.Configuration;
             if (snapshot.Status != ChallengeStatus.Active || trade.Outcome != TradeOutcome.Traded ||
-                configuration.Kind == ChallengeKind.CityRecovery ||
+                configuration.Kind == ChallengeKind.CityRecovery || ExpandingChallenges.IsExpanding(configuration.Kind) ||
                 ownerId != configuration.OwnerId || portId != configuration.PortId ||
                 trade.GoodId != configuration.GoodId) return snapshot;
             // Signed debt matters: buying locally and selling back must never create delivery credit.
@@ -156,7 +157,7 @@ namespace SaltAndLedger.Simulation
         {
             if (snapshot.Status != ChallengeStatus.Active || goodId != snapshot.Configuration.GoodId || consumed == 0)
                 return snapshot;
-            if (snapshot.Configuration.Kind == ChallengeKind.CityRecovery) return snapshot;
+            if (snapshot.Configuration.Kind == ChallengeKind.CityRecovery || ExpandingChallenges.IsExpanding(snapshot.Configuration.Kind)) return snapshot;
             return new ChallengeSnapshot(snapshot.Configuration, snapshot.NetDeliveredQuantity, snapshot.Status, null,
                 checked(snapshot.RegionalConsumedQuantity + consumed), snapshot.ProducedQuantity, snapshot.RealizedGrossMargin);
         }
@@ -166,10 +167,21 @@ namespace SaltAndLedger.Simulation
                 snapshot.RegionalConsumedQuantity, snapshot.ProducedQuantity, snapshot.RealizedGrossMargin, snapshot.Recovery);
 
         internal static ChallengeSnapshot Evaluate(ChallengeSnapshot snapshot, long day, long companyCash,
-            CompanyFinancialSnapshot? financial = null, CitySnapshot? city = null)
+            CompanyFinancialSnapshot? financial = null, CitySnapshot? city = null, RegionalWorldSnapshot? world = null)
         {
             if (snapshot.Status != ChallengeStatus.Active) return snapshot;
             var configuration = snapshot.Configuration;
+            if (ExpandingChallenges.IsExpanding(configuration.Kind))
+            {
+                var expanding = ExpandingChallenges.Progress(world ?? throw new InvalidOperationException("V3 objectives need the authoritative regional snapshot."));
+                var won = expanding.Qualified && day <= configuration.DeadlineDay && companyCash >= configuration.MinimumCash;
+                var status = won ? ChallengeStatus.Succeeded : day >= configuration.DeadlineDay ? ChallengeStatus.Failed : ChallengeStatus.Active;
+                if (snapshot.ProducedQuantity == expanding.Percent && snapshot.Status == status &&
+                    snapshot.RealizedGrossMargin == financial!.RealizedGrossMargin) return snapshot;
+                return new ChallengeSnapshot(configuration, snapshot.NetDeliveredQuantity, status,
+                    status == ChallengeStatus.Active ? (long?)null : day, snapshot.RegionalConsumedQuantity,
+                    expanding.Percent, financial!.RealizedGrossMargin);
+            }
             var produced = financial != null && financial.ProducedQuantities.TryGetValue(configuration.GoodId, out var quantity)
                 ? quantity : snapshot.ProducedQuantity;
             var margin = financial?.RealizedGrossMargin ?? snapshot.RealizedGrossMargin;

@@ -148,13 +148,16 @@ namespace SaltAndLedger.Simulation
         public bool ShouldSerializeCashTransfers() => CashTransfers.Count != 0;
         public IReadOnlyList<CityChange> CityChanges { get; }
         public bool ShouldSerializeCityChanges() => CityChanges.Count != 0;
+        public IReadOnlyList<DevelopmentAttempt> Development { get; }
+        public bool ShouldSerializeDevelopment() => Development.Count != 0;
         internal RegionalResult(RegionalWorldSnapshot before, RegionalWorldSnapshot after,
             IEnumerable<RegionalTrade> trades, IEnumerable<RegionalProduction> production,
             IEnumerable<RegionalConsumption> consumption, IEnumerable<RegionalMovement> movements,
             IEnumerable<RegionalDecision> decisions, IEnumerable<RegionalWarehouseTrade> warehouseTrades,
             IEnumerable<RegionalPrivateProduction> privateProduction, IEnumerable<RegionalConstruction> construction,
             IEnumerable<RegionalTransfer> transfers, IEnumerable<EconomicEvent> economicEvents,
-            IEnumerable<CityCashTransfer>? cashTransfers = null, IEnumerable<CityChange>? cityChanges = null)
+            IEnumerable<CityCashTransfer>? cashTransfers = null, IEnumerable<CityChange>? cityChanges = null,
+            IEnumerable<DevelopmentAttempt>? development = null)
         {
             Before = before; After = after;
             Trades = Array.AsReadOnly(trades.ToArray());
@@ -169,6 +172,7 @@ namespace SaltAndLedger.Simulation
             EconomicEvents = Array.AsReadOnly(economicEvents.ToArray());
             CashTransfers = Array.AsReadOnly((cashTransfers ?? Array.Empty<CityCashTransfer>()).ToArray());
             CityChanges = Array.AsReadOnly((cityChanges ?? Array.Empty<CityChange>()).ToArray());
+            Development = Array.AsReadOnly((development ?? Array.Empty<DevelopmentAttempt>()).ToArray());
         }
     }
 }

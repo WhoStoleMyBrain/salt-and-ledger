@@ -7,12 +7,15 @@ namespace SaltAndLedger.Simulation
     public static class RoutePolicyEvaluator
     {
         public static AutomationDecision Evaluate(MaritimeWorldSnapshot snapshot, TradeRoutePolicy policy,
-            bool enabled = true, int minimumOriginStock = 0, int minimumReturnStock = 0)
+            bool enabled = true, int minimumOriginStock = 0, int minimumReturnStock = 0, int quantityStep = 1)
         {
             if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
             if (policy == null) throw new ArgumentNullException(nameof(policy));
             if (minimumOriginStock < 0 || minimumReturnStock < 0)
                 throw new ArgumentOutOfRangeException(nameof(minimumOriginStock));
+            EconomicUnits.ValidateQuantityScale(quantityStep);
+            ValidateQuantities(policy.Outbound, quantityStep);
+            if (policy.ReturnLeg != null) ValidateQuantities(policy.ReturnLeg, quantityStep);
             ValidateReferences(snapshot, policy);
             if (!enabled) return Pause(snapshot, AutomationReason.Disabled);
             if (policy.Outbound.MinShipmentQuantity > snapshot.Ship.CargoCapacity ||
@@ -35,17 +38,17 @@ namespace SaltAndLedger.Simulation
             if (string.Equals(snapshot.Ship.DockedPortId, policy.OriginPortId, StringComparison.Ordinal))
             {
                 if (returnCargo > 0)
-                    return Sell(snapshot, policy.ReturnLeg!, policy.OriginPortId, AutomationStage.ReturnSale);
+                    return Sell(snapshot, policy.ReturnLeg!, policy.OriginPortId, AutomationStage.ReturnSale, quantityStep);
                 return Load(snapshot, policy, policy.Outbound, policy.OriginPortId,
-                    policy.DestinationPortId, AutomationStage.OutboundLoading, minimumOriginStock);
+                    policy.DestinationPortId, AutomationStage.OutboundLoading, minimumOriginStock, quantityStep);
             }
 
             if (outboundCargo > 0)
-                return Sell(snapshot, policy.Outbound, policy.DestinationPortId, AutomationStage.OutboundSale);
+                return Sell(snapshot, policy.Outbound, policy.DestinationPortId, AutomationStage.OutboundSale, quantityStep);
             if (policy.ReturnLeg != null)
             {
                 var loading = Load(snapshot, policy, policy.ReturnLeg, policy.DestinationPortId,
-                    policy.OriginPortId, AutomationStage.ReturnLoading, minimumReturnStock);
+                    policy.OriginPortId, AutomationStage.ReturnLoading, minimumReturnStock, quantityStep);
                 if (loading.Action != AutomationAction.Wait || !policy.AllowEmptyReturn || snapshot.Ship.CargoUnits != 0)
                     return loading;
             }
@@ -54,7 +57,7 @@ namespace SaltAndLedger.Simulation
         }
 
         private static AutomationDecision Load(MaritimeWorldSnapshot snapshot, TradeRoutePolicy policy,
-            RouteLeg leg, string portId, string destinationPortId, AutomationStage stage, int minimumStock)
+            RouteLeg leg, string portId, string destinationPortId, AutomationStage stage, int minimumStock, int quantityStep)
         {
             var port = snapshot.Ports[portId];
             var carried = snapshot.Ship.Cargo[leg.GoodId];
@@ -69,7 +72,7 @@ namespace SaltAndLedger.Simulation
             var budget = snapshot.TraderCash > policy.CashReserve ? snapshot.TraderCash - policy.CashReserve : 0;
             budget = Math.Min(budget, leg.MaxPurchaseExpenditure);
             var quantity = SelectQuantity(port.Quotes[leg.GoodId], TradeDirection.Buy,
-                port.Inventory[leg.GoodId], upper, leg.MaxBuyPrice, budget);
+                port.Inventory[leg.GoodId], upper, leg.MaxBuyPrice, budget, quantityStep);
             if (quantity > 0 && checked(carried + quantity) >= leg.MinShipmentQuantity)
             {
                 var command = new PortTradeCommand(portId, TradeDirection.Buy, leg.GoodId, quantity);
@@ -87,27 +90,27 @@ namespace SaltAndLedger.Simulation
         }
 
         private static AutomationDecision Sell(MaritimeWorldSnapshot snapshot, RouteLeg leg,
-            string portId, AutomationStage stage)
+            string portId, AutomationStage stage, int quantityStep)
         {
             var port = snapshot.Ports[portId];
             var stock = port.Inventory[leg.GoodId];
             var upper = Math.Min(snapshot.Ship.Cargo[leg.GoodId], int.MaxValue - stock);
             var quote = port.Quotes[leg.GoodId];
-            var quantity = SelectQuantity(quote, TradeDirection.Sell, stock, upper, leg.MinSellPrice, port.MarketCash);
+            var quantity = SelectQuantity(quote, TradeDirection.Sell, stock, upper, leg.MinSellPrice, port.MarketCash, quantityStep);
             if (quantity > 0)
             {
                 var command = new PortTradeCommand(portId, TradeDirection.Sell, leg.GoodId, quantity);
                 return new AutomationDecision(snapshot, stage, AutomationAction.Sell, AutomationReason.SaleReady,
                     command, preview: SuccessfulPreview(snapshot, command));
             }
-            var reason = upper == 0 ? AutomationReason.MarketInventoryFull :
-                !MeetsPriceLimit(quote, TradeDirection.Sell, stock, 1, leg.MinSellPrice) ? AutomationReason.SellPriceLimit :
+            var reason = upper < quantityStep ? AutomationReason.MarketInventoryFull :
+                !MeetsPriceLimit(quote, TradeDirection.Sell, stock, quantityStep, leg.MinSellPrice) ? AutomationReason.SellPriceLimit :
                 AutomationReason.InsufficientMarketFunds;
             return new AutomationDecision(snapshot, stage, AutomationAction.Wait, reason);
         }
 
         private static int SelectQuantity(MarketQuote quote, TradeDirection direction, int stock,
-            int upper, long marginalLimit, long budget)
+            int upper, long marginalLimit, long budget, int quantityStep)
         {
             var lower = 0;
             // Positive prices and monotone marginal curves make feasibility a prefix.
@@ -120,7 +123,13 @@ namespace SaltAndLedger.Simulation
                     lower = middle;
                 else upper = middle - 1;
             }
-            return lower;
+            return lower - lower % quantityStep;
+        }
+
+        private static void ValidateQuantities(RouteLeg leg, int quantityStep)
+        {
+            if (leg.MinShipmentQuantity % quantityStep != 0 || leg.MaxPurchaseQuantity % quantityStep != 0)
+                throw new ArgumentException("Ship route quantities must be whole cargo units.", nameof(leg));
         }
 
         private static bool MeetsPriceLimit(MarketQuote quote, TradeDirection direction,

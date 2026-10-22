@@ -19,18 +19,18 @@ namespace SaltAndLedger.Simulation
                 throw new ArgumentException("Recipe '" + recipeId + "' does not belong to building '" + buildingId + "'.", nameof(buildingId));
 
             foreach (var input in recipe.Inputs)
-                if (inventory.GetQuantity(input.GoodId) < input.Quantity) return false;
+                if (inventory.GetQuantity(input.GoodId) < checked(input.Quantity * inventory.QuantityScale)) return false;
 
             // Stage every final balance before committing any change. Subtracting inputs
             // first also handles a good appearing on both sides without false overflow.
             var updated = new Dictionary<string, int>(StringComparer.Ordinal);
             foreach (var input in recipe.Inputs)
-                updated[input.GoodId] = inventory.GetQuantity(input.GoodId) - input.Quantity;
+                updated[input.GoodId] = inventory.GetQuantity(input.GoodId) - checked(input.Quantity * inventory.QuantityScale);
             foreach (var output in recipe.Outputs)
             {
                 var current = updated.TryGetValue(output.GoodId, out var staged)
                     ? staged : inventory.GetQuantity(output.GoodId);
-                updated[output.GoodId] = checked(current + output.Quantity);
+                updated[output.GoodId] = checked(current + checked(output.Quantity * inventory.QuantityScale));
             }
             inventory.Commit(updated);
             return true;

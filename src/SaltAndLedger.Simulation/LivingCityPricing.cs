@@ -24,13 +24,16 @@ namespace SaltAndLedger.Simulation
 
             var targets = new Dictionary<string, int>(StringComparer.Ordinal);
             var budget = city.HouseholdCash;
+            var maximumTarget = checked(MaximumTargetStock * port.Settlement.QuantityScale);
             foreach (var need in HouseholdNeeds(port))
             {
                 if (!targets.ContainsKey(need.GoodId)) targets.Add(need.GoodId, 0);
                 if (need.Kind == ConsumptionKind.Luxury && !city.LuxuryEnabled) continue;
                 var opportunities = ((long)CoverageHorizonDays + need.IntervalDays - 1) / need.IntervalDays;
-                var desired = (int)BigInteger.Min(MaximumTargetStock,
-                    (BigInteger)DesiredQuantity(need, city.Population) * opportunities);
+                var expected = need.Proportional ?
+                    (BigInteger)need.Quantity * city.Population * opportunities / need.PopulationPerUnit :
+                    (BigInteger)DesiredQuantity(need, city.Population) * opportunities;
+                var desired = (int)BigInteger.Min(maximumTarget, expected);
                 var quote = port.Market.Quotes[need.GoodId];
                 // The declared hypothetical shelf has at least the original target or the desired
                 // coverage amount. This isolates the hypothesis from today's missing physical stock.
@@ -40,7 +43,7 @@ namespace SaltAndLedger.Simulation
                     shelf, 0, 0, budget, int.MaxValue, desired);
                 if (quantity > 0)
                     budget = checked(budget - quote.Price(new TradeCommand(TradeDirection.Buy, need.GoodId, quantity), shelf).TotalAmount);
-                targets[need.GoodId] = Math.Min(MaximumTargetStock, checked(targets[need.GoodId] + quantity));
+                targets[need.GoodId] = Math.Min(maximumTarget, checked(targets[need.GoodId] + quantity));
             }
 
             var result = new SortedDictionary<string, MarketQuote>(StringComparer.Ordinal);
@@ -57,14 +60,11 @@ namespace SaltAndLedger.Simulation
             return new ReadOnlyDictionary<string, MarketQuote>(result);
         }
 
-        /// <summary>Nominal scheduled household need, with a ceiling and checked public quantity.</summary>
-        public static int DesiredQuantity(ConsumptionConfiguration need, int population)
+        /// <summary>Nominal scheduled household need; v3 uses exact carry, legacy retains its ceiling.</summary>
+        public static int DesiredQuantity(ConsumptionConfiguration need, int population, int remainder = 0)
         {
             if (need == null) throw new ArgumentNullException(nameof(need));
-            if (population < 0) throw new ArgumentOutOfRangeException(nameof(population));
-            if (need.Kind == ConsumptionKind.Legacy || need.Kind == ConsumptionKind.Municipal)
-                return need.Quantity;
-            return checked((int)(((BigInteger)need.Quantity * population + need.PopulationPerUnit - 1) / need.PopulationPerUnit));
+            return need.PreviewDemand(population, remainder).Quantity;
         }
 
         /// <summary>
@@ -83,8 +83,11 @@ namespace SaltAndLedger.Simulation
             foreach (var need in HouseholdNeeds(port).Where(need => need.GoodId == goodId &&
                 (need.Kind != ConsumptionKind.Luxury || city.LuxuryEnabled)))
             {
-                numerator = numerator * need.IntervalDays + (BigInteger)DesiredQuantity(need, city.Population) * denominator;
-                denominator *= need.IntervalDays;
+                var needNumerator = need.Proportional ? (BigInteger)need.Quantity * city.Population :
+                    DesiredQuantity(need, city.Population);
+                var needDenominator = (BigInteger)need.IntervalDays * (need.Proportional ? need.PopulationPerUnit : 1);
+                numerator = numerator * needDenominator + needNumerator * denominator;
+                denominator *= needDenominator;
                 var divisor = BigInteger.GreatestCommonDivisor(numerator, denominator);
                 numerator /= divisor;
                 denominator /= divisor;

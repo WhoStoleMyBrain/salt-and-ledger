@@ -41,6 +41,12 @@ namespace SaltAndLedger.Simulation
         public long TotalPayment { get; }
         public long TotalUnmetStock { get; }
         public long TotalUnmetAffordability { get; }
+        public int DemandRemainder { get; }
+        public int BaselineDemandRemainder { get; }
+        public int LastBaselineDesiredQuantity { get; }
+        public bool ShouldSerializeDemandRemainder() => Configuration.Proportional;
+        public bool ShouldSerializeBaselineDemandRemainder() => Configuration.Proportional;
+        public bool ShouldSerializeLastBaselineDesiredQuantity() => Configuration.Proportional;
         public bool ShouldSerializeLastDesiredQuantity() => Configuration.Kind != ConsumptionKind.Legacy;
         public bool ShouldSerializeLastConsumedQuantity() => Configuration.Kind != ConsumptionKind.Legacy;
         public bool ShouldSerializeLastPayment() => Configuration.Kind != ConsumptionKind.Legacy;
@@ -54,7 +60,8 @@ namespace SaltAndLedger.Simulation
         internal ConsumptionSnapshot(ConsumptionConfiguration configuration, long nextDueDay,
             int lastUnmetQuantity, long totalUnmetQuantity, int lastDesired = 0, int lastConsumed = 0,
             long lastPayment = 0, int unmetStock = 0, int unmetAffordability = 0, long totalDesired = 0,
-            long totalConsumed = 0, long totalPayment = 0, long totalStock = 0, long totalAffordability = 0)
+            long totalConsumed = 0, long totalPayment = 0, long totalStock = 0, long totalAffordability = 0,
+            int demandRemainder = 0, int baselineDemandRemainder = 0, int lastBaselineDesired = 0)
         {
             Configuration = configuration;
             NextDueDay = nextDueDay;
@@ -64,6 +71,8 @@ namespace SaltAndLedger.Simulation
             LastUnmetStock = unmetStock; LastUnmetAffordability = unmetAffordability;
             TotalDesiredQuantity = totalDesired; TotalConsumedQuantity = totalConsumed; TotalPayment = totalPayment;
             TotalUnmetStock = totalStock; TotalUnmetAffordability = totalAffordability;
+            DemandRemainder = demandRemainder; BaselineDemandRemainder = baselineDemandRemainder;
+            LastBaselineDesiredQuantity = lastBaselineDesired;
         }
     }
 
@@ -133,7 +142,7 @@ namespace SaltAndLedger.Simulation
     }
 
     /// <summary>Detached state shared by the map, commands and deterministic experiments.</summary>
-    public sealed class RegionalWorldSnapshot
+    public sealed partial class RegionalWorldSnapshot
     {
         public long Day { get; }
         public long Revision { get; }
@@ -147,16 +156,25 @@ namespace SaltAndLedger.Simulation
         public IReadOnlyDictionary<string, PrivateFacilitySnapshot> PrivateFacilities { get; }
         public ChallengeSnapshot? Challenge { get; }
         public AccountingSnapshot Accounting { get; }
+        public ExpandingEconomySnapshot? Economy { get; }
+        public bool ShouldSerializeEconomy() => Economy != null;
+        [JsonIgnore]
+        public int QuantityScale => Economy == null ? 1 : 10000;
+        [JsonIgnore]
+        public int MoneyScale => Economy == null ? 1 : 10000;
+        [JsonIgnore]
+        public BigInteger RegionalCash => TotalCash - (Economy?.ExternalCash ?? 0);
         [JsonIgnore]
         public BigInteger TotalCash => Ports.Values.Aggregate(BigInteger.Zero,
             (sum, port) => sum + port.MarketCash + (port.City?.HouseholdCash ?? 0)) +
-            Companies.Values.Aggregate(BigInteger.Zero, (sum, company) => sum + company.Cash);
+            Companies.Values.Aggregate(BigInteger.Zero, (sum, company) => sum + company.Cash) +
+            (Economy?.TreasuryCash ?? 0) + (BigInteger)(Economy?.ExternalCash ?? 0);
         internal RegionalWorldSnapshot(long day, long revision, IEnumerable<RegionalPortSnapshot> ports,
             IEnumerable<RegionalShipSnapshot> ships, IEnumerable<SeaRoute> routes,
             IEnumerable<CompanySnapshot> companies, IEnumerable<IndustryBlueprint> industryBlueprints,
             IEnumerable<PrivateFacilitySnapshot> privateFacilities, ChallengeSnapshot? challenge,
             AccountingSnapshot accounting, RunDifficulty difficulty = RunDifficulty.Normal,
-            RunIdentity? runIdentity = null)
+            RunIdentity? runIdentity = null, ExpandingEconomySnapshot? economy = null)
         {
             Day = day;
             Revision = revision;
@@ -175,6 +193,7 @@ namespace SaltAndLedger.Simulation
                 new SortedDictionary<string, PrivateFacilitySnapshot>(privateFacilities.ToDictionary(f => f.Id), StringComparer.Ordinal));
             Challenge = challenge;
             Accounting = accounting;
+            Economy = economy;
         }
 
         public SeaRoute GetRoute(string from, string to)
@@ -203,8 +222,10 @@ namespace SaltAndLedger.Simulation
         {
             var port = Ports[portId];
             var city = port.City ?? throw new InvalidOperationException("This historical town has no household account.");
-            var rule = port.Configuration.Consumption.Single(c => c.Id == ruleId);
-            return LivingRetail.Preview(port.Configuration, city, rule, port.Quotes, port.Inventory, port.MarketCash);
+            var need = port.Consumption.Single(c => c.Configuration.Id == ruleId);
+            var food = port.Consumption.Single(c => c.Configuration.Kind == ConsumptionKind.Essential);
+            return LivingRetail.Preview(port.Configuration, city, need.Configuration, port.Quotes, port.Inventory,
+                port.MarketCash, need.DemandRemainder, food.DemandRemainder);
         }
 
         /// <summary>Dates only: eligibility, funds and site uniqueness are still checked when ordering.</summary>
@@ -221,6 +242,7 @@ namespace SaltAndLedger.Simulation
         public TradeAttempt PreviewTrade(string shipId, string portId, TradeCommand command)
         {
             if (command == null) throw new ArgumentNullException(nameof(command));
+            ValidateWholeCargo(command.Quantity);
             var port = Ports[portId];
             var ship = Ships[shipId];
             return TradeCalculator.Preview(port.Quotes[command.GoodId], command, port.Inventory[command.GoodId],
@@ -247,8 +269,9 @@ namespace SaltAndLedger.Simulation
         {
             var port = Ports[portId];
             var ship = Ships[shipId];
-            return TradeQuantityCalculator.Maximum(port.Quotes[goodId], direction, port.Inventory[goodId],
+            var quantity = TradeQuantityCalculator.Maximum(port.Quotes[goodId], direction, port.Inventory[goodId],
                 ship.Cargo[goodId], port.MarketCash, ship.Cash, ship.CargoCapacity - ship.CargoUnits);
+            return quantity - quantity % QuantityScale;
         }
 
         public int MaximumWarehouseTradeQuantity(string ownerId, string facilityId, TradeDirection direction, string goodId)
