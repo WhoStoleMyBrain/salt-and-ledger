@@ -229,3 +229,13 @@ Test these with explicit scenarios, recorded assumptions, and comparable runs. C
 ## Deferred
 
 Task 1.9 implements constrained v2 role generation and explicit structural checks. Universal economic viability scoring, advanced competitors, city ownership, politics, piracy and combat remain future work. They should not require placeholder types or unused parameters in the current production sample.
+
+## V3: distinguish productive capacity, circulation and issuance
+
+[Expanding Economy](EXPANDING_ECONOMY.md) addresses v2's unexpandable Flour ceiling through legal private Mills and upstream extraction. All existing building types have a place in the role matrix, and multiple same-kind sites can coexist. Production capacity is potential, not free output: materials, wages, storage and actual distribution remain finite constraints. Fractional population-proportional retail makes paid food volume comparable across nearby population values.
+
+Three financial questions are deliberately separate. **Circulation** transfers existing coins between markets, households and companies. **External contracts** import existing cash from a visible finite outside account in exchange for physically exported goods. **Mint issuance** creates bounded coins only against physically transported and surrendered Silver, splitting them between supplier and public treasury. Population and consumption trigger no automatic issuance. Public works spend only treasury funds on actual finite deliveries.
+
+Company Value measures cash and owned goods/capital at declared stable references. It can rise through productive goods or capital without increasing regional money; it can also fall while a company earns sale revenue. It is neither guaranteed liquidation proceeds nor material FIFO basis. Mint receipts, wages, construction and held output must remain visible separately from realized material margin.
+
+Required comparison questions include: does complementary export trade fund a food-importing town for a measured period; which input or payroll constraint follows an extra Mill; what does a second ship actually deliver; how much finite outside budget remains; where do minted coins circulate; and can households with those coins obtain actual food? Keep v2 deterioration, v3 idle, overbuilding, unsupported employers and food-rich/household-poor counterexamples. A green account invariant establishes conservation, not sustainable welfare or enjoyable strategy. New observed outcomes belong to the separate v3 report; no economic balance claim follows from authored parameters alone.

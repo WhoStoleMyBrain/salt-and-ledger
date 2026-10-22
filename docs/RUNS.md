@@ -2,15 +2,15 @@
 
 Choose a world mode, its challenge or sandbox, one starting charter and Ascension 0/1. Classic and seeded-v1 preserve the historical economy. [Living Cities v2](LIVING_CITIES.md) adds generated roles, finite households, wages and one recovery objective over the same four towns and six goods. A run ends when its objective and cash requirement are met, its deadline expires, or you deliberately abandon it. Sandbox uses the same economic rules without a scored objective or deadline.
 
-The menu, setup, pause, reference, and results screens form the current Unity host's run flow. [Playtest](PLAYTEST.md) documents controls; [Unity integration](UNITY.md) distinguishes automated, actual Editor, and standalone-player verification. Runs exist only in application memory. There is no persistent save, unlock history, or recovery after closing the application.
+The menu, setup, pause, reference, and results screens form the current Unity host's run flow. [Playtest](PLAYTEST.md) documents controls; [Unity integration](UNITY.md) distinguishes automated, actual Editor, and standalone-player verification. Task 2.0 adds explicit local Save / Load / Continue for all four named modes. There is no cloud save or permanent unlock history; unsaved changes remain in memory.
 
 ## Navigate a run
 
-**New Run** and **Sandbox** both open setup, with the corresponding challenge or unlimited option selected. Review the challenge, charter, initial assets, world preview, difficulty, objective and deadline before starting. The title also offers **Encyclopedia**, **Settings**, and **Exit Game**; it has no misleading Continue or save option.
+**New Run** and **Sandbox** both open setup, with the corresponding challenge or unlimited option selected. Review the challenge, charter, initial assets, world preview, difficulty, objective and deadline before starting. The title also offers **Encyclopedia**, **Settings**, and **Exit Game**; Continue / Load restore a validated local save; a fresh run always uses setup.
 
 During gameplay, Escape opens the pause menu without advancing a day. **Resume** restores the playback state from before the pause. The menu also opens the encyclopedia, company ledger and settings, or offers **Retry Same World**, **Change Setup**, **New World / Reroll**, **Return to Main Menu** and **Exit Game**. An active challenge additionally offers **Abandon and inspect results**.
 
-Replacing a world, returning to the main menu or exiting confirms loss of active progress. Explicit abandonment creates a terminal abandoned result. Confirmed return to the main menu abandons an active challenge and discards the host's in-memory session. Results offer **Retry Same World**, **Change Setup**, **New World / Reroll**, **Main Menu** and **Encyclopedia**. Retry restores the exact original run identity and initial state; reroll changes the draft seed and returns to preview before a separate start. Merely opening a menu never rerolls.
+Replacing a world, returning to the main menu or exiting confirms loss of unsaved active progress. Explicit abandonment creates a terminal abandoned result. Confirmed return to the main menu abandons an active challenge and discards the host's in-memory session. Results offer **Retry Same World**, **Change Setup**, **New World / Reroll**, **Main Menu** and **Encyclopedia**. Retry restores the exact original run identity and initial state; reroll changes the draft seed and returns to preview before a separate start. Merely opening a menu never rerolls.
 
 Escape first cancels a confirmation, or closes the open trade/industry modal, without also triggering a lower screen. In the encyclopedia it follows entry history and then returns to the parent screen; other secondary screens return to their parent. On the pause menu, Escape resumes. This ordering supports both keyboard events and the Input System navigation-cancel path. Actual Editor and standalone behavior must be checked separately as recorded in [Unity integration](UNITY.md).
 
@@ -22,7 +22,7 @@ Escape first cancels a confirmation, or closes the open trade/industry modal, wi
 
 The Industrial Consortium's inherited bakery starts operational under either difficulty and keeps its day-2 first batch and granted inputs. This narrow construction penalty affects strategies differently; it is not a blanket claim that every challenge becomes harder. There are no unlocks, stacking modifiers or further ascensions. [Seeded runs](SEEDED_RUNS.md) details version-1 generation, constraints and measured difficulty limits.
 
-Settings applies **Compact/Default/Large/Extra Large** text to every ArchipelagoLab screen. Default body text is 17 px; Large and Extra Large use 21 and 25 px with wrapping and internal scrolling. The local PlayerPrefs preference survives retries/new runs and later application launches in the same preference environment. It does not persist economic progress, change the day/revision or reroll a world.
+Settings applies **Compact/Default/Large/Extra Large** text to every ArchipelagoLab screen. Default body text is 17 px; Large and Extra Large use 21 and 25 px with wrapping and internal scrolling. The local PlayerPrefs preference survives retries/new runs and later application launches in the same preference environment. The preference does not persist economic progress, change the day/revision or reroll a world; explicit run saves are separate.
 
 ## Select a starting company
 
@@ -154,6 +154,26 @@ The separate [industrial logistics comparison](AUTOMATION.md#reproducible-indust
 
 ## Current limits and next questions
 
-Living Cities adds explicit v2 economic roles and a finite household prototype. There are no saves, persistent unlocks, further ascensions, online rankings, city ownership or automatic strategy search. All charters and both difficulty choices are available immediately. Finite liquidity, route length and unfavorable prices can still block an enterprise. A valid navigable generated map does not prove a particular policy wins. Changing a policy is a strategic choice, not a promise that any configuration can recover.
+Living Cities adds explicit v2 economic roles and a finite household prototype. Task 2.0 adds explicit local saves for this mode. Persistent unlocks, further ascensions, online rankings, city ownership and automatic strategy search remain outside the implementation. All charters and both difficulty choices are available immediately. Finite liquidity, route length and unfavorable prices can still block an enterprise. A valid navigable generated map does not prove a particular policy wins. Changing a policy is a strategic choice, not a promise that any configuration can recover.
 
 The next design step is observed startup-to-results playtesting: can players understand the charter tradeoffs, configure a complete supply chain, distinguish sales from consumption, and explain their final cash and margin? Numerical feasibility and scoring reproducibility are necessary evidence, not a substitute for that observation.
+
+## Expanding Economy v3 runs
+
+V3 is a separate setup mode with generator/content version 3 and valuation version 1. It keeps the exact v1 seed geography and v2 economic role permutation, adds proportional needs and Silver/public monetary rules, and uses explicit starting cash of 1,800 / 1,200 / 1,500 coins for Merchant / Industrial / Independent. Whole ship capacities and starter physical grants remain unchanged. Its [Company Value](EXPANDING_ECONOMY.md#reference-company-value-and-honest-finance) includes owned goods and capital at stable references, separately from cash and realized material earnings. Compare only like complete identities.
+
+The three provisional new objectives use actual committed outcomes:
+
+| Objective | Deadline | Required economic result, plus 100 company cash |
+| --- | ---: | --- |
+| Sustainable Provisioning | 120 | Six target paid-food opportunities at 80%, retained starting population and prosperity 50; eight privately produced Bread and 60 coins of actual private wages |
+| Industrial Network | 180 | Operational Mill+Bakery with six Flour/eight Bread output and four Bread sold, or Sawmill+Workshop with six Planks/three Furniture output and two Furniture sold; Company Value growth of 100 coins |
+| Royal Commission | 180 | Company-commissioned public Mint, three physical Silver issuances, 100 coins from finite external exports, two Planks delivered for funded public works and six target paid-food opportunities at 60% |
+
+V3 objective progress is the lowest completion percentage across its required components. Selling or transferring the same goods cannot substitute for actual private output. Royal issuance alone does not win without the paid-food condition. The vulnerable role supplies the target town; public/NPC contributions count as regional welfare. Sandbox remains available without a forced objective or compulsory Mint. These provisional authored thresholds are backed by the [measured normal/deep strategy comparisons](EXPANDING_ECONOMY_EXPERIMENTS.md), including actual wins, idle failures and long-horizon counterexamples; they are not a universal viability guarantee.
+
+## Local saves and exact continuation
+
+Save explicitly to a local slot. Continue or Load validates the whole saved world before replacing the active session. The schema includes complete identity, exact fractional stock/money, households and residuals, every ship/policy/voyage, factory and pending project, FIFO, finite contracts, Mint/treasury state, day/revision and challenge outcome. Loading neither advances a day nor reevaluates the economy. Corrupt, unsupported or incompatible content/configuration fails clearly while retaining a valid current session.
+
+The host writes a temporary file and replaces a slot atomically where supported. Storage is local and finite, with no cloud recovery or guarantee of migration after rules/content change. Terminal saves remain inspectable and frozen. Retry Same World reconstructs original initial assets and clears transient host state; it never loads the latest saved position. Text scaling remains independent of save files. Actual host/player evidence belongs to [Unity integration](UNITY.md).

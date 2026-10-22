@@ -305,3 +305,27 @@ Preview the same immutable configuration used to create the world. Adapt only ch
 Use the existing immutable inventory-price model with a household-coverage target derived from seven days of expected opportunities and one finite actual household budget. Prioritize essentials, retain affordability, cap target quantities and leave industrial goods/reference prices/spreads unchanged. Do not multiply all prices by wealth or invent expected wages to fund a hypothetical need.
 
 Derive parameters at initialization and the daily boundary after welfare observation, then freeze them across instant trades. Previews, household retail, players, NPCs and factories share the same exact marginal mathematics. Historical snapshots retain their effective parameters, and same-day quote derivation cannot manufacture an immediate reversal gain. Measured A/B outcomes and long-run deadlocks remain evidence in [Living Cities](LIVING_CITIES.md), not reasons to introduce subsidies.
+
+## ADR 034: Select exact subunits only through an explicit v3 identity
+
+**Status:** Selected and implemented for Task 2.0; complete integration verification is recorded separately.
+
+Use 10,000 physical and monetary subunits, retaining existing int/long public bounds and wider checked intermediates. Scale configuration once and use the existing exact edge-price floor sums, inventory transactions and FIFO interval slices. Ship orders remain whole-unit multiples while local retail is divisible. Carry proportional-demand residuals rather than discard fine authored fractions. Preserve old scale-1 rules and reports. An explicit catalog extension prevents Silver from leaking into historical goods enumeration; both validators and reference generation understand its scope. This is a concrete compatibility adapter, not a second simulation engine.
+
+## ADR 035: Account for public issuance and finite external purchases separately
+
+**Status:** Selected for Task 2.0; monetary parameters remain provisional.
+
+A finite external authority lies outside the regional money boundary and buys actual delivered goods. A unique public Mint, funded once by the company and located away from Silver extraction, is the sole issuer. Actual surrendered Silver enters a retained reserve; every issued coin reaches the supplier or treasury once under cadence and lifetime bounds. Treasury procurement requires funds and consumes actual finite deliveries. Check global/regional identities in every atomic commit. Do not add food-based cash creation, household stipends, automatic contract refill, private Mint ownership or currency retirement.
+
+## ADR 036: Value owned capital without inventing realized profit
+
+**Status:** Selected for Task 2.0; reference values are versioned design assumptions.
+
+Derive Company Value from one company cash account, every distinct owned goods store, completed ships/sites and paid pending capital. Starter gifts can have positive reference value while paid FIFO basis remains zero. Completion replaces pending capital once; public Mint/treasury and surrendered Silver are excluded. Stable reference commodity prices and replacement capital costs make comparisons explainable, but do not promise market liquidation. Keep material margin, expensed wages, Mint receipts and public commissions distinct.
+
+## ADR 037: Restore complete bounded state instead of replaying a run
+
+**Status:** Selected and implemented for Task 2.0; host/platform verification is separate.
+
+Expose a filesystem-free, concrete schema-versioned codec for all named run modes. Bind exact identity and content/configuration/state fingerprints; restore committed state without stepping, purchasing, minting or evaluating objectives. Store fractional residuals, open FIFO intervals, all ship stages/voyages, pending projects and finite public obligations explicitly. Reject unsupported/corrupt/impossible states before replacing an active world. The host owns safe finite local slots and temporary-write/atomic-replacement behavior. No arbitrary runtime type-name loading, cloud system or speculative migration framework is introduced.

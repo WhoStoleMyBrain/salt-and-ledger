@@ -19,7 +19,7 @@ Phase 0 includes logs, planks, a sawmill, one production conversion, validation,
 
 The world example uses two sawmills and configurable initial stock. It advances five ticks, demonstrates controls and resource exhaustion, and compares repeated runs including reversed building input order. Tests cover scheduling, scarcity, state ownership, and failures; actual Unity verification and its limits are recorded in [Unity integration](UNITY.md).
 
-The legacy one-batch-per-abstract-tick schedule remains intact. Task 1.5 adds a separate provisional daily cadence and explicit consumption phase rather than changing that API. Allocation fairness and unmodeled labor/operating costs remain open; Task 1.7 attributes actual private input-material expenditure. Fixed priority/ID ordering can starve later facilities. Representative small-world measurements do not establish large-map scalability. No save/replay compatibility or concurrent access contract is promised.
+The legacy one-batch-per-abstract-tick schedule remains intact. Task 1.5 adds a separate provisional daily cadence and explicit consumption phase rather than changing that API. Allocation fairness and unmodeled labor/operating costs remain open; Task 1.7 attributes actual private input-material expenditure. Fixed priority/ID ordering can starve later facilities. Representative small-world measurements do not establish large-map scalability. That early phase did not promise save/replay compatibility or concurrent access. Task 2.0 adds the bounded regional save contract; concurrent mutation remains unsupported.
 
 ## Task 1.2: finite markets, trading, and accounting
 
@@ -120,3 +120,9 @@ Pair observed confusion with focused presentation fixes, then isolate one finite
 3. **Measure simulation cost before enlarging the world.** Snapshot copying and result allocation favor clear atomicity. Live cost lots depend on held acquisitions; bounded event journals do not imply a constant bound on all inventory-lot counts. Extend representative performance/allocation measurements before adding larger maps or fleets.
 
 These follow-ups are proposals, not selected final economic rules. Keep randomness confined to explicit versioned geography/economic initialization until another mechanic has its own approved scope and reproducible design.
+
+## Task 2.0: integrated expanding economy
+
+Task 2.0 combines productive expansion and strategic company development in one opt-in v3 milestone. Its implementation includes exact proportional paid needs, all original player-buildable industry kinds and repeatable sites, the Silver Mine and unique public Royal Mint, finite outside contracts, a bounded three-ship player fleet, reference Company Value, complete local save/restore and three distinct objectives. [Expanding Economy](EXPANDING_ECONOMY.md) records the rules and provisional parameters. Classic/v1/v2 remain historical controls.
+
+Acceptance requires exact headless/continuation tests, unchanged historical reports, bounded comparative/deep economic evidence, and actual Editor/player journeys. [Unity integration](UNITY.md) is the evidence record; writing code alone does not establish completion. Further work should follow measured bottlenecks and observed usability. Banking, debt, unrestricted fleets, taxes, additional metals/ascensions, online saves and a route optimizer remain outside this milestone.
