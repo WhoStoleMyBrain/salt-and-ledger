@@ -10,7 +10,7 @@ Local explicit saves preserve an economic run; retry starts its identity fresh\.
 
 Save explicitly to a local slot before leaving\. Continue or Load restores a saved Classic, seeded\-v1, Living Cities\-v2 or Expanding Economy\-v3 run without advancing its day\. Saves are local to this installation; there is no cloud account or automatic cross\-device recovery\.
 
-The save retains exact accounts, fractional stock and demand residuals, every ship and route stage, voyages, factories, pending construction, household history, FIFO lots, challenges and v3 contracts, Mint and treasury state\. Visual interpolation and focus are presentation state, while text size remains an independent local preference\.
+The save retains exact accounts, fractional stock and demand residuals, every ship and route stage, voyages, factories, pending construction, household history, FIFO lots, challenges and v3 contracts, Mint and treasury state\. Grand Commission saves also retain the exact selected plan, per\-ship visits and signed target\-market history\. Visual interpolation and focus are presentation state, while text size remains an independent local preference\.
 
 A load validates the complete file, identity, content and configuration before replacing the current session\. Unsupported versions, damaged files, inconsistent stock or impossible states produce an error and preserve the valid active run\. A saved terminal run remains frozen and inspectable\.
 
@@ -20,6 +20,7 @@ Retry Same World always reconstructs the original initial identity and assets, e
 
 - [Challenges and run outcomes](../mechanics/help_challenges.md)
 - [Fractional goods and exact coins](../mechanics/help_exact_units.md)
+- [The Grand Commission and Objectives Journal](../mechanics/help_grand_commission.md)
 - [Menus, pause, and the encyclopedia](../mechanics/help_navigation.md)
 - [Seeded worlds and exact retries](../mechanics/help_seeded_worlds.md)
 

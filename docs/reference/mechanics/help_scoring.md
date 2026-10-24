@@ -12,7 +12,9 @@ Results identify the challenge, charter, world mode, seed and generator version,
 
 Score combines four capped components: up to 500 objective points in proportion to completed progress; 1,000 points for victory; 10 points per remaining deadline day on victory, capped at 600; and one solvency point per 10 cash, capped at 100\. Fractional points round down\. Enterprise Ambition uses the lower of its production and margin progress for objective points\. Total score cannot exceed 2,200; repeated transaction count earns no separate points\. City Recovery objective progress is the lower of paid baseline\-protected fulfillment and completion of its six\-opportunity observation window; victory also checks population, prosperity and cash\.
 
-Compare results only within the same challenge, starting charter, ascension and exact world identity\. Different seeds are not equivalent leaderboard placements, and packages have different endowments\. Retry Same World restores the original configuration; New World / Reroll changes the draft seed and previews it before a separate start\.
+Compare results only within the same challenge, starting charter, ascension and exact world identity\. Grand Commission identity also includes its draft version and exact selected objectives\. Different seeds or selections are not equivalent leaderboard placements, and packages have different endowments\. Retry Same World restores the original configuration; New World / Reroll changes the draft seed and previews it before a separate start\.
+
+Grand Commission objective points are floor\(500 times the sum of its four card percentages divided by 400\)\. A card uses its least\-complete condition, with each bar capped from zero to 100\. Victory still requires all four cards currently met and 100 company coins by day 180; partial points cannot award success\. Permanent accomplishments and currently met conditions are distinguished in the Objectives Journal\.
 
 ## Related entries
 

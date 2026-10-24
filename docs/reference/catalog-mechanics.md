@@ -18,6 +18,7 @@ These explanations are shared with the offline in-game encyclopedia. For exact d
 - [Owning a factory](mechanics/help_factories.md) — Invest cash in a fixed recipe and a finite private stockpile\.
 - [Financial reports and the ledger](mechanics/help_finances.md) — Separate cash, revenue, attributed costs, realized margin, and capital\.
 - [Commission and direct a fleet](mechanics/help_fleet_expansion.md) — Up to three owned ships share cash but keep separate cargo and routes\.
+- [The Grand Commission and Objectives Journal](mechanics/help_grand_commission.md) — Read the seeded map, draft four mandatory goals, and track real economic accomplishments\.
 - [Industrial shipping automation](mechanics/help_industrial_routes.md) — Connect owned production to physical transport and a chosen destination\.
 - [Market liquidity](mechanics/help_liquidity.md) — Stock and money are separate finite limits\.
 - [Menus, pause, and the encyclopedia](mechanics/help_navigation.md) — Inspect, pause, and begin another run without accidentally advancing the economy\.

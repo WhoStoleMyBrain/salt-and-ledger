@@ -6,6 +6,8 @@ This repository contains **Task 2.0's opt-in Expanding Economy v3**: exact fract
 
 ## Play the expanding archipelago
 
+**Task 2.1 adds [The Grand Commission](docs/GRAND_COMMISSION.md)** as the default scored v3 choice: inspect the full economic map, draft one of three objectives in each of four rounds, and satisfy all four by day 180 with 100 company coins. A dedicated Objectives / Journal distinguishes permanent accomplishments from reversible net sales, welfare and liquidity; save/Continue and Retry preserve the exact chosen commission. The three earlier v3 challenges and sandbox remain available.
+
 Run `python tools/generate_docs.py` and `python tools/prepare_unity.py` to stage the simulation, canonical content and encyclopedia. Open `unity/` in Unity **6000.6.6f1**, open **`Assets/Scenes/ArchipelagoLab.unity`**, and press Play. New Run and Sandbox open setup: review the charter, challenge, world preview and ascension before starting paused on day 0. Seeded worlds accept signed 32-bit integer seeds; copy the seed and record generator version, charter, challenge and ascension to reproduce a run. **Retry Same World** preserves all those choices; **New World / Reroll** changes the draft seed and returns to preview before starting.
 
 **Expanding Economy** retains seeded geography while adding proportional needs and construction eligibility for every existing producer somewhere in the world. Company opens the owned-fleet selector, shipwright, public Mint, finite contracts and funded public works. Select an owned ship before trading, sailing or editing its independent route. Town and private-stock displays may be fractional; ship orders remain whole units. The Ledger separates cash, reference Company Value, paid material basis, wages and issuance receipts. These rules permit productive recovery without guaranteeing lasting solvency.
@@ -28,6 +30,7 @@ dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --seeded-ru
 dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --living-cities --check
 dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --expanding-economy --check
 dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --expanding-economy --reinvestment --check
+dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --grand-commission --check
 ```
 
 The preserved **Classic/Ascension 0** complete-run report demonstrates all nine charter/challenge pairings and nine idle failures, with per-operation financial reconciliation. Merchant and industrial charters complete the main supply challenge on days 29 and 39 respectively. Those fixed-world measurements are not guarantees for every seed or policy. The separate [seeded experiment](docs/SEEDED_RUNS.md) examines geography and construction pressure without hidden economic assistance. Read [Runs and charters](docs/RUNS.md), [Player guide](docs/PLAYER_GUIDE.md), [Playtest](docs/PLAYTEST.md), and the actual [Unity verification record](docs/UNITY.md).

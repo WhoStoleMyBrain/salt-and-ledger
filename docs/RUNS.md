@@ -160,6 +160,8 @@ The next design step is observed startup-to-results playtesting: can players und
 
 ## Expanding Economy v3 runs
 
+The default scored v3 choice is now [The Grand Commission](GRAND_COMMISSION.md): inspect the seeded map, then draft four compulsory objectives in four three-card rounds. Its common deadline is day 180 with 100 liquid company coins. The resolved plan is part of run identity and local saves; Retry restores the original selection. The three Task 2.0 authored objectives below remain separate and unchanged, as does sandbox.
+
 V3 is a separate setup mode with generator/content version 3 and valuation version 1. It keeps the exact v1 seed geography and v2 economic role permutation, adds proportional needs and Silver/public monetary rules, and uses explicit starting cash of 1,800 / 1,200 / 1,500 coins for Merchant / Industrial / Independent. Whole ship capacities and starter physical grants remain unchanged. Its [Company Value](EXPANDING_ECONOMY.md#reference-company-value-and-honest-finance) includes owned goods and capital at stable references, separately from cash and realized material earnings. Compare only like complete identities.
 
 The three provisional new objectives use actual committed outcomes:

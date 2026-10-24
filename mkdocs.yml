@@ -19,6 +19,7 @@ nav:
       - Seeds, Ascension and readability: SEEDED_RUNS.md
       - Living cities and recovery: LIVING_CITIES.md
       - Expanding economy: EXPANDING_ECONOMY.md
+      - Grand Commission objectives: GRAND_COMMISSION.md
       - Local saves and continue: reference/mechanics/help_saves.md
       - Readability settings: reference/mechanics/help_readability.md
       - Trade and prices: reference/mechanics/help_trading.md
@@ -50,6 +51,7 @@ nav:
       - Playtest guides: PLAYTEST.md
       - Unity integration: UNITY.md
       - Task 2.0 acceptance evidence: TASK-2.0-VERIFICATION.md
+      - Task 2.1 acceptance evidence: TASK-2.1-VERIFICATION.md
       - Readability verification gallery: READABILITY_VERIFICATION.md
       - Website and publishing: WEBSITE.md
       - Roadmap: ROADMAP.md

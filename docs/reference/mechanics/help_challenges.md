@@ -18,12 +18,13 @@ Sandbox has no victory deadline\. An active run can be deliberately abandoned wi
 
 City Recovery in Living Cities measures six recent scheduled paid Bread opportunities at the vulnerable town\. It requires at least 90 percent fulfillment against the greater of current and starting\-population need, population at least its starting value, prosperity at least 55 and company cash at least 100 by day 90\. Deliveries alone do not count; regional public/NPC contributions may help\. A shrinking population cannot lower the baseline denominator\.
 
-Expanding Economy v3 offers separate provisioning, industrial\-network and royal\-commission objectives\. Read the actual setup thresholds: paid welfare, real production, Company Value, liquid cash and monetary development are different requirements\. Public Mint funding alone is not a victory or private company asset\.
+Expanding Economy v3 offers the Grand Commission objective draft alongside separate provisioning, industrial\-network and royal\-commission objectives\. Read the actual setup thresholds: paid welfare, real production, Company Value, liquid cash and monetary development are different requirements\. Public Mint funding alone is not a victory or private company asset\.
 
 ## Related entries
 
 - [Starting company charters](../mechanics/help_charters.md)
 - [Financial reports and the ledger](../mechanics/help_finances.md)
+- [The Grand Commission and Objectives Journal](../mechanics/help_grand_commission.md)
 - [Menus, pause, and the encyclopedia](../mechanics/help_navigation.md)
 - [Results and scoring](../mechanics/help_scoring.md)
 
