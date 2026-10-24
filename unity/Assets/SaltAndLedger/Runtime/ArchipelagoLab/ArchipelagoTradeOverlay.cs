@@ -224,6 +224,13 @@ namespace SaltAndLedger.UnityHost
             if (challenge == null)
             {
                 SetText("challengeLabel", "SANDBOX · Build your enterprise at your own pace. No deadline.");
+                Element<Label>("challengeLabel").tooltip = "";
+                return;
+            }
+            if (Session.Identity?.Commission != null)
+            {
+                SetText("challengeLabel", ObjectiveText());
+                Element<Label>("challengeLabel").tooltip = "All four drafted objectives and the cash minimum must hold together. Open Objectives for exact conditions and blockers.";
                 return;
             }
             if (Session.Snapshot.Economy != null)

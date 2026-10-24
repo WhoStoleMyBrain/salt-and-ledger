@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 
 namespace SaltAndLedger.UnityHost
 {
-    public enum ArchipelagoScreen { Gameplay, MainMenu, Setup, Pause, Results, Encyclopedia, Settings, Ledger, Logistics, CityEconomy, Development, Saves }
+    public enum ArchipelagoScreen { Gameplay, MainMenu, Setup, Pause, Results, Encyclopedia, Settings, Ledger, Logistics, CityEconomy, Development, Saves, CommissionMap, CommissionDraft, CommissionReview, Objectives }
 
     public static class ArchipelagoApplicationExit
     {
@@ -37,6 +37,7 @@ namespace SaltAndLedger.UnityHost
             navigationRoot = Panel(Root.Q("archipelagoLab"), "runNavigation", "run-navigation");
             BuildMainMenu();
             BuildRunSetup();
+            BuildCommissionScreens();
             BuildPauseMenu();
             BuildResults();
             BuildSettings();
@@ -80,6 +81,7 @@ namespace SaltAndLedger.UnityHost
                 "Industrial shipping", OpenLogistics);
             Button(Element<VisualElement>("contextScroll").contentContainer, "gameHelpButton",
                 "Encyclopedia / help", () => OpenSecondary(ArchipelagoScreen.Encyclopedia));
+            Button(Element<Label>("challengeLabel").parent, "objectivesButton", "Objectives", OpenObjectives);
             BuildCityEconomy();
         }
 
@@ -151,6 +153,7 @@ namespace SaltAndLedger.UnityHost
             Text(card, "pauseSummary", "", "run-copy");
             Button(card, "resumeButton", "Resume", ResumeGame, "primary run-menu-button");
             Button(card, "pauseSavesButton", "Save / Load", OpenSaveSlots, "run-menu-button");
+            Button(card, "pauseObjectivesButton", "Objectives / Journal", OpenObjectives, "run-menu-button");
             Button(card, "pauseCompanyButton", "Company & royal services", () => OpenSecondary(ArchipelagoScreen.Development), "run-menu-button");
             Button(card, "pauseEncyclopediaButton", "Encyclopedia", () => OpenSecondary(ArchipelagoScreen.Encyclopedia), "run-menu-button");
             Button(card, "pauseLedgerButton", "Company ledger", () => OpenSecondary(ArchipelagoScreen.Ledger), "run-menu-button");
@@ -256,17 +259,19 @@ namespace SaltAndLedger.UnityHost
             scroll.AddToClassList("run-content-scroll");
             screen.Add(scroll);
             Text(scroll, "resultObjective", "", "run-objective");
+            Panel(scroll, "resultCommissionGoals", "commission-result-goals");
             Text(scroll, "resultScore", "", "run-copy");
             Text(scroll, "resultFinances", "", "run-copy");
             Text(scroll, "resultAssets", "", "run-copy");
             Text(scroll, "resultOperations", "", "run-copy");
             Text(scroll, null, "Material margin deducts FIFO material basis released by sales. Living Cities also reports all paid wages as a separate operating expense, including work whose output is still held. Transport operating costs, depreciation and asset resale are unmodeled. Grants have zero paid basis, not zero economic value. Compare scores within the same challenge, charter, ascension and exact world identity.", "run-footnote");
-            var actions = Panel(screen, null, "run-actions row");
+            var actions = Panel(screen, "resultsActions", "run-actions row results-actions");
             Button(actions, "retryRunButton", "Retry Same World", () => BeginRun(Session.Identity), "primary");
             Button(actions, "resultsNewRunButton", "Change Setup", ChangeSetup);
             Button(actions, "resultsRerollButton", "New World / Reroll", RerollWorld);
             Button(actions, "resultsMenuButton", "Main Menu", ReturnToMainMenu);
             Button(actions, "resultsHelpButton", "Encyclopedia", () => OpenSecondary(ArchipelagoScreen.Encyclopedia));
+            Button(actions, "resultsObjectivesButton", "Objectives", OpenObjectives);
             Button(actions, "resultsSaveButton", "Save result", OpenSaveSlots);
         }
 
@@ -282,11 +287,14 @@ namespace SaltAndLedger.UnityHost
                 " · Day " + presentedResult.Day + " of " + result.Challenge.Configuration.DeadlineDay +
                 "\n" + WorldIdentityText(result.Identity));
             SetText("resultObjective", ObjectiveText());
+            RefreshCommissionResults();
             SetText("resultScore", "Score " + result.TotalScore + "\nObjective " + result.ObjectiveScore +
                 " / 500 · Victory " + result.VictoryScore + " / 1,000 · Time remaining " + result.TimeScore +
                 " / 600 · Cash " + result.SolvencyScore + " / 100\n" +
                 "Comparison group: " + result.ComparisonGroup.Replace("/", " / ") +
-                "\nObjective: 500 × capped completion fraction. Victory: 1,000. Winning early: 10 per remaining day, capped at 60 days. Cash: 1 per 10, capped at 100.");
+                (Session.Identity?.Commission == null ? "\nObjective: 500 × capped completion fraction." :
+                "\nObjective: floor(500 × sum of the four capped card percentages / 400).") +
+                " Victory: 1,000. Winning early: 10 per remaining day, capped at 60 days. Cash: 1 per 10, capped at 100.");
             SetText("resultFinances", FinancialText());
             SetText("resultAssets", AssetText());
             SetText("resultOperations", OperationsText());
@@ -321,6 +329,7 @@ namespace SaltAndLedger.UnityHost
             if (screen == ArchipelagoScreen.Ledger) RefreshLedger();
             if (screen == ArchipelagoScreen.CityEconomy) RefreshCityEconomy();
             if (screen == ArchipelagoScreen.Development) RefreshDevelopment();
+            if (screen == ArchipelagoScreen.Objectives) RefreshObjectives();
         }
 
         public void HandleCancel()
@@ -329,6 +338,10 @@ namespace SaltAndLedger.UnityHost
             if (TradeIsOpen || IndustryIsOpen) { CloseModals(); return; }
             if (Screen == ArchipelagoScreen.Encyclopedia) { EncyclopediaBack(); return; }
             if (Screen == ArchipelagoScreen.CityEconomy) { ShowScreen(cityReturnScreen); return; }
+            if (Screen == ArchipelagoScreen.CommissionMap) { ShowScreen(ArchipelagoScreen.Setup); return; }
+            if (Screen == ArchipelagoScreen.CommissionDraft) { BackCommissionRound(); return; }
+            if (Screen == ArchipelagoScreen.CommissionReview) { ShowCommissionRound(3); return; }
+            if (Screen == ArchipelagoScreen.Objectives) { CloseObjectives(); return; }
             if (Screen == ArchipelagoScreen.Settings || Screen == ArchipelagoScreen.Ledger || Screen == ArchipelagoScreen.Logistics ||
                 Screen == ArchipelagoScreen.Development || Screen == ArchipelagoScreen.Saves)
             { ShowScreen(secondaryParent); return; }
@@ -356,8 +369,16 @@ namespace SaltAndLedger.UnityHost
             if (HasActiveRun && Session.IsChallengeEnded && !ReferenceEquals(presentedResult, Session.Snapshot)) PresentResults();
             SetText("runIdentityLabel", WorldIdentityText(Session.Identity) + "\n" +
                 (Session.ChallengeId == null ? "Unlimited sandbox" : RunScenario.GetChallenge(Session.ChallengeId).Name) +
-                "\n" + RunScenario.GetCharter(Session.CharterId).Name);
+                "\n" + RunScenario.GetCharter(Session.CharterId).Name +
+                (Session.Identity?.Commission == null ? "" : "\nMission draft v" + Session.Identity.Commission.Version +
+                " · " + Session.Identity.Commission.Signature + "\n" +
+                string.Join(" · ", Session.Identity.Commission.Goals.Select(goal => goal.Title))));
             Element<Button>("copyRunSeedButton").SetEnabled(Session.Identity?.Seed != null);
+            var drafted = Session.Identity?.Commission != null;
+            Element<Button>("objectivesButton").EnableInClassList("hidden", !drafted);
+            Element<Button>("pauseObjectivesButton").EnableInClassList("hidden", !drafted);
+            Element<Button>("resultsObjectivesButton").EnableInClassList("hidden", !drafted);
+            if (Screen == ArchipelagoScreen.Objectives) RefreshObjectives();
             if (Screen == ArchipelagoScreen.Ledger) RefreshLedger();
             if (Screen == ArchipelagoScreen.Logistics) RefreshLogisticsStatus();
         }
@@ -367,6 +388,13 @@ namespace SaltAndLedger.UnityHost
             var challenge = Session.Snapshot.Challenge;
             if (challenge == null) return "Sandbox · no deadline. Build your enterprise at your own pace.";
             var config = challenge.Configuration;
+            if (Session.Identity?.Commission != null)
+            {
+                var commission = GrandCommission.Progress(Session.Snapshot);
+                return "Objectives " + commission.CurrentlyMetCount + "/4 · " +
+                    Math.Max(0, config.DeadlineDay - Session.Snapshot.Day) + " days left · cash " +
+                    Money(Session.Player.Cash) + "/" + Money(config.MinimumCash) + " min";
+            }
             if (Session.Snapshot.Economy != null)
             {
                 var progress = ExpandingChallenges.Progress(Session.Snapshot);

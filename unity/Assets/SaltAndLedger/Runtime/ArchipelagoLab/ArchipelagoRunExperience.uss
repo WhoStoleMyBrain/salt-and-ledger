@@ -16,6 +16,7 @@
 .run-card { background-color: #183340; border-width: 1px; border-color: #3e5c66; border-radius: 7px; padding: 14px; }
 .run-actions { flex-shrink: 0; margin-top: 10px; flex-wrap: wrap; }
 .run-actions > .unity-button { min-height: var(--sl-control); font-size: var(--sl-body); }
+.results-actions > .unity-button { flex-basis: 22%; min-width: 0; white-space: normal; }
 .run-pause-card { width: 780px; max-width: 100%; align-self: center; }
 .run-content-scroll { flex-grow: 1; min-height: 0; background-color: #132c38; border-radius: 7px; }
 .run-content-scroll > .unity-scroll-view__content-viewport > .unity-scroll-view__content-container { padding: 14px; }
@@ -71,3 +72,26 @@
 .setup-city-cards { flex-direction: row; flex-wrap: wrap; }
 .setup-city-card { flex-grow: 1; flex-basis: 42%; min-width: 0; padding: 10px; margin: 5px; background-color: #142b36; border-radius: 5px; }
 .ui-narrow.ui-large-layout .setup-city-card { flex-basis: 100%; }
+
+.commission-map-host { height: 360px; flex-shrink: 0; border-width: 1px; border-color: #496672; border-radius: 7px; }
+.commission-map-host > .archipelago-map { flex-grow: 1; min-height: 0; }
+.commission-offers { flex-direction: row; align-items: stretch; }
+.commission-offer { flex-grow: 1; flex-basis: 0; min-width: 0; margin: 5px; border-width: 2px; }
+.commission-selected { border-color: #e5c276; background-color: #28464b; }
+.commission-requirement { font-size: var(--sl-body); color: #d5e1df; white-space: normal; margin: 6px 0 12px 0; flex-shrink: 0; }
+.commission-choose { margin-top: auto; min-height: var(--sl-control); font-size: var(--sl-body); white-space: normal; }
+.commission-selections { font-size: var(--sl-caption); color: #b9d3d3; white-space: normal; margin: 8px 0; flex-shrink: 0; }
+.commission-review-card { margin-bottom: 12px; }
+.commission-journal-cards, .commission-result-goals { flex-direction: row; flex-wrap: wrap; align-items: stretch; }
+.commission-progress-card { flex-grow: 1; flex-basis: 44%; min-width: 0; margin: 6px; }
+.commission-progress-card .run-objective { margin-bottom: 6px; }
+.commission-progress-card .run-eyebrow { letter-spacing: 1px; }
+.commission-progress { height: var(--sl-control); flex-shrink: 0; margin: 4px 0 10px 0; }
+.commission-progress .unity-progress-bar__background { background-color: #0f2734; border-color: #53717a; border-width: 1px; }
+.commission-progress .unity-progress-bar__progress { background-color: #477c73; }
+.commission-progress .unity-progress-bar__title { color: #fff1cf; font-size: var(--sl-body); -unity-font-style: bold; }
+.commission-finished { color: #a9d9ba; }
+.ui-narrow.ui-large-layout .commission-offers { flex-direction: column; }
+.ui-narrow.ui-large-layout .commission-offer { flex-basis: auto; margin-bottom: 12px; }
+.ui-narrow.ui-large-layout .commission-progress-card { flex-basis: 100%; }
+.ui-short .commission-map-host { height: 310px; }

@@ -75,7 +75,9 @@ namespace SaltAndLedger.UnityHost
             Button(actions, "startRunButton", "Begin voyage", () =>
             {
                 RefreshSetup();
-                if (setupIdentity != null) BeginRun(setupIdentity);
+                if (setupIdentity == null) return;
+                if (SetupChallengeId() == GrandCommission.ChallengeId) OpenCommissionMap();
+                else BeginRun(setupIdentity);
             }, "primary");
             mode.RegisterValueChangedCallback(_ => RefreshSetup());
             seed.RegisterValueChangedCallback(_ => RefreshSetup());
@@ -128,14 +130,21 @@ namespace SaltAndLedger.UnityHost
             Element<TextField>("seedField").SetEnabled(seeded);
             var validSeed = SeededArchipelago.TryParseSeed(Element<TextField>("seedField").value, out var seed);
             var valid = !seeded || validSeed;
+            var commission = id == GrandCommission.ChallengeId;
+            if (commission && valid) EnsureCommissionDraft(seed);
+            Element<Button>("startRunButton").text = commission ? "Reveal map & draft" : "Begin voyage";
             Element<Button>("startRunButton").SetEnabled(valid);
             Element<Button>("copySeedButton").SetEnabled(seeded && valid);
             SetText("seedValidation", valid ? "" : "Enter a signed 32-bit integer using ASCII digits. No spaces, decimals or exponents.");
             SetText("setupDifficulty", difficulty == RunDifficulty.Normal
                 ? "New private facilities operate immediately; their first batch waits one normal production interval."
                 : "Pay the full cost at order. New private sites spend two complete days under construction, then wait a full production interval. No automatic purchases, sales or production while building. The Industrial Consortium's granted bakery is already operational and keeps its original schedule.");
-            setupIdentity = valid ? new RunIdentity(id, charter.Id, mode,
-                seeded ? seed : (int?)null, difficulty, livingPricingMode: living ? pricing : LivingPricingMode.StockOnly) : null;
+            var plan = commission && valid ? SelectedCommission() : null;
+            // An unfinished draft uses an ordinary day-zero sandbox preview; it cannot be started as a commission.
+            setupIdentity = valid ? new RunIdentity(commission && plan == null ? null : id, charter.Id, mode,
+                seeded ? seed : (int?)null, difficulty, livingPricingMode: living ? pricing : LivingPricingMode.StockOnly,
+                commission: plan) : null;
+            Root.Q<Button>("commissionBeginButton")?.SetEnabled(commission && valid && plan != null);
             if (valid) charter = RunScenario.GetCharter(setupIdentity);
             SetText("setupCharterDescription", charter.Description);
             SetText("setupAssets", charter.Endowment);
@@ -188,6 +197,7 @@ namespace SaltAndLedger.UnityHost
 
         private void LoadSetupIdentity(RunIdentity identity)
         {
+            RestoreCommissionSelection(identity);
             var mode = Element<DropdownField>("worldModePicker");
             mode.SetValueWithoutNotify(mode.choices[(int)identity.WorldMode]);
             RefreshSetupChallenges();
