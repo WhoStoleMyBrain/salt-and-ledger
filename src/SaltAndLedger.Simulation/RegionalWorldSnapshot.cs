@@ -158,6 +158,8 @@ namespace SaltAndLedger.Simulation
         public AccountingSnapshot Accounting { get; }
         public ExpandingEconomySnapshot? Economy { get; }
         public bool ShouldSerializeEconomy() => Economy != null;
+        public CommissionHistory? CommissionHistory { get; }
+        public bool ShouldSerializeCommissionHistory() => CommissionHistory != null;
         [JsonIgnore]
         public int QuantityScale => Economy == null ? 1 : 10000;
         [JsonIgnore]
@@ -174,7 +176,8 @@ namespace SaltAndLedger.Simulation
             IEnumerable<CompanySnapshot> companies, IEnumerable<IndustryBlueprint> industryBlueprints,
             IEnumerable<PrivateFacilitySnapshot> privateFacilities, ChallengeSnapshot? challenge,
             AccountingSnapshot accounting, RunDifficulty difficulty = RunDifficulty.Normal,
-            RunIdentity? runIdentity = null, ExpandingEconomySnapshot? economy = null)
+            RunIdentity? runIdentity = null, ExpandingEconomySnapshot? economy = null,
+            CommissionHistory? commissionHistory = null)
         {
             Day = day;
             Revision = revision;
@@ -194,6 +197,7 @@ namespace SaltAndLedger.Simulation
             Challenge = challenge;
             Accounting = accounting;
             Economy = economy;
+            CommissionHistory = commissionHistory;
         }
 
         public SeaRoute GetRoute(string from, string to)

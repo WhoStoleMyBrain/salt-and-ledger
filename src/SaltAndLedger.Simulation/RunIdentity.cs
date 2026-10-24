@@ -16,6 +16,8 @@ namespace SaltAndLedger.Simulation
         public int GeneratorVersion { get; }
         public RunDifficulty Difficulty { get; }
         public LivingPricingMode LivingPricingMode { get; }
+        public GrandCommissionPlan? Commission { get; }
+        public bool ShouldSerializeCommission() => Commission != null;
         public bool ShouldSerializeLivingPricingMode() => WorldMode == RunWorldMode.LivingCities || WorldMode == RunWorldMode.ExpandingEconomy;
         public int ContentVersion => WorldMode == RunWorldMode.ExpandingEconomy ? 3 : 1;
         public int ValuationVersion => WorldMode == RunWorldMode.ExpandingEconomy ? 1 : 0;
@@ -30,12 +32,13 @@ namespace SaltAndLedger.Simulation
                 GeneratorVersion.ToString(CultureInfo.InvariantCulture) + "-seed" +
                 Seed!.Value.ToString(CultureInfo.InvariantCulture) +
                 (ShouldSerializeLivingPricingMode() ? "-" + LivingPricingMode.ToString().ToLowerInvariant() : "") +
-                (WorldMode == RunWorldMode.ExpandingEconomy ? "-content3-value1" : ""));
+                (WorldMode == RunWorldMode.ExpandingEconomy ? "-content3-value1" : "")) +
+            (Commission == null ? "" : "/commission-v" + Commission.Version.ToString(CultureInfo.InvariantCulture) + "-" + Commission.Signature);
 
         public RunIdentity(string? challengeId, string charterId, RunWorldMode worldMode = RunWorldMode.Classic,
             int? seed = null, RunDifficulty difficulty = RunDifficulty.Normal, int? generatorVersion = null,
             LivingPricingMode livingPricingMode = LivingPricingMode.StockOnly,
-            int? contentVersion = null, int? valuationVersion = null)
+            int? contentVersion = null, int? valuationVersion = null, GrandCommissionPlan? commission = null)
         {
             if (challengeId != null) RunScenario.GetChallenge(challengeId);
             RunScenario.GetCharter(charterId);
@@ -52,6 +55,10 @@ namespace SaltAndLedger.Simulation
                 throw new ArgumentException("City Recovery requires a Living Cities world.", nameof(challengeId));
             if (challengeId != null && RunScenario.IsExpandingChallenge(challengeId) != (worldMode == RunWorldMode.ExpandingEconomy))
                 throw new ArgumentException("Expanding Economy uses its own v3 objectives.", nameof(challengeId));
+            if ((challengeId == GrandCommission.ChallengeId) != (commission != null))
+                throw new ArgumentException("Grand Commission requires exactly one complete mission plan; other runs cannot carry one.", nameof(commission));
+            if (commission != null && (worldMode != RunWorldMode.ExpandingEconomy || commission.Seed != seed))
+                throw new ArgumentException("The commission must belong to this exact v3 seed.", nameof(commission));
             var supportedVersion = worldMode == RunWorldMode.Classic ? 0 :
                 worldMode == RunWorldMode.Seeded ? SeededArchipelago.CurrentVersion :
                 worldMode == RunWorldMode.LivingCities ? LivingCityGeneration.CurrentVersion : ExpandingEconomyGeneration.CurrentVersion;
@@ -68,12 +75,13 @@ namespace SaltAndLedger.Simulation
             GeneratorVersion = supportedVersion;
             Difficulty = difficulty;
             LivingPricingMode = livingPricingMode;
+            Commission = commission;
         }
 
         public bool Equals(RunIdentity? other) => other != null &&
             ChallengeId == other.ChallengeId && CharterId == other.CharterId && WorldMode == other.WorldMode &&
             Seed == other.Seed && GeneratorVersion == other.GeneratorVersion && Difficulty == other.Difficulty &&
-            LivingPricingMode == other.LivingPricingMode;
+            LivingPricingMode == other.LivingPricingMode && Commission?.Signature == other.Commission?.Signature;
 
         public override bool Equals(object? obj) => obj is RunIdentity other && Equals(other);
 

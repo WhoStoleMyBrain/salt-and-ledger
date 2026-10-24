@@ -115,7 +115,7 @@ namespace SaltAndLedger.Simulation
         public static IReadOnlyList<RunChallenge> GetChallenges(RunWorldMode mode)
         {
             if (!Enum.IsDefined(typeof(RunWorldMode), mode)) throw new ArgumentOutOfRangeException(nameof(mode));
-            return mode == RunWorldMode.ExpandingEconomy ? ExpandingChallenges.Definitions :
+            return mode == RunWorldMode.ExpandingEconomy ? CommissionChallenges :
                 mode == RunWorldMode.LivingCities ? LivingChallenges : Challenges;
         }
 
@@ -126,10 +126,13 @@ namespace SaltAndLedger.Simulation
                 "Meet at least 90% of Bread needs over six due opportunities, preserve the initial population, reach prosperity 55, and retain 100 company cash by day 90. The target follows the vulnerable town role.")
         });
 
-        public static bool IsExpandingChallenge(string id) => id == SustainableChallenge || id == NetworkChallenge || id == RoyalChallenge;
+        private static IReadOnlyList<RunChallenge> CommissionChallenges => Array.AsReadOnly(
+            new[] { GrandCommission.Definition }.Concat(ExpandingChallenges.Definitions).ToArray());
+
+        public static bool IsExpandingChallenge(string id) => id == SustainableChallenge || id == NetworkChallenge || id == RoyalChallenge || id == GrandCommission.ChallengeId;
 
         public static RunChallenge GetChallenge(string id) => Challenges.Concat(LivingChallenges)
-            .Concat(ExpandingChallenges.Definitions).SingleOrDefault(c => c.Id == id)
+            .Concat(CommissionChallenges).SingleOrDefault(c => c.Id == id)
             ?? throw new ArgumentException("Unknown challenge: " + id, nameof(id));
 
         public static RegionalWorldState Create(ContentCatalog content, string? challengeId, string charterId)
@@ -223,6 +226,8 @@ namespace SaltAndLedger.Simulation
             Finance = snapshot.Accounting.Companies[Challenge.Configuration.OwnerId];
             Cash = snapshot.Companies[Challenge.Configuration.OwnerId].Cash;
             ObjectiveScore = Fraction(Challenge.ObjectiveQuantity, Challenge.Configuration.RequiredQuantity, 500);
+            if (Challenge.Configuration.Kind == ChallengeKind.GrandCommission)
+                ObjectiveScore = GrandCommission.Progress(snapshot).ObjectiveScore;
             if (Challenge.Configuration.Kind == ChallengeKind.EnterpriseAmbition)
                 ObjectiveScore = Math.Min(ObjectiveScore, Fraction(Challenge.RealizedGrossMargin,
                     Challenge.Configuration.RequiredMargin, 500));

@@ -21,6 +21,21 @@ namespace SaltAndLedger.Simulation
             if (restored.Economy != null)
             {
                 foreach (var owner in restored.Companies.Keys) _ = restored.CompanyValue(owner).Total;
+                if (restored.RunIdentity?.Commission != null)
+                {
+                    var challenge = restored.Challenge!;
+                    var actual = GrandCommission.Progress(restored);
+                    var qualified = actual.Qualified &&
+                        restored.Companies[challenge.Configuration.OwnerId].Cash >= challenge.Configuration.MinimumCash;
+                    RequireCommission(challenge.NetDeliveredQuantity == 0 && challenge.RegionalConsumedQuantity == 0 &&
+                        challenge.RealizedGrossMargin == restored.Accounting.Companies[challenge.Configuration.OwnerId].RealizedGrossMargin,
+                        "Saved commission accounting counters disagree with authoritative company accounting.");
+                    RequireCommission(challenge.ProducedQuantity == actual.Percent &&
+                        (challenge.Status != ChallengeStatus.Succeeded || qualified),
+                        "Saved commission progress disagrees with authoritative mission conditions.");
+                    RequireCommission(!qualified || (challenge.Status != ChallengeStatus.Active && challenge.Status != ChallengeStatus.Failed),
+                        "Saved commission lifecycle conflicts with its already qualified state.");
+                }
                 if (restored.Challenge != null && ExpandingChallenges.IsExpanding(restored.Challenge.Configuration.Kind))
                 {
                     // Pure validation of the saved observations/assets; never execute ChallengeRules.Evaluate
@@ -42,6 +57,9 @@ namespace SaltAndLedger.Simulation
             // evaluation is invoked by restore, including when the saved challenge is already terminal.
             state = restored;
         }
+
+        private static void RequireCommission(bool condition, string message)
+        { if (!condition) throw new WorldSaveException(message); }
     }
 
     internal static partial class RegionalSaveRestore
@@ -61,6 +79,15 @@ namespace SaltAndLedger.Simulation
                     total = checked(total + good.Lots.Length);
                     Require(total <= WorldSaveCodec.MaximumOpenLots, "Too many open FIFO lots.");
                 }
+            }
+            if (data.Identity?.Commission != null) Count(data.Identity.Commission.Goals, 4, 4);
+            if (data.CommissionHistory != null)
+            {
+                Count(data.CommissionHistory.Ships, 1, 3);
+                Count(data.CommissionHistory.Markets, 0, 28);
+                foreach (var ship in data.CommissionHistory.Ships)
+                    Require(ship.Visits != null && ship.Visits.Count >= 1 && ship.Visits.Count <= 4,
+                        "Invalid bounded ship visit count.");
             }
         }
 
@@ -91,8 +118,10 @@ namespace SaltAndLedger.Simulation
             var financial = data.Companies.Select(c => RestoreCompany(content, initial, c, stores)).ToArray();
             var accounting = new AccountingSnapshot(financial, stores, data.NextLotId);
             var challenge = RestoreChallenge(initial, data, ports);
+            var commissionHistory = RestoreCommissionHistory(content, initial, data, ships, economy);
             return new RegionalWorldSnapshot(data.Day, data.Revision, ports, ships, initial.Routes, companies,
-                initial.IndustryBlueprints.Values, facilities, challenge, accounting, initial.Difficulty, initial.RunIdentity, economy);
+                initial.IndustryBlueprints.Values, facilities, challenge, accounting, initial.Difficulty, initial.RunIdentity, economy,
+                commissionHistory);
         }
 
         private static RegionalPortSnapshot RestorePort(ContentCatalog content, RegionalPortSnapshot initial, RegionalSavePort data, long day)
@@ -347,13 +376,14 @@ namespace SaltAndLedger.Simulation
             {
                 var funded = data.Companies.Single(company => company.Id == config.OwnerId).Cash >= config.MinimumCash;
                 var qualified = config.Kind == ChallengeKind.CityRecovery ? recovery!.Qualified :
-                    ExpandingChallenges.IsExpanding(config.Kind) ? c.Produced == 100 :
+                    ExpandingChallenges.IsExpanding(config.Kind) || initial.RunIdentity?.Commission != null ? c.Produced == 100 :
                     config.Kind == ChallengeKind.RegionalRelief ? c.RegionalConsumed >= config.RequiredQuantity :
                     config.Kind == ChallengeKind.EnterpriseAmbition ? c.Produced >= config.RequiredQuantity && c.Margin >= config.RequiredMargin :
                     c.NetDelivered >= config.RequiredQuantity;
                 Require(funded && qualified, "Saved success does not meet its recorded objective and solvency requirements.");
             }
-            if (ExpandingChallenges.IsExpanding(config.Kind)) Require(c.Produced <= 100, "Invalid v3 objective percentage.");
+            if (ExpandingChallenges.IsExpanding(config.Kind) || initial.RunIdentity?.Commission != null)
+                Require(c.Produced <= 100, "Invalid v3 objective percentage.");
             return new ChallengeSnapshot(config, c.NetDelivered, c.Status, c.CompletedDay, c.RegionalConsumed, c.Produced, c.Margin, recovery);
         }
 

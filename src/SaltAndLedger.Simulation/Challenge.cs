@@ -11,7 +11,7 @@ namespace SaltAndLedger.Simulation
         Abandoned
     }
 
-    public enum ChallengeKind { CoastalSupply, RegionalRelief, EnterpriseAmbition, CityRecovery, SustainableProvisioning, IndustrialNetwork, RoyalCommission }
+    public enum ChallengeKind { CoastalSupply, RegionalRelief, EnterpriseAmbition, CityRecovery, SustainableProvisioning, IndustrialNetwork, RoyalCommission, GrandCommission }
 
     /// <summary>A configured objective evaluated on the regional world's own day.</summary>
     public sealed class ChallengeConfiguration
@@ -113,7 +113,7 @@ namespace SaltAndLedger.Simulation
         public CityRecoveryProgress? Recovery { get; }
         public bool ShouldSerializeRecovery() => Recovery != null;
         public long ObjectiveQuantity => Configuration.Kind == ChallengeKind.RegionalRelief ? RegionalConsumedQuantity :
-            ExpandingChallenges.IsExpanding(Configuration.Kind) ? ProducedQuantity :
+            (ExpandingChallenges.IsExpanding(Configuration.Kind) || Configuration.Kind == ChallengeKind.GrandCommission) ? ProducedQuantity :
             Configuration.Kind == ChallengeKind.EnterpriseAmbition ? ProducedQuantity :
             Configuration.Kind == ChallengeKind.CityRecovery ? Recovery?.ProgressPercent ?? 0 : DeliveredQuantity;
 
@@ -144,6 +144,7 @@ namespace SaltAndLedger.Simulation
             var configuration = snapshot.Configuration;
             if (snapshot.Status != ChallengeStatus.Active || trade.Outcome != TradeOutcome.Traded ||
                 configuration.Kind == ChallengeKind.CityRecovery || ExpandingChallenges.IsExpanding(configuration.Kind) ||
+                configuration.Kind == ChallengeKind.GrandCommission ||
                 ownerId != configuration.OwnerId || portId != configuration.PortId ||
                 trade.GoodId != configuration.GoodId) return snapshot;
             // Signed debt matters: buying locally and selling back must never create delivery credit.
@@ -157,7 +158,8 @@ namespace SaltAndLedger.Simulation
         {
             if (snapshot.Status != ChallengeStatus.Active || goodId != snapshot.Configuration.GoodId || consumed == 0)
                 return snapshot;
-            if (snapshot.Configuration.Kind == ChallengeKind.CityRecovery || ExpandingChallenges.IsExpanding(snapshot.Configuration.Kind)) return snapshot;
+            if (snapshot.Configuration.Kind == ChallengeKind.CityRecovery || ExpandingChallenges.IsExpanding(snapshot.Configuration.Kind) ||
+                snapshot.Configuration.Kind == ChallengeKind.GrandCommission) return snapshot;
             return new ChallengeSnapshot(snapshot.Configuration, snapshot.NetDeliveredQuantity, snapshot.Status, null,
                 checked(snapshot.RegionalConsumedQuantity + consumed), snapshot.ProducedQuantity, snapshot.RealizedGrossMargin);
         }
@@ -171,6 +173,16 @@ namespace SaltAndLedger.Simulation
         {
             if (snapshot.Status != ChallengeStatus.Active) return snapshot;
             var configuration = snapshot.Configuration;
+            if (configuration.Kind == ChallengeKind.GrandCommission)
+            {
+                var commission = GrandCommission.Progress(world ?? throw new InvalidOperationException("A commission needs its authoritative world."));
+                var won = commission.Qualified && companyCash >= configuration.MinimumCash && day <= configuration.DeadlineDay;
+                var status = won ? ChallengeStatus.Succeeded : day >= configuration.DeadlineDay ? ChallengeStatus.Failed : ChallengeStatus.Active;
+                if (snapshot.ProducedQuantity == commission.Percent && snapshot.Status == status &&
+                    snapshot.RealizedGrossMargin == financial!.RealizedGrossMargin) return snapshot;
+                return new ChallengeSnapshot(configuration, 0, status, status == ChallengeStatus.Active ? (long?)null : day,
+                    0, commission.Percent, financial!.RealizedGrossMargin);
+            }
             if (ExpandingChallenges.IsExpanding(configuration.Kind))
             {
                 var expanding = ExpandingChallenges.Progress(world ?? throw new InvalidOperationException("V3 objectives need the authoritative regional snapshot."));

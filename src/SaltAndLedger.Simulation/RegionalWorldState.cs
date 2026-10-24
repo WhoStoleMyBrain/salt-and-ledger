@@ -34,6 +34,9 @@ namespace SaltAndLedger.Simulation
                 throw new ArgumentException("Run identity and world difficulty must agree.", nameof(runIdentity));
             if (runIdentity != null && runIdentity.ChallengeId != challenge?.Id)
                 throw new ArgumentException("Run identity and world challenge must agree.", nameof(runIdentity));
+            if (challenge?.Kind == ChallengeKind.GrandCommission &&
+                (runIdentity?.Commission == null || economy == null))
+                throw new ArgumentException("A Grand Commission needs its resolved v3 run identity.", nameof(runIdentity));
             if (initialDay < 0 || initialRevision < 0) throw new ArgumentOutOfRangeException(nameof(initialDay));
             var locations = new List<RegionalPortSnapshot>();
             foreach (var port in ports)
@@ -147,13 +150,15 @@ namespace SaltAndLedger.Simulation
             state = new RegionalWorldSnapshot(initialDay, initialRevision, locations, vessels, connections,
                 accounts.Values, blueprints, privateFacilities,
                 initialChallenge, accounting.Snapshot(), difficulty, runIdentity,
-                economy == null ? null : ExpandingEconomySnapshot.Initial(economy));
+                economy == null ? null : ExpandingEconomySnapshot.Initial(economy),
+                runIdentity?.Commission == null ? null : CommissionHistory.Initial(vessels, challenge!.OwnerId, initialDay));
             if (economy != null)
             {
                 ValidateExpandingConfiguration(economy);
                 var working = new WorkingWorld(content, state);
                 foreach (var company in state.Companies.Values)
                     working.Economy!.InitialValues.Add(company.Id, state.CompanyValue(company.Id).Total);
+                if (runIdentity?.Commission != null) working.EvaluateChallenge();
                 state = working.View();
             }
             initialCombinedCash = state.TotalCash;
@@ -515,6 +520,7 @@ namespace SaltAndLedger.Simulation
             internal SortedDictionary<string, WorkingFacility> PrivateFacilities { get; } = new SortedDictionary<string, WorkingFacility>(StringComparer.Ordinal);
             internal ChallengeSnapshot? Challenge { get; set; }
             internal WorkingAccounting Accounting { get; }
+            internal WorkingCommissionHistory? Commission { get; }
             internal List<RegionalTrade> Trades { get; } = new List<RegionalTrade>();
             internal List<RegionalProduction> Production { get; } = new List<RegionalProduction>();
             internal List<RegionalConsumption> Consumption { get; } = new List<RegionalConsumption>();
@@ -539,13 +545,14 @@ namespace SaltAndLedger.Simulation
                 Challenge = before.Challenge;
                 Accounting = new WorkingAccounting(before.Accounting);
                 Economy = before.Economy == null ? null : new WorkingEconomy(before.Economy);
+                Commission = before.CommissionHistory == null ? null : new WorkingCommissionHistory(before.CommissionHistory);
             }
             internal RegionalWorldSnapshot View(long? revision = null) => new RegionalWorldSnapshot(Day,
                 revision ?? before.Revision, Ports.Values.Select(p => p.Snapshot()),
                 Ships.Values.Select(s => s.Snapshot(Companies[s.Configuration.OwnerId].Cash)), before.Routes,
                 Companies.Values.Select(c => c.Snapshot()), before.IndustryBlueprints.Values,
                 PrivateFacilities.Values.Select(f => f.Snapshot(Day)), Challenge, Accounting.Snapshot(),
-                before.Difficulty, before.RunIdentity, Economy?.Snapshot());
+                before.Difficulty, before.RunIdentity, Economy?.Snapshot(), Commission?.Snapshot());
 
             internal void EvaluateChallenge()
             {
@@ -577,6 +584,7 @@ namespace SaltAndLedger.Simulation
                 if (attempt.Outcome == TradeOutcome.Traded)
                 {
                     AccountTrade("ship:" + shipId, portId, attempt);
+                    if (company.Id == Challenge?.Configuration.OwnerId) Commission?.Trade(portId, attempt);
                     Changed = true;
                 }
                 return attempt;
@@ -708,6 +716,7 @@ namespace SaltAndLedger.Simulation
                 if (attempt.Outcome == TradeOutcome.Traded)
                 {
                     AccountTrade("facility:" + facility.Id, facility.PortId, attempt);
+                    if (company.Id == Challenge?.Configuration.OwnerId) Commission?.Trade(facility.PortId, attempt);
                     if (command.Direction == TradeDirection.Buy)
                         facility.ProcurementCost = checked(facility.ProcurementCost + attempt.ExecutedAmount);
                     else facility.SalesRevenue = checked(facility.SalesRevenue + attempt.ExecutedAmount);
@@ -1089,6 +1098,8 @@ namespace SaltAndLedger.Simulation
                     if (ship.Remaining != 0) continue;
                     Movements.Add(new RegionalMovement(entry.Key, ship.Origin!, ship.Destination, ShipMovementKind.Arrival, 0));
                     ship.Dock = ship.Destination;
+                    if (ship.Configuration.OwnerId == Challenge?.Configuration.OwnerId)
+                        Commission?.Visit(entry.Key, ship.Dock, checked(Day + 1));
                     ship.Origin = null;
                     ship.Destination = null;
                 }

@@ -266,6 +266,8 @@ namespace SaltAndLedger.Simulation
                         new ShipSnapshot(order.ShipId, config.ShipCapacity, new Inventory(content).Snapshot(), order.PortId, null, null, 0),
                         Companies[order.OwnerId].Cash, null, false, 0);
                     Ships.Add(order.ShipId, new WorkingShip(content, snapshot, before.QuantityScale));
+                    if (order.OwnerId == Challenge?.Configuration.OwnerId)
+                        Commission?.Visit(order.ShipId, order.PortId, nextDay);
                     Accounting.RegisterStore("ship:" + order.ShipId, order.OwnerId);
                     economy.Orders.Remove(order);
                     Development.Add(new DevelopmentAttempt(DevelopmentKind.ShipCompletion, DevelopmentOutcome.Completed,

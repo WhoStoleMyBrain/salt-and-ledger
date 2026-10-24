@@ -23,6 +23,7 @@ namespace SaltAndLedger.Simulation
     public static class WorldSaveCodec
     {
         public const int SchemaVersion = 1;
+        public const int CommissionSchemaVersion = 2;
         public const int MaximumJsonCharacters = 8 * 1024 * 1024;
         internal const int MaximumFacilities = 512;
         internal const int MaximumOpenLots = 16384;
@@ -50,7 +51,7 @@ namespace SaltAndLedger.Simulation
                     throw new WorldSaveException("Only named RunScenario worlds support durable saves; custom diagnostic fixtures do not have a reproducible identity.");
                 var initial = RunScenario.Create(world.SaveContent, identity);
                 var data = world.CaptureSave();
-                data.SchemaVersion = SchemaVersion;
+                data.SchemaVersion = identity.Commission == null ? SchemaVersion : CommissionSchemaVersion;
                 data.ContentFingerprint = Fingerprint(ContentShape(world.SaveContent));
                 data.ConfigurationFingerprint = Fingerprint(initial.Snapshot());
                 data.StateFingerprint = Fingerprint(data);
@@ -75,15 +76,17 @@ namespace SaltAndLedger.Simulation
                 var root = Parse(json);
                 ValidateTree(root);
                 var data = root.ToObject<RegionalSaveData>(Serializer()) ?? throw new WorldSaveException("Save is empty.");
-                if (data.SchemaVersion != SchemaVersion) throw new WorldSaveException("Unsupported save schema version.");
+                if (data.SchemaVersion != SchemaVersion && data.SchemaVersion != CommissionSchemaVersion)
+                    throw new WorldSaveException("Unsupported save schema version.");
                 var checksum = data.StateFingerprint;
                 data.StateFingerprint = "";
                 if (checksum != Fingerprint(data)) throw new WorldSaveException("Save state checksum is invalid; the file may be damaged.");
                 data.StateFingerprint = checksum;
                 RegionalSaveRestore.ValidateCounts(data);
                 var id = data.Identity ?? throw new WorldSaveException("Save identity is missing.");
+                var commission = RegionalSaveRestore.RestoreCommissionPlan(data);
                 var identity = new RunIdentity(id.ChallengeId, id.CharterId, id.WorldMode, id.Seed,
-                    id.Difficulty, id.GeneratorVersion, id.PricingMode, id.ContentVersion, id.ValuationVersion);
+                    id.Difficulty, id.GeneratorVersion, id.PricingMode, id.ContentVersion, id.ValuationVersion, commission);
                 var world = RunScenario.Create(content, identity);
                 if (data.ContentFingerprint != Fingerprint(ContentShape(world.SaveContent)))
                     throw new WorldSaveException("Save content does not match the current canonical catalog.");

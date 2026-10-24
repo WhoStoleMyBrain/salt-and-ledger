@@ -47,7 +47,8 @@ namespace SaltAndLedger.Simulation
                 reverseConfiguration ? ships.Reverse() : ships,
                 companies: reverseConfiguration ? companies.Reverse() : companies,
                 industryBlueprints: reverseConfiguration ? generation.Blueprints.Reverse() : generation.Blueprints,
-                challenge: ExpandingChallenges.Create(identity, generation.RecoveryPortId),
+                challenge: identity.Commission == null ? ExpandingChallenges.Create(identity, generation.RecoveryPortId) :
+                    GrandCommission.Definition.Configuration,
                 initialFacilities: charter.Facilities, initialGrantProvenance: charter.Id,
                 difficulty: identity.Difficulty, runIdentity: identity,
                 economy: ExpandingEconomyConfiguration.CreateDefault(generation.MintPortId, generation.SilverPortId));

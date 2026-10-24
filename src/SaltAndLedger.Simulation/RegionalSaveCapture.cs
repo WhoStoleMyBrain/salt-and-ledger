@@ -17,7 +17,14 @@ namespace SaltAndLedger.Simulation
                 Identity = new RegionalSaveIdentity { ChallengeId = identity.ChallengeId, CharterId = identity.CharterId,
                     WorldMode = identity.WorldMode, Seed = identity.Seed, GeneratorVersion = identity.GeneratorVersion,
                     Difficulty = identity.Difficulty, PricingMode = identity.LivingPricingMode,
-                    ContentVersion = identity.ContentVersion, ValuationVersion = identity.ValuationVersion },
+                    ContentVersion = identity.ContentVersion, ValuationVersion = identity.ValuationVersion,
+                    Commission = identity.Commission == null ? null : new RegionalSaveCommissionPlan
+                    {
+                        Seed = identity.Commission.Seed, Version = identity.Commission.Version,
+                        Signature = identity.Commission.Signature,
+                        Goals = identity.Commission.Goals.Select(g => new RegionalSaveCommissionGoal
+                        { Id = g.Id, TemplateId = g.TemplateId, CanonicalParameters = g.CanonicalParameters }).ToArray()
+                    } },
                 Day = state.Day, Revision = state.Revision,
                 Ports = state.Ports.Values.Select(port => new RegionalSavePort
                 {
@@ -86,6 +93,14 @@ namespace SaltAndLedger.Simulation
                 }).ToArray(),
                 NextLotId = state.Accounting.NextLotId,
                 Economy = state.Economy == null ? null : CaptureEconomy(state.Economy),
+                CommissionHistory = state.CommissionHistory == null ? null : new RegionalSaveCommissionHistory
+                {
+                    Ships = state.CommissionHistory.Ships.Select(s => new RegionalSaveCommissionShip
+                    { ShipId = s.ShipId, AcquisitionOrder = s.AcquisitionOrder, Visits = Copy(s.Visits) }).ToArray(),
+                    Markets = state.CommissionHistory.Markets.Select(m => new RegionalSaveCommissionMarket
+                    { PortId = m.PortId, GoodId = m.GoodId, PurchasedQuantity = m.PurchasedQuantity,
+                        SoldQuantity = m.SoldQuantity }).ToArray()
+                },
                 Challenge = state.Challenge == null ? null : new RegionalSaveChallenge
                 {
                     NetDelivered = state.Challenge.NetDeliveredQuantity, Status = state.Challenge.Status,

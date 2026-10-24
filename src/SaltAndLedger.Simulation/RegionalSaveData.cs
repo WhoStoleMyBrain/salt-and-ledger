@@ -24,6 +24,9 @@ namespace SaltAndLedger.Simulation
         public long NextLotId { get; set; }
         public RegionalSaveChallenge? Challenge { get; set; }
         public RegionalSaveEconomy? Economy { get; set; }
+        [JsonProperty(Required = Required.Default)]
+        public RegionalSaveCommissionHistory? CommissionHistory { get; set; }
+        public bool ShouldSerializeCommissionHistory() => CommissionHistory != null;
     }
 
     [JsonObject(ItemRequired = Required.AllowNull)]
@@ -38,6 +41,51 @@ namespace SaltAndLedger.Simulation
         public LivingPricingMode PricingMode { get; set; }
         public int ContentVersion { get; set; }
         public int ValuationVersion { get; set; }
+        [JsonProperty(Required = Required.Default)]
+        public RegionalSaveCommissionPlan? Commission { get; set; }
+        public bool ShouldSerializeCommission() => Commission != null;
+    }
+
+    [JsonObject(ItemRequired = Required.AllowNull)]
+    internal sealed class RegionalSaveCommissionPlan
+    {
+        public int Seed { get; set; }
+        public int Version { get; set; }
+        public string Signature { get; set; } = "";
+        public RegionalSaveCommissionGoal[] Goals { get; set; } = null!;
+    }
+
+    [JsonObject(ItemRequired = Required.AllowNull)]
+    internal sealed class RegionalSaveCommissionGoal
+    {
+        public string Id { get; set; } = "";
+        public string TemplateId { get; set; } = "";
+        // Versioned, invariant, typed rule/role/port/good/target parameters, never display prose.
+        public string CanonicalParameters { get; set; } = "";
+    }
+
+    [JsonObject(ItemRequired = Required.AllowNull)]
+    internal sealed class RegionalSaveCommissionHistory
+    {
+        public RegionalSaveCommissionShip[] Ships { get; set; } = null!;
+        public RegionalSaveCommissionMarket[] Markets { get; set; } = null!;
+    }
+
+    [JsonObject(ItemRequired = Required.AllowNull)]
+    internal sealed class RegionalSaveCommissionShip
+    {
+        public string ShipId { get; set; } = "";
+        public int AcquisitionOrder { get; set; }
+        public Dictionary<string, long> Visits { get; set; } = null!;
+    }
+
+    [JsonObject(ItemRequired = Required.AllowNull)]
+    internal sealed class RegionalSaveCommissionMarket
+    {
+        public string PortId { get; set; } = "";
+        public string GoodId { get; set; } = "";
+        public long PurchasedQuantity { get; set; }
+        public long SoldQuantity { get; set; }
     }
 
     [JsonObject(ItemRequired = Required.AllowNull)]

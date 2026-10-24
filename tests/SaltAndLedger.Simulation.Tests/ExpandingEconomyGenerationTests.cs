@@ -130,7 +130,9 @@ public sealed class ExpandingEconomyGenerationTests
         Assert.Throws<ArgumentException>(() => Identity(challenge: RunScenario.CoastalChallenge));
         Assert.Throws<ArgumentException>(() => new RunIdentity(RunScenario.RoyalChallenge,
             RunScenario.MerchantCharter, RunWorldMode.LivingCities, 42));
-        Assert.Equal(3, RunScenario.GetChallenges(RunWorldMode.ExpandingEconomy).Count);
+        Assert.Equal(4, RunScenario.GetChallenges(RunWorldMode.ExpandingEconomy).Count);
+        Assert.Equal(GrandCommission.ChallengeId, RunScenario.GetChallenges(RunWorldMode.ExpandingEconomy)[0].Id);
+        Assert.Equal(ExpandingChallenges.Definitions, RunScenario.GetChallenges(RunWorldMode.ExpandingEconomy).Skip(1));
         Assert.Equal(3, RunScenario.Challenges.Count);
         Assert.Single(RunScenario.GetChallenges(RunWorldMode.LivingCities));
     }
