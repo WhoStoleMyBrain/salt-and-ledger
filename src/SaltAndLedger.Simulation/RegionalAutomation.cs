@@ -11,8 +11,10 @@ namespace SaltAndLedger.Simulation
         public string Reason { get; }
         public AutomationDecision? Detail { get; }
         public IndustrialRouteDecision? IndustrialDetail { get; }
-        public int SelectedQuantity => IndustrialDetail?.SelectedQuantity ?? Detail?.SelectedQuantity ?? 0;
-        public TradeAttempt? Preview => IndustrialDetail?.Preview ?? Detail?.Preview;
+        public CargoItineraryDecision? ItineraryDetail { get; }
+        public bool ShouldSerializeItineraryDetail() => ItineraryDetail != null;
+        public int SelectedQuantity => ItineraryDetail?.SelectedQuantity ?? IndustrialDetail?.SelectedQuantity ?? Detail?.SelectedQuantity ?? 0;
+        public TradeAttempt? Preview => ItineraryDetail?.Preview ?? IndustrialDetail?.Preview ?? Detail?.Preview;
         internal RegionalDecision(RegionalWorldSnapshot before, string shipId, AutomationStage stage,
             AutomationAction action, string reason, AutomationDecision? detail = null)
         { Before = before; ShipId = shipId; Stage = stage; Action = action; Reason = reason; Detail = detail; }
@@ -33,6 +35,16 @@ namespace SaltAndLedger.Simulation
                 detail.Action == IndustrialRouteAction.ContinueSailing ? AutomationAction.ContinueSailing :
                 detail.Action == IndustrialRouteAction.Wait ? AutomationAction.Wait : AutomationAction.Pause;
         }
+        internal RegionalDecision(CargoItineraryDecision detail)
+        {
+            Before = detail.Before; ShipId = detail.ShipId; ItineraryDetail = detail; Reason = detail.Reason;
+            Stage = detail.Kind == CargoItineraryDecisionKind.ContinueSailing ? AutomationStage.InTransit : AutomationStage.OutboundLoading;
+            Action = detail.Kind == CargoItineraryDecisionKind.Execute ? AutomationAction.ExecuteItinerary :
+                detail.Kind == CargoItineraryDecisionKind.Skip ? AutomationAction.AdvanceStage :
+                detail.Kind == CargoItineraryDecisionKind.Depart ? AutomationAction.Depart :
+                detail.Kind == CargoItineraryDecisionKind.ContinueSailing ? AutomationAction.ContinueSailing :
+                detail.Kind == CargoItineraryDecisionKind.Wait ? AutomationAction.Wait : AutomationAction.Pause;
+        }
     }
 
     /// <summary>Projects one actor's route into the proven evaluator; never owns economic state.</summary>
@@ -42,6 +54,8 @@ namespace SaltAndLedger.Simulation
         {
             if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
             var ship = snapshot.Ships[shipId];
+            if (ship.Itinerary != null)
+                return new RegionalDecision(CargoItineraryEvaluator.Evaluate(snapshot, shipId));
             if (ship.IndustrialPolicy != null)
                 return new RegionalDecision(IndustrialRouteEvaluator.Evaluate(snapshot, shipId));
             if (!ship.AutomationEnabled || ship.Policy == null)

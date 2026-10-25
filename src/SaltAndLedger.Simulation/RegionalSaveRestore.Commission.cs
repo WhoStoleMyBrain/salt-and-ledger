@@ -16,7 +16,7 @@ namespace SaltAndLedger.Simulation
                     "Schema 1 cannot contain drafted commission state.");
                 return null;
             }
-            if (data.SchemaVersion == WorldSaveCodec.PooledStorageSchemaVersion && saved == null)
+            if (data.SchemaVersion >= WorldSaveCodec.PooledStorageSchemaVersion && saved == null)
             {
                 Require(data.CommissionHistory == null, "Commission history requires a resolved commission plan.");
                 return null;

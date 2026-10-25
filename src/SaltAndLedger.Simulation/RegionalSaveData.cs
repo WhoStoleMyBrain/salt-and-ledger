@@ -50,6 +50,9 @@ namespace SaltAndLedger.Simulation
         [JsonProperty(Required = Required.Default)]
         public CompanyStorageRules CompanyStorageRules { get; set; } = CompanyStorageRules.Legacy;
         public bool ShouldSerializeCompanyStorageRules() => CompanyStorageRules != CompanyStorageRules.Legacy;
+        [JsonProperty(Required = Required.Default)]
+        public int ItineraryVersion { get; set; }
+        public bool ShouldSerializeItineraryVersion() => ItineraryVersion != 0;
     }
 
     [JsonObject(ItemRequired = Required.AllowNull)]
@@ -194,6 +197,54 @@ namespace SaltAndLedger.Simulation
         public IndustrialRoutePolicy? IndustrialPolicy { get; set; }
         public IndustrialRouteStage IndustrialStage { get; set; }
         public bool AutomationEnabled { get; set; }
+        [JsonProperty(Required = Required.Default)]
+        public RegionalSaveItinerary? Itinerary { get; set; }
+        public bool ShouldSerializeItinerary() => Itinerary != null;
+        [JsonProperty(Required = Required.Default)]
+        public RegionalSaveItineraryProgress? ItineraryProgress { get; set; }
+        public bool ShouldSerializeItineraryProgress() => ItineraryProgress != null;
+    }
+
+    [JsonObject(ItemRequired = Required.AllowNull)]
+    internal sealed class RegionalSaveItinerary
+    {
+        public string Id { get; set; } = "";
+        public int Version { get; set; }
+        public RegionalSaveItineraryStop[] Stops { get; set; } = null!;
+    }
+
+    [JsonObject(ItemRequired = Required.AllowNull)]
+    internal sealed class RegionalSaveItineraryStop
+    {
+        public string PortId { get; set; } = "";
+        public RegionalSaveItineraryCommand[] Commands { get; set; } = null!;
+    }
+
+    [JsonObject(ItemRequired = Required.AllowNull)]
+    internal sealed class RegionalSaveItineraryCommand
+    {
+        public int Kind { get; set; }
+        public string GoodId { get; set; } = "";
+        public int MaximumQuantity { get; set; }
+        public int MinimumQuantity { get; set; }
+        public int ShortagePolicy { get; set; }
+        public long MarginalPriceLimit { get; set; }
+        public long CashReserve { get; set; }
+        public long MaximumExpenditure { get; set; }
+        public int WarehouseReserve { get; set; }
+    }
+
+    [JsonObject(ItemRequired = Required.AllowNull)]
+    internal sealed class RegionalSaveItineraryProgress
+    {
+        public int StopIndex { get; set; }
+        public int ActionIndex { get; set; }
+        public long Cycle { get; set; }
+        public int LastDecision { get; set; }
+        public int LastReason { get; set; }
+        public int LastQuantity { get; set; }
+        public long OperationsDay { get; set; }
+        public int OperationsUsed { get; set; }
     }
 
     [JsonObject(ItemRequired = Required.AllowNull)]

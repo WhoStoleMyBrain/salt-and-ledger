@@ -18,7 +18,7 @@ namespace SaltAndLedger.Simulation
                     WorldMode = identity.WorldMode, Seed = identity.Seed, GeneratorVersion = identity.GeneratorVersion,
                     Difficulty = identity.Difficulty, PricingMode = identity.LivingPricingMode,
                     ContentVersion = identity.ContentVersion, ValuationVersion = identity.ValuationVersion,
-                    CompanyStorageRules = identity.CompanyStorageRules,
+                    CompanyStorageRules = identity.CompanyStorageRules, ItineraryVersion = identity.ItineraryVersion,
                     Commission = identity.Commission == null ? null : new RegionalSaveCommissionPlan
                     {
                         Seed = identity.Commission.Seed, Version = identity.Commission.Version,
@@ -52,7 +52,9 @@ namespace SaltAndLedger.Simulation
                     Id = s.Id, Cargo = Copy(s.Cargo), Dock = s.DockedPortId, Origin = s.OriginPortId,
                     Destination = s.DestinationPortId, RemainingDays = s.RemainingTravelDays,
                     VoyageDays = s.VoyageDurationDays, Policy = s.Policy, IndustrialPolicy = s.IndustrialPolicy,
-                    IndustrialStage = s.IndustrialStage, AutomationEnabled = s.AutomationEnabled
+                    IndustrialStage = s.IndustrialStage, AutomationEnabled = s.AutomationEnabled,
+                    Itinerary = s.Itinerary == null ? null : CaptureItinerary(s.Itinerary),
+                    ItineraryProgress = s.ItineraryProgress == null ? null : CaptureItineraryProgress(s.ItineraryProgress)
                 }).ToArray(),
                 Companies = state.Companies.Values.Select(company =>
                 {
@@ -116,6 +118,31 @@ namespace SaltAndLedger.Simulation
 
         private static Dictionary<string, T> Copy<T>(IReadOnlyDictionary<string, T> values) =>
             values.OrderBy(v => v.Key, StringComparer.Ordinal).ToDictionary(v => v.Key, v => v.Value, StringComparer.Ordinal);
+
+        private static RegionalSaveItinerary CaptureItinerary(CargoItineraryPolicy policy) => new RegionalSaveItinerary
+        {
+            Id = policy.Id, Version = policy.Version,
+            Stops = policy.Stops.Select(s => new RegionalSaveItineraryStop
+            {
+                PortId = s.PortId,
+                Commands = s.Commands.Select(c => new RegionalSaveItineraryCommand
+                {
+                    Kind = (int)c.Kind, GoodId = c.GoodId, MaximumQuantity = c.MaximumQuantity,
+                    MinimumQuantity = c.MinimumQuantity, ShortagePolicy = (int)c.ShortagePolicy,
+                    MarginalPriceLimit = c.MarginalPriceLimit, CashReserve = c.CashReserve,
+                    MaximumExpenditure = c.MaximumExpenditure, WarehouseReserve = c.WarehouseReserve
+                }).ToArray()
+            }).ToArray()
+        };
+
+        private static RegionalSaveItineraryProgress CaptureItineraryProgress(CargoItineraryProgress progress) =>
+            new RegionalSaveItineraryProgress
+            {
+                StopIndex = progress.StopIndex, ActionIndex = progress.ActionIndex, Cycle = progress.Cycle,
+                LastDecision = (int)progress.LastDecision, LastReason = (int)progress.LastReason,
+                LastQuantity = progress.LastQuantity, OperationsDay = progress.OperationsDay,
+                OperationsUsed = progress.OperationsUsed
+            };
 
         private static RegionalSaveCity CaptureCity(CitySnapshot c) => new RegionalSaveCity
         {

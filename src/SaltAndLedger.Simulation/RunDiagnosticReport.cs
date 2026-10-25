@@ -105,6 +105,7 @@ namespace SaltAndLedger.Simulation
                     s.Id, s.Name, s.OwnerId, s.IsPlayer, s.CargoCapacity, s.CargoUnits, s.Cargo,
                     s.DockedPortId, s.OriginPortId, s.DestinationPortId, s.RemainingTravelDays, s.VoyageDurationDays,
                     s.AutomationEnabled, s.Policy, s.IndustrialPolicy, s.IndustrialStage,
+                    s.Itinerary, s.ItineraryProgress,
                     AutomationDecision = s.AutomationEnabled ? RouteStatus(snapshot, s.Id) : null
                 }).ToArray(),
                 Facilities = snapshot.PrivateFacilities.Values.Select(f =>

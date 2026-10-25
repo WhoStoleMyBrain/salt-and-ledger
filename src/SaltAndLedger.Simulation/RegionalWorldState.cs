@@ -281,9 +281,12 @@ namespace SaltAndLedger.Simulation
             {
                 RegionalAutomation.ValidatePolicy(state, shipId, policy);
                 var ship = work.Ships[shipId];
+                if (ship.Itinerary != null) EnsureItineraryReplacement(ship, work.Day);
                 if (ReferenceEquals(ship.Policy, policy) && ship.AutomationEnabled == enabled) return;
                 ship.Policy = policy;
                 ship.IndustrialPolicy = null;
+                ship.Itinerary = null;
+                ship.ItineraryProgress = null;
                 ship.AutomationEnabled = enabled;
                 work.Changed = true;
             });
@@ -296,6 +299,7 @@ namespace SaltAndLedger.Simulation
             {
                 IndustrialRouteEvaluator.ValidatePolicy(state, shipId, policy);
                 var ship = work.Ships[shipId];
+                if (ship.Itinerary != null) EnsureItineraryReplacement(ship, work.Day);
                 if (ReferenceEquals(ship.IndustrialPolicy, policy))
                 {
                     if (ship.AutomationEnabled != enabled) { ship.AutomationEnabled = enabled; work.Changed = true; }
@@ -304,6 +308,8 @@ namespace SaltAndLedger.Simulation
                 if (ship.CargoUnits != 0 || (ship.Dock != policy.OriginPortId && ship.Dock != policy.DestinationPortId))
                     throw new InvalidOperationException("Configure an industrial route with an empty ship docked at either route port.");
                 ship.Policy = null;
+                ship.Itinerary = null;
+                ship.ItineraryProgress = null;
                 ship.IndustrialPolicy = policy;
                 ship.IndustrialStage = ship.Dock == policy.OriginPortId
                     ? IndustrialRouteStage.AcquireOutbound : IndustrialRouteStage.AcquireReturn;
@@ -316,8 +322,9 @@ namespace SaltAndLedger.Simulation
             Mutate(work =>
             {
                 var ship = work.Ships[shipId];
-                if (enabled && ship.Policy == null && ship.IndustrialPolicy == null)
+                if (enabled && ship.Policy == null && ship.IndustrialPolicy == null && ship.Itinerary == null)
                     throw new InvalidOperationException("Configure a route first.");
+                if (enabled && ship.Itinerary != null) EnsureItineraryLocation(ship);
                 if (ship.AutomationEnabled == enabled) return;
                 ship.AutomationEnabled = enabled;
                 work.Changed = true;
@@ -347,9 +354,13 @@ namespace SaltAndLedger.Simulation
             });
         }
 
-        public RegionalResult RunAutomation(string shipId, int maxActions = MaximumDocksideActions)
+        public RegionalResult RunAutomation(string shipId) => RunAutomation(shipId,
+            state.Ships[shipId].Itinerary == null ? MaximumDocksideActions : CargoItineraryPolicy.MaximumDailyOperations);
+
+        public RegionalResult RunAutomation(string shipId, int maxActions)
         {
-            if (maxActions < 1 || maxActions > MaximumDocksideActions)
+            var limit = state.Ships[shipId].Itinerary == null ? MaximumDocksideActions : CargoItineraryPolicy.MaximumDailyOperations;
+            if (maxActions < 1 || maxActions > limit)
                 throw new ArgumentOutOfRangeException(nameof(maxActions));
             return Mutate(work => work.RunAutomation(shipId, maxActions));
         }
@@ -362,7 +373,8 @@ namespace SaltAndLedger.Simulation
             work.BeginCityDay();
             foreach (var ship in work.Ships.Values.OrderBy(s => s.Configuration.Priority)
                 .ThenBy(s => s.Configuration.Ship.Id, StringComparer.Ordinal))
-                if (ship.AutomationEnabled) work.RunAutomation(ship.Configuration.Ship.Id, MaximumDocksideActions);
+                if (ship.AutomationEnabled) work.RunAutomation(ship.Configuration.Ship.Id,
+                    ship.Itinerary == null ? MaximumDocksideActions : CargoItineraryPolicy.MaximumDailyOperations);
             work.Procure();
             work.Produce(nextDay);
             work.ProducePrivate(nextDay);
@@ -452,6 +464,8 @@ namespace SaltAndLedger.Simulation
             internal TradeRoutePolicy? Policy { get; set; }
             internal IndustrialRoutePolicy? IndustrialPolicy { get; set; }
             internal IndustrialRouteStage IndustrialStage { get; set; }
+            internal CargoItineraryPolicy? Itinerary { get; set; }
+            internal CargoItineraryProgress? ItineraryProgress { get; set; }
             internal bool AutomationEnabled { get; set; }
             internal string? Dock { get; set; }
             internal string? Origin { get; set; }
@@ -466,6 +480,8 @@ namespace SaltAndLedger.Simulation
                 Policy = before.Policy;
                 IndustrialPolicy = before.IndustrialPolicy;
                 IndustrialStage = before.IndustrialStage;
+                Itinerary = before.Itinerary;
+                ItineraryProgress = before.ItineraryProgress;
                 AutomationEnabled = before.AutomationEnabled;
                 Dock = before.DockedPortId;
                 Origin = before.OriginPortId;
@@ -476,7 +492,7 @@ namespace SaltAndLedger.Simulation
             internal RegionalShipSnapshot Snapshot(long cash) => new RegionalShipSnapshot(Configuration,
                 new ShipSnapshot(Configuration.Ship.Id, Configuration.Ship.CargoCapacity, Cargo.Snapshot(),
                     Dock, Origin, Destination, Remaining), cash, Policy, AutomationEnabled, Duration,
-                    IndustrialPolicy, IndustrialStage);
+                    IndustrialPolicy, IndustrialStage, Itinerary, ItineraryProgress);
         }
 
         private sealed class WorkingCompany
@@ -944,6 +960,11 @@ namespace SaltAndLedger.Simulation
             internal void ApplyDecision(RegionalDecision decision)
             {
                 Decisions.Add(decision);
+                if (decision.ItineraryDetail != null)
+                {
+                    ApplyItineraryDecision(decision.ItineraryDetail);
+                    return;
+                }
                 if (decision.Action == AutomationAction.Wait || decision.Action == AutomationAction.Pause ||
                     decision.Action == AutomationAction.ContinueSailing) return;
                 if (decision.IndustrialDetail != null)
@@ -1005,9 +1026,13 @@ namespace SaltAndLedger.Simulation
                     var movementCount = Movements.Count;
                     var transferCount = Transfers.Count;
                     var stage = Ships[shipId].IndustrialStage;
+                    var itineraryProgress = Ships[shipId].ItineraryProgress;
                     ApplyDecision(decision);
+                    if (decision.ItineraryDetail != null && decision.ItineraryDetail.Kind != CargoItineraryDecisionKind.Execute &&
+                        decision.ItineraryDetail.Kind != CargoItineraryDecisionKind.Skip) break;
                     if (Ships[shipId].Dock == null || (tradeCount == Trades.Count && movementCount == Movements.Count &&
-                        transferCount == Transfers.Count && stage == Ships[shipId].IndustrialStage)) break;
+                        transferCount == Transfers.Count && stage == Ships[shipId].IndustrialStage &&
+                        ReferenceEquals(itineraryProgress, Ships[shipId].ItineraryProgress))) break;
                 }
             }
 

@@ -19,6 +19,8 @@ namespace SaltAndLedger.Simulation
         public LivingPricingMode LivingPricingMode { get; }
         public GrandCommissionPlan? Commission { get; }
         public CompanyStorageRules CompanyStorageRules { get; }
+        public int ItineraryVersion { get; }
+        public bool ShouldSerializeItineraryVersion() => ItineraryVersion != 0;
         public bool ShouldSerializeCompanyStorageRules() => CompanyStorageRules != CompanyStorageRules.Legacy;
         public bool ShouldSerializeCommission() => Commission != null;
         public bool ShouldSerializeLivingPricingMode() => WorldMode == RunWorldMode.LivingCities || WorldMode == RunWorldMode.ExpandingEconomy;
@@ -37,13 +39,14 @@ namespace SaltAndLedger.Simulation
                 (ShouldSerializeLivingPricingMode() ? "-" + LivingPricingMode.ToString().ToLowerInvariant() : "") +
                 (WorldMode == RunWorldMode.ExpandingEconomy ? "-content3-value1" : "")) +
             (Commission == null ? "" : "/commission-v" + Commission.Version.ToString(CultureInfo.InvariantCulture) + "-" + Commission.Signature) +
-            (CompanyStorageRules == CompanyStorageRules.Pooled ? "/storage-v2" : "");
+            (CompanyStorageRules == CompanyStorageRules.Pooled ? "/storage-v2" : "") +
+            (ItineraryVersion == 0 ? "" : "/itinerary-v" + ItineraryVersion.ToString(CultureInfo.InvariantCulture));
 
         public RunIdentity(string? challengeId, string charterId, RunWorldMode worldMode = RunWorldMode.Classic,
             int? seed = null, RunDifficulty difficulty = RunDifficulty.Normal, int? generatorVersion = null,
             LivingPricingMode livingPricingMode = LivingPricingMode.StockOnly,
             int? contentVersion = null, int? valuationVersion = null, GrandCommissionPlan? commission = null,
-            CompanyStorageRules companyStorageRules = CompanyStorageRules.Legacy)
+            CompanyStorageRules companyStorageRules = CompanyStorageRules.Legacy, int itineraryVersion = 0)
         {
             if (challengeId != null) RunScenario.GetChallenge(challengeId);
             RunScenario.GetCharter(charterId);
@@ -54,6 +57,9 @@ namespace SaltAndLedger.Simulation
                 throw new ArgumentOutOfRangeException(nameof(companyStorageRules));
             if (difficulty != RunDifficulty.Normal && difficulty != RunDifficulty.SlowFoundations)
                 throw new ArgumentOutOfRangeException(nameof(difficulty));
+            if (itineraryVersion != 0 && (itineraryVersion != CargoItineraryPolicy.CurrentVersion ||
+                worldMode != RunWorldMode.ExpandingEconomy || companyStorageRules != CompanyStorageRules.Pooled))
+                throw new ArgumentOutOfRangeException(nameof(itineraryVersion));
             if ((worldMode != RunWorldMode.Classic) != seed.HasValue)
                 throw new ArgumentException("Seeded worlds require a seed; Classic worlds have no seed.", nameof(seed));
             if (!Enum.IsDefined(typeof(LivingPricingMode), livingPricingMode) ||
@@ -85,13 +91,14 @@ namespace SaltAndLedger.Simulation
             LivingPricingMode = livingPricingMode;
             Commission = commission;
             CompanyStorageRules = companyStorageRules;
+            ItineraryVersion = itineraryVersion;
         }
 
         public bool Equals(RunIdentity? other) => other != null &&
             ChallengeId == other.ChallengeId && CharterId == other.CharterId && WorldMode == other.WorldMode &&
             Seed == other.Seed && GeneratorVersion == other.GeneratorVersion && Difficulty == other.Difficulty &&
             LivingPricingMode == other.LivingPricingMode && Commission?.Signature == other.Commission?.Signature &&
-            CompanyStorageRules == other.CompanyStorageRules;
+            CompanyStorageRules == other.CompanyStorageRules && ItineraryVersion == other.ItineraryVersion;
 
         public override bool Equals(object? obj) => obj is RunIdentity other && Equals(other);
 

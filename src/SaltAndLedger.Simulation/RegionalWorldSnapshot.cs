@@ -116,6 +116,10 @@ namespace SaltAndLedger.Simulation
         public TradeRoutePolicy? Policy { get; }
         public IndustrialRoutePolicy? IndustrialPolicy { get; }
         public IndustrialRouteStage IndustrialStage { get; }
+        public CargoItineraryPolicy? Itinerary { get; }
+        public CargoItineraryProgress? ItineraryProgress { get; }
+        public bool ShouldSerializeItinerary() => Itinerary != null;
+        public bool ShouldSerializeItineraryProgress() => ItineraryProgress != null;
         public bool AutomationEnabled { get; }
         public int VoyageDurationDays { get; }
         public IReadOnlyDictionary<string, int> Cargo => Ship.Cargo;
@@ -128,7 +132,8 @@ namespace SaltAndLedger.Simulation
         internal RegionalShipSnapshot(RegionalShipConfiguration configuration, ShipSnapshot ship,
             long cash, TradeRoutePolicy? policy, bool automationEnabled, int voyageDurationDays,
             IndustrialRoutePolicy? industrialPolicy = null,
-            IndustrialRouteStage industrialStage = IndustrialRouteStage.AcquireOutbound)
+            IndustrialRouteStage industrialStage = IndustrialRouteStage.AcquireOutbound,
+            CargoItineraryPolicy? itinerary = null, CargoItineraryProgress? itineraryProgress = null)
         {
             Configuration = configuration;
             Ship = ship;
@@ -136,6 +141,8 @@ namespace SaltAndLedger.Simulation
             Policy = policy;
             IndustrialPolicy = industrialPolicy;
             IndustrialStage = industrialStage;
+            Itinerary = itinerary;
+            ItineraryProgress = itineraryProgress;
             AutomationEnabled = automationEnabled;
             VoyageDurationDays = voyageDurationDays;
         }

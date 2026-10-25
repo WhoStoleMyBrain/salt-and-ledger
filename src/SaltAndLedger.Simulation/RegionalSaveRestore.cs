@@ -17,6 +17,7 @@ namespace SaltAndLedger.Simulation
             {
                 if (vessel.Policy != null) RegionalAutomation.ValidatePolicy(restored, vessel.Id, vessel.Policy);
                 if (vessel.IndustrialPolicy != null) IndustrialRouteEvaluator.ValidatePolicy(restored, vessel.Id, vessel.IndustrialPolicy);
+                if (vessel.Itinerary != null) CargoItineraryEvaluator.ValidatePolicy(restored, vessel.Id, vessel.Itinerary);
             }
             if (restored.Economy != null)
             {
@@ -70,6 +71,7 @@ namespace SaltAndLedger.Simulation
             Count(data.Facilities, 0, WorldSaveCodec.MaximumFacilities);
             if (data.CompanyStockpiles != null) Count(data.CompanyStockpiles, 0, WorldSaveCodec.MaximumFacilities);
             Count(data.Stores, 1, WorldSaveCodec.MaximumFacilities + 64);
+            foreach (var ship in data.Ships) ValidateItineraryCounts(ship);
             var total = 0;
             foreach (var store in data.Stores)
             {
@@ -115,7 +117,7 @@ namespace SaltAndLedger.Simulation
                     "Starter facility identity changed.");
             }
             var ships = data.Ships.Select(s => RestoreShip(content, initial, shipConfigurations[s.Id], s,
-                companies.Single(c => c.Id == shipConfigurations[s.Id].OwnerId).Cash)).ToArray();
+                companies.Single(c => c.Id == shipConfigurations[s.Id].OwnerId).Cash, data.Day)).ToArray();
             var stores = RestoreStores(content, data, ships, facilities, stockpiles);
             var financial = data.Companies.Select(c => RestoreCompany(content, initial, c, stores)).ToArray();
             var accounting = new AccountingSnapshot(financial, stores, data.NextLotId);
@@ -222,11 +224,13 @@ namespace SaltAndLedger.Simulation
         }
 
         private static RegionalShipSnapshot RestoreShip(ContentCatalog content, RegionalWorldSnapshot initial,
-            RegionalShipConfiguration config, RegionalSaveShip s, long cash)
+            RegionalShipConfiguration config, RegionalSaveShip s, long cash, long day)
         {
             Defined(s.IndustrialStage);
-            Require(s.Policy == null || s.IndustrialPolicy == null, "Ship has conflicting automation policies.");
-            Require(!s.AutomationEnabled || s.Policy != null || s.IndustrialPolicy != null, "Enabled ship has no policy.");
+            Require((s.Policy == null ? 0 : 1) + (s.IndustrialPolicy == null ? 0 : 1) +
+                (s.Itinerary == null ? 0 : 1) <= 1, "Ship has conflicting automation policies.");
+            Require(!s.AutomationEnabled || s.Policy != null || s.IndustrialPolicy != null || s.Itinerary != null,
+                "Enabled ship has no policy.");
             if (s.Dock != null)
             {
                 Require(initial.Ports.ContainsKey(s.Dock) && s.Origin == null && s.Destination == null &&
@@ -241,9 +245,11 @@ namespace SaltAndLedger.Simulation
             }
             var cargo = Inventory(content, s.Cargo);
             Require(cargo.Values.All(q => q % initial.QuantityScale == 0), "Ship cargo must contain whole cargo units.");
+            var itinerary = RestoreItinerary(initial, config, s);
+            var progress = RestoreItineraryProgress(initial, s, itinerary, day);
             return new RegionalShipSnapshot(config, new ShipSnapshot(s.Id, config.Ship.CargoCapacity, cargo,
                 s.Dock, s.Origin, s.Destination, s.RemainingDays), cash, s.Policy, s.AutomationEnabled,
-                s.VoyageDays, s.IndustrialPolicy, s.IndustrialStage);
+                s.VoyageDays, s.IndustrialPolicy, s.IndustrialStage, itinerary, progress);
         }
 
         private static PrivateFacilitySnapshot RestoreFacility(ContentCatalog content, RegionalWorldSnapshot initial, RegionalSaveFacility f, long day)
