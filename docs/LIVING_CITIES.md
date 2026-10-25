@@ -182,3 +182,7 @@ The normal sample observed at most **52 structured events per operation** and **
 The main unresolved problems are finite cash concentration, stock ceilings that stop wage income, integer demand jumps after growth, policy-limited imports and player attention. The next useful economic experiment should vary one explicit circulation or distribution rule at a time against these counterexamples and preserve exact reconciliation. No calibration or hidden subsidy was added to make the reported policies succeed. Extra commodities, fleets, city ownership, politics, loans, saves and further ascensions are not implemented solutions.
 
 Actual UI/Editor/player evidence and limitations belong to [Unity verification](UNITY.md) and [Playtest](PLAYTEST.md). A headless victory alone does not certify pointer usability or a player backend. To update the published website after reviewing the changes on `main`, explicitly run GitHub Actions **Publish documentation**. Validation and a local MkDocs build do not publish; the Pages workflow remains manual-only.
+
+## Later v3 circulation revision
+
+The rules and reports above remain the Living Cities-v2/historical-v3 contracts. New modern v3 economic rules1 add [bounded commercial and municipal transfers](ECONOMIC_CIRCULATION_REVIEW.md), separate from recorded production wages and retail. They also fix the fractional Coverage luxury fallback only in that explicit new version. Existing v2 identities and saves are not retuned.

@@ -1,0 +1,1981 @@
+{
+  "FormatVersion": 1,
+  "Provenance": "Supplied terminal day-140 diagnostic; read-only, no commands executed.",
+  "SaveSha256": "5bb9e1b135adf2e63e7d55243e84731254f4555ff6a581fd4a68690651ab0a47",
+  "ReportSha256": "09faa7d2739f1a5058e161254815b962b5bfc2619811e13be2a873067df14c27",
+  "Units": "Integer physical and monetary subunits, 10000 per good/coin. Prices are ratios per whole good.",
+  "Day": 140,
+  "Revision": 535,
+  "Status": "Succeeded",
+  "Identity": {
+    "ChallengeId": "grand_commission",
+    "CharterId": "industrial_consortium",
+    "WorldMode": "ExpandingEconomy",
+    "Seed": -734282136,
+    "GeneratorVersion": 3,
+    "Difficulty": "SlowFoundations",
+    "LivingPricingMode": "Coverage",
+    "Commission": {
+      "Seed": -734282136,
+      "Version": 1,
+      "Goals": [
+        {
+          "Id": "regional_survey",
+          "TemplateId": "regional_survey",
+          "Category": "Navigation",
+          "Title": "Regional Survey",
+          "Explanation": "Visit the recovery, processing and forest towns with owned ships.",
+          "Conditions": [
+            {
+              "Id": "role_visits",
+              "Rule": "NamedVisits",
+              "Label": "Visit Westhaven, Southhaven, Northport",
+              "Target": 3,
+              "Unit": "Count",
+              "Semantic": "Cumulative",
+              "PortId": null,
+              "Role": null,
+              "GoodId": null,
+              "RecipeId": null,
+              "PortIds": [
+                "westhaven",
+                "southhaven",
+                "northport"
+              ],
+              "TargetText": "3"
+            }
+          ],
+          "CanonicalParameters": "regional_survey|regional_survey|0|role_visits:3:3:0:0:-:-:-:-:westhaven,southhaven,northport"
+        },
+        {
+          "Id": "artisan_guild",
+          "TemplateId": "artisan_guild",
+          "Category": "Industry",
+          "Title": "Artisan Guild",
+          "Explanation": "Operate a Sawmill and Furniture Workshop, and privately produce two Furniture.",
+          "Conditions": [
+            {
+              "Id": "saw_planks",
+              "Rule": "OperationalRecipe",
+              "Label": "Operational Sawmill",
+              "Target": 1,
+              "Unit": "Count",
+              "Semantic": "Current",
+              "PortId": null,
+              "Role": null,
+              "GoodId": null,
+              "RecipeId": "saw_planks",
+              "PortIds": [],
+              "TargetText": "1"
+            },
+            {
+              "Id": "make_furniture",
+              "Rule": "OperationalRecipe",
+              "Label": "Operational Furniture Workshop",
+              "Target": 1,
+              "Unit": "Count",
+              "Semantic": "Current",
+              "PortId": null,
+              "Role": null,
+              "GoodId": null,
+              "RecipeId": "make_furniture",
+              "PortIds": [],
+              "TargetText": "1"
+            },
+            {
+              "Id": "production",
+              "Rule": "PrivateProduction",
+              "Label": "Private furniture produced",
+              "Target": 20000,
+              "Unit": "Goods",
+              "Semantic": "Cumulative",
+              "PortId": null,
+              "Role": null,
+              "GoodId": "furniture",
+              "RecipeId": null,
+              "PortIds": [],
+              "TargetText": "2"
+            }
+          ],
+          "CanonicalParameters": "artisan_guild|artisan_guild|1|saw_planks:5:1:0:1:-:-:-:saw_planks:;make_furniture:5:1:0:1:-:-:-:make_furniture:;production:7:20000:1:0:-:-:furniture:-:"
+        },
+        {
+          "Id": "bread_for_coast",
+          "TemplateId": "bread_for_coast",
+          "Category": "Commerce",
+          "Title": "Bread for the Coast",
+          "Explanation": "Supply four net Bread to Westhaven. Local purchases subtract credit.",
+          "Conditions": [
+            {
+              "Id": "net_sales",
+              "Rule": "NetMarketSales",
+              "Label": "Net Bread sold to Westhaven",
+              "Target": 40000,
+              "Unit": "Goods",
+              "Semantic": "Current",
+              "PortId": "westhaven",
+              "Role": "recovery",
+              "GoodId": "bread",
+              "RecipeId": null,
+              "PortIds": [],
+              "TargetText": "4"
+            }
+          ],
+          "CanonicalParameters": "bread_for_coast|bread_for_coast|2|net_sales:12:40000:1:1:westhaven:recovery:bread:-:"
+        },
+        {
+          "Id": "prosperous_enterprise",
+          "TemplateId": "prosperous_enterprise",
+          "Category": "Civic",
+          "Title": "Prosperous Enterprise",
+          "Explanation": "Simultaneously grow reference Company Value by 100 coins and retain 100 liquid coins.",
+          "Conditions": [
+            {
+              "Id": "value",
+              "Rule": "ValueGrowth",
+              "Label": "Company Value growth",
+              "Target": 1000000,
+              "Unit": "Coins",
+              "Semantic": "Current",
+              "PortId": null,
+              "Role": null,
+              "GoodId": null,
+              "RecipeId": null,
+              "PortIds": [],
+              "TargetText": "100 coins"
+            },
+            {
+              "Id": "cash",
+              "Rule": "Cash",
+              "Label": "Company cash",
+              "Target": 1000000,
+              "Unit": "Coins",
+              "Semantic": "Current",
+              "PortId": null,
+              "Role": null,
+              "GoodId": null,
+              "RecipeId": null,
+              "PortIds": [],
+              "TargetText": "100 coins"
+            }
+          ],
+          "CanonicalParameters": "prosperous_enterprise|prosperous_enterprise|3|value:19:1000000:2:1:-:-:-:-:;cash:20:1000000:2:1:-:-:-:-:"
+        }
+      ],
+      "Signature": "2e8e46d344785142b9bb9344473d07fbe11e60f200b7f8fe58bf6163dbef58bb"
+    },
+    "ContentVersion": 3,
+    "ValuationVersion": 1,
+    "Ascension": 1,
+    "ConstructionDelayDays": 2,
+    "ComparisonGroup": "grand_commission/industrial_consortium/ascension1/expanding-v3-seed-734282136-coverage-content3-value1/commission-v1-2e8e46d344785142b9bb9344473d07fbe11e60f200b7f8fe58bf6163dbef58bb"
+  },
+  "FullStateFingerprint": "601b1d27ea952a6c9fe5b49f04a3633e6ee218e8256b080c19c204bb76b67071",
+  "Accounts": {
+    "RegionalCash": "102500000",
+    "AllAccountCash": "114500000",
+    "Note": "Company accounts include NPCs once. Ship cash is a compatibility projection and is deliberately excluded from account totals.",
+    "Companies": [
+      {
+        "Id": "grain_company",
+        "Cash": 13870001,
+        "IsPlayer": false,
+        "ReferenceValue": {
+          "Cash": 13870001,
+          "Goods": 360000,
+          "Ships": 3000000,
+          "Facilities": 0,
+          "PendingCapital": 0,
+          "Total": 17230001,
+          "InitialValue": 8000000,
+          "Change": 9230001
+        },
+        "Financials": {
+          "OwnerId": "grain_company",
+          "InitialCash": 5000000,
+          "InventoryPurchases": 8973322,
+          "SalesRevenue": 17843323,
+          "CostOfGoodsSold": 8913322,
+          "RealizedGrossMargin": 8930001,
+          "ConstructionExpenditure": 0,
+          "HeldInventoryCost": 60000,
+          "GrantedQuantities": {},
+          "PurchasedQuantities": {
+            "flour": 380000,
+            "grain": 840000
+          },
+          "SoldQuantities": {
+            "flour": 380000,
+            "grain": 780000
+          },
+          "ProducedQuantities": {},
+          "ConsumedQuantities": {},
+          "HeldInventoryQuantities": {
+            "grain": 60000
+          }
+        }
+      },
+      {
+        "Id": "plank_company",
+        "Cash": 8118985,
+        "IsPlayer": false,
+        "ReferenceValue": {
+          "Cash": 8118985,
+          "Goods": 0,
+          "Ships": 1500000,
+          "Facilities": 0,
+          "PendingCapital": 0,
+          "Total": 9618985,
+          "InitialValue": 5500000,
+          "Change": 4118985
+        },
+        "Financials": {
+          "OwnerId": "plank_company",
+          "InitialCash": 4000000,
+          "InventoryPurchases": 6840000,
+          "SalesRevenue": 10958985,
+          "CostOfGoodsSold": 6840000,
+          "RealizedGrossMargin": 4118985,
+          "ConstructionExpenditure": 0,
+          "HeldInventoryCost": 0,
+          "GrantedQuantities": {},
+          "PurchasedQuantities": {
+            "planks": 330000
+          },
+          "SoldQuantities": {
+            "planks": 330000
+          },
+          "ProducedQuantities": {},
+          "ConsumedQuantities": {},
+          "HeldInventoryQuantities": {}
+        }
+      },
+      {
+        "Id": "player",
+        "Cash": 1090006,
+        "IsPlayer": true,
+        "ReferenceValue": {
+          "Cash": 1090006,
+          "Goods": 10655300,
+          "Ships": 4000000,
+          "Facilities": 16600000,
+          "PendingCapital": 0,
+          "Total": 32345306,
+          "InitialValue": 19500000,
+          "Change": 12845306
+        },
+        "Financials": {
+          "OwnerId": "player",
+          "InitialCash": 12000000,
+          "InventoryPurchases": 13838714,
+          "SalesRevenue": 21628720,
+          "CostOfGoodsSold": 10862903,
+          "RealizedGrossMargin": 10765817,
+          "ConstructionExpenditure": 13600000,
+          "HeldInventoryCost": 2975811,
+          "WagesPaid": 5100000,
+          "OperatingSurplusAfterWages": 5665817,
+          "GrantedQuantities": {
+            "flour": 20000,
+            "logs": 20000
+          },
+          "PurchasedQuantities": {
+            "bread": 130000,
+            "flour": 90000,
+            "furniture": 90000,
+            "grain": 290000,
+            "logs": 363540,
+            "planks": 62995
+          },
+          "SoldQuantities": {
+            "bread": 230000,
+            "flour": 90000,
+            "furniture": 90000,
+            "grain": 150000,
+            "logs": 150000,
+            "planks": 190000
+          },
+          "ProducedQuantities": {
+            "bread": 180000,
+            "flour": 70000,
+            "furniture": 40000,
+            "grain": 560000,
+            "logs": 440000,
+            "planks": 230000
+          },
+          "ConsumedQuantities": {
+            "flour": 90000,
+            "grain": 140000,
+            "logs": 550000,
+            "planks": 80000
+          },
+          "HeldInventoryQuantities": {
+            "bread": 80000,
+            "furniture": 40000,
+            "grain": 560000,
+            "logs": 123540,
+            "planks": 22995
+          }
+        }
+      },
+      {
+        "Id": "timber_company",
+        "Cash": 9990362,
+        "IsPlayer": false,
+        "ReferenceValue": {
+          "Cash": 9990362,
+          "Goods": 100000,
+          "Ships": 2500000,
+          "Facilities": 0,
+          "PendingCapital": 0,
+          "Total": 12590362,
+          "InitialValue": 5500000,
+          "Change": 7090362
+        },
+        "Financials": {
+          "OwnerId": "timber_company",
+          "InitialCash": 3000000,
+          "InventoryPurchases": 12153322,
+          "SalesRevenue": 19143684,
+          "CostOfGoodsSold": 12016655,
+          "RealizedGrossMargin": 7127029,
+          "ConstructionExpenditure": 0,
+          "HeldInventoryCost": 136667,
+          "GrantedQuantities": {},
+          "PurchasedQuantities": {
+            "logs": 950000
+          },
+          "SoldQuantities": {
+            "logs": 940000
+          },
+          "ProducedQuantities": {},
+          "ConsumedQuantities": {},
+          "HeldInventoryQuantities": {
+            "logs": 10000
+          }
+        }
+      }
+    ],
+    "Towns": [
+      {
+        "Id": "eastport",
+        "Name": "Eastport",
+        "MarketCash": 9867246,
+        "HouseholdCash": 24547889
+      },
+      {
+        "Id": "northport",
+        "Name": "Northport",
+        "MarketCash": 2843664,
+        "HouseholdCash": 14695000
+      },
+      {
+        "Id": "southhaven",
+        "Name": "Southhaven",
+        "MarketCash": 93394,
+        "HouseholdCash": 12233754
+      },
+      {
+        "Id": "westhaven",
+        "Name": "Westhaven",
+        "MarketCash": 96449,
+        "HouseholdCash": 5053250
+      }
+    ],
+    "PublicTreasury": 0,
+    "ExternalAuthority": 12000000,
+    "MintedCurrency": 0,
+    "ExternalNetInflow": 0
+  },
+  "Towns": [
+    {
+      "Id": "eastport",
+      "Name": "Eastport",
+      "Role": "Food source: Farm, Lumber Camp and Bakery; imports Flour",
+      "Inventory": {
+        "bread": 207500,
+        "flour": 140000,
+        "furniture": 28750,
+        "grain": 480000,
+        "logs": 290000,
+        "planks": 0,
+        "silver": 0
+      },
+      "City": {
+        "Configuration": {
+          "InitialPopulation": 30,
+          "InitialHouseholdCash": 9000000,
+          "InitialProsperity": 65,
+          "MinimumPopulation": 10,
+          "MaximumPopulation": 80,
+          "DemographicIntervalDays": 12,
+          "PricingMode": "Coverage",
+          "QuantityScale": 10000
+        },
+        "Population": 40,
+        "InitialPopulation": 30,
+        "PopulationDelta": 1,
+        "HouseholdCash": 24547889,
+        "Prosperity": 100,
+        "ProsperityReason": "Paid food needs fulfilled with a reserve for the next opportunity.",
+        "LuxuryEnabled": true,
+        "PurchasingPowerPercent": 100,
+        "TotalWagesReceived": 16840000,
+        "LastWagesReceived": 100000,
+        "TotalRetailSpend": 1292111,
+        "LastRetailSpend": 20000,
+        "LastDemographicDay": 132,
+        "HealthyObservations": 6,
+        "DeprivedObservations": 0,
+        "LuxuryReadyObservations": 3,
+        "LuxuryPoorObservations": 0,
+        "FoodWindow": [
+          {
+            "Day": 120,
+            "DesiredQuantity": 19000,
+            "ConsumedQuantity": 19000,
+            "BaselineDesiredQuantity": 15000,
+            "UnmetStock": 0,
+            "UnmetAffordability": 0,
+            "Payment": 19000
+          },
+          {
+            "Day": 124,
+            "DesiredQuantity": 19500,
+            "ConsumedQuantity": 19500,
+            "BaselineDesiredQuantity": 15000,
+            "UnmetStock": 0,
+            "UnmetAffordability": 0,
+            "Payment": 19500
+          },
+          {
+            "Day": 128,
+            "DesiredQuantity": 19500,
+            "ConsumedQuantity": 19500,
+            "BaselineDesiredQuantity": 15000,
+            "UnmetStock": 0,
+            "UnmetAffordability": 0,
+            "Payment": 19500
+          },
+          {
+            "Day": 132,
+            "DesiredQuantity": 19500,
+            "ConsumedQuantity": 19500,
+            "BaselineDesiredQuantity": 15000,
+            "UnmetStock": 0,
+            "UnmetAffordability": 0,
+            "Payment": 19500
+          },
+          {
+            "Day": 136,
+            "DesiredQuantity": 20000,
+            "ConsumedQuantity": 20000,
+            "BaselineDesiredQuantity": 15000,
+            "UnmetStock": 0,
+            "UnmetAffordability": 0,
+            "Payment": 20000
+          },
+          {
+            "Day": 140,
+            "DesiredQuantity": 20000,
+            "ConsumedQuantity": 20000,
+            "BaselineDesiredQuantity": 15000,
+            "UnmetStock": 0,
+            "UnmetAffordability": 0,
+            "Payment": 20000
+          }
+        ],
+        "EssentialFulfillmentPercent": 100,
+        "RecoveryFulfillmentPercent": 100
+      },
+      "Consumption": [
+        {
+          "Configuration": {
+            "Id": "eastport_durables",
+            "GoodId": "furniture",
+            "Quantity": 10000,
+            "IntervalDays": 24,
+            "FirstDueDay": 24,
+            "Kind": "Luxury",
+            "PopulationPerUnit": 80,
+            "Proportional": true
+          },
+          "NextDueDay": 144,
+          "LastUnmetQuantity": 0,
+          "TotalUnmetQuantity": 0,
+          "LastDesiredQuantity": 4750,
+          "LastConsumedQuantity": 4750,
+          "LastPayment": 6373,
+          "LastUnmetStock": 0,
+          "LastUnmetAffordability": 0,
+          "TotalDesiredQuantity": 21250,
+          "TotalConsumedQuantity": 21250,
+          "TotalPayment": 689611,
+          "TotalUnmetStock": 0,
+          "TotalUnmetAffordability": 0,
+          "DemandRemainder": 0,
+          "BaselineDemandRemainder": 0,
+          "LastBaselineDesiredQuantity": 3750
+        },
+        {
+          "Configuration": {
+            "Id": "eastport_food",
+            "GoodId": "bread",
+            "Quantity": 10000,
+            "IntervalDays": 4,
+            "FirstDueDay": 4,
+            "Kind": "Essential",
+            "PopulationPerUnit": 20,
+            "Proportional": true
+          },
+          "NextDueDay": 144,
+          "LastUnmetQuantity": 0,
+          "TotalUnmetQuantity": 0,
+          "LastDesiredQuantity": 20000,
+          "LastConsumedQuantity": 20000,
+          "LastPayment": 20000,
+          "LastUnmetStock": 0,
+          "LastUnmetAffordability": 0,
+          "TotalDesiredQuantity": 602500,
+          "TotalConsumedQuantity": 602500,
+          "TotalPayment": 602500,
+          "TotalUnmetStock": 0,
+          "TotalUnmetAffordability": 0,
+          "DemandRemainder": 0,
+          "BaselineDemandRemainder": 0,
+          "LastBaselineDesiredQuantity": 15000
+        },
+        {
+          "Configuration": {
+            "Id": "eastport_municipal",
+            "GoodId": "planks",
+            "Quantity": 10000,
+            "IntervalDays": 12,
+            "FirstDueDay": 12,
+            "Kind": "Municipal",
+            "PopulationPerUnit": 40
+          },
+          "NextDueDay": 144,
+          "LastUnmetQuantity": 10000,
+          "TotalUnmetQuantity": 60000,
+          "LastDesiredQuantity": 10000,
+          "LastConsumedQuantity": 0,
+          "LastPayment": 0,
+          "LastUnmetStock": 10000,
+          "LastUnmetAffordability": 0,
+          "TotalDesiredQuantity": 110000,
+          "TotalConsumedQuantity": 50000,
+          "TotalPayment": 0,
+          "TotalUnmetStock": 60000,
+          "TotalUnmetAffordability": 0
+        }
+      ],
+      "Prices": [
+        {
+          "GoodId": "bread",
+          "CurrentMarginal": {
+            "GoodId": "bread",
+            "MarketStock": 207500,
+            "Bid": 1,
+            "Ask": 1
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 24,
+            "TargetStock": 40000,
+            "Sensitivity": 8,
+            "MinPrice": 1,
+            "MaxPrice": 80,
+            "Spread": 1
+          },
+          "TargetStock": 40000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "flour",
+          "CurrentMarginal": {
+            "GoodId": "flour",
+            "MarketStock": 140000,
+            "Bid": 15,
+            "Ask": 17
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 21,
+            "TargetStock": 80000,
+            "Sensitivity": 6,
+            "MinPrice": 1,
+            "MaxPrice": 50,
+            "Spread": 1
+          },
+          "TargetStock": 80000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "furniture",
+          "CurrentMarginal": {
+            "GoodId": "furniture",
+            "MarketStock": 28750,
+            "Bid": 5,
+            "Ask": 8
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 64,
+            "TargetStock": 5000,
+            "Sensitivity": 12,
+            "MinPrice": 1,
+            "MaxPrice": 120,
+            "Spread": 1
+          },
+          "TargetStock": 5000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "grain",
+          "CurrentMarginal": {
+            "GoodId": "grain",
+            "MarketStock": 480000,
+            "Bid": 1,
+            "Ask": 1
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 7,
+            "TargetStock": 160000,
+            "Sensitivity": 4,
+            "MinPrice": 1,
+            "MaxPrice": 30,
+            "Spread": 1
+          },
+          "TargetStock": 160000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "logs",
+          "CurrentMarginal": {
+            "GoodId": "logs",
+            "MarketStock": 290000,
+            "Bid": 4,
+            "Ask": 6
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 10,
+            "TargetStock": 160000,
+            "Sensitivity": 6,
+            "MinPrice": 1,
+            "MaxPrice": 60,
+            "Spread": 1
+          },
+          "TargetStock": 160000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "planks",
+          "CurrentMarginal": {
+            "GoodId": "planks",
+            "MarketStock": 0,
+            "Bid": 32,
+            "Ask": null
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 26,
+            "TargetStock": 80000,
+            "Sensitivity": 8,
+            "MinPrice": 1,
+            "MaxPrice": 70,
+            "Spread": 1
+          },
+          "TargetStock": 80000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "silver",
+          "CurrentMarginal": {
+            "GoodId": "silver",
+            "MarketStock": 0,
+            "Bid": 48,
+            "Ask": null
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 40,
+            "TargetStock": 40000,
+            "Sensitivity": 10,
+            "MinPrice": 1,
+            "MaxPrice": 100,
+            "Spread": 1
+          },
+          "TargetStock": 40000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        }
+      ],
+      "PublicFacilities": [
+        {
+          "Configuration": {
+            "Instance": {
+              "Id": "eastport_bakery",
+              "BuildingId": "bakery",
+              "RecipeId": "bake_bread",
+              "Priority": 0,
+              "ProductionEnabled": true
+            },
+            "IntervalDays": 2,
+            "OutputStockLimit": 240000,
+            "FirstDueDay": 2,
+            "WagePerBatch": 100000
+          },
+          "Enabled": true,
+          "NextDueDay": 139,
+          "LastOutcome": "OutputLimit",
+          "EmployerCash": 9867246,
+          "Inputs": [
+            {
+              "GoodId": "flour",
+              "RequiredForBatch": 10000,
+              "Available": 140000,
+              "EnoughNow": true
+            },
+            {
+              "GoodId": "logs",
+              "RequiredForBatch": 10000,
+              "Available": 290000,
+              "EnoughNow": true
+            }
+          ],
+          "Outputs": [
+            {
+              "GoodId": "bread",
+              "PerBatch": 20000,
+              "CurrentlyStored": 207500
+            }
+          ]
+        },
+        {
+          "Configuration": {
+            "Instance": {
+              "Id": "eastport_farm",
+              "BuildingId": "farm",
+              "RecipeId": "harvest_grain",
+              "Priority": 0,
+              "ProductionEnabled": true
+            },
+            "IntervalDays": 2,
+            "OutputStockLimit": 480000,
+            "FirstDueDay": 2,
+            "WagePerBatch": 120000
+          },
+          "Enabled": true,
+          "NextDueDay": 139,
+          "LastOutcome": "OutputLimit",
+          "EmployerCash": 9867246,
+          "Inputs": [],
+          "Outputs": [
+            {
+              "GoodId": "grain",
+              "PerBatch": 40000,
+              "CurrentlyStored": 480000
+            }
+          ]
+        },
+        {
+          "Configuration": {
+            "Instance": {
+              "Id": "eastport_lumber_camp",
+              "BuildingId": "lumber_camp",
+              "RecipeId": "harvest_logs",
+              "Priority": 0,
+              "ProductionEnabled": true
+            },
+            "IntervalDays": 2,
+            "OutputStockLimit": 360000,
+            "FirstDueDay": 2,
+            "WagePerBatch": 100000
+          },
+          "Enabled": true,
+          "NextDueDay": 142,
+          "LastOutcome": "Produced",
+          "EmployerCash": 9867246,
+          "Inputs": [],
+          "Outputs": [
+            {
+              "GoodId": "logs",
+              "PerBatch": 20000,
+              "CurrentlyStored": 290000
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "northport",
+      "Name": "Northport",
+      "Role": "Forest furniture: Lumber Camp and Furniture Workshop; no Sawmill; imports Planks and Bread; eligible Silver Mine, exports Silver to public Mint",
+      "Inventory": {
+        "bread": 0,
+        "flour": 20000,
+        "furniture": 80000,
+        "grain": 70000,
+        "logs": 290000,
+        "planks": 57005,
+        "silver": 0
+      },
+      "City": {
+        "Configuration": {
+          "InitialPopulation": 40,
+          "InitialHouseholdCash": 16800000,
+          "InitialProsperity": 75,
+          "MinimumPopulation": 10,
+          "MaximumPopulation": 80,
+          "DemographicIntervalDays": 12,
+          "PricingMode": "Coverage",
+          "QuantityScale": 10000
+        },
+        "Population": 38,
+        "InitialPopulation": 40,
+        "PopulationDelta": -1,
+        "HouseholdCash": 14695000,
+        "Prosperity": 27,
+        "ProsperityReason": "Food missing from the market.",
+        "LuxuryEnabled": false,
+        "PurchasingPowerPercent": 100,
+        "TotalWagesReceived": 3920000,
+        "LastWagesReceived": 0,
+        "TotalRetailSpend": 6025000,
+        "LastRetailSpend": 0,
+        "LastDemographicDay": 132,
+        "HealthyObservations": 0,
+        "DeprivedObservations": 6,
+        "LuxuryReadyObservations": 0,
+        "LuxuryPoorObservations": 3,
+        "FoodWindow": [
+          {
+            "Day": 120,
+            "DesiredQuantity": 20000,
+            "ConsumedQuantity": 0,
+            "BaselineDesiredQuantity": 20000,
+            "UnmetStock": 20000,
+            "UnmetAffordability": 0,
+            "Payment": 0
+          },
+          {
+            "Day": 124,
+            "DesiredQuantity": 19500,
+            "ConsumedQuantity": 0,
+            "BaselineDesiredQuantity": 20000,
+            "UnmetStock": 19500,
+            "UnmetAffordability": 0,
+            "Payment": 0
+          },
+          {
+            "Day": 128,
+            "DesiredQuantity": 19500,
+            "ConsumedQuantity": 0,
+            "BaselineDesiredQuantity": 20000,
+            "UnmetStock": 19500,
+            "UnmetAffordability": 0,
+            "Payment": 0
+          },
+          {
+            "Day": 132,
+            "DesiredQuantity": 19500,
+            "ConsumedQuantity": 0,
+            "BaselineDesiredQuantity": 20000,
+            "UnmetStock": 19500,
+            "UnmetAffordability": 0,
+            "Payment": 0
+          },
+          {
+            "Day": 136,
+            "DesiredQuantity": 19000,
+            "ConsumedQuantity": 0,
+            "BaselineDesiredQuantity": 20000,
+            "UnmetStock": 19000,
+            "UnmetAffordability": 0,
+            "Payment": 0
+          },
+          {
+            "Day": 140,
+            "DesiredQuantity": 19000,
+            "ConsumedQuantity": 0,
+            "BaselineDesiredQuantity": 20000,
+            "UnmetStock": 19000,
+            "UnmetAffordability": 0,
+            "Payment": 0
+          }
+        ],
+        "EssentialFulfillmentPercent": 0,
+        "RecoveryFulfillmentPercent": 0
+      },
+      "Consumption": [
+        {
+          "Configuration": {
+            "Id": "northport_durables",
+            "GoodId": "furniture",
+            "Quantity": 10000,
+            "IntervalDays": 24,
+            "FirstDueDay": 24,
+            "Kind": "Luxury",
+            "PopulationPerUnit": 80,
+            "Proportional": true
+          },
+          "NextDueDay": 144,
+          "LastUnmetQuantity": 0,
+          "TotalUnmetQuantity": 0,
+          "LastDesiredQuantity": 0,
+          "LastConsumedQuantity": 0,
+          "LastPayment": 0,
+          "LastUnmetStock": 0,
+          "LastUnmetAffordability": 0,
+          "TotalDesiredQuantity": 20000,
+          "TotalConsumedQuantity": 20000,
+          "TotalPayment": 20000,
+          "TotalUnmetStock": 0,
+          "TotalUnmetAffordability": 0,
+          "DemandRemainder": 0,
+          "BaselineDemandRemainder": 0,
+          "LastBaselineDesiredQuantity": 0
+        },
+        {
+          "Configuration": {
+            "Id": "northport_food",
+            "GoodId": "bread",
+            "Quantity": 10000,
+            "IntervalDays": 4,
+            "FirstDueDay": 4,
+            "Kind": "Essential",
+            "PopulationPerUnit": 20,
+            "Proportional": true
+          },
+          "NextDueDay": 144,
+          "LastUnmetQuantity": 19000,
+          "TotalUnmetQuantity": 546500,
+          "LastDesiredQuantity": 19000,
+          "LastConsumedQuantity": 0,
+          "LastPayment": 0,
+          "LastUnmetStock": 19000,
+          "LastUnmetAffordability": 0,
+          "TotalDesiredQuantity": 696500,
+          "TotalConsumedQuantity": 150000,
+          "TotalPayment": 6005000,
+          "TotalUnmetStock": 546500,
+          "TotalUnmetAffordability": 0,
+          "DemandRemainder": 0,
+          "BaselineDemandRemainder": 0,
+          "LastBaselineDesiredQuantity": 20000
+        },
+        {
+          "Configuration": {
+            "Id": "northport_municipal",
+            "GoodId": "planks",
+            "Quantity": 10000,
+            "IntervalDays": 12,
+            "FirstDueDay": 12,
+            "Kind": "Municipal",
+            "PopulationPerUnit": 40
+          },
+          "NextDueDay": 144,
+          "LastUnmetQuantity": 0,
+          "TotalUnmetQuantity": 0,
+          "LastDesiredQuantity": 10000,
+          "LastConsumedQuantity": 10000,
+          "LastPayment": 0,
+          "LastUnmetStock": 0,
+          "LastUnmetAffordability": 0,
+          "TotalDesiredQuantity": 110000,
+          "TotalConsumedQuantity": 110000,
+          "TotalPayment": 0,
+          "TotalUnmetStock": 0,
+          "TotalUnmetAffordability": 0
+        }
+      ],
+      "Prices": [
+        {
+          "GoodId": "bread",
+          "CurrentMarginal": {
+            "GoodId": "bread",
+            "MarketStock": 0,
+            "Bid": 44,
+            "Ask": null
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 38,
+            "TargetStock": 38000,
+            "Sensitivity": 8,
+            "MinPrice": 1,
+            "MaxPrice": 80,
+            "Spread": 1
+          },
+          "TargetStock": 38000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "flour",
+          "CurrentMarginal": {
+            "GoodId": "flour",
+            "MarketStock": 20000,
+            "Bid": 29,
+            "Ask": 31
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 26,
+            "TargetStock": 80000,
+            "Sensitivity": 6,
+            "MinPrice": 1,
+            "MaxPrice": 50,
+            "Spread": 1
+          },
+          "TargetStock": 80000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "furniture",
+          "CurrentMarginal": {
+            "GoodId": "furniture",
+            "MarketStock": 80000,
+            "Bid": 1,
+            "Ask": 1
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 52,
+            "TargetStock": 1,
+            "Sensitivity": 12,
+            "MinPrice": 1,
+            "MaxPrice": 120,
+            "Spread": 1
+          },
+          "TargetStock": 1,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "grain",
+          "CurrentMarginal": {
+            "GoodId": "grain",
+            "MarketStock": 70000,
+            "Bid": 17,
+            "Ask": 19
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 16,
+            "TargetStock": 160000,
+            "Sensitivity": 4,
+            "MinPrice": 1,
+            "MaxPrice": 30,
+            "Spread": 1
+          },
+          "TargetStock": 160000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "logs",
+          "CurrentMarginal": {
+            "GoodId": "logs",
+            "MarketStock": 290000,
+            "Bid": 4,
+            "Ask": 6
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 10,
+            "TargetStock": 160000,
+            "Sensitivity": 6,
+            "MinPrice": 1,
+            "MaxPrice": 60,
+            "Spread": 1
+          },
+          "TargetStock": 160000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "planks",
+          "CurrentMarginal": {
+            "GoodId": "planks",
+            "MarketStock": 57005,
+            "Bid": 31,
+            "Ask": 33
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 30,
+            "TargetStock": 80000,
+            "Sensitivity": 8,
+            "MinPrice": 1,
+            "MaxPrice": 70,
+            "Spread": 1
+          },
+          "TargetStock": 80000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "silver",
+          "CurrentMarginal": {
+            "GoodId": "silver",
+            "MarketStock": 0,
+            "Bid": 48,
+            "Ask": null
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 40,
+            "TargetStock": 40000,
+            "Sensitivity": 10,
+            "MinPrice": 1,
+            "MaxPrice": 100,
+            "Spread": 1
+          },
+          "TargetStock": 40000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        }
+      ],
+      "PublicFacilities": [
+        {
+          "Configuration": {
+            "Instance": {
+              "Id": "northport_furniture_workshop",
+              "BuildingId": "furniture_workshop",
+              "RecipeId": "make_furniture",
+              "Priority": 0,
+              "ProductionEnabled": true
+            },
+            "IntervalDays": 5,
+            "OutputStockLimit": 80000,
+            "FirstDueDay": 5,
+            "WagePerBatch": 160000
+          },
+          "Enabled": true,
+          "NextDueDay": 106,
+          "LastOutcome": "OutputLimit",
+          "EmployerCash": 2843664,
+          "Inputs": [
+            {
+              "GoodId": "planks",
+              "RequiredForBatch": 20000,
+              "Available": 57005,
+              "EnoughNow": true
+            }
+          ],
+          "Outputs": [
+            {
+              "GoodId": "furniture",
+              "PerBatch": 10000,
+              "CurrentlyStored": 80000
+            }
+          ]
+        },
+        {
+          "Configuration": {
+            "Instance": {
+              "Id": "northport_lumber_camp",
+              "BuildingId": "lumber_camp",
+              "RecipeId": "harvest_logs",
+              "Priority": 0,
+              "ProductionEnabled": true
+            },
+            "IntervalDays": 3,
+            "OutputStockLimit": 300000,
+            "FirstDueDay": 3,
+            "WagePerBatch": 120000
+          },
+          "Enabled": true,
+          "NextDueDay": 33,
+          "LastOutcome": "OutputLimit",
+          "EmployerCash": 2843664,
+          "Inputs": [],
+          "Outputs": [
+            {
+              "GoodId": "logs",
+              "PerBatch": 20000,
+              "CurrentlyStored": 290000
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "southhaven",
+      "Name": "Southhaven",
+      "Role": "Processing: Mill and Sawmill; imports Grain, Logs and Bread; sole public Royal Mint and shipwright harbor",
+      "Inventory": {
+        "bread": 0,
+        "flour": 50000,
+        "furniture": 17500,
+        "grain": 0,
+        "logs": 96460,
+        "planks": 10000,
+        "silver": 0
+      },
+      "City": {
+        "Configuration": {
+          "InitialPopulation": 20,
+          "InitialHouseholdCash": 5200000,
+          "InitialProsperity": 60,
+          "MinimumPopulation": 10,
+          "MaximumPopulation": 80,
+          "DemographicIntervalDays": 12,
+          "PricingMode": "Coverage",
+          "QuantityScale": 10000
+        },
+        "Population": 19,
+        "InitialPopulation": 20,
+        "PopulationDelta": -1,
+        "HouseholdCash": 12233754,
+        "Prosperity": 31,
+        "ProsperityReason": "Food missing from the market.",
+        "LuxuryEnabled": false,
+        "PurchasingPowerPercent": 100,
+        "TotalWagesReceived": 10740000,
+        "LastWagesReceived": 0,
+        "TotalRetailSpend": 3706246,
+        "LastRetailSpend": 0,
+        "LastDemographicDay": 132,
+        "HealthyObservations": 0,
+        "DeprivedObservations": 6,
+        "LuxuryReadyObservations": 0,
+        "LuxuryPoorObservations": 3,
+        "FoodWindow": [
+          {
+            "Day": 120,
+            "DesiredQuantity": 10000,
+            "ConsumedQuantity": 0,
+            "BaselineDesiredQuantity": 10000,
+            "UnmetStock": 10000,
+            "UnmetAffordability": 0,
+            "Payment": 0
+          },
+          {
+            "Day": 124,
+            "DesiredQuantity": 10000,
+            "ConsumedQuantity": 0,
+            "BaselineDesiredQuantity": 10000,
+            "UnmetStock": 10000,
+            "UnmetAffordability": 0,
+            "Payment": 0
+          },
+          {
+            "Day": 128,
+            "DesiredQuantity": 10000,
+            "ConsumedQuantity": 0,
+            "BaselineDesiredQuantity": 10000,
+            "UnmetStock": 10000,
+            "UnmetAffordability": 0,
+            "Payment": 0
+          },
+          {
+            "Day": 132,
+            "DesiredQuantity": 10000,
+            "ConsumedQuantity": 0,
+            "BaselineDesiredQuantity": 10000,
+            "UnmetStock": 10000,
+            "UnmetAffordability": 0,
+            "Payment": 0
+          },
+          {
+            "Day": 136,
+            "DesiredQuantity": 9500,
+            "ConsumedQuantity": 0,
+            "BaselineDesiredQuantity": 10000,
+            "UnmetStock": 9500,
+            "UnmetAffordability": 0,
+            "Payment": 0
+          },
+          {
+            "Day": 140,
+            "DesiredQuantity": 9500,
+            "ConsumedQuantity": 0,
+            "BaselineDesiredQuantity": 10000,
+            "UnmetStock": 9500,
+            "UnmetAffordability": 0,
+            "Payment": 0
+          }
+        ],
+        "EssentialFulfillmentPercent": 0,
+        "RecoveryFulfillmentPercent": 0
+      },
+      "Consumption": [
+        {
+          "Configuration": {
+            "Id": "southhaven_durables",
+            "GoodId": "furniture",
+            "Quantity": 10000,
+            "IntervalDays": 24,
+            "FirstDueDay": 24,
+            "Kind": "Luxury",
+            "PopulationPerUnit": 80,
+            "Proportional": true
+          },
+          "NextDueDay": 144,
+          "LastUnmetQuantity": 0,
+          "TotalUnmetQuantity": 0,
+          "LastDesiredQuantity": 2500,
+          "LastConsumedQuantity": 2500,
+          "LastPayment": 2500,
+          "LastUnmetStock": 0,
+          "LastUnmetAffordability": 0,
+          "TotalDesiredQuantity": 12500,
+          "TotalConsumedQuantity": 12500,
+          "TotalPayment": 96246,
+          "TotalUnmetStock": 0,
+          "TotalUnmetAffordability": 0,
+          "DemandRemainder": 0,
+          "BaselineDemandRemainder": 0,
+          "LastBaselineDesiredQuantity": 2500
+        },
+        {
+          "Configuration": {
+            "Id": "southhaven_food",
+            "GoodId": "bread",
+            "Quantity": 10000,
+            "IntervalDays": 4,
+            "FirstDueDay": 4,
+            "Kind": "Essential",
+            "PopulationPerUnit": 20,
+            "Proportional": true
+          },
+          "NextDueDay": 144,
+          "LastUnmetQuantity": 9500,
+          "TotalUnmetQuantity": 249000,
+          "LastDesiredQuantity": 9500,
+          "LastConsumedQuantity": 0,
+          "LastPayment": 0,
+          "LastUnmetStock": 9500,
+          "LastUnmetAffordability": 0,
+          "TotalDesiredQuantity": 349000,
+          "TotalConsumedQuantity": 100000,
+          "TotalPayment": 3610000,
+          "TotalUnmetStock": 249000,
+          "TotalUnmetAffordability": 0,
+          "DemandRemainder": 0,
+          "BaselineDemandRemainder": 0,
+          "LastBaselineDesiredQuantity": 10000
+        },
+        {
+          "Configuration": {
+            "Id": "southhaven_municipal",
+            "GoodId": "planks",
+            "Quantity": 10000,
+            "IntervalDays": 12,
+            "FirstDueDay": 12,
+            "Kind": "Municipal",
+            "PopulationPerUnit": 40
+          },
+          "NextDueDay": 144,
+          "LastUnmetQuantity": 0,
+          "TotalUnmetQuantity": 0,
+          "LastDesiredQuantity": 10000,
+          "LastConsumedQuantity": 10000,
+          "LastPayment": 0,
+          "LastUnmetStock": 0,
+          "LastUnmetAffordability": 0,
+          "TotalDesiredQuantity": 110000,
+          "TotalConsumedQuantity": 110000,
+          "TotalPayment": 0,
+          "TotalUnmetStock": 0,
+          "TotalUnmetAffordability": 0
+        }
+      ],
+      "Prices": [
+        {
+          "GoodId": "bread",
+          "CurrentMarginal": {
+            "GoodId": "bread",
+            "MarketStock": 0,
+            "Bid": 44,
+            "Ask": null
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 38,
+            "TargetStock": 19000,
+            "Sensitivity": 8,
+            "MinPrice": 1,
+            "MaxPrice": 80,
+            "Spread": 1
+          },
+          "TargetStock": 19000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "flour",
+          "CurrentMarginal": {
+            "GoodId": "flour",
+            "MarketStock": 50000,
+            "Bid": 16,
+            "Ask": 18
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 15,
+            "TargetStock": 80000,
+            "Sensitivity": 6,
+            "MinPrice": 1,
+            "MaxPrice": 50,
+            "Spread": 1
+          },
+          "TargetStock": 80000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "furniture",
+          "CurrentMarginal": {
+            "GoodId": "furniture",
+            "MarketStock": 17500,
+            "Bid": 1,
+            "Ask": 1
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 64,
+            "TargetStock": 1,
+            "Sensitivity": 12,
+            "MinPrice": 1,
+            "MaxPrice": 120,
+            "Spread": 1
+          },
+          "TargetStock": 1,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "grain",
+          "CurrentMarginal": {
+            "GoodId": "grain",
+            "MarketStock": 0,
+            "Bid": 18,
+            "Ask": null
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 16,
+            "TargetStock": 160000,
+            "Sensitivity": 4,
+            "MinPrice": 1,
+            "MaxPrice": 30,
+            "Spread": 1
+          },
+          "TargetStock": 160000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "logs",
+          "CurrentMarginal": {
+            "GoodId": "logs",
+            "MarketStock": 96460,
+            "Bid": 19,
+            "Ask": 21
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 18,
+            "TargetStock": 160000,
+            "Sensitivity": 6,
+            "MinPrice": 1,
+            "MaxPrice": 60,
+            "Spread": 1
+          },
+          "TargetStock": 160000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "planks",
+          "CurrentMarginal": {
+            "GoodId": "planks",
+            "MarketStock": 10000,
+            "Bid": 23,
+            "Ask": 26
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 18,
+            "TargetStock": 80000,
+            "Sensitivity": 8,
+            "MinPrice": 1,
+            "MaxPrice": 70,
+            "Spread": 1
+          },
+          "TargetStock": 80000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "silver",
+          "CurrentMarginal": {
+            "GoodId": "silver",
+            "MarketStock": 0,
+            "Bid": 48,
+            "Ask": null
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 40,
+            "TargetStock": 40000,
+            "Sensitivity": 10,
+            "MinPrice": 1,
+            "MaxPrice": 100,
+            "Spread": 1
+          },
+          "TargetStock": 40000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        }
+      ],
+      "PublicFacilities": [
+        {
+          "Configuration": {
+            "Instance": {
+              "Id": "southhaven_mill",
+              "BuildingId": "mill",
+              "RecipeId": "mill_flour",
+              "Priority": 0,
+              "ProductionEnabled": true
+            },
+            "IntervalDays": 2,
+            "OutputStockLimit": 240000,
+            "FirstDueDay": 2,
+            "WagePerBatch": 100000
+          },
+          "Enabled": true,
+          "NextDueDay": 115,
+          "LastOutcome": "InputShortage",
+          "EmployerCash": 93394,
+          "Inputs": [
+            {
+              "GoodId": "grain",
+              "RequiredForBatch": 20000,
+              "Available": 0,
+              "EnoughNow": false
+            }
+          ],
+          "Outputs": [
+            {
+              "GoodId": "flour",
+              "PerBatch": 10000,
+              "CurrentlyStored": 50000
+            }
+          ]
+        },
+        {
+          "Configuration": {
+            "Instance": {
+              "Id": "southhaven_sawmill",
+              "BuildingId": "sawmill",
+              "RecipeId": "saw_planks",
+              "Priority": 0,
+              "ProductionEnabled": true
+            },
+            "IntervalDays": 2,
+            "OutputStockLimit": 200000,
+            "FirstDueDay": 2,
+            "WagePerBatch": 100000
+          },
+          "Enabled": true,
+          "NextDueDay": 125,
+          "LastOutcome": "PayrollShortage",
+          "EmployerCash": 93394,
+          "Inputs": [
+            {
+              "GoodId": "logs",
+              "RequiredForBatch": 20000,
+              "Available": 96460,
+              "EnoughNow": true
+            }
+          ],
+          "Outputs": [
+            {
+              "GoodId": "planks",
+              "PerBatch": 10000,
+              "CurrentlyStored": 10000
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "westhaven",
+      "Name": "Westhaven",
+      "Role": "Vulnerable coast: Lumber Camp; no public food production; imports Bread and Planks",
+      "Inventory": {
+        "bread": 0,
+        "flour": 20000,
+        "furniture": 10000,
+        "grain": 10000,
+        "logs": 280000,
+        "planks": 40000,
+        "silver": 0
+      },
+      "City": {
+        "Configuration": {
+          "InitialPopulation": 25,
+          "InitialHouseholdCash": 5500000,
+          "InitialProsperity": 40,
+          "MinimumPopulation": 10,
+          "MaximumPopulation": 80,
+          "DemographicIntervalDays": 12,
+          "PricingMode": "Coverage",
+          "QuantityScale": 10000
+        },
+        "Population": 20,
+        "InitialPopulation": 25,
+        "PopulationDelta": -1,
+        "HouseholdCash": 5053250,
+        "Prosperity": 26,
+        "ProsperityReason": "Food missing from the market.",
+        "LuxuryEnabled": false,
+        "PurchasingPowerPercent": 100,
+        "TotalWagesReceived": 2160000,
+        "LastWagesReceived": 0,
+        "TotalRetailSpend": 2606750,
+        "LastRetailSpend": 0,
+        "LastDemographicDay": 132,
+        "HealthyObservations": 0,
+        "DeprivedObservations": 6,
+        "LuxuryReadyObservations": 0,
+        "LuxuryPoorObservations": 3,
+        "FoodWindow": [
+          {
+            "Day": 120,
+            "DesiredQuantity": 11000,
+            "ConsumedQuantity": 0,
+            "BaselineDesiredQuantity": 12500,
+            "UnmetStock": 11000,
+            "UnmetAffordability": 0,
+            "Payment": 0
+          },
+          {
+            "Day": 124,
+            "DesiredQuantity": 10500,
+            "ConsumedQuantity": 0,
+            "BaselineDesiredQuantity": 12500,
+            "UnmetStock": 10500,
+            "UnmetAffordability": 0,
+            "Payment": 0
+          },
+          {
+            "Day": 128,
+            "DesiredQuantity": 10500,
+            "ConsumedQuantity": 0,
+            "BaselineDesiredQuantity": 12500,
+            "UnmetStock": 10500,
+            "UnmetAffordability": 0,
+            "Payment": 0
+          },
+          {
+            "Day": 132,
+            "DesiredQuantity": 10500,
+            "ConsumedQuantity": 0,
+            "BaselineDesiredQuantity": 12500,
+            "UnmetStock": 10500,
+            "UnmetAffordability": 0,
+            "Payment": 0
+          },
+          {
+            "Day": 136,
+            "DesiredQuantity": 10000,
+            "ConsumedQuantity": 0,
+            "BaselineDesiredQuantity": 12500,
+            "UnmetStock": 10000,
+            "UnmetAffordability": 0,
+            "Payment": 0
+          },
+          {
+            "Day": 140,
+            "DesiredQuantity": 10000,
+            "ConsumedQuantity": 0,
+            "BaselineDesiredQuantity": 12500,
+            "UnmetStock": 10000,
+            "UnmetAffordability": 0,
+            "Payment": 0
+          }
+        ],
+        "EssentialFulfillmentPercent": 0,
+        "RecoveryFulfillmentPercent": 0
+      },
+      "Consumption": [
+        {
+          "Configuration": {
+            "Id": "westhaven_durables",
+            "GoodId": "furniture",
+            "Quantity": 10000,
+            "IntervalDays": 24,
+            "FirstDueDay": 24,
+            "Kind": "Luxury",
+            "PopulationPerUnit": 80,
+            "Proportional": true
+          },
+          "NextDueDay": 144,
+          "LastUnmetQuantity": 0,
+          "TotalUnmetQuantity": 0,
+          "LastDesiredQuantity": 0,
+          "LastConsumedQuantity": 0,
+          "LastPayment": 0,
+          "LastUnmetStock": 0,
+          "LastUnmetAffordability": 0,
+          "TotalDesiredQuantity": 0,
+          "TotalConsumedQuantity": 0,
+          "TotalPayment": 0,
+          "TotalUnmetStock": 0,
+          "TotalUnmetAffordability": 0,
+          "DemandRemainder": 0,
+          "BaselineDemandRemainder": 0,
+          "LastBaselineDesiredQuantity": 0
+        },
+        {
+          "Configuration": {
+            "Id": "westhaven_food",
+            "GoodId": "bread",
+            "Quantity": 10000,
+            "IntervalDays": 4,
+            "FirstDueDay": 4,
+            "Kind": "Essential",
+            "PopulationPerUnit": 20,
+            "Proportional": true
+          },
+          "NextDueDay": 144,
+          "LastUnmetQuantity": 10000,
+          "TotalUnmetQuantity": 322500,
+          "LastDesiredQuantity": 10000,
+          "LastConsumedQuantity": 0,
+          "LastPayment": 0,
+          "LastUnmetStock": 10000,
+          "LastUnmetAffordability": 0,
+          "TotalDesiredQuantity": 402500,
+          "TotalConsumedQuantity": 80000,
+          "TotalPayment": 2606750,
+          "TotalUnmetStock": 322500,
+          "TotalUnmetAffordability": 0,
+          "DemandRemainder": 0,
+          "BaselineDemandRemainder": 0,
+          "LastBaselineDesiredQuantity": 12500
+        },
+        {
+          "Configuration": {
+            "Id": "westhaven_municipal",
+            "GoodId": "planks",
+            "Quantity": 10000,
+            "IntervalDays": 12,
+            "FirstDueDay": 12,
+            "Kind": "Municipal",
+            "PopulationPerUnit": 40
+          },
+          "NextDueDay": 144,
+          "LastUnmetQuantity": 0,
+          "TotalUnmetQuantity": 60000,
+          "LastDesiredQuantity": 10000,
+          "LastConsumedQuantity": 10000,
+          "LastPayment": 0,
+          "LastUnmetStock": 0,
+          "LastUnmetAffordability": 0,
+          "TotalDesiredQuantity": 110000,
+          "TotalConsumedQuantity": 50000,
+          "TotalPayment": 0,
+          "TotalUnmetStock": 60000,
+          "TotalUnmetAffordability": 0
+        }
+      ],
+      "Prices": [
+        {
+          "GoodId": "bread",
+          "CurrentMarginal": {
+            "GoodId": "bread",
+            "MarketStock": 0,
+            "Bid": 44,
+            "Ask": null
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 38,
+            "TargetStock": 20000,
+            "Sensitivity": 8,
+            "MinPrice": 1,
+            "MaxPrice": 80,
+            "Spread": 1
+          },
+          "TargetStock": 20000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "flour",
+          "CurrentMarginal": {
+            "GoodId": "flour",
+            "MarketStock": 20000,
+            "Bid": 26,
+            "Ask": 28
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 23,
+            "TargetStock": 80000,
+            "Sensitivity": 6,
+            "MinPrice": 1,
+            "MaxPrice": 50,
+            "Spread": 1
+          },
+          "TargetStock": 80000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "furniture",
+          "CurrentMarginal": {
+            "GoodId": "furniture",
+            "MarketStock": 10000,
+            "Bid": 1,
+            "Ask": 1
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 68,
+            "TargetStock": 1,
+            "Sensitivity": 12,
+            "MinPrice": 1,
+            "MaxPrice": 120,
+            "Spread": 1
+          },
+          "TargetStock": 1,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "grain",
+          "CurrentMarginal": {
+            "GoodId": "grain",
+            "MarketStock": 10000,
+            "Bid": 20,
+            "Ask": 22
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 18,
+            "TargetStock": 160000,
+            "Sensitivity": 4,
+            "MinPrice": 1,
+            "MaxPrice": 30,
+            "Spread": 1
+          },
+          "TargetStock": 160000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "logs",
+          "CurrentMarginal": {
+            "GoodId": "logs",
+            "MarketStock": 280000,
+            "Bid": 3,
+            "Ask": 5
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 9,
+            "TargetStock": 160000,
+            "Sensitivity": 6,
+            "MinPrice": 1,
+            "MaxPrice": 60,
+            "Spread": 1
+          },
+          "TargetStock": 160000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "planks",
+          "CurrentMarginal": {
+            "GoodId": "planks",
+            "MarketStock": 40000,
+            "Bid": 30,
+            "Ask": 33
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 28,
+            "TargetStock": 80000,
+            "Sensitivity": 8,
+            "MinPrice": 1,
+            "MaxPrice": 70,
+            "Spread": 1
+          },
+          "TargetStock": 80000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        },
+        {
+          "GoodId": "silver",
+          "CurrentMarginal": {
+            "GoodId": "silver",
+            "MarketStock": 0,
+            "Bid": 48,
+            "Ask": null
+          },
+          "Model": {
+            "Model": "Linear",
+            "ReferencePrice": 40,
+            "TargetStock": 40000,
+            "Sensitivity": 10,
+            "MinPrice": 1,
+            "MaxPrice": 100,
+            "Spread": 1
+          },
+          "TargetStock": 40000,
+          "Detail": "Bid is paid by the town to a seller; ask is paid by a buyer to the town. Exact bulk execution uses the shared trade preview, not marginal price times quantity."
+        }
+      ],
+      "PublicFacilities": [
+        {
+          "Configuration": {
+            "Instance": {
+              "Id": "westhaven_lumber_camp",
+              "BuildingId": "lumber_camp",
+              "RecipeId": "harvest_logs",
+              "Priority": 0,
+              "ProductionEnabled": true
+            },
+            "IntervalDays": 3,
+            "OutputStockLimit": 280000,
+            "FirstDueDay": 3,
+            "WagePerBatch": 120000
+          },
+          "Enabled": true,
+          "NextDueDay": 120,
+          "LastOutcome": "OutputLimit",
+          "EmployerCash": 96449,
+          "Inputs": [],
+          "Outputs": [
+            {
+              "GoodId": "logs",
+              "PerBatch": 20000,
+              "CurrentlyStored": 280000
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "FurnitureReadOnlyQuotes": [
+    {
+      "PortId": "eastport",
+      "Quantity": 10000,
+      "BuyTotal": 194992,
+      "SellTotal": 14165
+    },
+    {
+      "PortId": "northport",
+      "Quantity": 10000,
+      "BuyTotal": 10000,
+      "SellTotal": 10000
+    },
+    {
+      "PortId": "southhaven",
+      "Quantity": 10000,
+      "BuyTotal": 10000,
+      "SellTotal": 10000
+    },
+    {
+      "PortId": "westhaven",
+      "Quantity": 10000,
+      "BuyTotal": 10228,
+      "SellTotal": 10000
+    }
+  ],
+  "Limitations": [
+    "No event history or inferred time series.",
+    "Quotes do not authorize economic mutation of this terminal world.",
+    "No private save, filesystem paths or personal data included."
+  ]
+}

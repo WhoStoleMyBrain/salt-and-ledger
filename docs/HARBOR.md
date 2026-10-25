@@ -44,3 +44,7 @@ Development builds and the Editor expose **Export Run Report** on diagnostic sur
 Reports separate markets, households, companies, treasury and finite outside money; list physical stores/FIFO, ships, facilities, input/payroll/output status, prices/targets and objective conditions. Recent host events are explicitly **partial bounded history**, not a complete lifetime transaction ledger. Exporting a difficult economy does not repair its finances or stock. Keep private playtest saves out of published documentation.
 
 The [Task 2.2 verification record](TASK-2.2-VERIFICATION.md) contains the criterion audit, actual test results, Editor and Windows Mono winning journeys, save/export checks, screenshots and remaining graphics/runtime warnings.
+
+## Modern sale handling fees
+
+Economic rules1 Harbor previews show the gross market payment, exact port service fee, net company receipts and local market/worker shares. The company pays2% on successful ordinary sales from either ships or local stock. Buying and private transfers are exempt. A fee is withheld from sale proceeds; no upfront seller cash is needed. Gross market affordability still applies. Fractional orders and split sales retain exact cumulative rounding. Older runs show their original gross/net-equivalent settlement. [Town and Ledger explanations](ECONOMIC_CIRCULATION_REVIEW.md#commercial-handling) keep these expenses separate from FIFO and wages.

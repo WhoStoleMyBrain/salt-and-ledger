@@ -222,3 +222,9 @@ For an intentional NuGet dependency change, run `dotnet restore SaltAndLedger.sl
 | `.github/workflows/` | Headless CI |
 
 Start with the [documentation index](docs/index.md), [design principles](docs/GAME_DESIGN.md), and [implemented architecture](docs/ARCHITECTURE.md). The [roadmap](docs/ROADMAP.md) is provisional; [economy](docs/ECONOMY.md) and [ideas](docs/IDEAS.md) distinguish accepted direction from open hypotheses and deferred work. Contribution and agent guidance is in [AGENTS.md](AGENTS.md).
+
+## Task 2.4: measured economic circulation
+
+Fresh modern v3 runs now use economic rules revision 1: exact 2% company sale handling fees, a bounded four-day municipal payroll/food review, a sane Coverage Furniture target floor and finite role-based starting imports. Harbor shows gross payment, fees and net receipts; town accounts explain receipts, reserves and the next review. Schema 5 preserves this state, while older saves and Retry retain their original rules. See the [fixture diagnosis, rules and matched A/B evidence](docs/ECONOMIC_CIRCULATION_REVIEW.md). No recurring stock grant, wealth cap or automatic currency creation is added.
+
+Verify the separate bounded report with `dotnet run --project samples/SaltAndLedger.Demo -c Release -- data/content.json --economic-circulation --check`.

@@ -384,3 +384,11 @@ Use a fresh **Expanding Economy / Unlimited sandbox / seed 99 / Merchant Company
 7. At **1366×768 Default** and **1920×1080 Large**, inspect stop cards, one expanded action, keyboard quantity/dropdown input, internal scrolling, Back/Escape and the Harbor link. The footer remains accessible; remote inspection must never grant execution. Repeat the ordinary two-cycle route in a Windows Mono development player when available.
 
 Do not substitute free warehouse stock, direct simulation calls or a two-port industrial policy for this acceptance journey. The measured example is a bounded route demonstration, not a promise of indefinite economic growth. Local save slots should be backed up before destructive test replacement and restored afterward.
+
+## Task2.4 circulation journey
+
+1. Start a fresh v3 sandbox, Industrial charter, seed42. Confirm the setup/preview identifies circulation1 and all towns show finite Bread. Viewing the map does not step time.
+2. Open Harbor at the owned dock, select company local stock, buy0.5Grain and preview selling it. Check gross payment,2%fee,net receipts,market/worker shares and final exact cash. A zero or rejected order must change nothing. Open Ledger to inspect separate fee expense and surplus after wages and fees.
+3. Advance four days, open Town economy and inspect cumulative fee receipts, last reason, recorded payroll/food reserves and next reviewday8. Compare actual stock and price targets, including Furniture. A no-transfer reason is valid.
+4. Save to a backed-up local slot, load and verify the exact day/cash/review date; advance to the next review once. Retry retains the exact identity; loading an old save and retrying keeps economic revision0.
+5. Repeat town and Harbor price views at1366×768Default and1920×1080Large. Use internal scrolling; verify Back/Escape, modal focus and paused time. See the [Task2.4 evidence record](ECONOMIC_CIRCULATION_REVIEW.md) for actual executed checks and limitations.
