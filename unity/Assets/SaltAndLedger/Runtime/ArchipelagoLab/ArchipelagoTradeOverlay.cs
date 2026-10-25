@@ -125,6 +125,14 @@ namespace SaltAndLedger.UnityHost
         public static string AverageExecutionPrice(TradeAttempt preview) => preview.Price == null || preview.Quantity <= 0
             ? "—" : ((decimal)preview.TotalAmount / preview.Quantity).ToString("0.00", CultureInfo.InvariantCulture);
 
+        private string ServiceFeeText(TradeAttempt preview)
+        {
+            if (preview.Outcome != TradeOutcome.Traded || preview.Direction != TradeDirection.Sell || Session.Snapshot.Circulation == null)
+                return "";
+            return "\nService fee " + Money(preview.ServiceFee) + " · net receipts " + Money(preview.TraderCashChange.Delta) +
+                "\nFee to market " + Money(preview.MarketServiceFee) + " · local workers " + Money(preview.HouseholdServiceFee);
+        }
+
         private string DetailedTradeText(TradeAttempt preview, long cash, long units, int capacity)
         {
             if (preview.Price == null) return TradingLabText.Outcome(preview.Outcome) + ".";
@@ -132,7 +140,7 @@ namespace SaltAndLedger.UnityHost
                 "\nFirst " + Number(preview.Price.FirstMarginalPrice) + "  →  last " + Number(preview.Price.LastMarginalPrice);
             if (preview.Outcome != TradeOutcome.Traded) return text + "\n" + TradingLabText.Outcome(preview.Outcome);
             var buying = preview.Direction == TradeDirection.Buy;
-            return text + "\nAfter: cash " + Money(buying ? checked(cash - preview.TotalAmount) : checked(cash + preview.TotalAmount)) +
+            return text + ServiceFeeText(preview) + "\nAfter: cash " + Money(preview.TraderCashChange.After) +
                 "   ·   cargo " + Q(buying ? units + preview.Quantity : units - preview.Quantity) + "/" + Q(capacity);
         }
 

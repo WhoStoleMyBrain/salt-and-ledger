@@ -112,7 +112,8 @@ namespace SaltAndLedger.UnityHost
                             new TradeCommand(direction, SelectedGoodId(), amount));
                         text = preview == null ? "No company store. Construct a local facility." :
                             "Total " + Money(preview.TotalAmount) + " · Average " + AverageExecutionPrice(preview) + " / good\n" +
-                            (preview.Outcome == TradeOutcome.Traded ? (direction == TradeDirection.Buy ? "Company pays market" : "Market pays company") : TradeRemedy(preview.Outcome, HarborUsesLocalStock));
+                            (preview.Outcome == TradeOutcome.Traded ? (direction == TradeDirection.Buy ? "Company pays market" : "Gross market payment") : TradeRemedy(preview.Outcome, HarborUsesLocalStock)) +
+                            ServiceFeeText(preview);
                     }
                     else if (valid) text = "Ship cargo requires a positive whole quantity. Choose company local stock for fractional trades.";
                 }

@@ -12,6 +12,7 @@ namespace SaltAndLedger.UnityHost
         private RunIdentity setupIdentity;
         private CompanyStorageRules setupStorageRules = CompanyStorageRules.Pooled;
         private int setupItineraryVersion = 1;
+        private int setupEconomicRulesVersion = 1;
         public RunIdentity SetupIdentity => setupIdentity;
 
         private void BuildRunSetup()
@@ -159,13 +160,16 @@ namespace SaltAndLedger.UnityHost
             setupIdentity = valid ? new RunIdentity(commission && plan == null ? null : id, charter.Id, mode,
                 seeded ? seed : (int?)null, difficulty, livingPricingMode: living ? pricing : LivingPricingMode.StockOnly,
                 commission: plan, companyStorageRules: expanding ? setupStorageRules : CompanyStorageRules.Legacy,
-                itineraryVersion: expanding && setupStorageRules == CompanyStorageRules.Pooled ? setupItineraryVersion : 0) : null;
+                itineraryVersion: expanding && setupStorageRules == CompanyStorageRules.Pooled ? setupItineraryVersion : 0,
+                economicRulesVersion: expanding && setupStorageRules == CompanyStorageRules.Pooled && setupItineraryVersion == 1 ? setupEconomicRulesVersion : 0) : null;
             Root.Q<Button>("commissionBeginButton")?.SetEnabled(commission && valid && plan != null);
             if (valid) charter = RunScenario.GetCharter(setupIdentity);
             SetText("setupCharterDescription", charter.Description);
             SetText("setupAssets", charter.Endowment);
             SetText("setupTradeoff", "Opportunity cost\n" + charter.Tradeoff);
-            SetText("setupEconomyDescription", expanding ? "Expanding Economy v3: exact fractional paid needs, seven buildable industries, up to three ships, finite outside trade, public Silver-backed Mint and Company Value. No automatic subsidies. Save explicitly to continue locally." : living
+            SetText("setupEconomyDescription", expanding ? "Expanding Economy v3: exact paid needs, seven buildable industries, up to three ships, finite outside trade and a public Silver-backed Mint. " +
+                (setupEconomicRulesVersion == 1 ? "Circulation revision 1 adds local sale service fees, a bounded four-day food/payroll budget review and finite initial imports. These are real transfers, not new money. " : "Historical circulation and starting stock remain unchanged. ") +
+                "Save explicitly to continue locally." : living
                 ? "Living Cities v2 varies geography, production roles, eligible private industries, population and initial finite accounts. Households pay for actual purchases; completed production pays wages. Economic viability is not guaranteed victory."
                 : "Historical economy: Classic keeps authored geography; seeded v1 changes geography only. Household finances, wages and population are not modeled.");
             SetText("setupWorldIdentity", valid ? WorldIdentityText(setupIdentity) : "Preview unavailable until the seed is valid.");
@@ -183,7 +187,7 @@ namespace SaltAndLedger.UnityHost
         private void RefreshSetupCities()
         {
             var expanding = setupIdentity.WorldMode == RunWorldMode.ExpandingEconomy;
-            var v3 = expanding ? ExpandingEconomyGeneration.Generate(setupIdentity.Seed.Value, setupIdentity.GeneratorVersion, setupIdentity.LivingPricingMode) : null;
+            var v3 = expanding ? ExpandingEconomyGeneration.Generate(setupIdentity.Seed.Value, setupIdentity.GeneratorVersion, setupIdentity.LivingPricingMode, setupIdentity.EconomicRulesVersion) : null;
             var generation = expanding ? v3.SourceRoles : LivingCityGeneration.Generate(setupIdentity.Seed.Value, setupIdentity.GeneratorVersion, setupIdentity.LivingPricingMode);
             var ports = expanding ? v3.Ports : generation.Ports;
             var blueprints = expanding ? v3.Blueprints : generation.Blueprints;
@@ -215,6 +219,7 @@ namespace SaltAndLedger.UnityHost
         {
             setupStorageRules = identity.CompanyStorageRules;
             setupItineraryVersion = identity.ItineraryVersion;
+            setupEconomicRulesVersion = identity.EconomicRulesVersion;
             RestoreCommissionSelection(identity);
             var mode = Element<DropdownField>("worldModePicker");
             mode.SetValueWithoutNotify(mode.choices[(int)identity.WorldMode]);
@@ -235,6 +240,7 @@ namespace SaltAndLedger.UnityHost
             LeaveActiveRunForSetup();
             setupStorageRules = CompanyStorageRules.Pooled;
             setupItineraryVersion = 1;
+            setupEconomicRulesVersion = 1;
             if (!preserveSelections)
             {
                 var mode = Element<DropdownField>("worldModePicker");
@@ -303,7 +309,8 @@ namespace SaltAndLedger.UnityHost
                 " · Ascension " + identity.Ascension + (identity.Difficulty == RunDifficulty.SlowFoundations ? ": Slow Foundations" : ": Normal") +
                 (identity.WorldMode == RunWorldMode.ExpandingEconomy ? " · storage v" + (int)identity.CompanyStorageRules +
                     (identity.CompanyStorageRules == CompanyStorageRules.Pooled ? " (shared town stock)" : " (legacy facility stores)") : "") +
-                (identity.ItineraryVersion > 0 ? " · itinerary v" + identity.ItineraryVersion : "");
+                (identity.ItineraryVersion > 0 ? " · itinerary v" + identity.ItineraryVersion : "") +
+                (identity.EconomicRulesVersion > 0 ? " · circulation revision " + identity.EconomicRulesVersion : "");
         }
     }
 }

@@ -16,6 +16,8 @@ The ledger identifies committed transactions, transfers, production, and grants 
 
 Historical modes do not value ships and factories\. Expanding Economy v3 adds a disclosed reference Company Value, not liquidation proceeds\. Material gross margin remains revenue minus FIFO material cost\. Living modes separately expense all actual wages: operating surplus after wages subtracts them, including wages for output still held\. This is not full net profit after travel, depreciation, overhead or taxes\.
 
+Port service fees are separate from material FIFO and wages\. Surplus after wages and fees subtracts both operating expenses from realized material margin; it excludes construction capital, Mint receipts and unmodeled costs\. Fees are paid from actual sale proceeds, half to the local market and the remainder to local workers\. Lifetime rounding is shared across the company's sales in each town\.
+
 ## Related entries
 
 - [Challenges and run outcomes](../mechanics/help_challenges.md)

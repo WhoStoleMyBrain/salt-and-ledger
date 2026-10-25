@@ -487,7 +487,7 @@ namespace SaltAndLedger.UnityHost
                 "\n" + decision.Reason + "\nSelected " + Q(decision.SelectedQuantity) + " units" +
                 (decision.Preview == null ? command.Kind == CargoItineraryCommandKind.LoadFromCompanyTownStock || command.Kind == CargoItineraryCommandKind.UnloadToCompanyTownStock
                     ? " · own-stock movement carries no cash." : " · no executable market order at these constraints." : " · exact total " + Money(decision.Preview.TotalAmount) + " coins" +
-                    (decision.Preview.Price == null ? "" : " · last marginal price " + Number(decision.Preview.Price.LastMarginalPrice))) +
+                    (decision.Preview.Price == null ? "" : " · last marginal price " + Number(decision.Preview.Price.LastMarginalPrice)) + ServiceFeeText(decision.Preview)) +
                 "\nThis preview uses current holdings only; preceding draft actions have not been executed.";
         }
     }

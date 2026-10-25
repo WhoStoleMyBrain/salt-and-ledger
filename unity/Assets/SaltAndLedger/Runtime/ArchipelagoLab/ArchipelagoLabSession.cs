@@ -515,6 +515,9 @@ namespace SaltAndLedger.UnityHost
                 if (port.City.LuxuryEnabled != prior.LuxuryEnabled)
                     Add(port.Id, null, port.Name + ": durable Furniture demand " + (port.City.LuxuryEnabled ? "eligible after sustained prosperity." : "suspended after sustained hardship."));
             }
+            foreach (var transfer in result.CashTransfers.Where(t => t.Kind != CityCashTransferKind.Wage && t.Kind != CityCashTransferKind.Retail))
+                Add(transfer.PortId, null, result.After.Ports[transfer.PortId].Name + ": " + transfer.Kind + " " +
+                    Coins(transfer.Amount) + " · " + transfer.SourceAccountId + " → " + transfer.DestinationAccountId + ".");
             foreach (var movement in result.Movements)
             {
                 if (movement.Kind != ShipMovementKind.Departure && movement.Kind != ShipMovementKind.Arrival) continue;

@@ -16,6 +16,8 @@ Opening trade pauses playback\. Close the window and resume deliberately when re
 
 Harbor shows public market stock, the selected ship hold and local company stock together\. Choose paid Buy/Sell for either accessible destination, or no\-cash Load/Unload at the actual dock\. Exact previews, quantity presets and specific blockers explain what can execute; a remote ship cannot move cargo here\.
 
+New modern v3 circulation runs charge 2% port handling on completed company sales, including NPC sales\. Harbor shows the gross market payment, exact fee, net receipts and local market/worker shares\. Buying, private transfers and public contracts have no handling fee\. Rejected orders and previews charge nothing\.
+
 ## Related entries
 
 - [Cargo and storage capacity](../mechanics/help_capacity.md)

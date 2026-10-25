@@ -68,7 +68,8 @@ namespace SaltAndLedger.UnityHost
             Text(households, "cityHouseholdAccount", "", "run-objective");
             Text(households, null, "Earn completed-batch wages and purchase food or eligible luxuries. These funds cannot directly pay a merchant's sale to the market.", "run-copy");
             Text(people, "cityCashFlows", "", "run-copy");
-            Text(people, null, "No daily allowance or rescue payment. Household purchases can fund the market only when households have cash and the goods actually exist. Future wages, quotes and recovery days are not guaranteed.", "run-footnote");
+            Text(people, "cityCirculationDetail", "", "run-copy");
+            Text(people, "cityAccountExplanation", "", "run-footnote");
             var needs = Panel(scroll, "cityNeedsPage", "hidden");
             Text(needs, "cityNeedsDetail", "", "run-copy");
             Text(needs, "cityCoverageDetail", "", "run-copy");
@@ -135,6 +136,7 @@ namespace SaltAndLedger.UnityHost
             var snapshot = Session.Snapshot;
             var port = snapshot.Ports[Session.SelectedPortId];
             var city = port.City;
+            RefreshCityCirculation(port);
             var eligible = snapshot.IndustryBlueprints.Values.Where(b => b.EligiblePortIds.Contains(port.Id))
                 .OrderBy(b => b.Id, StringComparer.Ordinal).ToArray();
             var missing = snapshot.IndustryBlueprints.Values.Where(b => !b.EligiblePortIds.Contains(port.Id))
@@ -210,7 +212,46 @@ namespace SaltAndLedger.UnityHost
                 return Session.Content.GetGood(id).Name + ": " + (coverage.HasValue ? coverage.Value + " whole days at current scheduled household need" : "not applicable; no currently active household demand");
             })) + "\nCoverage describes current stock, not what households can afford, a promised delivery or a survival forecast. Industrial inputs and municipal use are shown separately.");
             SetText("cityPricingDetail", "Pricing experiment: " + port.Configuration.Settlement.PricingMode +
-                ". Quotes, supply and actual purchasing power are separate. Prosperity is not a global price multiplier.");
+                ". Quotes, supply and actual purchasing power are separate. Prosperity is not a global price multiplier." +
+                (snapshot.Circulation != null && port.Configuration.Settlement.PricingMode == LivingPricingMode.Coverage
+                    ? " Luxury pricing retains at least half the authored stock target, even while demand is suspended. This does not enable purchases or grant stock." : ""));
+        }
+
+        private void RefreshCityCirculation(RegionalPortSnapshot port)
+        {
+            var circulation = Session.Snapshot.Circulation;
+            SetText("cityAccountExplanation", circulation == null
+                ? "Historical rules: no municipal levy, food relief or port service fees. Household purchases fund the market only when funded residents buy real stock."
+                : "Fees and municipal reviews transfer existing money. Food relief requires actual food stock; a levy protects twice the next food cost and funds currently feasible public employment. Missing inputs or transport can still stop recovery.");
+            if (circulation == null)
+            {
+                SetText("cityCirculationDetail", "");
+                return;
+            }
+            var fiscal = circulation.Towns[port.Id];
+            SetText("cityCirculationDetail", "LOCAL CIRCULATION · revision " + circulation.Configuration.Version +
+                "\nService fees received: market " + Money(circulation.MarketFeesReceived(port.Id)) +
+                " · local workers " + Money(circulation.HouseholdFeesReceived(port.Id)) +
+                "\nHousehold levy to market " + Money(fiscal.TotalLevy) + " · food relief to households " + Money(fiscal.TotalRelief) +
+                "\nLast review day " + fiscal.LastReviewDay + ": " + MunicipalReason(fiscal.LastReason) +
+                "\nRecorded food reserve " + Money(fiscal.FoodReserve) + " · productive payroll reserve " + Money(fiscal.PayrollReserve) +
+                "\nNext review day " + fiscal.NextReviewDay + ". At most 12 coins and 10% of eligible surplus; one direction per four-day review. Reserves describe that review, not a live promise.");
+        }
+
+        private static string MunicipalReason(MunicipalReviewReason reason)
+        {
+            switch (reason)
+            {
+                case MunicipalReviewReason.AwaitingReview: return "awaiting the first budget review";
+                case MunicipalReviewReason.Disabled: return "municipal mechanism disabled in this diagnostic";
+                case MunicipalReviewReason.PayrollLevy: return "household surplus funded due public payroll";
+                case MunicipalReviewReason.FoodRelief: return "municipal surplus funded food affordability";
+                case MunicipalReviewReason.NoProductivePayroll: return "no eligible productive payroll deficit";
+                case MunicipalReviewReason.HouseholdFoodReserveProtected: return "household food reserve protected";
+                case MunicipalReviewReason.MunicipalPayrollReserveProtected: return "public payroll reserve protected";
+                case MunicipalReviewReason.NoFoodStock: return "no food available; moving cash cannot supply it";
+                default: return "accounts meet the review's protected needs";
+            }
         }
 
         private string PublicInputStatus(RegionalPortSnapshot port, ScheduledFacilitySnapshot facility)

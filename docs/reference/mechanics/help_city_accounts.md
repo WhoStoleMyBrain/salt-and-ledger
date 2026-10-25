@@ -18,6 +18,8 @@ Market insolvency can block your sale even when households still have money\. Re
 
 Open City Economy for separate cash balances, actual wage and retail payments, due needs, food failure causes and next opportunities\. A missing item and an unaffordable stocked item are different constraints\.
 
+Modern circulation towns review accounts every four days before public production\. Only ready public work can trigger a payroll levy, and households keep twice their next essential food budget\. Otherwise food relief requires actual food on the shelf and protects upcoming public payroll\. Each direction is limited to the shortfall, 12 coins and 10% of the payer's unreserved cash\. The town screen shows recorded reserves, reason, totals and next review\. No money or food is created\.
+
 ## Related entries
 
 - [Food, furniture and municipal use](../mechanics/help_city_needs.md)

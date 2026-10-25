@@ -240,7 +240,9 @@ namespace SaltAndLedger.UnityHost
                 var value = snapshot.CompanyValue(player.OwnerId);
                 SetText("cashLabel", "Cash " + Money(player.Cash) + " · Value " + Money(value.Total));
                 Element<Label>("cashLabel").tooltip = "Reference Company Value; not liquidation proceeds. Change " + SignedMoney(value.Change) +
-                    " · operating surplus after wages " + SignedMoney(snapshot.Accounting.Companies[player.OwnerId].OperatingSurplusAfterWages) + ". Open Company or Ledger for the breakdown.";
+                    " · surplus after wages" + (snapshot.Circulation == null ? " " : " and fees ") +
+                    SignedMoney(snapshot.Circulation == null ? snapshot.Accounting.Companies[player.OwnerId].OperatingSurplusAfterWages :
+                        snapshot.Accounting.Companies[player.OwnerId].OperatingSurplusAfterExpenses) + ". Open Company or Ledger for the breakdown.";
             }
             else Element<Label>("cashLabel").tooltip = "";
             SetText("playbackLabel", Session.IsPlaying ? "Playing " + Session.PlaybackSpeed + "×" : "Paused");

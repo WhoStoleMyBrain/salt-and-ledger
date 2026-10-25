@@ -20,7 +20,7 @@ namespace SaltAndLedger.UnityHost
             Text(scroll, "ledgerFinances", "", "run-objective");
             Text(scroll, "ledgerAssets", "", "run-copy");
             Text(scroll, "ledgerOperations", "", "run-copy");
-            Text(scroll, null, "FIFO costing follows arrival at each stockpile. Partial lots retain exact integer remainders. Transfers keep basis and ownership; manufacture carries consumed material expenditure into output. Starter grants have zero paid basis. Living wages are expensed separately when paid, including work whose output is still held. V3 Company Value uses stable reference values, not promised liquidation proceeds. Transport expenses and depreciation are not modeled.", "run-footnote");
+            Text(scroll, null, "FIFO costing follows arrival at each stockpile. Partial lots retain exact integer remainders. Transfers keep basis and ownership; manufacture carries consumed material expenditure into output. Starter grants have zero paid basis. Living wages and modern port handling fees are separate operating expenses. Wages include work whose output is still held. V3 Company Value uses stable reference values, not promised liquidation proceeds. Voyage costs and depreciation are not modeled.", "run-footnote");
             var history = new Foldout { name = "ledgerHistory", text = "This session's recent financial events · 200 maximum", value = false };
             scroll.Add(history);
             Panel(history, "ledgerEvents", "");
@@ -120,6 +120,9 @@ namespace SaltAndLedger.UnityHost
                 (living ? "\nPaid wages (operating expense)  " + Money(finance.WagesPaid) +
                     "\nOPERATING SURPLUS AFTER WAGES  " + SignedMoney(finance.OperatingSurplusAfterWages) +
                     "\nThis subtracts wages for unsold output too; capital and unmodeled costs remain separate." : "") +
+                (snapshot.Circulation == null ? "" : "\nPort service fees paid  " + Money(finance.FeesPaid) +
+                    "\nSURPLUS AFTER WAGES AND FEES  " + SignedMoney(finance.OperatingSurplusAfterExpenses) +
+                    "\nFees are operating expenses, separate from material FIFO, capital and Mint receipts.") +
                 (value == null ? "" : "\nMint supplier receipts  " + Money(finance.MintReceipts) +
                     "   |   Surrendered Silver material basis  " + Money(finance.MintMaterialCost) +
                     "\nPublic Mint commissioning paid  " + Money(finance.PublicCommissionExpenditure) +

@@ -121,7 +121,8 @@ namespace SaltAndLedger.UnityHost
             if (setupIdentity == null) return;
             var previewIdentity = new RunIdentity(null, setupIdentity.CharterId, setupIdentity.WorldMode, setupIdentity.Seed,
                 setupIdentity.Difficulty, livingPricingMode: setupIdentity.LivingPricingMode,
-                companyStorageRules: setupIdentity.CompanyStorageRules, itineraryVersion: setupIdentity.ItineraryVersion);
+                companyStorageRules: setupIdentity.CompanyStorageRules, itineraryVersion: setupIdentity.ItineraryVersion,
+                economicRulesVersion: setupIdentity.EconomicRulesVersion);
             commissionPreview = RunScenario.Create(Session.CanonicalContent, previewIdentity).Snapshot();
             SetText("commissionMapIdentity", WorldIdentityText(setupIdentity) + " · " + RunScenario.GetCharter(setupIdentity).Name);
             var host = Element<VisualElement>("commissionMapHost");

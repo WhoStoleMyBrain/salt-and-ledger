@@ -14,6 +14,8 @@ The exact total adds the actual prices across the complete order\. Average execu
 
 An automation price limit applies to the worst marginal unit in its selected order\. A profitable\-looking current quote does not guarantee the same price after a voyage, production, consumption, or another merchant's trade\.
 
+Modern circulation Coverage pricing protects Furniture with a two\-good target floor even when luxury purchases are suspended\. Actual stock and each town's reference price still determine bid and ask; the target creates neither demand nor goods\. Older runs retain their original prices\.
+
 ## Related entries
 
 - [Historical inventory cost](../mechanics/help_cost_basis.md)

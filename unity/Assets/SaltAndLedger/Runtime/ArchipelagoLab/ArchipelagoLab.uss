@@ -79,6 +79,7 @@
 .context-panel .unity-foldout { margin: 9px 0 0 0; padding-top: 5px; border-top-width: 1px; border-top-color: #3a525b; }
 .unity-foldout__toggle { min-height: var(--sl-control); }
 .unity-foldout__text { white-space: normal; -unity-font-style: bold; }
+#pricingFoldout .unity-foldout__text { color: #edf1ef; }
 .unity-foldout__content { margin-left: 5px; }
 .help { white-space: normal; color: #adc6cc; font-size: var(--sl-caption); margin: 6px 0; padding: 0; }
 .preview { white-space: normal; margin: 6px 0; padding: 7px; background-color: #122a35; border-radius: 4px; }

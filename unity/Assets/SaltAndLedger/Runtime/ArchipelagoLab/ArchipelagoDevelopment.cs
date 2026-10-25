@@ -104,7 +104,8 @@ namespace SaltAndLedger.UnityHost
             var value = world.CompanyValue(Session.Player.OwnerId);
             var finance = world.Accounting.Companies[Session.Player.OwnerId];
             SetText("companyHeadline", "Cash " + Money(value.Cash) + " · Company Value " + Money(value.Total) +
-                " (" + SignedMoney(value.Change) + ") · operating surplus after wages " + SignedMoney(finance.OperatingSurplusAfterWages) +
+                " (" + SignedMoney(value.Change) + ") · surplus after wages" + (world.Circulation == null ? " " : " and fees ") +
+                SignedMoney(world.Circulation == null ? finance.OperatingSurplusAfterWages : finance.OperatingSurplusAfterExpenses) +
                 "\nSelected ship: " + Session.Player.Name + " · " + Session.Player.Id + " · regional money " + Money(world.RegionalCash));
             for (var i = 0; i < 4; i++)
             {
