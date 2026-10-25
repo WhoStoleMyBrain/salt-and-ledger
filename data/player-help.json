@@ -77,7 +77,8 @@
       "relatedIds": [
         "help_capacity",
         "help_industrial_routes",
-        "help_trading"
+        "help_trading",
+        "help_cargo_itineraries"
       ]
     },
     {
@@ -153,6 +154,7 @@
       "name": "Industrial shipping automation",
       "description": "Connect owned production to physical transport and a chosen destination.",
       "paragraphs": [
+        "This entry describes the preserved historical two-port policy. New v3 pooled worlds instead expose ordered cargo itineraries in Fleet > Route planner, with multiple market and company-stock actions and mixed cargo. Loading an older run keeps its original controls and policy semantics.",
         "Choose a source market or owned warehouse, commodity, stock threshold, retained reserve, shipment target and minimum, destination, and selling limit. A route may deliver into an owned destination warehouse instead of selling. Optional return cargo can make the return voyage useful.",
         "Warehouse loading removes your stock and adds it to the assigned ship without payment. Warehouse unloading reverses that movement. Market buying and selling use ordinary prices and finite cash. Every action requires the correct dock and ownership.",
         "A route keeps an explicit outbound or return stage. It runs a bounded sequence of dockside actions and stops for travel, a wait, or incompatible cargo. Unsold cargo stays aboard; a blocked shipment is never discarded or teleported.",
@@ -162,7 +164,8 @@
         "help_procurement",
         "help_ownership",
         "help_shipping",
-        "help_prices"
+        "help_prices",
+        "help_cargo_itineraries"
       ]
     },
     {
@@ -268,7 +271,8 @@
         "help_production",
         "help_industrial_routes",
         "help_seeded_worlds",
-        "help_readability"
+        "help_readability",
+        "help_cargo_itineraries"
       ]
     },
     {
@@ -401,7 +405,7 @@
       "description": "Invest in real capacity and inspect the next finite bottleneck.",
       "paragraphs": [
         "Every v3 world permits all six original production building types somewhere. Eligibility follows economic roles, not displayed city names. The food source can host Farms; the processing town can host Mills and Sawmills. The forest-furniture town can host a Silver Mine but cannot build a Sawmill, preserving a real Plank import dependency.",
-        "Each owned facility has separate inventory, schedule, enabled state and policy. Multiple Mills may coexist. Public and private extraction create only their declared batch outputs, and every successful living batch pays its full configured wage from the real employer.",
+        "Each owned facility has a separate schedule, enabled state, policy and production/payroll counters. New pooled runs share one owned company stockpile per town; legacy storage keeps separate facility inventories. Multiple Mills may coexist. Public and private extraction create only their declared batch outputs, and every successful living batch pays its full configured wage from the real employer.",
         "An extra Mill expands potential Flour output. Actual results still require Grain, wages and warehouse space, then a Bakery with Flour and Logs, and actual distribution to households able to pay. Overbuilding can consume cash without improving food access. Distinguish a recorded last-attempt failure from current conditions before changing policy."
       ],
       "relatedIds": [
@@ -442,14 +446,15 @@
       "paragraphs": [
         "V3 permits the starting ship and two additional ships. The processing harbor shipwright charges 500 coins and consumes four real market Planks. Of that payment, 460 goes to the market and 40 to local households for labor. Construction takes four economic days; completion creates an empty ten-unit ship at that harbor.",
         "Pending orders count toward the three-ship limit and retain paid capital in Company Value. Missing company cash or actual market Planks prevents the order without partial payment or a phantom ship. Private-factory Ascension timing is separate from this shipbuilding schedule.",
-        "Select the intended owned ship before trading, sailing, transfer or route editing. All ships share one company account, but each has its own cargo, position, policy, enabled state and industrial stage. Ships act in stable priority and ID order through one atomic day; one ship cannot load or spend another ship's cargo.",
-        "Configure complementary routes using the existing two-port policies. A useful return export can return money to an importing town. Automation still respects actual stock, household-independent market liquidity, price limits, company reserves and real voyages; it cannot discover a winning strategy for you."
+        "Select the intended owned ship before trading, sailing, transfer or route editing. All ships share one company account, but each has its own cargo, position, policy and enabled state. New itineraries retain an exact stop/action/pass and daily budget; older industrial routes retain their original stage. Ships act in stable priority and ID order through one atomic day; one ship cannot load another ship's cargo.",
+        "New v3 pooled runs offer Route planner on each Fleet ship card and in Harbor. Draft ordered Buy, Sell, Load and Unload instructions through two to four towns; different goods can share the finite hold. Older saved worlds keep two-port routes. All automation respects actual stock, market liquidity, price limits, company reserves and real voyages; it cannot discover a winning strategy for you."
       ],
       "relatedIds": [
         "help_shipping",
         "help_industrial_routes",
         "help_ownership",
-        "help_company_value"
+        "help_company_value",
+        "help_cargo_itineraries"
       ]
     },
     {
@@ -478,14 +483,15 @@
         "The save retains exact accounts, fractional stock and demand residuals, every ship and route stage, voyages, factories, pending construction, household history, FIFO lots, challenges and v3 contracts, Mint and treasury state. Grand Commission saves also retain the exact selected plan, per-ship visits and signed target-market history. Visual interpolation and focus are presentation state, while text size remains an independent local preference.",
         "A load validates the complete file, identity, content and configuration before replacing the current session. Unsupported versions, damaged files, inconsistent stock or impossible states produce an error and preserve the valid active run. A saved terminal run remains frozen and inspectable.",
         "Retry Same World always reconstructs the original initial identity and assets, even when a saved later state exists. Reroll explicitly chooses a new draft seed and requires preview/start. Neither action silently loads or overwrites your saved progress.",
-        "New pooled-stock v3 runs use save schema 3. Original schema 1/2 runs retain their old storage identity, format and behavior; loading never silently combines warehouses. Development builds and the Editor offer Export Run Report: an exact raw save plus a readable diagnostic under the displayed Exports paths. Export uses no save slot and changes no economic state; recent activity is partial bounded history."
+        "New v3 pooled runs explicitly use itinerary format 1 and save schema 4, retaining the complete plan, exact next stop/action/pass, last decision and used daily budget. Older pooled schema 3 retains itinerary version zero; original schema 1/2 retains its old storage identity. Valid older files keep their fields and behavior; loading never silently combines warehouses or converts a route. Development Export Run Report writes an exact save and diagnostic under displayed Exports paths without changing the world or save slots. Recent activity is partial bounded history."
       ],
       "relatedIds": [
         "help_navigation",
         "help_seeded_worlds",
         "help_challenges",
         "help_exact_units",
-        "help_grand_commission"
+        "help_grand_commission",
+        "help_cargo_itineraries"
       ]
     },
     {
@@ -508,6 +514,30 @@
         "help_seeded_worlds",
         "help_factories",
         "help_royal_economy",
+        "help_saves"
+      ]
+    },
+    {
+      "id": "help_cargo_itineraries",
+      "name": "Ordered cargo itineraries",
+      "description": "Plan mixed cargo and ordered market or company-stock work through two to four towns.",
+      "paragraphs": [
+        "New v3 pooled runs offer Company > Fleet > Route planner. Choose an owned ship, then draft two to four unique town stops with one to eight ordered actions each, at most 24 total. Add, remove or reorder cards and expand an action to edit its fields. Drafting and inspecting pause playback without changing stocks, cash or time.",
+        "Buy and Sell exchange the named good with the public market for its exact bulk price. Load and Unload transfer owned stock between the actual docked ship and its company town stock without payment. No owned facility means no town warehouse. Different goods can remain aboard together within the combined hold capacity; unmentioned goods are never discarded.",
+        "Every action executes once per visit, choosing the largest whole quantity between its minimum and maximum that current stock, capacity and real funds permit. Maximum is an order cap, not a hold target. A partial qualifying order advances once. Below minimum, Skip continues with no transaction; Wait keeps that exact action and stops. Earlier completed buys or transfers never repeat because another instruction waits.",
+        "Buy limits include maximum marginal ask, company cash reserve and a per-order spending cap; Sell uses a minimum marginal bid. Price zero means unrestricted and a blank spending cap means unrestricted within actual funds. Loading can preserve a fractional town-stock reserve. Maximum and minimum cargo quantities are whole units; coin and warehouse reserves support four decimal places. Remote quotes describe current conditions, not reserved future prices or permission to move goods.",
+        "Each ship can use eight itinerary operations per economic day, counting successful orders, intentional skips and departure. Eight commands can leave departure for tomorrow. Repeated Run dockside actions, pause and save/load cannot reset this budget. Ships keep the ordinary priority and ID order, real voyages and shared company cash; a blocked ship does not prevent the other ships from acting.",
+        "Apply draft assigns the route and leaves actions paused. Replacing a route requires Manual control, an actual dock included in the new plan, no partially completed old stop and no itinerary operations already performed today. Advance a day after completed work before replacing it. Viewing never requires empty cargo; applying preserves it. Equivalent reapplication keeps progress. Manual travel elsewhere does not reset the next stop; return there before resuming.",
+        "Draft Grain–Flour–Bread loop resolves the actual role towns: A unloads two Flour and two Logs and loads up to four Bread; B sells up to four Bread and buys four Grain plus two Logs; C sells four Grain and buys two Flour before returning. All orders use minimum one and Skip. Purchases retain 100 company coins and cap each order at 200. You must build the eligible Bakery and fund wages yourself; the example creates no stock, facilities or money.",
+        "The live planner shows actual dock or voyage, next stop and action, cargo and an authoritative blocker. Expand Cargo and committed route state for daily budget and last outcome; inspect an action for current source stock, market funds and quote. Pass count advances when leaving the last listed stop, so an initial middle-stop pass is not a completed circuit. Inspect harbor returns to ordinary trading. Back returns to the prior screen or overlay.",
+        "New itinerary identities use policy format 1 and save schema 4. Complete plans, exact stop/action/pass, last outcome and remaining daily budget survive mid-stop and mid-voyage saves. Old schema 1/2/3 worlds retain historical route controls and bytes. Load continues exact saved work; Retry recreates the original initial world. Route edits cannot reroll geography or the objective draft."
+      ],
+      "relatedIds": [
+        "help_shipping",
+        "help_ownership",
+        "help_capacity",
+        "help_prices",
+        "help_procurement",
         "help_saves"
       ]
     }

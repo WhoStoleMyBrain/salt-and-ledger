@@ -20,6 +20,7 @@ New Run defaults to Expanding Economy v3 and the Grand Commission\. Advanced / L
 
 ## Related entries
 
+- [Ordered cargo itineraries](../mechanics/help_cargo_itineraries.md)
 - [Challenges and run outcomes](../mechanics/help_challenges.md)
 - [Industrial shipping automation](../mechanics/help_industrial_routes.md)
 - [Production and scheduling](../mechanics/help_production.md)

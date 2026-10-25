@@ -17,6 +17,7 @@ There are currently no simulated ship\-crew wages, fuel, voyage fees or transpor
 ## Related entries
 
 - [Cargo and storage capacity](../mechanics/help_capacity.md)
+- [Ordered cargo itineraries](../mechanics/help_cargo_itineraries.md)
 - [Industrial shipping automation](../mechanics/help_industrial_routes.md)
 - [Buying and selling](../mechanics/help_trading.md)
 

@@ -12,12 +12,13 @@ V3 permits the starting ship and two additional ships\. The processing harbor sh
 
 Pending orders count toward the three\-ship limit and retain paid capital in Company Value\. Missing company cash or actual market Planks prevents the order without partial payment or a phantom ship\. Private\-factory Ascension timing is separate from this shipbuilding schedule\.
 
-Select the intended owned ship before trading, sailing, transfer or route editing\. All ships share one company account, but each has its own cargo, position, policy, enabled state and industrial stage\. Ships act in stable priority and ID order through one atomic day; one ship cannot load or spend another ship's cargo\.
+Select the intended owned ship before trading, sailing, transfer or route editing\. All ships share one company account, but each has its own cargo, position, policy and enabled state\. New itineraries retain an exact stop/action/pass and daily budget; older industrial routes retain their original stage\. Ships act in stable priority and ID order through one atomic day; one ship cannot load another ship's cargo\.
 
-Configure complementary routes using the existing two\-port policies\. A useful return export can return money to an importing town\. Automation still respects actual stock, household\-independent market liquidity, price limits, company reserves and real voyages; it cannot discover a winning strategy for you\.
+New v3 pooled runs offer Route planner on each Fleet ship card and in Harbor\. Draft ordered Buy, Sell, Load and Unload instructions through two to four towns; different goods can share the finite hold\. Older saved worlds keep two\-port routes\. All automation respects actual stock, market liquidity, price limits, company reserves and real voyages; it cannot discover a winning strategy for you\.
 
 ## Related entries
 
+- [Ordered cargo itineraries](../mechanics/help_cargo_itineraries.md)
 - [Company Value and operating results](../mechanics/help_company_value.md)
 - [Industrial shipping automation](../mechanics/help_industrial_routes.md)
 - [Company, market, and private ownership](../mechanics/help_ownership.md)

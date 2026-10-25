@@ -13,6 +13,8 @@ Open Harbor from the town's visible action or by selecting a ship and right-clic
 
 Industry remains the place to construct facilities and control their individual production/procurement/sales policies. In pooled runs, each local facility uses the same company stock. In legacy runs, the warehouse selector shows actual separate facility stores; loading an old save never merges them.
 
+New v3 runs also link the selected owned ship to [Fleet → Route planner](AUTOMATION.md#ordered-cargo-itineraries). Plan ordered market buys/sales and company-stock loads/unloads through two to four actual towns while retaining mixed cargo. Harbor still handles ordinary manual transactions; choose **Manual control** before submitting ship orders. Pausing the route retains its cursor, voyage and cargo. Planner **Inspect harbor** returns to this same transaction surface; remote information never grants transfer permission.
+
 ## Shared stock rules, version 2
 
 One company owns one physical store and one FIFO account at each town where it has a private facility. Public market stock, other companies' stocks, other towns and ship holds remain separate. A warehouse adapter validates the named facility's owner and port before resolving this store; industrial shipping uses the same adapter and real voyages.
@@ -31,7 +33,7 @@ Facilities retain separate IDs, construction states, controls, deadlines, batche
 
 `CompanyStorageRules` is independent of geography, economic generator/content and valuation versions. `Legacy = 1` retains separate warehouses; `Pooled = 2` is selected explicitly for new v3 host runs. Existing constructor defaults remain legacy for historical APIs and reports. Pooled identity comparison groups append `/storage-v2`; the seed, economic generation and objective draft do not change.
 
-Pooled runs use save schema 3. Original schema-1/2 identities omit the storage field and retain their previous format, fingerprints and behavior. There is no consolidation migration. The codec validates one owned pool per actual company/town, derived finite capacity, zero duplicate facility inventory, and exact FIFO/physical agreement before replacing a host session. Retry starts a fresh copy of the same storage rules and draft.
+Old pooled runs with itinerary version zero retain save schema 3. New v3 pooled host starts explicitly choose itinerary version 1 and schema 4, preserving complete route instructions and exact next action/budget alongside company stock. Original schema-1/2 identities omit the storage field and retain their previous format, fingerprints and behavior. There is no consolidation or route migration. The codec validates one owned pool per actual company/town, derived finite capacity, zero duplicate facility inventory, exact FIFO/physical agreement and any versioned itinerary before replacing a host session. Retry starts a fresh copy of the same storage, itinerary identity and objective draft.
 
 ## Completion and diagnostic export
 

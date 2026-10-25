@@ -6,6 +6,7 @@ These explanations are shared with the offline in-game encyclopedia. For exact d
 
 - [Ascension 1: Slow Foundations](mechanics/help_ascension.md) — New player\-owned factories need two complete economic days to become operational\.
 - [Cargo and storage capacity](mechanics/help_capacity.md) — Every physical item uses one unit of ship or private storage capacity\.
+- [Ordered cargo itineraries](mechanics/help_cargo_itineraries.md) — Plan mixed cargo and ordered market or company\-stock work through two to four towns\.
 - [Challenges and run outcomes](mechanics/help_challenges.md) — A challenge ends in victory, deadline defeat, or confirmed voluntary abandonment\.
 - [Starting company charters](mechanics/help_charters.md) — Choose one replacement starting package with understandable tradeoffs\.
 - [Living city accounts and wages](mechanics/help_city_accounts.md) — Household money, market liquidity and company cash have separate owners\.

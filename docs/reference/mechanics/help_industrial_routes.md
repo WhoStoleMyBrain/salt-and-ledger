@@ -8,6 +8,8 @@ title: "Industrial shipping automation"
 
 Connect owned production to physical transport and a chosen destination\.
 
+This entry describes the preserved historical two\-port policy\. New v3 pooled worlds instead expose ordered cargo itineraries in Fleet &gt; Route planner, with multiple market and company\-stock actions and mixed cargo\. Loading an older run keeps its original controls and policy semantics\.
+
 Choose a source market or owned warehouse, commodity, stock threshold, retained reserve, shipment target and minimum, destination, and selling limit\. A route may deliver into an owned destination warehouse instead of selling\. Optional return cargo can make the return voyage useful\.
 
 Warehouse loading removes your stock and adds it to the assigned ship without payment\. Warehouse unloading reverses that movement\. Market buying and selling use ordinary prices and finite cash\. Every action requires the correct dock and ownership\.
@@ -18,6 +20,7 @@ Read the current stage and wait reason before changing rules\. Factory procureme
 
 ## Related entries
 
+- [Ordered cargo itineraries](../mechanics/help_cargo_itineraries.md)
 - [Company, market, and private ownership](../mechanics/help_ownership.md)
 - [Marginal prices and execution averages](../mechanics/help_prices.md)
 - [Private procurement and local sales](../mechanics/help_procurement.md)
