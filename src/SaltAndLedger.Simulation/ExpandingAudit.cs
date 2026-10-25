@@ -12,6 +12,7 @@ namespace SaltAndLedger.Simulation
             var economy = after.Economy;
             if (economy == null) return;
             var config = economy.Configuration;
+            AuditCirculationCommit(result);
             if (after.RegionalCash != initialCombinedCash - config.InitialExternalCash + economy.MintedCurrency + economy.ExternalNetInflow ||
                 (BigInteger)economy.ExternalCash + economy.ExternalNetInflow != config.InitialExternalCash ||
                 (BigInteger)economy.MintedCurrency != (BigInteger)economy.MintBatches * config.CurrencyPerBatch ||
@@ -70,5 +71,60 @@ namespace SaltAndLedger.Simulation
             world.PrivateFacilities.Values.Aggregate(BigInteger.Zero, (sum, f) => sum + f.Inventory[goodId]) +
             world.CompanyStockpiles.Values.Aggregate(BigInteger.Zero, (sum, s) => sum + s.Inventory[goodId]) +
             (goodId == "silver" ? world.Economy?.SilverReserve ?? 0 : 0);
+
+        private static void AuditCirculationCommit(RegionalResult result)
+        {
+            var after = result.After;
+            var circulation = after.Circulation;
+            if (circulation == null)
+            {
+                if (after.Accounting.Companies.Values.Any(f => f.FeesPaid != 0))
+                    throw new InvalidOperationException("Historical worlds cannot acquire circulation expenses.");
+                return;
+            }
+            var before = result.Before.Circulation ?? throw new InvalidOperationException("Circulation cannot appear during a run.");
+            if (circulation.Commercial.Count != after.Companies.Count * after.Ports.Count || circulation.Towns.Count != after.Ports.Count)
+                throw new InvalidOperationException("Circulation must retain one row per company/town and one municipal schedule per town.");
+            var trades = result.Trades.Select(t => new { Owner = t.OwnerId, Port = t.PortId, Attempt = t.Trade })
+                .Concat(result.WarehouseTrades.Select(t => new { Owner = t.OwnerId, Port = t.PortId, Attempt = t.Trade })).ToArray();
+            foreach (var owner in after.Companies.Keys)
+            {
+                var fees = circulation.Commercial.Values.Where(c => c.OwnerId == owner)
+                    .Aggregate(BigInteger.Zero, (sum, c) => sum + c.FeesPaid);
+                if (fees != after.Accounting.Companies[owner].FeesPaid)
+                    throw new InvalidOperationException("Commercial fees and company expenses do not reconcile.");
+            }
+            foreach (var row in circulation.Commercial.Values)
+            {
+                var prior = before.Commercial[CommercialCirculationSnapshot.Key(row.OwnerId, row.PortId)];
+                var local = trades.Where(t => t.Owner == row.OwnerId && t.Port == row.PortId &&
+                    t.Attempt.Direction == TradeDirection.Sell && t.Attempt.Outcome == TradeOutcome.Traded).ToArray();
+                var gross = local.Aggregate(BigInteger.Zero, (sum, t) => sum + t.Attempt.ExecutedAmount);
+                if ((BigInteger)row.GrossLocalSales - prior.GrossLocalSales != (circulation.Configuration.FeesEnabled ? gross : 0) ||
+                    (BigInteger)row.FeesPaid - prior.FeesPaid != local.Sum(t => t.Attempt.ServiceFee) ||
+                    (BigInteger)row.MarketFees - prior.MarketFees != local.Sum(t => t.Attempt.MarketServiceFee) ||
+                    (BigInteger)row.HouseholdFees - prior.HouseholdFees != local.Sum(t => t.Attempt.HouseholdServiceFee))
+                    throw new InvalidOperationException("Commercial fee prefixes disagree with committed local trades.");
+            }
+            foreach (var port in after.Ports.Values)
+            {
+                var city = port.City!;
+                var town = circulation.Towns[port.Id];
+                var prior = before.Towns[port.Id];
+                var transfers = result.CashTransfers.Where(t => t.PortId == port.Id).ToArray();
+                BigInteger Sum(CityCashTransferKind kind) => transfers.Where(t => t.Kind == kind)
+                    .Aggregate(BigInteger.Zero, (sum, t) => sum + t.Amount);
+                if ((BigInteger)town.TotalLevy - prior.TotalLevy != Sum(CityCashTransferKind.MunicipalLevy) ||
+                    (BigInteger)town.TotalRelief - prior.TotalRelief != Sum(CityCashTransferKind.FoodRelief) ||
+                    (BigInteger)circulation.MarketFeesReceived(port.Id) - before.MarketFeesReceived(port.Id) != Sum(CityCashTransferKind.ServiceFeeMarket) ||
+                    (BigInteger)circulation.HouseholdFeesReceived(port.Id) - before.HouseholdFeesReceived(port.Id) != Sum(CityCashTransferKind.ServiceFeeHouseholds) ||
+                    (BigInteger)city.HouseholdCash != (BigInteger)city.Configuration.InitialHouseholdCash + city.TotalWagesReceived -
+                    city.TotalRetailSpend + circulation.HouseholdFeesReceived(port.Id) + town.TotalRelief - town.TotalLevy)
+                    throw new InvalidOperationException("Town fiscal/service payments do not reconcile with real accounts.");
+                if (town.LastLevy > CirculationConfiguration.MaximumFiscalTransfer || town.LastRelief > CirculationConfiguration.MaximumFiscalTransfer ||
+                    (town.LastLevy != 0 && town.LastRelief != 0) || town.NextReviewDay <= after.Day || town.DuePayroll > town.PayrollReserve)
+                    throw new InvalidOperationException("Municipal transfer bounds or schedule are invalid.");
+            }
+        }
     }
 }

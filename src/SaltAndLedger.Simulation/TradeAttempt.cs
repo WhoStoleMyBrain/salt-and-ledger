@@ -37,6 +37,14 @@ namespace SaltAndLedger.Simulation
         public long TotalAmount => Price?.TotalAmount ?? 0;
         public int ExecutedQuantity => Outcome == TradeOutcome.Traded ? Quantity : 0;
         public long ExecutedAmount => Outcome == TradeOutcome.Traded ? TotalAmount : 0;
+        public long ServiceFee { get; }
+        public long MarketServiceFee { get; }
+        public long HouseholdServiceFee { get; }
+        public long NetProceeds => Direction == TradeDirection.Sell ? checked(ExecutedAmount - ServiceFee) : 0;
+        public bool ShouldSerializeServiceFee() => ServiceFee != 0;
+        public bool ShouldSerializeMarketServiceFee() => ServiceFee != 0;
+        public bool ShouldSerializeHouseholdServiceFee() => ServiceFee != 0;
+        public bool ShouldSerializeNetProceeds() => ServiceFee != 0;
         public TradeOutcome Outcome { get; }
         public InventoryChange MarketInventoryChange { get; }
         public InventoryChange TraderInventoryChange { get; }
@@ -45,7 +53,8 @@ namespace SaltAndLedger.Simulation
 
         internal TradeAttempt(TradeCommand command, TradePrice? price, TradeOutcome outcome,
             InventoryChange marketInventoryChange, InventoryChange traderInventoryChange,
-            CashChange marketCashChange, CashChange traderCashChange)
+            CashChange marketCashChange, CashChange traderCashChange,
+            long serviceFee = 0, long marketServiceFee = 0, long householdServiceFee = 0)
         {
             Direction = command.Direction;
             GoodId = command.GoodId;
@@ -56,6 +65,9 @@ namespace SaltAndLedger.Simulation
             TraderInventoryChange = traderInventoryChange;
             MarketCashChange = marketCashChange;
             TraderCashChange = traderCashChange;
+            ServiceFee = serviceFee;
+            MarketServiceFee = marketServiceFee;
+            HouseholdServiceFee = householdServiceFee;
         }
     }
 }

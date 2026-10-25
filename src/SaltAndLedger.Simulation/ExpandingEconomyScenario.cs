@@ -8,14 +8,18 @@ namespace SaltAndLedger.Simulation
     public static class ExpandingEconomyScenario
     {
         public static RegionalWorldState Create(ContentCatalog content, RunIdentity identity,
-            bool reverseConfiguration = false)
+            bool reverseConfiguration = false, CirculationConfiguration? circulation = null)
         {
             if (content == null) throw new ArgumentNullException(nameof(content));
             if (identity == null) throw new ArgumentNullException(nameof(identity));
             if (identity.WorldMode != RunWorldMode.ExpandingEconomy)
                 throw new ArgumentException("An Expanding Economy identity is required.", nameof(identity));
+            if (circulation != null && identity.EconomicRulesVersion != circulation.Version)
+                throw new ArgumentException("Diagnostic circulation must match the run's economic rules version.", nameof(circulation));
+            if (identity.EconomicRulesVersion == 1 && circulation == null)
+                circulation = new CirculationConfiguration();
             var generation = ExpandingEconomyGeneration.Generate(identity.Seed!.Value, identity.GeneratorVersion,
-                identity.LivingPricingMode);
+                identity.LivingPricingMode, identity.EconomicRulesVersion);
             var charter = GetCharter(generation, identity.CharterId);
             var food = generation.FoodSourcePortId;
             var processor = generation.ProcessingPortId;
@@ -51,7 +55,8 @@ namespace SaltAndLedger.Simulation
                     GrandCommission.Definition.Configuration,
                 initialFacilities: charter.Facilities, initialGrantProvenance: charter.Id,
                 difficulty: identity.Difficulty, runIdentity: identity,
-                economy: ExpandingEconomyConfiguration.CreateDefault(generation.MintPortId, generation.SilverPortId));
+                economy: ExpandingEconomyConfiguration.CreateDefault(generation.MintPortId, generation.SilverPortId),
+                circulation: circulation);
         }
 
         public static StartingCharter GetCharter(ExpandingEconomyGeneration generation, string charterId)

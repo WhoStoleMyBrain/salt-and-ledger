@@ -17,7 +17,7 @@ internal static class ArchipelagoExperiments
     private static readonly JsonSerializerOptions Options = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = true
+        TypeInfoResolver = HistoricalReportJson.Resolver(), WriteIndented = true
     };
 
     internal static int Run(ContentCatalog content, string? outputPath, bool check)

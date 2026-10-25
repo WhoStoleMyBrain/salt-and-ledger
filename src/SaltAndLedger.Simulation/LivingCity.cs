@@ -7,7 +7,7 @@ namespace SaltAndLedger.Simulation
 {
     public enum LivingPricingMode { StockOnly, Coverage }
     public enum ConsumptionKind { Legacy, Essential, Luxury, Municipal }
-    public enum CityCashTransferKind { Wage, Retail }
+    public enum CityCashTransferKind { Wage, Retail, ServiceFeeMarket, ServiceFeeHouseholds, MunicipalLevy, FoodRelief }
 
     public sealed class SettlementConfiguration
     {

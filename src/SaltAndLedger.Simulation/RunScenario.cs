@@ -105,7 +105,7 @@ namespace SaltAndLedger.Simulation
             if (identity == null) throw new ArgumentNullException(nameof(identity));
             if (identity.WorldMode == RunWorldMode.ExpandingEconomy)
                 return ExpandingEconomyScenario.GetCharter(ExpandingEconomyGeneration.Generate(identity.Seed!.Value,
-                    identity.GeneratorVersion, identity.LivingPricingMode), identity.CharterId);
+                    identity.GeneratorVersion, identity.LivingPricingMode, identity.EconomicRulesVersion), identity.CharterId);
             return identity.WorldMode == RunWorldMode.LivingCities
                 ? LivingCityScenario.GetCharter(LivingCityGeneration.Generate(identity.Seed!.Value,
                     identity.GeneratorVersion, identity.LivingPricingMode), identity.CharterId)
@@ -161,7 +161,7 @@ namespace SaltAndLedger.Simulation
             if (identity == null) throw new ArgumentNullException(nameof(identity));
             if (identity.WorldMode == RunWorldMode.ExpandingEconomy)
                 return ExpandingEconomyGeneration.Generate(identity.Seed!.Value, identity.GeneratorVersion,
-                    identity.LivingPricingMode).Geography;
+                    identity.LivingPricingMode, identity.EconomicRulesVersion).Geography;
             return identity.WorldMode == RunWorldMode.Classic ? ArchipelagoGeography.Classic :
                 identity.WorldMode == RunWorldMode.LivingCities ?
                     LivingCityGeneration.Generate(identity.Seed!.Value, identity.GeneratorVersion,

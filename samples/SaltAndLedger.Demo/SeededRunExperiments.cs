@@ -15,7 +15,7 @@ internal static class SeededRunExperiments
     private const string Owner = EnterpriseScenario.PlayerOwnerId;
     private const string Factory = "seeded_bakery";
     private static readonly string[] Strategies = { "idle", "merchant", "local_factory", "industrial" };
-    private static readonly JsonSerializerOptions Options = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
+    private static readonly JsonSerializerOptions Options = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, TypeInfoResolver = HistoricalReportJson.Resolver(), WriteIndented = true };
     private static readonly int[] StandardSeeds =
     {
         int.MinValue, int.MinValue + 1, -1000000007, -104729, -12345, -1024, -42, -7, -1,

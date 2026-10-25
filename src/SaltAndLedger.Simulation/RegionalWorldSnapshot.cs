@@ -165,6 +165,8 @@ namespace SaltAndLedger.Simulation
         public AccountingSnapshot Accounting { get; }
         public ExpandingEconomySnapshot? Economy { get; }
         public bool ShouldSerializeEconomy() => Economy != null;
+        public CirculationSnapshot? Circulation { get; }
+        public bool ShouldSerializeCirculation() => Circulation != null;
         public CommissionHistory? CommissionHistory { get; }
         public bool ShouldSerializeCommissionHistory() => CommissionHistory != null;
         [JsonIgnore]
@@ -184,7 +186,8 @@ namespace SaltAndLedger.Simulation
             IEnumerable<PrivateFacilitySnapshot> privateFacilities, ChallengeSnapshot? challenge,
             AccountingSnapshot accounting, RunDifficulty difficulty = RunDifficulty.Normal,
             RunIdentity? runIdentity = null, ExpandingEconomySnapshot? economy = null,
-            CommissionHistory? commissionHistory = null, IEnumerable<CompanyStockpileSnapshot>? companyStockpiles = null)
+            CommissionHistory? commissionHistory = null, IEnumerable<CompanyStockpileSnapshot>? companyStockpiles = null,
+            CirculationSnapshot? circulation = null)
         {
             Day = day;
             Revision = revision;
@@ -207,6 +210,7 @@ namespace SaltAndLedger.Simulation
             Challenge = challenge;
             Accounting = accounting;
             Economy = economy;
+            Circulation = circulation;
             CommissionHistory = commissionHistory;
         }
 
@@ -259,8 +263,9 @@ namespace SaltAndLedger.Simulation
             ValidateWholeCargo(command.Quantity);
             var port = Ports[portId];
             var ship = Ships[shipId];
-            return TradeCalculator.Preview(port.Quotes[command.GoodId], command, port.Inventory[command.GoodId],
+            var gross = TradeCalculator.Preview(port.Quotes[command.GoodId], command, port.Inventory[command.GoodId],
                 ship.Cargo[command.GoodId], port.MarketCash, ship.Cash, ship.CargoCapacity - ship.CargoUnits);
+            return Circulation?.Preview(ship.OwnerId, portId, port.City!.HouseholdCash, gross) ?? gross;
         }
 
         public IReadOnlyList<RegionalShipSnapshot> DockedShips(string portId)
@@ -275,9 +280,10 @@ namespace SaltAndLedger.Simulation
             var facility = OwnedFacility(ownerId, facilityId);
             var storage = GetFacilityStorage(facilityId);
             var port = Ports[facility.PortId];
-            return TradeCalculator.Preview(port.Quotes[command.GoodId], command, port.Inventory[command.GoodId],
+            var gross = TradeCalculator.Preview(port.Quotes[command.GoodId], command, port.Inventory[command.GoodId],
                 storage.Inventory[command.GoodId], port.MarketCash, Companies[ownerId].Cash,
                 storage.Capacity - storage.StoredUnits);
+            return Circulation?.Preview(ownerId, port.Id, port.City!.HouseholdCash, gross) ?? gross;
         }
 
         public int MaximumTradeQuantity(string shipId, string portId, TradeDirection direction, string goodId)

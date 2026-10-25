@@ -20,6 +20,8 @@ namespace SaltAndLedger.Simulation
         public GrandCommissionPlan? Commission { get; }
         public CompanyStorageRules CompanyStorageRules { get; }
         public int ItineraryVersion { get; }
+        public int EconomicRulesVersion { get; }
+        public bool ShouldSerializeEconomicRulesVersion() => EconomicRulesVersion != 0;
         public bool ShouldSerializeItineraryVersion() => ItineraryVersion != 0;
         public bool ShouldSerializeCompanyStorageRules() => CompanyStorageRules != CompanyStorageRules.Legacy;
         public bool ShouldSerializeCommission() => Commission != null;
@@ -40,13 +42,15 @@ namespace SaltAndLedger.Simulation
                 (WorldMode == RunWorldMode.ExpandingEconomy ? "-content3-value1" : "")) +
             (Commission == null ? "" : "/commission-v" + Commission.Version.ToString(CultureInfo.InvariantCulture) + "-" + Commission.Signature) +
             (CompanyStorageRules == CompanyStorageRules.Pooled ? "/storage-v2" : "") +
-            (ItineraryVersion == 0 ? "" : "/itinerary-v" + ItineraryVersion.ToString(CultureInfo.InvariantCulture));
+            (ItineraryVersion == 0 ? "" : "/itinerary-v" + ItineraryVersion.ToString(CultureInfo.InvariantCulture)) +
+            (EconomicRulesVersion == 0 ? "" : "/economy-v" + EconomicRulesVersion.ToString(CultureInfo.InvariantCulture));
 
         public RunIdentity(string? challengeId, string charterId, RunWorldMode worldMode = RunWorldMode.Classic,
             int? seed = null, RunDifficulty difficulty = RunDifficulty.Normal, int? generatorVersion = null,
             LivingPricingMode livingPricingMode = LivingPricingMode.StockOnly,
             int? contentVersion = null, int? valuationVersion = null, GrandCommissionPlan? commission = null,
-            CompanyStorageRules companyStorageRules = CompanyStorageRules.Legacy, int itineraryVersion = 0)
+            CompanyStorageRules companyStorageRules = CompanyStorageRules.Legacy, int itineraryVersion = 0,
+            int economicRulesVersion = 0)
         {
             if (challengeId != null) RunScenario.GetChallenge(challengeId);
             RunScenario.GetCharter(charterId);
@@ -60,6 +64,10 @@ namespace SaltAndLedger.Simulation
             if (itineraryVersion != 0 && (itineraryVersion != CargoItineraryPolicy.CurrentVersion ||
                 worldMode != RunWorldMode.ExpandingEconomy || companyStorageRules != CompanyStorageRules.Pooled))
                 throw new ArgumentOutOfRangeException(nameof(itineraryVersion));
+            if (economicRulesVersion != 0 && (economicRulesVersion != 1 ||
+                worldMode != RunWorldMode.ExpandingEconomy || companyStorageRules != CompanyStorageRules.Pooled ||
+                itineraryVersion != CargoItineraryPolicy.CurrentVersion))
+                throw new ArgumentOutOfRangeException(nameof(economicRulesVersion));
             if ((worldMode != RunWorldMode.Classic) != seed.HasValue)
                 throw new ArgumentException("Seeded worlds require a seed; Classic worlds have no seed.", nameof(seed));
             if (!Enum.IsDefined(typeof(LivingPricingMode), livingPricingMode) ||
@@ -92,13 +100,15 @@ namespace SaltAndLedger.Simulation
             Commission = commission;
             CompanyStorageRules = companyStorageRules;
             ItineraryVersion = itineraryVersion;
+            EconomicRulesVersion = economicRulesVersion;
         }
 
         public bool Equals(RunIdentity? other) => other != null &&
             ChallengeId == other.ChallengeId && CharterId == other.CharterId && WorldMode == other.WorldMode &&
             Seed == other.Seed && GeneratorVersion == other.GeneratorVersion && Difficulty == other.Difficulty &&
             LivingPricingMode == other.LivingPricingMode && Commission?.Signature == other.Commission?.Signature &&
-            CompanyStorageRules == other.CompanyStorageRules && ItineraryVersion == other.ItineraryVersion;
+            CompanyStorageRules == other.CompanyStorageRules && ItineraryVersion == other.ItineraryVersion &&
+            EconomicRulesVersion == other.EconomicRulesVersion;
 
         public override bool Equals(object? obj) => obj is RunIdentity other && Equals(other);
 

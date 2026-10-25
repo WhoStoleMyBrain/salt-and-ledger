@@ -18,7 +18,7 @@ internal static class EnterpriseExperiments
     private const string PathDefault = "docs/experiments/enterprise-results.json";
     private static readonly JsonSerializerOptions Options = new()
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase, TypeInfoResolver = HistoricalReportJson.Resolver(), WriteIndented = true
     };
 
     internal static int Run(ContentCatalog content, string? path, bool check)

@@ -70,6 +70,9 @@ namespace SaltAndLedger.Simulation
             var projected = Project(snapshot, shipId, policy);
             var detail = RoutePolicyEvaluator.Evaluate(projected, policy, true,
                 ship.Configuration.MinimumOriginStock, ship.Configuration.MinimumReturnStock, snapshot.QuantityScale);
+            if (snapshot.Circulation != null && detail.Trade != null)
+                detail = new AutomationDecision(detail.Before, detail.Stage, detail.Action, detail.Reason,
+                    detail.Trade, detail.Departure, snapshot.PreviewTrade(shipId, detail.Trade.PortId, detail.Trade.Trade));
             if (detail.Reason == AutomationReason.SourceStockThreshold)
             {
                 var threshold = detail.Stage == AutomationStage.OutboundLoading

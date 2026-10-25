@@ -71,6 +71,11 @@ namespace SaltAndLedger.Simulation
             Count(data.Facilities, 0, WorldSaveCodec.MaximumFacilities);
             if (data.CompanyStockpiles != null) Count(data.CompanyStockpiles, 0, WorldSaveCodec.MaximumFacilities);
             Count(data.Stores, 1, WorldSaveCodec.MaximumFacilities + 64);
+            if (data.Circulation != null)
+            {
+                Count(data.Circulation.Commercial, 1, 256);
+                Count(data.Circulation.Towns, 4, 4);
+            }
             foreach (var ship in data.Ships) ValidateItineraryCounts(ship);
             var total = 0;
             foreach (var store in data.Stores)
@@ -101,9 +106,11 @@ namespace SaltAndLedger.Simulation
             SameIds(data.Ports.Select(p => p.Id), initial.Ports.Keys, "ports");
             SameIds(data.Companies.Select(c => c.Id), initial.Companies.Keys, "companies");
             var economy = RestoreEconomy(initial, data);
+            var circulation = RestoreCirculation(initial, data);
             var shipConfigurations = RestoreShipConfigurations(initial, data, economy);
             var companies = data.Companies.Select(c => new CompanySnapshot(c.Id, Nonnegative(c.Cash))).ToArray();
-            var ports = data.Ports.Select(p => RestorePort(content, initial.Ports[p.Id], p, data.Day)).ToArray();
+            var ports = data.Ports.Select(p => RestorePort(content, initial.Ports[p.Id], p, data.Day,
+                circulation)).ToArray();
             var facilities = data.Facilities.Select(f => RestoreFacility(content, initial, f, data.Day)).ToArray();
             var stockpiles = RestoreCompanyStockpiles(content, initial, data, facilities);
             var facilityIds = ports.SelectMany(p => p.Facilities).Select(f => f.Configuration.Instance.Id)
@@ -125,10 +132,11 @@ namespace SaltAndLedger.Simulation
             var commissionHistory = RestoreCommissionHistory(content, initial, data, ships, economy);
             return new RegionalWorldSnapshot(data.Day, data.Revision, ports, ships, initial.Routes, companies,
                 initial.IndustryBlueprints.Values, facilities, challenge, accounting, initial.Difficulty, initial.RunIdentity, economy,
-                commissionHistory, stockpiles);
+                commissionHistory, stockpiles, circulation);
         }
 
-        private static RegionalPortSnapshot RestorePort(ContentCatalog content, RegionalPortSnapshot initial, RegionalSavePort data, long day)
+        private static RegionalPortSnapshot RestorePort(ContentCatalog content, RegionalPortSnapshot initial, RegionalSavePort data,
+            long day, CirculationSnapshot? circulation)
         {
             var inventory = Inventory(content, data.Inventory);
             Count(data.Quotes, 1, content.Goods.Count);
@@ -149,6 +157,21 @@ namespace SaltAndLedger.Simulation
                     "Dynamic quote parameters changed.");
                 if (initial.City?.Configuration.PricingMode != LivingPricingMode.Coverage)
                     Require(p.TargetStock == b.TargetStock, "Stock pricing target changed.");
+                else if (circulation != null)
+                {
+                    var needs = initial.Configuration.Consumption.Where(n => n.GoodId == q.GoodId &&
+                        (n.Kind == ConsumptionKind.Essential || n.Kind == ConsumptionKind.Luxury)).ToArray();
+                    var authored = initial.Configuration.Market.Quotes[q.GoodId].Pricing!;
+                    if (needs.Length == 0) Require(p.TargetStock == authored.TargetStock, "Non-household target changed.");
+                    else
+                    {
+                        var minimum = needs.Any(n => n.Kind == ConsumptionKind.Luxury) ?
+                            Math.Max(initial.City!.Configuration.QuantityScale, authored.TargetStock / 2) : 1;
+                        Require(p.TargetStock >= minimum && p.TargetStock <=
+                            checked(LivingCityPricing.MaximumTargetStock * initial.City!.Configuration.QuantityScale),
+                            "Coverage target is outside its versioned bounds.");
+                    }
+                }
                 return new MarketQuote(q.GoodId, p);
             }, StringComparer.Ordinal);
             Count(data.Facilities, 0, 64); Count(data.Consumption, 0, 64);
@@ -163,7 +186,10 @@ namespace SaltAndLedger.Simulation
             }).ToArray();
             var consumption = data.Consumption.Select(c => RestoreConsumption(
                 initial.Consumption.Single(n => n.Configuration.Id == c.Id).Configuration, c, day)).ToArray();
-            var city = RestoreCity(initial.Configuration.Settlement, data.City, day);
+            var fiscal = circulation?.Towns[data.Id];
+            var householdTransfers = circulation == null ? BigInteger.Zero :
+                (BigInteger)circulation.HouseholdFeesReceived(data.Id) + fiscal!.TotalRelief - fiscal.TotalLevy;
+            var city = RestoreCity(initial.Configuration.Settlement, data.City, day, householdTransfers);
             var buildings = schedules.Select(s => new BuildingInstance(s.Configuration.Instance.Id,
                 s.Configuration.Instance.BuildingId, s.Configuration.Instance.RecipeId, s.Configuration.Instance.Priority, s.Enabled));
             return new RegionalPortSnapshot(initial.Configuration, new PortSnapshot(data.Id, inventory,
@@ -193,7 +219,8 @@ namespace SaltAndLedger.Simulation
                 c.TotalPayment, c.TotalStock, c.TotalAffordability, c.DemandRemainder, c.BaselineDemandRemainder, c.LastBaselineDesired);
         }
 
-        private static CitySnapshot? RestoreCity(SettlementConfiguration? config, RegionalSaveCity? c, long day)
+        private static CitySnapshot? RestoreCity(SettlementConfiguration? config, RegionalSaveCity? c, long day,
+            BigInteger householdTransfers)
         {
             Require((config == null) == (c == null), "Household sector presence changed.");
             if (c == null || config == null) return null;
@@ -207,8 +234,8 @@ namespace SaltAndLedger.Simulation
             Require(c.LastWages <= c.Wages && c.LastRetail <= c.Retail && c.LastDemographicDay <= day &&
                 c.Healthy <= 6 && c.Deprived <= 6 && c.LuxuryReady <= 3 && c.LuxuryPoor <= 3 &&
                 !string.IsNullOrWhiteSpace(c.Reason), "Invalid household counters.");
-            Require((BigInteger)c.Cash == (BigInteger)config.InitialHouseholdCash + c.Wages - c.Retail,
-                "Household cash does not reconcile with wages and retail payments.");
+            Require((BigInteger)c.Cash == (BigInteger)config.InitialHouseholdCash + c.Wages - c.Retail + householdTransfers,
+                "Household cash does not reconcile with wages, retail and explicit circulation transfers.");
             long previous = -1;
             var food = c.Food.Select(n =>
             {
@@ -393,10 +420,10 @@ namespace SaltAndLedger.Simulation
             RegionalSaveCompany c, InventoryCostSnapshot[] stores)
         {
             Nonnegative(c.InitialCash, c.Purchases, c.Revenue, c.CostOfGoodsSold, c.Construction, c.Wages,
-                c.MintReceipts, c.MintMaterialCost, c.PublicCommissionExpenditure);
+                c.MintReceipts, c.MintMaterialCost, c.PublicCommissionExpenditure, c.FeesPaid);
             Require(c.InitialCash == initial.Companies[c.Id].Cash, "Initial company cash changed.");
             Require((BigInteger)c.Cash == (BigInteger)c.InitialCash + c.Revenue - c.Purchases - c.Construction - c.Wages +
-                c.MintReceipts - c.PublicCommissionExpenditure,
+                c.MintReceipts - c.PublicCommissionExpenditure - c.FeesPaid,
                 "Company cash does not reconcile with accounting.");
             foreach (var values in new[] { c.Granted, c.Purchased, c.Sold, c.Produced, c.Consumed, c.SurrenderedQuantities }) Totals(content, values);
             var owned = stores.Where(s => s.OwnerId == c.Id).ToArray();
@@ -412,8 +439,9 @@ namespace SaltAndLedger.Simulation
             var result = new CompanyFinancialSnapshot(c.Id, c.InitialCash, c.Purchases, c.Revenue, c.CostOfGoodsSold,
                 c.Construction, owned.Aggregate(0L, (sum, s) => checked(sum + s.TotalCostBasis)), c.Granted,
                 c.Purchased, c.Sold, c.Produced, c.Consumed, held, c.Wages, c.MintReceipts, c.MintMaterialCost,
-                c.PublicCommissionExpenditure, c.SurrenderedQuantities);
+                c.PublicCommissionExpenditure, c.SurrenderedQuantities, c.FeesPaid);
             _ = result.OperatingSurplusAfterWages;
+            _ = result.OperatingSurplusAfterExpenses;
             return result;
         }
 

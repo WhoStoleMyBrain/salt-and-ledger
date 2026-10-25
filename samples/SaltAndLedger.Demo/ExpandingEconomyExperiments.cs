@@ -17,7 +17,7 @@ internal static class ExpandingEconomyExperiments
     private const string Player = EnterpriseScenario.PlayerShipId, Owner = EnterpriseScenario.PlayerOwnerId;
     private static readonly int[] Seeds = { -42, 42, 99 };
     private static readonly string[] Strategies = { "idle", "imports", "balanced", "industry", "overbuilt", "external", "external_control", "monetary", "monetary_control", "network2", "network3", "circulation", "fleet3" };
-    private static readonly JsonSerializerOptions Options = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
+    private static readonly JsonSerializerOptions Options = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, TypeInfoResolver = HistoricalReportJson.Resolver(), WriteIndented = true };
     private static int Q(int value) => EconomicUnits.FromWhole(value);
     private static long M(long value) => EconomicUnits.Coins(value);
     private static bool Active(RegionalWorldSnapshot state) => state.Challenge == null || state.Challenge.Status == ChallengeStatus.Active;

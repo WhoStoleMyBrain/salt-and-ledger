@@ -30,6 +30,9 @@ namespace SaltAndLedger.Simulation
         [JsonProperty(Required = Required.Default)]
         public RegionalSaveCompanyStockpile[]? CompanyStockpiles { get; set; }
         public bool ShouldSerializeCompanyStockpiles() => CompanyStockpiles != null;
+        [JsonProperty(Required = Required.Default)]
+        public RegionalSaveCirculation? Circulation { get; set; }
+        public bool ShouldSerializeCirculation() => Circulation != null;
     }
 
     [JsonObject(ItemRequired = Required.AllowNull)]
@@ -53,6 +56,9 @@ namespace SaltAndLedger.Simulation
         [JsonProperty(Required = Required.Default)]
         public int ItineraryVersion { get; set; }
         public bool ShouldSerializeItineraryVersion() => ItineraryVersion != 0;
+        [JsonProperty(Required = Required.Default)]
+        public int EconomicRulesVersion { get; set; }
+        public bool ShouldSerializeEconomicRulesVersion() => EconomicRulesVersion != 0;
     }
 
     [JsonObject(ItemRequired = Required.AllowNull)]
@@ -258,6 +264,9 @@ namespace SaltAndLedger.Simulation
         public long CostOfGoodsSold { get; set; }
         public long Construction { get; set; }
         public long Wages { get; set; }
+        [JsonProperty(Required = Required.Default)]
+        public long FeesPaid { get; set; }
+        public bool ShouldSerializeFeesPaid() => FeesPaid != 0;
         public long MintReceipts { get; set; }
         public long MintMaterialCost { get; set; }
         public long PublicCommissionExpenditure { get; set; }
@@ -387,5 +396,41 @@ namespace SaltAndLedger.Simulation
         public string Id { get; set; } = "";
         public int Delivered { get; set; }
         public long Paid { get; set; }
+    }
+
+    [JsonObject(ItemRequired = Required.AllowNull)]
+    internal sealed class RegionalSaveCirculation
+    {
+        public int Version { get; set; }
+        public CirculationMode Mode { get; set; }
+        public RegionalSaveCommercialCirculation[] Commercial { get; set; } = null!;
+        public RegionalSaveMunicipalCirculation[] Towns { get; set; } = null!;
+    }
+
+    [JsonObject(ItemRequired = Required.AllowNull)]
+    internal sealed class RegionalSaveCommercialCirculation
+    {
+        public string OwnerId { get; set; } = "";
+        public string PortId { get; set; } = "";
+        public long GrossLocalSales { get; set; }
+        public long FeesPaid { get; set; }
+        public long MarketFees { get; set; }
+        public long HouseholdFees { get; set; }
+    }
+
+    [JsonObject(ItemRequired = Required.AllowNull)]
+    internal sealed class RegionalSaveMunicipalCirculation
+    {
+        public string PortId { get; set; } = "";
+        public long NextReviewDay { get; set; }
+        public long LastReviewDay { get; set; }
+        public long TotalLevy { get; set; }
+        public long TotalRelief { get; set; }
+        public long LastLevy { get; set; }
+        public long LastRelief { get; set; }
+        public long PayrollReserve { get; set; }
+        public long DuePayroll { get; set; }
+        public long FoodReserve { get; set; }
+        public MunicipalReviewReason LastReason { get; set; }
     }
 }

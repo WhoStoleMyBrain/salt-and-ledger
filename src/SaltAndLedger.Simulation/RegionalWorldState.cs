@@ -23,7 +23,8 @@ namespace SaltAndLedger.Simulation
             IEnumerable<IndustryBlueprint>? industryBlueprints = null, ChallengeConfiguration? challenge = null,
             IEnumerable<PrivateFacilityConfiguration>? initialFacilities = null,
             string initialGrantProvenance = "initial_inventory", RunDifficulty difficulty = RunDifficulty.Normal,
-            RunIdentity? runIdentity = null, ExpandingEconomyConfiguration? economy = null)
+            RunIdentity? runIdentity = null, ExpandingEconomyConfiguration? economy = null,
+            CirculationConfiguration? circulation = null)
         {
             this.content = content ?? throw new ArgumentNullException(nameof(content));
             if (ports == null) throw new ArgumentNullException(nameof(ports));
@@ -35,6 +36,10 @@ namespace SaltAndLedger.Simulation
             if (runIdentity != null && runIdentity.ChallengeId != challenge?.Id)
                 throw new ArgumentException("Run identity and world challenge must agree.", nameof(runIdentity));
             var pooledStorage = runIdentity?.CompanyStorageRules == CompanyStorageRules.Pooled;
+            if (circulation != null && economy == null)
+                throw new ArgumentException("Circulation requires the v3 economy.", nameof(circulation));
+            if (runIdentity != null && runIdentity.EconomicRulesVersion != (circulation?.Version ?? 0))
+                throw new ArgumentException("Run identity and circulation rules must agree.", nameof(circulation));
             if (pooledStorage && economy == null)
                 throw new ArgumentException("Pooled storage requires the v3 economy.", nameof(economy));
             if (challenge?.Kind == ChallengeKind.GrandCommission &&
@@ -49,7 +54,9 @@ namespace SaltAndLedger.Simulation
                 var city = port.Settlement == null ? null : CitySnapshot.Initial(port.Settlement, initialDay);
                 if (city != null)
                     market = new PortSnapshot(port.Id, market.Inventory, market.MarketCash,
-                        LivingCityPricing.Derive(port, city), market.Buildings);
+                        LivingCityPricing.Derive(port, city, circulation?.Version ?? 0), market.Buildings);
+                if (circulation != null && (city == null || port.Settlement!.QuantityScale != EconomicUnits.QuantityScale))
+                    throw new ArgumentException("Circulation requires scaled living households at every port.", nameof(circulation));
                 foreach (var demand in port.Consumption) content.GetGood(demand.GoodId);
                 locations.Add(new RegionalPortSnapshot(port, market,
                     port.Facilities.Select(f => new ScheduledFacilitySnapshot(f, f.Instance.ProductionEnabled,
@@ -174,7 +181,8 @@ namespace SaltAndLedger.Simulation
                 initialChallenge, accounting.Snapshot(), difficulty, runIdentity,
                 economy == null ? null : ExpandingEconomySnapshot.Initial(economy),
                 runIdentity?.Commission == null ? null : CommissionHistory.Initial(vessels, challenge!.OwnerId, initialDay),
-                stockpiles.Values.Select(s => s.Snapshot()));
+                stockpiles.Values.Select(s => s.Snapshot()),
+                circulation == null ? null : CirculationSnapshot.Initial(circulation, accounts.Keys, locations.Select(p => p.Id), initialDay));
             if (economy != null)
             {
                 ValidateExpandingConfiguration(economy);
@@ -376,6 +384,7 @@ namespace SaltAndLedger.Simulation
                 if (ship.AutomationEnabled) work.RunAutomation(ship.Configuration.Ship.Id,
                     ship.Itinerary == null ? MaximumDocksideActions : CargoItineraryPolicy.MaximumDailyOperations);
             work.Procure();
+            work.ReviewMunicipalBudgets(nextDay);
             work.Produce(nextDay);
             work.ProducePrivate(nextDay);
             work.SellPrivate();
@@ -414,10 +423,11 @@ namespace SaltAndLedger.Simulation
                 {
                     var finance = after.Accounting.Companies[company.Id];
                     if ((BigInteger)company.Cash != (BigInteger)finance.InitialCash + finance.SalesRevenue -
-                        finance.InventoryPurchases - finance.ConstructionExpenditure - finance.WagesPaid +
+                        finance.InventoryPurchases - finance.ConstructionExpenditure - finance.WagesPaid - finance.FeesPaid +
                         finance.MintReceipts - finance.PublicCommissionExpenditure)
                         throw new InvalidOperationException("Company cash must reconcile with recorded actual payments.");
                     _ = finance.OperatingSurplusAfterWages;
+                    _ = finance.OperatingSurplusAfterExpenses;
                 }
                 var result = new RegionalResult(before, after, work.Trades, work.Production, work.Consumption,
                     work.Movements, work.Decisions, work.WarehouseTrades, work.PrivateProduction,
@@ -621,6 +631,7 @@ namespace SaltAndLedger.Simulation
                 Accounting = new WorkingAccounting(before.Accounting);
                 Economy = before.Economy == null ? null : new WorkingEconomy(before.Economy);
                 Commission = before.CommissionHistory == null ? null : new WorkingCommissionHistory(before.CommissionHistory);
+                Circulation = before.Circulation;
             }
             internal RegionalWorldSnapshot View(long? revision = null) => new RegionalWorldSnapshot(Day,
                 revision ?? before.Revision, Ports.Values.Select(p => p.Snapshot()),
@@ -628,7 +639,7 @@ namespace SaltAndLedger.Simulation
                 Companies.Values.Select(c => c.Snapshot()), before.IndustryBlueprints.Values,
                 PrivateFacilities.Values.Select(f => f.Snapshot(Day)), Challenge, Accounting.Snapshot(),
                 before.Difficulty, before.RunIdentity, Economy?.Snapshot(), Commission?.Snapshot(),
-                CompanyStockpiles.Values.Select(s => s.Snapshot()));
+                CompanyStockpiles.Values.Select(s => s.Snapshot()), Circulation);
 
             internal void EvaluateChallenge()
             {
@@ -648,9 +659,9 @@ namespace SaltAndLedger.Simulation
                 var company = Companies[ship.Configuration.OwnerId];
                 if (ship.Dock == null || ship.Dock != portId)
                     throw new InvalidOperationException("Trade requires the ship to be docked at the selected port.");
-                var attempt = TradeCalculator.Preview(port.Quotes[command.GoodId], command,
+                var attempt = PreviewLocalTrade(company.Id, port, TradeCalculator.Preview(port.Quotes[command.GoodId], command,
                     port.Inventory.GetQuantity(command.GoodId), ship.Cargo.GetQuantity(command.GoodId),
-                    port.Cash, company.Cash, ship.Configuration.Ship.CargoCapacity - ship.CargoUnits);
+                    port.Cash, company.Cash, ship.Configuration.Ship.CargoCapacity - ship.CargoUnits));
                 TradeCalculator.Apply(attempt, port.Inventory, ship.Cargo);
                 ship.CargoUnits = checked(ship.CargoUnits + attempt.TraderInventoryChange.Delta);
                 port.Cash = attempt.MarketCashChange.After;
@@ -660,6 +671,7 @@ namespace SaltAndLedger.Simulation
                 if (attempt.Outcome == TradeOutcome.Traded)
                 {
                     AccountTrade("ship:" + shipId, portId, attempt);
+                    ApplyServiceFee(company.Id, "ship:" + shipId, port, attempt);
                     if (company.Id == Challenge?.Configuration.OwnerId) Commission?.Trade(portId, attempt);
                     Changed = true;
                 }
@@ -793,9 +805,9 @@ namespace SaltAndLedger.Simulation
                 if (command == null) throw new ArgumentNullException(nameof(command));
                 var port = Ports[facility.PortId];
                 var company = Companies[facility.OwnerId];
-                var attempt = TradeCalculator.Preview(port.Quotes[command.GoodId], command,
+                var attempt = PreviewLocalTrade(company.Id, port, TradeCalculator.Preview(port.Quotes[command.GoodId], command,
                     port.Inventory.GetQuantity(command.GoodId), facility.Inventory.GetQuantity(command.GoodId),
-                    port.Cash, company.Cash, facility.Capacity - facility.StoredUnits);
+                    port.Cash, company.Cash, facility.Capacity - facility.StoredUnits));
                 TradeCalculator.Apply(attempt, port.Inventory, facility.Inventory);
                 facility.StoredUnits = checked(facility.StoredUnits + attempt.TraderInventoryChange.Delta);
                 port.Cash = attempt.MarketCashChange.After;
@@ -804,6 +816,7 @@ namespace SaltAndLedger.Simulation
                 if (attempt.Outcome == TradeOutcome.Traded)
                 {
                     AccountTrade(facility.StoreId, facility.PortId, attempt);
+                    ApplyServiceFee(company.Id, facility.StoreId, port, attempt);
                     if (company.Id == Challenge?.Configuration.OwnerId) Commission?.Trade(facility.PortId, attempt);
                     if (command.Direction == TradeDirection.Buy)
                         facility.ProcurementCost = checked(facility.ProcurementCost + attempt.ExecutedAmount);
@@ -1047,25 +1060,11 @@ namespace SaltAndLedger.Simulation
                         if (nextDay < facility.NextDueDay) continue;
                         var config = facility.Configuration;
                         var instance = config.Instance;
-                        var recipe = content.GetRecipe(instance.RecipeId);
-                        var scale = port.Inventory.QuantityScale;
                         var starting = port.Inventory.Snapshot();
-                        var outcome = ScheduledProductionOutcome.Disabled;
-                        if (facility.Enabled)
-                        {
-                            if (recipe.Inputs.Any(i => port.Inventory.GetQuantity(i.GoodId) < checked(i.Quantity * scale)))
-                                outcome = ScheduledProductionOutcome.InputShortage;
-                            else if (config.OutputStockLimit.HasValue && recipe.Outputs.Any(output =>
-                                (long)port.Inventory.GetQuantity(output.GoodId) -
-                                recipe.Inputs.Where(i => i.GoodId == output.GoodId).Sum(i => (long)checked(i.Quantity * scale)) +
-                                checked(output.Quantity * scale) > config.OutputStockLimit.Value))
-                                outcome = ScheduledProductionOutcome.OutputLimit;
-                            else if (port.Cash < config.WagePerBatch)
-                                outcome = ScheduledProductionOutcome.PayrollShortage;
-                            else
-                                outcome = Simulation.Production.TryRunBatch(port.Inventory, instance.BuildingId, instance.RecipeId)
-                                    ? ScheduledProductionOutcome.Produced : ScheduledProductionOutcome.InputShortage;
-                        }
+                        var outcome = PreviewPublicBatch(port.Inventory, facility, nextDay, port.Cash);
+                        if (outcome == ScheduledProductionOutcome.Produced)
+                            outcome = Simulation.Production.TryRunBatch(port.Inventory, instance.BuildingId, instance.RecipeId)
+                                ? ScheduledProductionOutcome.Produced : ScheduledProductionOutcome.InputShortage;
                         if (outcome == ScheduledProductionOutcome.Produced)
                             PayWage(port, config.WagePerBatch, instance.Id, null);
                         var due = outcome == ScheduledProductionOutcome.Produced
@@ -1161,7 +1160,7 @@ namespace SaltAndLedger.Simulation
                     city.ReviewPopulation(nextDay);
                     if (food != null || city.Population != previous.Population)
                         CityChanges.Add(new CityChange(port.Configuration.Id, nextDay, previous, city.Snapshot()));
-                    port.Quotes = LivingCityPricing.Derive(port.Configuration, city.Snapshot());
+                    port.Quotes = LivingCityPricing.Derive(port.Configuration, city.Snapshot(), Circulation?.Configuration.Version ?? 0);
                 }
             }
 

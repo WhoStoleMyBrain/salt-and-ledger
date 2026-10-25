@@ -19,6 +19,7 @@ namespace SaltAndLedger.Simulation
                     Difficulty = identity.Difficulty, PricingMode = identity.LivingPricingMode,
                     ContentVersion = identity.ContentVersion, ValuationVersion = identity.ValuationVersion,
                     CompanyStorageRules = identity.CompanyStorageRules, ItineraryVersion = identity.ItineraryVersion,
+                    EconomicRulesVersion = identity.EconomicRulesVersion,
                     Commission = identity.Commission == null ? null : new RegionalSaveCommissionPlan
                     {
                         Seed = identity.Commission.Seed, Version = identity.Commission.Version,
@@ -63,7 +64,7 @@ namespace SaltAndLedger.Simulation
                     {
                         Id = company.Id, Cash = company.Cash, InitialCash = f.InitialCash,
                         Purchases = f.InventoryPurchases, Revenue = f.SalesRevenue, CostOfGoodsSold = f.CostOfGoodsSold,
-                        Construction = f.ConstructionExpenditure, Wages = f.WagesPaid,
+                        Construction = f.ConstructionExpenditure, Wages = f.WagesPaid, FeesPaid = f.FeesPaid,
                         MintReceipts = f.MintReceipts, MintMaterialCost = f.MintMaterialCost,
                         PublicCommissionExpenditure = f.PublicCommissionExpenditure,
                         SurrenderedQuantities = Copy(f.SurrenderedQuantities),
@@ -99,6 +100,7 @@ namespace SaltAndLedger.Simulation
                 }).ToArray(),
                 NextLotId = state.Accounting.NextLotId,
                 Economy = state.Economy == null ? null : CaptureEconomy(state.Economy),
+                Circulation = state.Circulation == null ? null : CaptureCirculation(state.Circulation),
                 CommissionHistory = state.CommissionHistory == null ? null : new RegionalSaveCommissionHistory
                 {
                     Ships = state.CommissionHistory.Ships.Select(s => new RegionalSaveCommissionShip
@@ -170,6 +172,23 @@ namespace SaltAndLedger.Simulation
                 CompletionDay = o.CompletionDay, PaidCapital = o.PaidCapital }).ToArray(),
             Contracts = e.Contracts.Select(c => new RegionalSaveContract { Id = c.Configuration.Id,
                 Delivered = c.DeliveredQuantity, Paid = c.AmountPaid }).ToArray()
+        };
+
+        private static RegionalSaveCirculation CaptureCirculation(CirculationSnapshot state) => new RegionalSaveCirculation
+        {
+            Version = state.Configuration.Version, Mode = state.Configuration.Mode,
+            Commercial = state.Commercial.Values.Select(c => new RegionalSaveCommercialCirculation
+            {
+                OwnerId = c.OwnerId, PortId = c.PortId, GrossLocalSales = c.GrossLocalSales,
+                FeesPaid = c.FeesPaid, MarketFees = c.MarketFees, HouseholdFees = c.HouseholdFees
+            }).ToArray(),
+            Towns = state.Towns.Values.Select(t => new RegionalSaveMunicipalCirculation
+            {
+                PortId = t.PortId, NextReviewDay = t.NextReviewDay, LastReviewDay = t.LastReviewDay,
+                TotalLevy = t.TotalLevy, TotalRelief = t.TotalRelief, LastLevy = t.LastLevy, LastRelief = t.LastRelief,
+                PayrollReserve = t.PayrollReserve, DuePayroll = t.DuePayroll, FoodReserve = t.FoodReserve,
+                LastReason = t.LastReason
+            }).ToArray()
         };
     }
 }

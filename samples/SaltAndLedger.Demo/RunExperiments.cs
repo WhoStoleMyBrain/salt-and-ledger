@@ -12,7 +12,7 @@ internal static class RunExperiments
 {
     private const string Player = EnterpriseScenario.PlayerShipId;
     private const string Owner = EnterpriseScenario.PlayerOwnerId;
-    private static readonly JsonSerializerOptions Options = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
+    private static readonly JsonSerializerOptions Options = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, TypeInfoResolver = HistoricalReportJson.Resolver(), WriteIndented = true };
 
     internal static int Run(ContentCatalog content, string? path, bool check)
     {

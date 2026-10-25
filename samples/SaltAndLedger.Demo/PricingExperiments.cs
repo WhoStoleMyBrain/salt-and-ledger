@@ -15,7 +15,7 @@ internal static class PricingExperiments
     private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = true
+        TypeInfoResolver = HistoricalReportJson.Resolver(), WriteIndented = true
     };
 
     internal static int Run(ContentCatalog content, string? outputPath, bool check)

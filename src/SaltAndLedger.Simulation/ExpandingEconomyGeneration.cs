@@ -15,6 +15,8 @@ namespace SaltAndLedger.Simulation
         public const string SilverMineBlueprint = "private_silver_mine";
         public int Seed => SourceRoles.Seed;
         public int GeneratorVersion => CurrentVersion;
+        public int EconomicRulesVersion { get; }
+        public bool ShouldSerializeEconomicRulesVersion() => EconomicRulesVersion != 0;
         public LivingPricingMode PricingMode => SourceRoles.PricingMode;
         public LivingCityGeneration SourceRoles { get; }
         public ArchipelagoGeography Geography => SourceRoles.Geography;
@@ -28,9 +30,10 @@ namespace SaltAndLedger.Simulation
         public IReadOnlyList<IndustryBlueprint> Blueprints { get; }
         public string Signature { get; }
 
-        private ExpandingEconomyGeneration(LivingCityGeneration source)
+        private ExpandingEconomyGeneration(LivingCityGeneration source, int economicRulesVersion)
         {
             SourceRoles = source;
+            EconomicRulesVersion = economicRulesVersion;
             Ports = Array.AsReadOnly(source.Ports.Select(ScalePort).ToArray());
             Blueprints = Array.AsReadOnly(new[]
             {
@@ -50,14 +53,24 @@ namespace SaltAndLedger.Simulation
                 records.Add(FormattableString.Invariant($"private:{blueprint.Id}:{blueprint.BuildingId}:{blueprint.RecipeId}:{blueprint.ConstructionCost}:{blueprint.IntervalDays}:{blueprint.WarehouseCapacity}:{blueprint.OutputStockLimit}:{blueprint.WagePerBatch}:") + string.Join(",", blueprint.EligiblePortIds));
             records.Add("silver:stock0:reference40:target40000:sensitivity10:min1:max100:spread1");
             records.Add("household:proportional:bread4:furniture24:municipal12");
+            if (EconomicRulesVersion != 0)
+            {
+                records.Add("economy-v1:bread-four-opportunities:finite-role-imports:luxury-half-authored-target");
+                foreach (var port in Ports)
+                    records.Add("initial:" + port.Id + ":" + string.Join(",", port.Market.InitialQuantities
+                        .OrderBy(p => p.Key, StringComparer.Ordinal).Select(p => p.Key + "=" +
+                            p.Value.ToString(CultureInfo.InvariantCulture))));
+            }
             Signature = string.Join("|", records);
         }
 
         public static ExpandingEconomyGeneration Generate(int seed, int version = CurrentVersion,
-            LivingPricingMode pricingMode = LivingPricingMode.StockOnly)
+            LivingPricingMode pricingMode = LivingPricingMode.StockOnly, int economicRulesVersion = 0)
         {
             if (version != CurrentVersion) throw new ArgumentOutOfRangeException(nameof(version), "Unsupported expanding economy generator version.");
-            return new ExpandingEconomyGeneration(LivingCityGeneration.Generate(seed, pricingMode: pricingMode));
+            if (economicRulesVersion != 0 && economicRulesVersion != 1)
+                throw new ArgumentOutOfRangeException(nameof(economicRulesVersion));
+            return new ExpandingEconomyGeneration(LivingCityGeneration.Generate(seed, pricingMode: pricingMode), economicRulesVersion);
         }
 
         private RegionalPortConfiguration ScalePort(RegionalPortConfiguration source)
@@ -77,6 +90,29 @@ namespace SaltAndLedger.Simulation
                 need.Kind, need.PopulationPerUnit,
                 proportional: need.Kind == ConsumptionKind.Essential || need.Kind == ConsumptionKind.Luxury));
             var settlement = source.Settlement!;
+            if (EconomicRulesVersion == 1)
+            {
+                // A finite initial shelf, not a recurring grant: four initial-population food
+                // opportunities with the same exact demand carry used by retail.
+                foreach (var need in needs.Where(n => n.Kind == ConsumptionKind.Essential))
+                {
+                    var remainder = 0;
+                    var buffer = 0;
+                    for (var opportunity = 0; opportunity < 4; opportunity++)
+                    {
+                        var demand = need.PreviewDemand(settlement.InitialPopulation, remainder);
+                        buffer = checked(buffer + demand.Quantity);
+                        remainder = demand.Remainder;
+                    }
+                    stocks[need.GoodId] = Math.Max(stocks[need.GoodId], buffer);
+                }
+                if (source.Id == FoodSourcePortId) AddInitialImport(stocks, "flour", 2);
+                else if (source.Id == ProcessingPortId)
+                { AddInitialImport(stocks, "logs", 2); AddInitialImport(stocks, "grain", 2); }
+                else if (source.Id == FurniturePortId) AddInitialImport(stocks, "planks", 2);
+                else if (source.Id == RecoveryPortId)
+                { AddInitialImport(stocks, "flour", 1); AddInitialImport(stocks, "planks", 1); }
+            }
             var role = source.Role + (source.Id == SilverPortId ? "; eligible Silver Mine, exports Silver to public Mint" :
                 source.Id == MintPortId ? "; sole public Royal Mint and shipwright harbor" : "");
             return new RegionalPortConfiguration(new PortConfiguration(source.Id, quotes,
@@ -95,6 +131,9 @@ namespace SaltAndLedger.Simulation
                 EconomicUnits.FromWhole(pricing.TargetStock), pricing.Sensitivity,
                 pricing.MinPrice, pricing.MaxPrice, pricing.Spread));
         }
+
+        private static void AddInitialImport(Dictionary<string, int> stock, string goodId, int wholeQuantity) =>
+            stock[goodId] = checked(stock[goodId] + EconomicUnits.FromWhole(wholeQuantity));
 
         private static IndustryBlueprint Blueprint(string id, string building, string recipe, long cost,
             int interval, int capacity, int outputLimit, long wages, params string[] ports) =>

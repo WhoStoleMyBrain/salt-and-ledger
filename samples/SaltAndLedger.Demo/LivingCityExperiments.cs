@@ -15,7 +15,7 @@ internal static partial class LivingCityExperiments
     private const string Player = EnterpriseScenario.PlayerShipId;
     private const string Owner = EnterpriseScenario.PlayerOwnerId;
     private const string Factory = "living_bakery";
-    private static readonly JsonSerializerOptions Options = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
+    private static readonly JsonSerializerOptions Options = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, TypeInfoResolver = HistoricalReportJson.Resolver(), WriteIndented = true };
     private static readonly int[] NormalSeeds = { -42, 42, 99 };
     private static readonly string[] Strategies = { "idle", "merchant", "industry" };
 

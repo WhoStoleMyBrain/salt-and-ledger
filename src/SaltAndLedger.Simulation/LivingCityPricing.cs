@@ -15,10 +15,13 @@ namespace SaltAndLedger.Simulation
         public const int CoverageHorizonDays = 7;
         public const int MaximumTargetStock = 64;
 
-        public static IReadOnlyDictionary<string, MarketQuote> Derive(RegionalPortConfiguration port, CitySnapshot city)
+        public static IReadOnlyDictionary<string, MarketQuote> Derive(RegionalPortConfiguration port, CitySnapshot city,
+            int economicRulesVersion = 0)
         {
             if (port == null) throw new ArgumentNullException(nameof(port));
             if (city == null) throw new ArgumentNullException(nameof(city));
+            if (economicRulesVersion != 0 && economicRulesVersion != 1)
+                throw new ArgumentOutOfRangeException(nameof(economicRulesVersion));
             if (port.Settlement == null || port.Settlement.PricingMode == LivingPricingMode.StockOnly)
                 return port.Market.Quotes;
 
@@ -53,9 +56,17 @@ namespace SaltAndLedger.Simulation
                 if (pricing == null || !targets.TryGetValue(entry.Key, out var target))
                     result.Add(entry.Key, entry.Value);
                 else
+                {
+                    // Coverage is a demand hypothesis, not a reason to declare a durable good's
+                    // entire normal shelf overstocked when luxury eligibility temporarily stops.
+                    // Version zero retains its historical one-subunit fallback byte for byte.
+                    var minimumTarget = economicRulesVersion == 1 &&
+                        port.Consumption.Any(n => n.GoodId == entry.Key && n.Kind == ConsumptionKind.Luxury) ?
+                        Math.Max(port.Settlement.QuantityScale, pricing.TargetStock / 2) : 1;
                     result.Add(entry.Key, new MarketQuote(entry.Key, new InventoryPricing(pricing.Model,
-                        pricing.ReferencePrice, Math.Max(1, target), pricing.Sensitivity,
+                        pricing.ReferencePrice, Math.Max(minimumTarget, target), pricing.Sensitivity,
                         pricing.MinPrice, pricing.MaxPrice, pricing.Spread)));
+                }
             }
             return new ReadOnlyDictionary<string, MarketQuote>(result);
         }

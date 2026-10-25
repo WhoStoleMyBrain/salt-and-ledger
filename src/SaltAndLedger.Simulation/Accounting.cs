@@ -7,7 +7,7 @@ using System.Numerics;
 namespace SaltAndLedger.Simulation
 {
     public enum InventoryCostOrigin { StarterGrant, Purchased, Manufactured }
-    public enum EconomicEventKind { StarterGrant, Purchase, Sale, Transfer, Production, Construction, ConstructionCompleted, Wage, MintExchange, PublicCommission, ExternalSale, TreasurySale }
+    public enum EconomicEventKind { StarterGrant, Purchase, Sale, Transfer, Production, Construction, ConstructionCompleted, Wage, MintExchange, PublicCommission, ExternalSale, TreasurySale, ServiceFee }
 
     /// <summary>
     /// An open interval of an original acquisition. Prefix-floor allocation keeps every integer
@@ -89,6 +89,10 @@ namespace SaltAndLedger.Simulation
         public long ConstructionExpenditure { get; }
         public long HeldInventoryCost { get; }
         public long WagesPaid { get; }
+        public long FeesPaid { get; }
+        public long OperatingSurplusAfterExpenses => checked(OperatingSurplusAfterWages - FeesPaid);
+        public bool ShouldSerializeFeesPaid() => FeesPaid != 0;
+        public bool ShouldSerializeOperatingSurplusAfterExpenses() => FeesPaid != 0;
         public long MintReceipts { get; }
         public long MintMaterialCost { get; }
         public long PublicCommissionExpenditure { get; }
@@ -113,11 +117,12 @@ namespace SaltAndLedger.Simulation
             IDictionary<string, long> purchased, IDictionary<string, long> sold, IDictionary<string, long> produced,
             IDictionary<string, long> consumed, IDictionary<string, long> held, long wagesPaid = 0,
             long mintReceipts = 0, long mintMaterialCost = 0, long publicCommissionExpenditure = 0,
-            IDictionary<string, long>? surrendered = null)
+            IDictionary<string, long>? surrendered = null, long feesPaid = 0)
         {
             OwnerId = ownerId; InitialCash = initialCash; InventoryPurchases = purchases; SalesRevenue = revenue;
             CostOfGoodsSold = costOfGoodsSold; ConstructionExpenditure = construction; HeldInventoryCost = heldCost;
             WagesPaid = wagesPaid;
+            FeesPaid = feesPaid;
             MintReceipts = mintReceipts; MintMaterialCost = mintMaterialCost;
             PublicCommissionExpenditure = publicCommissionExpenditure;
             SurrenderedQuantities = AccountingCollections.Dictionary(surrendered ?? new Dictionary<string, long>());
@@ -378,6 +383,14 @@ namespace SaltAndLedger.Simulation
                 storeId ?? "facility:" + facilityId, null, portId, null, 0, amount, -amount, 0, null, facilityId,
                 "production_wage_expense", Array.Empty<EconomicGoodsMovement>(), Array.Empty<EconomicGoodsMovement>()));
         }
+        internal void PayServiceFee(string ownerId, string storeId, string portId, string goodId, long amount, string destination)
+        {
+            if (amount == 0) return;
+            companies[ownerId].Fees = checked(companies[ownerId].Fees + amount);
+            events.Add(Event(EconomicEventKind.ServiceFee, ownerId, ownerId, destination,
+                storeId, null, portId, goodId, 0, amount, -amount, 0, null, null,
+                "local_sale_service_expense", Array.Empty<EconomicGoodsMovement>(), Array.Empty<EconomicGoodsMovement>()));
+        }
         internal AccountingSnapshot Snapshot()
         {
             var inventory = stores.Values.Select(s => s.Snapshot()).ToArray();
@@ -465,7 +478,7 @@ namespace SaltAndLedger.Simulation
         {
             internal string Id { get; }
             internal long InitialCash { get; }
-            internal long Purchases, Revenue, CostOfGoodsSold, Construction, Wages, MintReceipts, MintMaterialCost, PublicCommission;
+            internal long Purchases, Revenue, CostOfGoodsSold, Construction, Wages, Fees, MintReceipts, MintMaterialCost, PublicCommission;
             internal readonly Dictionary<string, long> Surrendered = new Dictionary<string, long>(StringComparer.Ordinal);
             internal readonly Dictionary<string, long> Granted = new Dictionary<string, long>(StringComparer.Ordinal);
             internal readonly Dictionary<string, long> Purchased = new Dictionary<string, long>(StringComparer.Ordinal);
@@ -478,6 +491,7 @@ namespace SaltAndLedger.Simulation
                 Purchases = before.InventoryPurchases; Revenue = before.SalesRevenue;
                 CostOfGoodsSold = before.CostOfGoodsSold; Construction = before.ConstructionExpenditure;
                 Wages = before.WagesPaid;
+                Fees = before.FeesPaid;
                 MintReceipts = before.MintReceipts; MintMaterialCost = before.MintMaterialCost;
                 PublicCommission = before.PublicCommissionExpenditure;
                 foreach (var value in before.SurrenderedQuantities) Surrendered.Add(value.Key, value.Value);
@@ -498,7 +512,7 @@ namespace SaltAndLedger.Simulation
                 }
                 return new CompanyFinancialSnapshot(Id, InitialCash, Purchases, Revenue, CostOfGoodsSold,
                     Construction, basis, Granted, Purchased, Sold, Produced, Consumed, held, Wages,
-                    MintReceipts, MintMaterialCost, PublicCommission, Surrendered);
+                    MintReceipts, MintMaterialCost, PublicCommission, Surrendered, Fees);
             }
         }
     }
