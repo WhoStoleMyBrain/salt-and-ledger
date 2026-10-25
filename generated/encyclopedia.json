@@ -618,7 +618,8 @@
       "paragraphs": [
         "Capacity counts all commodities together. A hold containing several kinds of goods has less room for the next shipment even if the selected commodity's quantity is small.",
         "Buying and transfers respect available stock and receiving capacity. Production checks the complete resulting private inventory before consuming inputs. A blocked batch does not partly consume materials.",
-        "Maximum trade quantities reflect current stock, exact payment, liquidity, and capacity. They remain previews and cannot authorize a remote transaction."
+        "Maximum trade quantities reflect current stock, exact payment, liquidity, and capacity. They remain previews and cannot authorize a remote transaction.",
+        "New v3 runs pool company storage per town. Capacity sums all granted and paid local facility warehouse capacities, including pending sites. Operational facilities with the same recipe add their output ceilings together. Pending sites provide storage but cannot produce early. Legacy saves keep their separate warehouses."
       ],
       "relatedIds": [
         "help_ownership",
@@ -634,7 +635,7 @@
       "paragraphs": [
         "Run setup states the objective, deadline, and required cash. The supply charter counts signed net target-market sales minus purchases by your company. Buying back and reselling that market's goods cannot create delivery credit; merely arriving or transferring stock does not count.",
         "Regional relief measures real scheduled consumption fulfilled in the configured towns. It is regional performance, not a claim that your company alone supplied every consumed item. An enterprise objective combines attributed financial performance with actual private production.",
-        "The complete economic operation finishes before the objective is evaluated. Success or deadline failure then freezes further economic actions and opens results. The final daily operation can succeed before the deadline failure check.",
+        "The complete economic operation finishes before the objective is evaluated. Success or deadline failure immediately freezes further economic actions. A victory acknowledgment offers View results while the frozen map, Journal and save remain inspectable. The final daily operation can succeed before the deadline failure check.",
         "Sandbox has no victory deadline. An active run can be deliberately abandoned with confirmation. Explicit local saves preserve supported run modes; there is no cloud recovery or hidden automatic save. Retry Same World starts fresh rather than loading saved progress.",
         "City Recovery in Living Cities measures six recent scheduled paid Bread opportunities at the vulnerable town. It requires at least 90 percent fulfillment against the greater of current and starting-population need, population at least its starting value, prosperity at least 55 and company cash at least 100 by day 90. Deliveries alone do not count; regional public/NPC contributions may help. A shrinking population cannot lower the baseline denominator.",
         "Expanding Economy v3 offers the Grand Commission objective draft alongside separate provisioning, industrial-network and royal-commission objectives. Read the actual setup thresholds: paid welfare, real production, Company Value, liquid cash and monetary development are different requirements. Public Mint funding alone is not a victory or private company asset."
@@ -804,7 +805,8 @@
         "The industry summary shows status, next opportunity, missing inputs and local quotes, real expenditure and physical shipping waits. A recommended setup prepares a visible policy draft; only Apply commits it. Keep local output sales disabled, or retain an appropriate reserve, when a ship should transport finished goods. Detailed rules remain available.",
         "A charter may grant an initial facility or goods. Those starter assets are grants, not purchases or construction payments during the run. Starter facilities are already operational at both ascensions and retain their initial schedule. Capital spending remains separate from material cost and sale margin.",
         "Living Cities has town-specific construction eligibility. An industry may be absent and also impossible to build locally. Cash alone cannot override this restriction; use the eligible-town list and import missing inputs through real trades or shipping.",
-        "V3 makes Farms, Lumber Camps, Mills, Sawmills, Bakeries, Furniture Workshops and Silver Mines constructible somewhere, with eligibility visible before purchase. Multiple separate sites of the same eligible kind are allowed. A second Mill still needs Grain, paid labor, storage and customers; no construction creates free inputs. The public Royal Mint is commissioned separately and is never a private blueprint."
+        "V3 makes Farms, Lumber Camps, Mills, Sawmills, Bakeries, Furniture Workshops and Silver Mines constructible somewhere, with eligibility visible before purchase. Multiple separate sites of the same eligible kind are allowed. A second Mill still needs Grain, paid labor, storage and customers; no construction creates free inputs. The public Royal Mint is commissioned separately and is never a private blueprint.",
+        "In new v3 runs a local Mill deposits Flour into the same owned town stock used by a Bakery. Facilities execute in stable port/ID order; an earlier eligible batch can consume scarce inputs before another. Only successful batches pay wages. Procurement targets and output reserves use current shared stock, so disable or reserve output sales when another local recipe needs it."
       ],
       "relatedIds": [
         "help_ascension",
@@ -918,7 +920,8 @@
         "Start from the main menu, choose New Run or unlimited Sandbox, then review the challenge, charter, Classic, seeded v1, Living Cities v2 or Expanding Economy v3 preview, and Ascension 0 or 1. Setup, seed editing and reference browsing do not advance economic time or reroll a started world.",
         "Escape first closes the active trade or industry overlay. From the encyclopedia it returns to the parent screen. During ordinary gameplay it opens pause; from pause it resumes unless a confirmation is active.",
         "Restart, abandonment, return to menu, and exit protect unsaved active progress with confirmation. Exit closes the standalone game. Save explicitly before leaving; Continue or Load restores a valid local saved run, while Retry Same World creates its initial state again.",
-        "The encyclopedia is available from the main menu, run setup, and pause menu. Browse a category, search names or descriptions, follow related entries, and use Back to return. All recipe facts are generated from the same content the simulation loads and work offline. Settings offers four game-wide text sizes without changing the world."
+        "The encyclopedia is available from the main menu, run setup, and pause menu. Browse a category, search names or descriptions, follow related entries, and use Back to return. All recipe facts are generated from the same content the simulation loads and work offline. Settings offers four game-wide text sizes without changing the world.",
+        "New Run defaults to Expanding Economy v3 and the Grand Commission. Advanced / Legacy keeps earlier worlds accessible, and Sandbox remains explicit. Inspect the large interactive map before drafting; invalid seed text leaves the last valid preview intact. Retry and Load preserve the original run identity."
       ],
       "relatedIds": [
         "help_challenges",
@@ -937,7 +940,8 @@
       "paragraphs": [
         "A public market owns its stock. Buying from it changes ownership and moves cash. A factory's private stock belongs to its company and is separate from the town market, even when they occupy the same port.",
         "Transfers between your ship and your warehouse preserve ownership and historical cost. They are not sales and move no cash or time. Both stores must have the same owner and the ship must be docked at the warehouse's town.",
-        "Remote management may buy or sell against a factory's local market. It cannot move goods to another port. Company cash shown beside a ship is the same account, not another balance."
+        "Remote management may buy or sell against a factory's local market. It cannot move goods to another port. Company cash shown beside a ship is the same account, not another balance.",
+        "Storage rules 2 give each company one town stockpile and one FIFO account shared by its local industries. Ships, public markets, other owners and other towns remain separate. Facility reports keep separate labor and production counters, never duplicate copies of the shared goods. Old saved runs retain storage rules 1 and their actual facility stores."
       ],
       "relatedIds": [
         "help_cost_basis",
@@ -1042,7 +1046,8 @@
         "Save explicitly to a local slot before leaving. Continue or Load restores a saved Classic, seeded-v1, Living Cities-v2 or Expanding Economy-v3 run without advancing its day. Saves are local to this installation; there is no cloud account or automatic cross-device recovery.",
         "The save retains exact accounts, fractional stock and demand residuals, every ship and route stage, voyages, factories, pending construction, household history, FIFO lots, challenges and v3 contracts, Mint and treasury state. Grand Commission saves also retain the exact selected plan, per-ship visits and signed target-market history. Visual interpolation and focus are presentation state, while text size remains an independent local preference.",
         "A load validates the complete file, identity, content and configuration before replacing the current session. Unsupported versions, damaged files, inconsistent stock or impossible states produce an error and preserve the valid active run. A saved terminal run remains frozen and inspectable.",
-        "Retry Same World always reconstructs the original initial identity and assets, even when a saved later state exists. Reroll explicitly chooses a new draft seed and requires preview/start. Neither action silently loads or overwrites your saved progress."
+        "Retry Same World always reconstructs the original initial identity and assets, even when a saved later state exists. Reroll explicitly chooses a new draft seed and requires preview/start. Neither action silently loads or overwrites your saved progress.",
+        "New pooled-stock v3 runs use save schema 3. Original schema 1/2 runs retain their old storage identity, format and behavior; loading never silently combines warehouses. Development builds and the Editor offer Export Run Report: an exact raw save plus a readable diagnostic under the displayed Exports paths. Export uses no save slot and changes no economic state; recent activity is partial bounded history."
       ],
       "relatedIds": [
         "help_challenges",
@@ -1115,7 +1120,8 @@
       "paragraphs": [
         "Buy moves goods from the public market into your ship or private warehouse and pays the town. Sell reverses those movements. A ship must actually be docked at that town; a remote quote is information, not permission to trade.",
         "Choose a good and quantity, then read the exact order total before confirming. Manual trades execute the complete requested quantity or leave goods and cash unchanged. Quantity shortcuts only edit the proposal. Transactions do not advance the economic day.",
-        "Opening trade pauses playback. Close the window and resume deliberately when ready. Disable that ship's automation before issuing manual trades or sailing orders."
+        "Opening trade pauses playback. Close the window and resume deliberately when ready. Disable that ship's automation before issuing manual trades or sailing orders.",
+        "Harbor shows public market stock, the selected ship hold and local company stock together. Choose paid Buy/Sell for either accessible destination, or no-cash Load/Unload at the actual dock. Exact previews, quantity presets and specific blockers explain what can execute; a remote ship cannot move cargo here."
       ],
       "relatedIds": [
         "help_capacity",

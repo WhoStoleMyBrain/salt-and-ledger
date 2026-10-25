@@ -14,6 +14,8 @@ Transfers between your ship and your warehouse preserve ownership and historical
 
 Remote management may buy or sell against a factory's local market\. It cannot move goods to another port\. Company cash shown beside a ship is the same account, not another balance\.
 
+Storage rules 2 give each company one town stockpile and one FIFO account shared by its local industries\. Ships, public markets, other owners and other towns remain separate\. Facility reports keep separate labor and production counters, never duplicate copies of the shared goods\. Old saved runs retain storage rules 1 and their actual facility stores\.
+
 ## Related entries
 
 - [Historical inventory cost](../mechanics/help_cost_basis.md)

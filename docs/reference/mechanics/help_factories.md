@@ -18,6 +18,8 @@ Living Cities has town\-specific construction eligibility\. An industry may be a
 
 V3 makes Farms, Lumber Camps, Mills, Sawmills, Bakeries, Furniture Workshops and Silver Mines constructible somewhere, with eligibility visible before purchase\. Multiple separate sites of the same eligible kind are allowed\. A second Mill still needs Grain, paid labor, storage and customers; no construction creates free inputs\. The public Royal Mint is commissioned separately and is never a private blueprint\.
 
+In new v3 runs a local Mill deposits Flour into the same owned town stock used by a Bakery\. Facilities execute in stable port/ID order; an earlier eligible batch can consume scarce inputs before another\. Only successful batches pay wages\. Procurement targets and output reserves use current shared stock, so disable or reserve output sales when another local recipe needs it\.
+
 ## Related entries
 
 - [Ascension 1: Slow Foundations](../mechanics/help_ascension.md)

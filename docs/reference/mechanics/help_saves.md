@@ -16,6 +16,8 @@ A load validates the complete file, identity, content and configuration before r
 
 Retry Same World always reconstructs the original initial identity and assets, even when a saved later state exists\. Reroll explicitly chooses a new draft seed and requires preview/start\. Neither action silently loads or overwrites your saved progress\.
 
+New pooled\-stock v3 runs use save schema 3\. Original schema 1/2 runs retain their old storage identity, format and behavior; loading never silently combines warehouses\. Development builds and the Editor offer Export Run Report: an exact raw save plus a readable diagnostic under the displayed Exports paths\. Export uses no save slot and changes no economic state; recent activity is partial bounded history\.
+
 ## Related entries
 
 - [Challenges and run outcomes](../mechanics/help_challenges.md)

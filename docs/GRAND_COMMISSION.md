@@ -2,15 +2,15 @@
 
 The Grand Commission is the default scored choice for **Expanding Economy v3**. Reveal the seeded map first, then choose one objective from three offers in each of four rounds. All four chosen cards become mandatory. Complete them **together by day 180**, with **at least 100 liquid company coins**. A high partial score cannot substitute for victory.
 
-The existing Sustainable Provisioning, Industrial Network, Royal Commission and unlimited sandbox remain available with their original rules. Classic, seeded-v1 and Living Cities-v2 do not use this draft. This milestone changes missions and their presentation, not the v3 economy, world generation or monetary balance.
+The existing Sustainable Provisioning, Industrial Network, Royal Commission and unlimited sandbox remain available with their original objectives. Classic, seeded-v1 and Living Cities-v2 do not use this draft. Task 2.2 keeps these mission rules, world generation and monetary parameters unchanged while adding independently versioned [shared company town stock and Harbor](HARBOR.md) for new v3 runs.
 
 ## Read the map, then commit
 
-1. Select the seed, existing starting charter, pricing view and Ascension 0 or 1. Inspect all four towns, their actual sea connections, roles, public industries and permitted private facilities. The preview is the world that will be started.
+1. **New Run** defaults to v3 Grand Commission. Select the seed, existing starting charter, pricing view and Ascension 0 or 1, then **Explore full map**. Inspect all four towns, actual sea connections, roles, stock/accounts, public industries and permitted private facilities. The preview is the world that will be started; exact distances remain available in a secondary foldout.
 2. Enter the four category rounds: Navigation / Fleet, Production / Industry, Markets / Commerce, and Civic / Capital Development. Each offers three distinct cards from its four-candidate pool.
 3. Select one card per round. Backtracking changes a choice without changing offers or advancing a day. Review the full four-card commission, world identity, charter, difficulty, deadline and cash floor before Begin.
 4. During play, open **Objectives / Journal** for exact conditions and blockers. The map HUD keeps a compact currently-met count and days remaining. Journal inspection pauses playback; returning preserves the relevant parent screen.
-5. Save explicitly to continue the existing run. Retry Same World starts the original commission fresh; a reroll returns to setup for a new seed and a new reviewed draft. Results retain the four cards and their final numerical progress.
+5. Save explicitly to continue the existing run. Retry Same World starts the original commission and storage rules fresh; a reroll returns to setup for a new seed and a new reviewed draft. Victory freezes immediately and presents an acknowledgment with **View results**, **Inspect objectives** and **Inspect frozen harbor**. Results retain the four cards and their final numerical progress.
 
 Construction, trade, payroll and shipping remain ordinary [v3 operations](EXPANDING_ECONOMY.md). A map or card selection never creates materials, wages, money, visits or objective credit. The incomplete pregame selection is not a persistent save slot.
 
@@ -42,6 +42,8 @@ The Open the Routes sale must have a positive signed quantity for at least one g
 ### Production is more than possession
 
 A New Industry evaluates the same identified Mill and Bakery for operational state and actual funded batches. A starter Bakery and a new Mill in the processing town do **not** satisfy its different-town requirement. The Mill is eligible at processing; build the other Bakery at food source or recovery. Each must have actual recipe inputs, output space and company-funded payroll. Pending construction or an unsuccessful attempt grants no batch credit. The Journal identifies the relevant facilities and shows each site and batch separately.
+
+In a new pooled run, same-town facilities share their company's stock and material FIFO, but retain separate production counters and payroll. This helps a local Mill feed a Bakery; it does not waive A New Industry's distinct-town requirement. Harbor's paid local-stock trades count as ordinary town market transactions, while Load/Unload transfers confer no production or sale credit.
 
 Timber, artisan and Breadworks output comes from authoritative company private-production totals. Public production, purchased output and warehouse transfers do not become private production. Reference Company Value includes real owned capital and goods under existing valuation rules; it is neither liquidation proceeds nor realized profit.
 
@@ -77,15 +79,15 @@ The economic generator and content stay version 3; reference valuation stays ver
 
 This consumes no geography or economic-role random draws. Offers do not depend on charter, pricing, difficulty, prior selections, culture or screen visits. Templates resolve role destinations from unchanged v3 generation. Unknown draft versions and choices not offered in their round are rejected. All required facility roles exist in every v3 role permutation; that structural legality does not guarantee a winning strategy for every four-card combination.
 
-The selected plan stores stable IDs and typed rule, target, unit, semantic, port/role/good/recipe parameters. Its SHA-256 signature covers the seed, draft version and ordered canonical parameters; display prose is excluded. The signature extends only drafted comparison groups. Retry preserves the exact plan and initial world.
+The selected plan stores stable IDs and typed rule, target, unit, semantic, port/role/good/recipe parameters. Its SHA-256 signature covers the seed, draft version and ordered canonical parameters; display prose is excluded. The signature extends only drafted comparison groups. Independently, pooled storage appends `/storage-v2` to the complete run comparison group without changing that draft signature. Retry preserves the exact plan, storage rules and initial world.
 
 `CommissionHistory` belongs to the atomic regional snapshot, with at most three owned ships, four first-visit dates per ship and 28 town/good purchase/sale balances. Initial docking, genuine arrivals and a commissioned ship's initial shipyard dock count. The second ship cannot fulfill two visits by remaining in the yard. Staged local trades, automation, voyages and construction share the ordinary commit/rollback boundary. Existing private production and public finance totals remain the source for other conditions; there is no second UI-owned quest ledger.
 
 ## Saves and compatibility
 
-Drafted runs use world-save **schema 2**. Non-drafted runs retain schema 1 and its existing fields. Restore reconstructs the offered catalogue and compares the saved plan's seed/version, choices, signature and every canonical resolved parameter. Bounded visit dates and ownership, market totals, public-flow adjustments, private production/payroll and terminal predicates are validated with the existing exact economic reconstruction. Loading neither advances a day nor grants credit again. A bad load leaves the active host session intact.
+New pooled v3 runs use world-save **schema 3**, including Grand Commission runs. Older drafted runs retain **schema 2** and separate facility stores; other legacy runs retain schema 1. An absent `CompanyStorageRules` field means legacy storage, never automatic consolidation. Restore reconstructs the offered catalogue and compares the saved plan's seed/version, choices, signature and every canonical resolved parameter. It validates bounded visit dates and ownership, market totals, public-flow adjustments, private production/payroll, terminal predicates and exact storage/FIFO ownership. Loading neither advances a day nor grants credit again. A bad load leaves the active host session intact.
 
-Fingerprints detect accidental damage and mismatches; they are not cryptographic authentication of a player-controlled save. Bounded first-visit records cannot prove an entire historical voyage sequence against a coordinated rewrite of otherwise plausible world state. The save format intentionally does not introduce a replay log or arbitrary quest counters. Valid older schema-1 saves remain supported.
+Fingerprints detect accidental damage and mismatches; they are not cryptographic authentication of a player-controlled save. Bounded first-visit records cannot prove an entire historical voyage sequence against a coordinated rewrite of otherwise plausible world state. The save format intentionally does not introduce a replay log or arbitrary quest counters. Valid older schema-1/2 saves remain supported byte-for-byte under their original rules. Development-only diagnostic exports retain the exact raw save and label recent activity as partial; they do not add history or change objective progress.
 
 ## Verification and limits
 
@@ -93,13 +95,15 @@ Fingerprints detect accidental damage and mismatches; they are not cryptographic
 
 `GrandCommissionProgressTests` uses ordinary operations for funded distinct-town industry, Ascension timing, signed net reversal, fractional warehouse trades, NPC exclusion, commissioned-ship arrivals, paid-food recovery followed by decline, and reversible Company Value versus permanent visits. The draft/progress targeted run passed 16 tests. Local-save tests and the reproducible witness add continuation and terminal evidence. Actual Editor/player interactions and visual limitations are recorded separately in [Unity integration](UNITY.md) and the [playtest guide](PLAYTEST.md); passing a headless test is not visual verification.
 
+The [Task 2.2 acceptance record](TASK-2.2-VERIFICATION.md) covers pooled-storage integration, Harbor, acknowledgment, schema-3 continuation and diagnostic exports. Historical Task 2.1 captures and report outcomes below remain identified separately.
+
 ### Reproduce two actual winning commissions
 
 ```text
 dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --grand-commission --check
 ```
 
-The compact `GrandCommissionWitness` executes ordinary construction, paid warehouse/ship purchases, funded production, physical transfers/voyages, sales, contracts and Mint operations. It does not edit world state, add grants or change economic parameters. It checks exact mid-voyage and terminal schema-2 round trips as well as the outcomes below.
+The compact `GrandCommissionWitness` executes ordinary construction, paid warehouse/ship purchases, funded production, physical transfers/voyages, sales, contracts and Mint operations. It does not edit world state, add grants or change economic parameters. This preserved report uses legacy facility storage and checks exact mid-voyage and terminal schema-2 round trips as well as the outcomes below. Separate pooled tests cover new schema-3 runs without rewriting this historical report.
 
 | Seed / charter | Mandatory selection | Result | Final company coins | Inventory purchase coins | Private wage coins | Private capital / public commission coins | Score |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |

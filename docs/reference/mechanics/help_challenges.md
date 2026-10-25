@@ -12,7 +12,7 @@ Run setup states the objective, deadline, and required cash\. The supply charter
 
 Regional relief measures real scheduled consumption fulfilled in the configured towns\. It is regional performance, not a claim that your company alone supplied every consumed item\. An enterprise objective combines attributed financial performance with actual private production\.
 
-The complete economic operation finishes before the objective is evaluated\. Success or deadline failure then freezes further economic actions and opens results\. The final daily operation can succeed before the deadline failure check\.
+The complete economic operation finishes before the objective is evaluated\. Success or deadline failure immediately freezes further economic actions\. A victory acknowledgment offers View results while the frozen map, Journal and save remain inspectable\. The final daily operation can succeed before the deadline failure check\.
 
 Sandbox has no victory deadline\. An active run can be deliberately abandoned with confirmation\. Explicit local saves preserve supported run modes; there is no cloud recovery or hidden automatic save\. Retry Same World starts fresh rather than loading saved progress\.
 

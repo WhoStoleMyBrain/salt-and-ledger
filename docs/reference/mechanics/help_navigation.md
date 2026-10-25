@@ -16,6 +16,8 @@ Restart, abandonment, return to menu, and exit protect unsaved active progress w
 
 The encyclopedia is available from the main menu, run setup, and pause menu\. Browse a category, search names or descriptions, follow related entries, and use Back to return\. All recipe facts are generated from the same content the simulation loads and work offline\. Settings offers four game\-wide text sizes without changing the world\.
 
+New Run defaults to Expanding Economy v3 and the Grand Commission\. Advanced / Legacy keeps earlier worlds accessible, and Sandbox remains explicit\. Inspect the large interactive map before drafting; invalid seed text leaves the last valid preview intact\. Retry and Load preserve the original run identity\.
+
 ## Related entries
 
 - [Challenges and run outcomes](../mechanics/help_challenges.md)

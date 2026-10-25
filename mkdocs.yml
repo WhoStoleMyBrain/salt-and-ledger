@@ -20,6 +20,7 @@ nav:
       - Living cities and recovery: LIVING_CITIES.md
       - Expanding economy: EXPANDING_ECONOMY.md
       - Grand Commission objectives: GRAND_COMMISSION.md
+      - Harbor and company stock: HARBOR.md
       - Local saves and continue: reference/mechanics/help_saves.md
       - Readability settings: reference/mechanics/help_readability.md
       - Trade and prices: reference/mechanics/help_trading.md
@@ -52,6 +53,7 @@ nav:
       - Unity integration: UNITY.md
       - Task 2.0 acceptance evidence: TASK-2.0-VERIFICATION.md
       - Task 2.1 acceptance evidence: TASK-2.1-VERIFICATION.md
+      - Task 2.2 acceptance evidence: TASK-2.2-VERIFICATION.md
       - Readability verification gallery: READABILITY_VERIFICATION.md
       - Website and publishing: WEBSITE.md
       - Roadmap: ROADMAP.md

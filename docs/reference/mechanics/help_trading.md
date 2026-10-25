@@ -14,6 +14,8 @@ Choose a good and quantity, then read the exact order total before confirming\. 
 
 Opening trade pauses playback\. Close the window and resume deliberately when ready\. Disable that ship's automation before issuing manual trades or sailing orders\.
 
+Harbor shows public market stock, the selected ship hold and local company stock together\. Choose paid Buy/Sell for either accessible destination, or no\-cash Load/Unload at the actual dock\. Exact previews, quantity presets and specific blockers explain what can execute; a remote ship cannot move cargo here\.
+
 ## Related entries
 
 - [Cargo and storage capacity](../mechanics/help_capacity.md)

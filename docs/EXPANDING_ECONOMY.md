@@ -50,7 +50,7 @@ The v3 generator calls unchanged v1 geography and unchanged v2 role generation. 
 
 Every role appears once in every generated world and all towns are connected, so all six old production types and the new Silver Mine are legally available somewhere. Forest furniture deliberately has no Sawmill capability and imports Planks. Processing imports Grain/Logs; food-source industry needs Flour. Eligibility is enforced by construction, not inferred from displayed names.
 
-Multiple facilities of the same kind may coexist in v3. Their IDs, owned warehouses, policies, production deadlines and counters remain distinct. There is no one-Mill-per-town rule. Ascension 0 is instant; Ascension 1 new private sites complete at the end of D+2 and first produce one full interval later. Pending sites skip automatic procurement/production/sales, including their completion day. Starter grants are already operational. Those rules are unchanged for older modes.
+Multiple facilities of the same kind may coexist in v3. Their IDs, policies, production deadlines and counters remain distinct. Legacy storage keeps separate owned warehouses; new pooled runs share one company store per town under the [storage rules](HARBOR.md#shared-stock-rules-version-2). There is no one-Mill-per-town rule. Ascension 0 is instant; Ascension 1 new private sites complete at the end of D+2 and first produce one full interval later. Pending sites skip automatic procurement/production/sales, including their completion day. Starter grants are already operational. Those rules are unchanged for older modes.
 
 An additional Mill adds a real potential Flour batch every two days, requiring two actual Grain and a funded wage. A complete food chain still needs extraction, processing, Logs for fuel, bakery capacity, storage, customers and transport. Missing inputs, payroll, output ceiling and warehouse capacity prevent the complete batch and its wage. A blocked due site does not accumulate catch-up batches. Wages for private extraction are actual company expenditure, never free starter income.
 
@@ -118,6 +118,8 @@ A Merchant starts with 1,800 cash and a 500-coin reference ship: Company Value *
 Material FIFO retains original interval slices: `floor(C*end/Q)-floor(C*start/Q)`. Fractional sale/transfer/production releases exact acquisition basis. Private wages remain period expense: `operating surplus after wages = realized material margin - all wages paid`, including wages for still-held output. Public commissions, Mint receipts and surrendered-metal basis remain separate. Company Value change is not sale revenue, realized margin or full net profit.
 
 ## Run identity, local saves and objectives
+
+Task 2.2 adds [shared company stock and Harbor](HARBOR.md), independently versioned from this economic configuration. New v3 host runs use storage rules 2 and schema 3; historical runs and schema 1/2 retain separate factory warehouses. Storage does not reroll geography, change canonical recipes/prices or rewrite old reports. Company Value counts each physical town pool once.
 
 V3 identity retains challenge, charter, seed, generator 3, Ascension 0/1, pricing mode, content version 3 and valuation version 1. Its qualified comparison group cannot be mistaken for v2. Retry reconstructs this initial world; reroll is an explicit host-only draft seed change followed by preview/start. Sandbox remains unlimited and Mint-free strategies remain legal.
 

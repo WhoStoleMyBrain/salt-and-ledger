@@ -1,12 +1,14 @@
 # Your first company
 
-Begin at the main menu. **New Run** opens world, seed, ascension, challenge and company-charter selection; **Sandbox** offers the same economic systems without a victory deadline. The encyclopedia is available before you commit to a run.
+Begin at the main menu. **New Run** defaults to **Expanding Economy v3 / The Grand Commission**. Review the seed, company charter and ascension, inspect the full map, then choose four objectives before starting. **Sandbox** offers the economic systems without a victory deadline. The encyclopedia is available before you commit to a run.
 
 ## Choose a world and text size
 
 Settings offers Compact, Default, Large and Extra Large game-wide text. Default body text is 17 px; the selected preference is remembered on this device. It changes layout and hit targets without spending a day or changing the economy.
 
-Choose **Fixed / Classic Archipelago** for the original authored map, **Seeded Archipelago v1** for new geography with the historical economy, or **Living Cities v2** for generated specializations and finite resident finances. Seeded modes accept a signed 32-bit integer. Inspect coordinates, connections and voyage times; Living Cities additionally shows production roles, private eligibility, population, prosperity and household funds. **Copy seed** records the seed; **Randomize seed** changes only the preview. Record the full mode/version, charter, challenge, ascension and living pricing choice to reproduce a run.
+Use **Explore full map** to inspect every town before drafting. Select towns to compare market stock, roles, building opportunities, cash and needs; route distances are available in a secondary foldout. A valid seed changes the preview; invalid text keeps the last valid map and prevents starting with that text. **Copy seed** records the seed; **Randomize seed** changes the preview, not an active world.
+
+**Advanced / Legacy world rules** retains Fixed / Classic, Seeded Archipelago v1 and Living Cities v2. Seeded modes accept a signed 32-bit integer. Record mode/version, charter, challenge, ascension and pricing choice when comparing runs. New v3 runs use shared company town stock; loading or retrying an older run preserves its separate facility warehouses.
 
 Ascension 0 preserves instant construction. Ascension 1 spends the full cost immediately but new private sites require two complete economic days, then a full production interval before the first eligible batch. The Industrial Consortium's inherited bakery is already built. See [seeded runs and Ascension](SEEDED_RUNS.md).
 
@@ -14,25 +16,31 @@ Ascension 0 preserves instant construction. Ascension 1 spends the full cost imm
 
 Review the objective, deadline, solvency condition, ship, company cash, and starter assets together. A liquid merchant company, an industrial company with a factory, and independent traders with logistical flexibility offer different opportunities. Select one package; their benefits do not accumulate.
 
-The setup screen supplies the current numbers. The [run guide](RUNS.md) lists the packages, goals, and reproducible strategies. [Charters](reference/mechanics/help_charters.md) explains starter grants and tradeoffs. [Challenges](reference/mechanics/help_challenges.md) explains the difference between net market delivery, genuine regional consumption, and productive enterprise performance.
+For the Grand Commission, choose **one of three cards in each of four rounds**, then review all four mandatory goals. Victory requires all four together and at least 100 company coins by day 180. **Objectives / Journal** pauses playback and shows numerical conditions, reasons, permanent accomplishments and conditions that can reverse. A destination sale can lose credit if you buy those goods back. Read [The Grand Commission](GRAND_COMMISSION.md) for exact objectives.
+
+The setup screen supplies the current numbers. The [run guide](RUNS.md) lists historical packages and strategies. [Charters](reference/mechanics/help_charters.md) explains starter grants and tradeoffs. [Challenges](reference/mechanics/help_challenges.md) explains the difference between net market delivery, genuine regional consumption, and productive enterprise performance.
 
 ## Make a first trade
 
-1. Select your ship and its docked town. Open Trade through the visible action or the town context interaction.
-2. Select a commodity and quantity. Compare the **exact total**, current marginal prices, average execution price, cargo room, and cash.
+1. Select your ship and its docked town. Open **Harbor** through the visible action or by right-clicking the town.
+2. Select a commodity, choose **Selected ship hold** for the paid trade target, and set a whole quantity. Compare the **exact total**, current **Buy / ask** and **Sell / bid**, average execution price, cargo room, and cash.
 3. Buy only what the market has and your company can afford. The completed trade changes cash and cargo immediately without advancing the day.
 4. Inspect another connected town and choose a voyage deliberately. Remote quotes describe the current market, not a guaranteed price after arrival.
 5. Advance time or resume playback. After the ship actually arrives, inspect a fresh proposal and sell.
 
-Opening trade pauses the economy. Closing it leaves you in control of resuming. Disable the ship's automation before issuing manual orders.
+Opening Harbor pauses the economy. Closing it leaves you in control of resuming. Disable the selected ship's automation before issuing manual cargo orders. NPC holds are read-only, and inspecting a remote ship never permits remote loading or trading.
+
+The same Harbor shows **Company local stock** when you own industry in that town. Select it for paid market purchases/sales, including fractional quantities, even while your ship is elsewhere. **Load** moves local goods aboard the docked ship; **Unload** moves cargo into local stock. These transfers move no cash and preserve historical cost. They still require whole cargo units, space at the destination and the actual matching dock. Quantity presets only edit the proposal; the action button commits it. An older saved run shows a selector for its actual separate facility stores.
 
 If an order cannot execute, read its reason: stock, capacity, company funds, destination liquidity, location, or a policy restriction. A lower selling limit cannot provide missing town cash. In Living Cities, households can replenish market cash by actually purchasing stocked food, or companies can inject cash through real local purchases. Check household funds and available goods before expecting recovery; there is no guaranteed payment day. Learn more about [trade](reference/mechanics/help_trading.md), [prices](reference/mechanics/help_prices.md), and [liquidity](reference/mechanics/help_liquidity.md).
 
 ## Build a supply chain
 
-Use the generated [production-chain table](reference/chains.md) to find a recipe, its materials, and its building. Select a town and inspect its private-industry options. Construction competes with cargo purchases for liquid cash and starts with empty private storage. In Living Cities, generated capabilities are binding: a forest-furniture town cannot build a Sawmill just because you can pay. Its real Plank inputs must arrive through trade.
+Use the generated [production-chain table](reference/chains.md) to find a recipe, its materials, and its building. Select a town and inspect its private-industry options. Construction competes with cargo purchases for liquid cash and grants no free materials. Generated capabilities are binding: a forest-furniture town cannot build a Sawmill just because you can pay. Its real Plank inputs must arrive through trade.
 
-Use the recommended industry preset to prepare a draft. Review its input targets, price limits and cash reserve, then apply the policy deliberately to authorize future purchases. The status and schedule show construction progress, missing inputs and blocked operation; detailed controls remain available. A successful batch consumes the factory's private inputs and creates its private output; public market stock is separate. Living factories must also fund their displayed wage from company cash. An unpaid batch waits without using inputs, while a pending site cannot operate early.
+In a new v3 run, all your facilities in one town use **one company stockpile**. Grain bought or unloaded there can feed a local Mill; its Flour can feed a local Bakery with Logs. No factory-to-factory transfer is needed. Public market goods, other companies' stores and other towns remain separate. The sum of your real local facility capacities limits storage; paid pending sites add space immediately but cannot produce early. Multiple operational buildings of a recipe add throughput and output headroom. Stable facility order determines whether a downstream batch runs that day or waits for the next opportunity.
+
+Use the recommended industry preset to prepare a draft. Review its input targets, price limits and cash reserve, then apply the policy deliberately to authorize future purchases. Policies remain separate per facility but read the shared stock: selling all Flour may deprive your Bakery of inputs. The status and schedule show construction progress, missing inputs and blocked operation; detailed controls remain available. A successful batch consumes actual owned inputs and creates actual output. Living factories must also fund their displayed wage from company cash. An unpaid batch waits without using inputs, while a pending site cannot operate early. [Harbor and town stock](HARBOR.md) explains the complete storage contract and legacy behavior.
 
 For factory-to-market transport:
 
@@ -46,7 +54,7 @@ The ship must physically dock to load. It keeps goods that the destination canno
 
 ## Read a living town
 
-Select a town and use **Overview**, **Market** or **Controls** in the sidebar. The fixed **Trade**, **Industry** and **city economy** actions open their respective views. Compare market cash with household cash: only the market pays for your sold cargo. Residents can have money but no Bread, or face stocked Bread they cannot afford. The food summary separates both causes and shows actual consumed goods; a requested meal is not a completed purchase.
+Select a town and use **Overview**, **Market** or **Controls** in the sidebar. The fixed **Harbor**, **Industry** and **city economy** actions open their respective views. Compare market cash with household cash: only the market pays for your sold cargo. Residents can have money but no Bread, or face stocked Bread they cannot afford. The food summary separates both causes and shows actual consumed goods; a requested meal is not a completed purchase. Harbor rows distinguish market needs from your own recipe needs; a shortage label is a planning signal, not an automatic order.
 
 **City economy** groups details into **People & money**, **Needs & coverage** and **Industry & trade**. Inspect population/recent direction, smoothed prosperity, luxury eligibility, actual wage income, public industries and eligible private construction. Population affects future food quantity; prosperity and a protected food reserve gate infrequent Furniture purchases. Logging plus furniture making does not imply local Plank production: check missing Sawmill capability and actual inputs before investing. **City economy help** opens the shared offline explanation; **Back** returns to the map.
 
@@ -56,7 +64,7 @@ The recovery challenge asks for sustained paid food access, retained population 
 
 ## Read your accounts
 
-Company cash is available liquidity. Purchase expenditure, sale revenue, construction payments, and held stock answer different questions. The financial panel and ledger separate them.
+Company cash is available liquidity. **Company Value** also includes owned goods, ships, operational sites and paid pending capital once; it is a reference valuation, not available cash or liquidation proceeds. Purchase expenditure, sale revenue, construction payments, and held stock answer different questions. The financial panel and ledger separate them.
 
 Goods retain historical acquisition or input-material cost through manufacture and transfers. A completed sale releases that cost into cost of goods sold; its attributed gross margin is revenue less that cost. Unsold goods are shown with their remaining basis, not an invented sale value. Granted starter assets remain identifiable.
 
@@ -64,11 +72,15 @@ Living wages are separate paid expenses. Operating surplus after wages subtracts
 
 ## Finish, inspect, and try again
 
-The objective summary shows the current goal, progress, time remaining, and outstanding conditions. A challenge stops automatically when it succeeds or reaches its failure condition. The whole triggering economic operation completes before results appear; playback does not continue behind the results screen.
+The compact objective summary shows goals met and remaining time; the Journal carries the full conditions. A challenge freezes automatically when it succeeds or reaches its failure condition. The whole triggering economic operation commits first. Victory then displays an acknowledgment with **View results**; dismissing it lets you inspect the frozen map or Journal without spending another day.
 
-Review the outcome and score breakdown alongside actual cash, costs, deliveries, production, and remaining goods. Compare only the same challenge, charter, ascension and exact world identity. **Retry Same World** restores all starting conditions, including seed and difficulty. **New World / Reroll** explicitly previews a new seed before you begin; **Change Setup** retains the current selections for editing.
+Review the outcome and score breakdown alongside actual cash, costs, deliveries, production, and remaining goods. Compare only the same challenge, charter, ascension and exact world identity, including chosen objectives and storage rules. **Retry Same World** restores all starting conditions and the original draft. **New World / Reroll** explicitly previews a new seed before you begin; **Change Setup** returns to editable setup.
 
-Escape closes the top trade or industry modal first. In ordinary gameplay it opens pause; in secondary screens it returns to the parent. Restart, return to menu, abandonment, and exit protect active progress with confirmation. Runs are in memory only and do not survive closing the application.
+Escape closes the top Harbor or industry modal first. In ordinary gameplay it opens pause; in secondary screens it returns to the parent. Restart, return to menu, abandonment, and exit protect unsaved progress with confirmation.
+
+Use **Save / Load** from pause or Company to store a run explicitly in one of three local slots. **Continue** loads the latest compatible slot, including exact voyages, stocks, construction and terminal state; there is no automatic or cloud save. An invalid load leaves the active run intact. Retry starts fresh and does not replace saved slots. Text-size preferences are independent of run saves.
+
+The Editor and development builds offer **Export Run Report** on Save/Load, results and Ledger. It creates an exact save plus a readable diagnostic report under the displayed `Exports` paths, without changing the world or a save slot. Recent activity in the report is explicitly partial. The [Task 2.2 verification record](TASK-2.2-VERIFICATION.md) separates actual checks from local repetition instructions.
 
 ## Use the encyclopedia
 
