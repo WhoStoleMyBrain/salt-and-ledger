@@ -395,6 +395,9 @@ namespace SaltAndLedger.UnityHost.Tests
         {
             Click("startChallengeButton");
             Click("confirmAcceptButton");
+            root.Q<Foldout>("advancedWorldFoldout").value = true;
+            root.Q<DropdownField>("worldModePicker").index = 0;
+            root.Q<DropdownField>("challengePicker").value = RunScenario.GetChallenge(RunScenario.CoastalChallenge).Name;
             Click("startRunButton");
             Assert.That(controller.Session.ChallengeMode, Is.True);
             Assert.That(root.Q<Label>("challengeLabel").text, Does.Contain("0 / " + EnterpriseScenario.CharterBread));

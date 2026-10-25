@@ -54,7 +54,7 @@ namespace SaltAndLedger.UnityHost.Tests
                 Assert.That(controller.CommissionPreview.Ports[position.PortId].X, Is.EqualTo(position.X));
                 Assert.That(controller.CommissionPreview.Ports[position.PortId].Y, Is.EqualTo(position.Y));
                 ClickIn(root.Q<ArchipelagoMap>("commissionPreviewMap"), "port_" + position.PortId);
-                Assert.That(root.Q<Label>("commissionMapDetails").text, Does.Contain("Can build:"));
+                Assert.That(root.Q<Label>("commissionMapDetails").text, Does.Contain("YOU CAN BUILD"));
             }
             Click("commissionMapNextButton");
             var draft = GrandCommissionDraft.Generate(42);

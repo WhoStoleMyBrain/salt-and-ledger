@@ -31,6 +31,7 @@ namespace SaltAndLedger.UnityHost
             Click("startSandboxButton", () => Confirm("Choose a new sandbox?",
                 "Current progress will be discarded. Choose your next starting company in run setup.", () => OpenSetup(true)));
             BindIndustry();
+            BindHarbor();
             Root.RegisterCallback<KeyDownEvent>(evt =>
             {
                 if (evt.keyCode != KeyCode.Escape || !TradeIsOpen && !IndustryIsOpen) return;
@@ -70,8 +71,11 @@ namespace SaltAndLedger.UnityHost
             {
                 var selectedShip = Session.SelectedShipId;
                 tradeShipId = selectedShip ?? Session.Player.Id;
+                harborFacilityId = null;
                 Session.InspectTradePort(portId);
                 ShowModal("tradeBackdrop", "closeTradeButton");
+                RefreshHarborStorageSelection();
+                SetIndex("harborTradeTarget", !HarborShipIsLocal() && harborFacilityId != null ? 1 : 0);
                 if (string.IsNullOrEmpty(Element<DropdownField>("goodDropdown").value)) SetIndex("goodDropdown", goodIds.IndexOf("logs"));
             });
         }
@@ -103,93 +107,20 @@ namespace SaltAndLedger.UnityHost
 
         private void AdjustQuantity(int delta)
         {
-            int.TryParse(Element<TextField>("quantityField").value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value);
-            SetQuantity((int)Math.Max(1, Math.Min(int.MaxValue, (long)value + delta)));
+            decimal.TryParse(Element<TextField>("quantityField").value, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var value);
+            Element<TextField>("quantityField").value = Math.Max(1, value + delta).ToString("0.####", CultureInfo.InvariantCulture);
         }
 
         private void SetMaximum(TradeDirection direction)
         {
-            if (tradeShipId == null) return;
-            var maximum = Session.Snapshot.MaximumTradeQuantity(tradeShipId, Session.SelectedPortId, direction, SelectedGoodId());
-            SetQuantity(maximum / Session.Snapshot.QuantityScale);
-            if (maximum == 0) Validation("No executable " + (direction == TradeDirection.Buy ? "purchase" : "sale") +
-                " is available with the current stock, cash and capacity.");
+            var snapshot = Session.Snapshot;
+            var maximum = HarborUsesLocalStock
+                ? harborFacilityId == null ? 0 : snapshot.MaximumWarehouseTradeQuantity(Session.Player.OwnerId, harborFacilityId, direction, SelectedGoodId())
+                : tradeShipId == null ? 0 : snapshot.MaximumTradeQuantity(tradeShipId, Session.SelectedPortId, direction, SelectedGoodId());
+            Element<TextField>("quantityField").value = Q(maximum);
         }
 
-        private void RefreshTradeOverlay()
-        {
-            if (tradeShipId == null) tradeShipId = Session.Player.Id;
-            tradeSnapshot = Session.Snapshot;
-            var ship = tradeSnapshot.Ships[tradeShipId];
-            var port = tradeSnapshot.Ports[Session.SelectedPortId];
-            var local = ship.DockedPortId == port.Id;
-            var canControl = ship.IsPlayer && !ship.AutomationEnabled && !Session.IsChallengeEnded;
-            SetText("tradeTitle", port.Name + "  /  " + ship.Name);
-            SetText("tradeDay", "DAY " + Number(tradeSnapshot.Day));
-            SetText("tradeHeader", (local ? "DOCKED" : "REMOTE MARKET") + "   ·   Company cash " + Money(ship.Cash) +
-                "   ·   Market cash " + Money(port.MarketCash) + "   ·   Cargo " + Q(ship.CargoUnits) + "/" + Q(ship.CargoCapacity) +
-                " (" + Q(ship.CargoCapacity - ship.CargoUnits) + " free)" +
-                (port.City == null ? "" : "\nHousehold cash " + Money(port.City.HouseholdCash) + " is separate. Only market cash can pay your sale."));
-            SetText("tradeAvailabilityLabel", !ship.IsPlayer ? "NPC inspection only. Select your ship to trade or sail." :
-                Session.IsChallengeEnded ? "The charter has ended. Reset or start a new sandbox to continue." :
-                ship.AutomationEnabled ? "Disable your trade route before placing manual orders." :
-                local ? "Trades are instant and all-or-nothing. Playback stays paused when you close the exchange." :
-                "Remote information only. Dock here to trade. Prices may change before your arrival.");
-            var sail = Element<Button>("tradeSailButton");
-            sail.EnableInClassList("hidden", local || !ship.IsPlayer);
-            sail.SetEnabled(canControl && ship.DockedPortId != null && !local && Session.HasRoute(ship.DockedPortId, port.Id));
-            sail.text = ship.DockedPortId != null && !local && Session.HasRoute(ship.DockedPortId, port.Id)
-                ? "Sail here · " + tradeSnapshot.TravelDays(ship.Id, port.Id) + " days" : "Sailing · await arrival";
-            var rows = Element<VisualElement>("tradeGoodsRows");
-            // Reuse rows while quantity changes so keyboard focus is never removed by a refresh.
-            if (rows.childCount == 0)
-                foreach (var goodId in goodIds)
-                {
-                    var captured = goodId;
-                    var row = new Button(() => { SetIndex("goodDropdown", goodIds.IndexOf(captured)); RefreshTradeOverlay(); })
-                        { name = "tradeGood_" + goodId };
-                    row.AddToClassList("trade-goods-row");
-                    row.Add(new Label(Session.Content.GetGood(goodId).Name) { name = "name", pickingMode = PickingMode.Ignore });
-                    row[0].AddToClassList("trade-good-name");
-                    foreach (var field in new[] { "town", "ship", "bid", "ask" })
-                    {
-                        var cell = new Label { name = field, pickingMode = PickingMode.Ignore };
-                        cell.AddToClassList("trade-cell"); row.Add(cell);
-                    }
-                    rows.Add(row);
-                }
-            foreach (var goodId in goodIds)
-            {
-                var row = rows.Q<Button>("tradeGood_" + goodId);
-                var quote = tradeSnapshot.GetMarketQuote(port.Id, goodId);
-                row.Q<Label>("town").text = Q(port.Inventory[goodId]);
-                row.Q<Label>("ship").text = Q(ship.Cargo[goodId]);
-                row.Q<Label>("bid").text = quote.Bid.HasValue ? Number(quote.Bid.Value) : "—";
-                row.Q<Label>("ask").text = quote.Ask.HasValue ? Number(quote.Ask.Value) : "—";
-                row.EnableInClassList("selected-good", goodId == SelectedGoodId());
-            }
-            SetText("tradeGoodDescription", Session.Content.GetGood(SelectedGoodId()).Description +
-                (port.City == null ? "" : "\nHousehold purchases can replenish market funds only when residents can afford real stocked goods. Future recovery and prices are not guaranteed."));
-            var valid = int.TryParse(Element<TextField>("quantityField").value, NumberStyles.Integer,
-                CultureInfo.InvariantCulture, out var quantity) && quantity > 0;
-            foreach (var direction in new[] { TradeDirection.Buy, TradeDirection.Sell })
-            {
-                var prefix = direction == TradeDirection.Buy ? "buy" : "sell";
-                TradeAttempt preview = null;
-                string text;
-                try
-                {
-                    preview = valid ? tradeSnapshot.PreviewTrade(ship.Id, port.Id, new TradeCommand(direction, SelectedGoodId(), Session.WholeOrderQuantity(quantity))) : null;
-                    text = preview == null ? "Enter a positive whole quantity." : DetailedTradeText(preview, ship.Cash, ship.CargoUnits, ship.CargoCapacity);
-                }
-                catch (OverflowException) { text = "This quantity exceeds the supported financial bounds. Choose a smaller order."; }
-                SetText(prefix + "PreviewLabel", text);
-                Element<Button>(prefix + "Button").SetEnabled(TradeIsOpen && canControl && local && preview?.Outcome == TradeOutcome.Traded);
-            }
-            Element<Button>("quantityMaxBuy").SetEnabled(canControl && local);
-            Element<Button>("quantityMaxSell").SetEnabled(canControl && local);
-            RefreshModalStatus();
-        }
+        private void RefreshTradeOverlay() => RefreshHarbor();
 
         public static string AverageExecutionPrice(TradeAttempt preview) => preview.Price == null || preview.Quantity <= 0
             ? "—" : ((decimal)preview.TotalAmount / preview.Quantity).ToString("0.00", CultureInfo.InvariantCulture);

@@ -187,6 +187,32 @@ namespace SaltAndLedger.UnityHost
             var scroll = new ScrollView { name = "saveSlotsScroll" }; scroll.AddToClassList("run-content-scroll"); screen.Add(scroll);
             Panel(scroll, "saveSlotRows", "");
             Button(screen, "savesBackButton", "Back", () => ShowScreen(secondaryParent));
+            AddDiagnosticExport(screen, "savesExportButton");
+        }
+
+        private void AddDiagnosticExport(VisualElement parent, string id)
+        {
+            if (!Application.isEditor && !Debug.isDebugBuild) return;
+            Button(parent, id, "Export Run Report · diagnostics", ExportRunReport);
+            Text(parent, id + "Status", "", "run-footnote");
+        }
+
+        private void ExportRunReport()
+        {
+            if (!HasActiveRun || Session.Identity == null) { Validation("Start or load a named run before exporting diagnostics."); return; }
+            try
+            {
+                var store = new RunReportExportStore(Path.Combine(Application.persistentDataPath, "Exports"), Session.Content);
+                var result = store.Export(Session.SaveText(), Session.Snapshot,
+                    Session.Activity.Select(entry => "Day " + entry.Day + " · " + entry.Message));
+                var message = "Exact save: " + result.SavePath + "\nDiagnostic report: " + result.ReportPath;
+                foreach (var id in new[] { "savesExportButton", "resultsExportButton", "ledgerExportButton" })
+                    if (Root.Q<Label>(id + "Status") is Label label) label.text = message;
+                Debug.Log("Salt & Ledger diagnostic export\n" + message);
+            }
+            catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException ||
+                exception is ArgumentException || exception is InvalidOperationException || exception is WorldSaveException)
+            { Validation("Diagnostic export failed: " + exception.Message); }
         }
         private void OpenSaveSlots()
         {
@@ -222,6 +248,7 @@ namespace SaltAndLedger.UnityHost
             CloseModals(); RefreshRunChoices(); LoadSetupIdentity(Session.Identity);
             HasActiveRun = true; presentedResult = null; tradeShipId = Session.Player.Id; selectedFacilityId = null;
             LoadPolicy(); ShowScreen(ArchipelagoScreen.Gameplay); status = "Loaded slot " + slot + "; paused at the exact saved revision.";
+            if (Session.IsChallengeEnded) PresentResults();
         });
         private void ContinueSavedRun()
         {

@@ -25,6 +25,7 @@ namespace SaltAndLedger.UnityHost
             scroll.Add(history);
             Panel(history, "ledgerEvents", "");
             Button(ledger, "ledgerBackButton", "Back", () => ShowScreen(secondaryParent));
+            AddDiagnosticExport(ledger, "ledgerExportButton");
 
             var logistics = CreateScreen(ArchipelagoScreen.Logistics, "Industrial shipping",
                 "Connect private stock to your ship and a destination. A route never moves goods remotely or overrides cash, prices or capacity.");
@@ -144,6 +145,7 @@ namespace SaltAndLedger.UnityHost
             return ValueText() + "HELD GOODS\n" + QuantityTotals(finance.HeldInventoryQuantities) +
                 "\n\nSTOCKPILES\n" + string.Join("\n", stores.Select(s =>
                     (s.StoreId.StartsWith("ship:", StringComparison.Ordinal) ? "Ship " + snapshot.Ships[s.StoreId.Substring(5)].Name :
+                        snapshot.CompanyStockpiles.ContainsKey(s.StoreId) ? "Company stock at " + PortName(snapshot.CompanyStockpiles[s.StoreId].PortId) :
                         "Private " + Session.Content.GetBuilding(snapshot.PrivateFacilities[s.StoreId.Substring(9)].Blueprint.BuildingId).Name +
                         " at " + PortName(snapshot.PrivateFacilities[s.StoreId.Substring(9)].PortId)) +
                     " · " + Q(s.TotalUnits) + " units · basis " + Money(s.TotalCostBasis) +

@@ -102,7 +102,7 @@ namespace SaltAndLedger.UnityHost.Tests
                 yield return Reachable("settingsBackButton");
                 Click("settingsBackButton");
                 Click("newRunButton");
-                yield return Reachable("worldModePicker");
+                yield return Reachable("setupModeHeadline");
                 yield return Reachable("seedField");
                 yield return Reachable("randomizeSeedButton");
                 yield return Reachable("copySeedButton");

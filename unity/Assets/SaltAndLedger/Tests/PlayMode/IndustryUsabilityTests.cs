@@ -71,9 +71,11 @@ namespace SaltAndLedger.UnityHost.Tests
             root.Q<DropdownField>("storageGoodDropdown").value = "Flour";
             root.Q<TextField>("storageQuantity").value = "1";
             Click("warehouseBuy");
-            Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Contain("Local inventory purchases " + preview.TotalAmount));
+            Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Contain("Market purchases addressed through this facility " + preview.TotalAmount));
             Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Contain("Capital paid " + facility.ConstructionCost));
-            Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Contain("not profit"));
+            Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Contain("not this recipe's material cost or profit"));
+            Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Contain("Inputs remain in this facility's separate store"));
+            Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Not.Contain("Shared inputs can serve other local facilities"));
             Assert.That(root.Q<Label>("facilityInputStatusLabel").text, Does.Contain("Flour: private 1/1 · missing 0"));
             yield return null;
         }
@@ -158,8 +160,12 @@ namespace SaltAndLedger.UnityHost.Tests
             root.Q<TextField>("inputPrice_flour").value = "1";
             root.Q<TextField>("inputPrice_logs").value = "1";
             Click("applyIndustryPolicy"); Click("closeIndustryButton"); Click("nextDayButton"); Click("openIndustryButton");
-            Assert.That(root.Q<Label>("facilityStateLabel").text, Does.Contain("CURRENT STOCK/FUNDS: waiting for inputs"));
-            Assert.That(root.Q<Label>("industryAppliedPolicyLabel").text, Does.Contain("buy price limit"));
+            Assert.That(root.Q<Label>("facilityStateLabel").text, Does.Contain("CURRENT STOCK/FUNDS: Inputs short"));
+            Assert.That(root.Q<Label>("facilityStateLabel").text, Does.Contain("buy or unload recipe inputs"));
+            Assert.That(controller.Session.Snapshot.PrivateFacilities.Values.Single().ProcurementWaitReason,
+                Is.EqualTo(IndustryWaitReason.BuyPriceLimit));
+            Assert.That(root.Q<Label>("industryAppliedPolicyLabel").text, Does.Contain("ask exceeds limit"));
+            Assert.That(root.Q<Label>("industryAppliedPolicyLabel").text, Does.Contain("review the buy ceiling or wait"));
             controller.BeginRun(null, RunScenario.IndustrialCharter);
             Click("openIndustryButton");
             root.Q<Foldout>("industryAdvancedFoldout").value = true;
@@ -172,7 +178,9 @@ namespace SaltAndLedger.UnityHost.Tests
             var facility = controller.Session.Snapshot.PrivateFacilities[RunScenario.StarterBakery];
             Assert.That(facility.Inventory["bread"], Is.GreaterThan(0));
             Assert.That(facility.SalesRevenue, Is.Zero);
-            Assert.That(root.Q<Label>("industryAppliedPolicyLabel").text, Does.Contain("sell price limit"));
+            Assert.That(facility.SalesWaitReason, Is.EqualTo(IndustryWaitReason.SellPriceLimit));
+            Assert.That(root.Q<Label>("industryAppliedPolicyLabel").text, Does.Contain("bid below limit"));
+            Assert.That(root.Q<Label>("industryAppliedPolicyLabel").text, Does.Contain("review the sale floor or ship elsewhere"));
             Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Contain("actual local sale revenue 0"));
             yield return null;
         }

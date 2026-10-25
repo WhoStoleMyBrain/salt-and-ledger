@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 
 namespace SaltAndLedger.UnityHost
 {
-    public enum ArchipelagoScreen { Gameplay, MainMenu, Setup, Pause, Results, Encyclopedia, Settings, Ledger, Logistics, CityEconomy, Development, Saves, CommissionMap, CommissionDraft, CommissionReview, Objectives }
+    public enum ArchipelagoScreen { Gameplay, MainMenu, Setup, Pause, Results, Encyclopedia, Settings, Ledger, Logistics, CityEconomy, Development, Saves, CommissionMap, CommissionDraft, CommissionReview, Objectives, Completion }
 
     public static class ArchipelagoApplicationExit
     {
@@ -40,6 +40,7 @@ namespace SaltAndLedger.UnityHost
             BuildCommissionScreens();
             BuildPauseMenu();
             BuildResults();
+            BuildCompletion();
             BuildSettings();
             BuildEncyclopedia();
             BuildLedgerAndLogistics();
@@ -170,7 +171,8 @@ namespace SaltAndLedger.UnityHost
 
         public void OpenPauseMenu()
         {
-            if (!HasActiveRun || Session.IsChallengeEnded) return;
+            if (!HasActiveRun) return;
+            if (Session.IsChallengeEnded) { PresentResults(); return; }
             resumePlayback = Session.IsPlaying;
             Session.Pause();
             CloseModals();
@@ -273,6 +275,31 @@ namespace SaltAndLedger.UnityHost
             Button(actions, "resultsHelpButton", "Encyclopedia", () => OpenSecondary(ArchipelagoScreen.Encyclopedia));
             Button(actions, "resultsObjectivesButton", "Objectives", OpenObjectives);
             Button(actions, "resultsSaveButton", "Save result", OpenSaveSlots);
+            AddDiagnosticExport(screen, "resultsExportButton");
+        }
+
+        private void BuildCompletion()
+        {
+            var screen = CreateScreen(ArchipelagoScreen.Completion, "Commission accomplished");
+            var scroll = new ScrollView { name = "completionScroll" }; scroll.AddToClassList("run-content-scroll"); screen.Add(scroll);
+            Text(scroll, "completionTitle", "", "run-result-title");
+            Text(scroll, "completionSummary", "", "run-objective");
+            Text(scroll, null, "Your victory is committed. Economic time has stopped; your stocks, accounts and objectives remain available to inspect and save.", "run-copy");
+            var actions = Panel(screen, null, "row run-actions");
+            Button(actions, "completionResultsButton", "View results", PresentResults, "primary");
+            Button(actions, "completionJournalButton", "Inspect objectives", OpenObjectives);
+            Button(actions, "completionMapButton", "Inspect frozen harbor", () => { ShowScreen(ArchipelagoScreen.Gameplay); Refresh(); });
+            Button(actions, "completionSaveButton", "Save victory", OpenSaveSlots);
+        }
+
+        private void AcknowledgeCompletion()
+        {
+            Session.Pause(); CloseModals(); presentedResult = Session.Snapshot;
+            SetText("completionTitle", Session.Identity?.Commission != null ? "GRAND COMMISSION COMPLETE" : "OBJECTIVE ACHIEVED");
+            SetText("completionSummary", Session.Snapshot.Challenge.Configuration.Title + " · day " + Session.Snapshot.Day +
+                "\n" + ObjectiveText() + "\nCompany cash " + Money(Session.Player.Cash));
+            Element<Button>("completionJournalButton").EnableInClassList("hidden", Session.Identity?.Commission == null);
+            ShowScreen(ArchipelagoScreen.Completion); Element<Button>("completionResultsButton").Focus();
         }
 
         private void PresentResults()
@@ -325,6 +352,11 @@ namespace SaltAndLedger.UnityHost
             secondaryParent = Screen;
             Session.Pause();
             ShowScreen(screen);
+            if (screen == ArchipelagoScreen.Settings)
+            {
+                var scale = Element<DropdownField>("textScaleDropdown");
+                scale.SetValueWithoutNotify(scale.choices[(int)TextScale.Current]);
+            }
             if (screen == ArchipelagoScreen.Encyclopedia) RefreshEncyclopedia();
             if (screen == ArchipelagoScreen.Ledger) RefreshLedger();
             if (screen == ArchipelagoScreen.CityEconomy) RefreshCityEconomy();
@@ -342,6 +374,7 @@ namespace SaltAndLedger.UnityHost
             if (Screen == ArchipelagoScreen.CommissionDraft) { BackCommissionRound(); return; }
             if (Screen == ArchipelagoScreen.CommissionReview) { ShowCommissionRound(3); return; }
             if (Screen == ArchipelagoScreen.Objectives) { CloseObjectives(); return; }
+            if (Screen == ArchipelagoScreen.Completion) { PresentResults(); return; }
             if (Screen == ArchipelagoScreen.Settings || Screen == ArchipelagoScreen.Ledger || Screen == ArchipelagoScreen.Logistics ||
                 Screen == ArchipelagoScreen.Development || Screen == ArchipelagoScreen.Saves)
             { ShowScreen(secondaryParent); return; }
@@ -366,7 +399,11 @@ namespace SaltAndLedger.UnityHost
         private void RefreshRunExperience()
         {
             if (navigationRoot == null) return;
-            if (HasActiveRun && Session.IsChallengeEnded && !ReferenceEquals(presentedResult, Session.Snapshot)) PresentResults();
+            if (HasActiveRun && Session.IsChallengeEnded && !ReferenceEquals(presentedResult, Session.Snapshot))
+            {
+                if (Session.Snapshot.Challenge.Status == ChallengeStatus.Succeeded) AcknowledgeCompletion();
+                else PresentResults();
+            }
             SetText("runIdentityLabel", WorldIdentityText(Session.Identity) + "\n" +
                 (Session.ChallengeId == null ? "Unlimited sandbox" : RunScenario.GetChallenge(Session.ChallengeId).Name) +
                 "\n" + RunScenario.GetCharter(Session.CharterId).Name +

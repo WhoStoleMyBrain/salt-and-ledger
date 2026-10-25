@@ -209,16 +209,20 @@ namespace SaltAndLedger.UnityHost
 
         private void Trade(TradeDirection direction)
         {
-            if (!int.TryParse(Element<TextField>("quantityField").value, NumberStyles.Integer,
-                CultureInfo.InvariantCulture, out var quantity) || quantity <= 0)
-            {
-                Validation("Enter a positive whole quantity.");
-                return;
-            }
             Run(() =>
             {
-                if (tradeShipId != Session.Player.Id) throw new InvalidOperationException("NPC markets are inspection only.");
-                Session.Trade(direction, SelectedGoodId(), Session.WholeOrderQuantity(quantity), tradeSnapshot);
+                var amount = ReadIndustryQuantity("quantityField", "Quantity", false);
+                if (HarborUsesLocalStock)
+                {
+                    if (harborFacilityId == null) throw new InvalidOperationException("Construct a local facility to create company storage.");
+                    Session.WarehouseTrade(harborFacilityId, direction, SelectedGoodId(), amount, tradeSnapshot);
+                }
+                else
+                {
+                    if (tradeShipId != Session.Player.Id) throw new InvalidOperationException("Select an owned ship to trade its cargo.");
+                    if (amount % Session.Snapshot.QuantityScale != 0) throw new ArgumentException("Ship orders require whole goods. Use company local stock for fractional trades.");
+                    Session.Trade(direction, SelectedGoodId(), amount, tradeSnapshot);
+                }
             });
             RefreshTradeOverlay();
         }

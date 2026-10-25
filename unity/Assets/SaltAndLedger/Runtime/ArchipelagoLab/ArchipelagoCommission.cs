@@ -18,21 +18,28 @@ namespace SaltAndLedger.UnityHost
         private void BuildCommissionScreens()
         {
             var mapScreen = CreateScreen(ArchipelagoScreen.CommissionMap, "Read the archipelago",
-                "All four towns and sea connections are revealed. These are the exact starting conditions; choosing objectives changes none of them.");
+                "Select any town. This is your starting world; drafting changes no stock or geography.");
             Text(mapScreen, "commissionMapIdentity", "", "run-copy");
             var mapScroll = new ScrollView { name = "commissionMapScroll" };
             mapScroll.AddToClassList("run-content-scroll");
             mapScreen.Add(mapScroll);
-            Panel(mapScroll, "commissionMapHost", "commission-map-host");
-            Text(mapScroll, "commissionMapSelection", "Select a town to inspect its capabilities below.", "run-objective");
-            Text(mapScroll, "commissionMapDetails", "", "run-copy");
+            var chart = Panel(mapScroll, null, "commission-chart-layout");
+            Panel(chart, "commissionMapHost", "commission-map-host");
+            var details = new ScrollView { name = "commissionTownScroll" };
+            details.AddToClassList("commission-town-details"); chart.Add(details);
+            Text(details, "commissionMapSelection", "Select a town to inspect.", "run-objective");
+            Text(details, "commissionMapDetails", "", "run-copy");
             var routes = new Foldout { name = "commissionRoutes", text = "Exact connections and starting travel times" };
             mapScroll.Add(routes);
             Text(routes, "commissionRouteDetails", "", "run-copy");
             Text(mapScroll, null, "Every town can be inspected before drafting. Industries, inputs and wages stay finite; a legal choice is not a guarantee of victory.", "run-footnote");
             var mapActions = Panel(mapScreen, null, "row run-actions");
             Button(mapActions, "commissionMapBackButton", "Back to setup", () => ShowScreen(ArchipelagoScreen.Setup));
-            Button(mapActions, "commissionMapNextButton", "Draft objectives", () => ShowCommissionRound(0), "primary");
+            Button(mapActions, "commissionMapNextButton", "Draft objectives", () =>
+            {
+                if (SetupChallengeId() == GrandCommission.ChallengeId) ShowCommissionRound(0);
+                else if (setupIdentity != null) BeginRun(setupIdentity);
+            }, "primary");
 
             var draft = CreateScreen(ArchipelagoScreen.CommissionDraft, "Draft your commission",
                 "Choose one of three objectives in each category. All four selected goals will be mandatory.");
@@ -111,9 +118,10 @@ namespace SaltAndLedger.UnityHost
         private void OpenCommissionMap()
         {
             RefreshSetup();
-            if (setupIdentity == null || SetupChallengeId() != GrandCommission.ChallengeId) return;
+            if (setupIdentity == null) return;
             var previewIdentity = new RunIdentity(null, setupIdentity.CharterId, setupIdentity.WorldMode, setupIdentity.Seed,
-                setupIdentity.Difficulty, livingPricingMode: setupIdentity.LivingPricingMode);
+                setupIdentity.Difficulty, livingPricingMode: setupIdentity.LivingPricingMode,
+                companyStorageRules: setupIdentity.CompanyStorageRules);
             commissionPreview = RunScenario.Create(Session.CanonicalContent, previewIdentity).Snapshot();
             SetText("commissionMapIdentity", WorldIdentityText(setupIdentity) + " · " + RunScenario.GetCharter(setupIdentity).Name);
             var host = Element<VisualElement>("commissionMapHost");
@@ -121,12 +129,19 @@ namespace SaltAndLedger.UnityHost
             var map = new ArchipelagoMap { name = "commissionPreviewMap" };
             host.Add(map);
             map.PortSelected += ShowCommissionPort;
+            map.PortTradeRequested += ShowCommissionPort;
+            map.ShipSelected += id =>
+            {
+                var ship = commissionPreview.Ships[id];
+                if (ship.DockedPortId != null) ShowCommissionPort(ship.DockedPortId);
+            };
             map.Present(commissionPreview, null, null, false, 1);
             SetText("commissionRouteDetails", string.Join("\n", commissionPreview.Routes.Select(route =>
                 commissionPreview.Ports[route.OriginPortId].Name + " ↔ " + commissionPreview.Ports[route.DestinationPortId].Name +
                 ": " + route.Distance + " units · " + route.DurationDays(RunScenario.StartingShipSpeed) + " days")));
             ShowCommissionPort(commissionPreview.Ships.Values.First(ship => ship.IsPlayer).DockedPortId);
             ShowScreen(ArchipelagoScreen.CommissionMap);
+            Element<Button>("commissionMapNextButton").text = SetupChallengeId() == GrandCommission.ChallengeId ? "Draft objectives" : "Begin voyage";
             Element<ScrollView>("commissionMapScroll").scrollOffset = Vector2.zero;
             Element<Button>("commissionMapNextButton").Focus();
         }
@@ -135,9 +150,18 @@ namespace SaltAndLedger.UnityHost
         {
             var port = commissionPreview.Ports[portId];
             SetText("commissionMapSelection", port.Name + " · " + port.Role);
-            // Reuse the setup's canonical generation-derived facts, including permitted and absent buildings.
-            var card = Element<VisualElement>("setupCity_" + portId);
-            SetText("commissionMapDetails", string.Join("\n", card.Query<Label>().ToList().Skip(1).Select(label => label.text)));
+            var content = setupIdentity.WorldMode == RunWorldMode.ExpandingEconomy ? Session.CanonicalContent.ForExpandingEconomy() : Session.CanonicalContent;
+            string Quantity(long value) => ((decimal)value / commissionPreview.QuantityScale).ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
+            string Coins(long value) => ((decimal)value / commissionPreview.MoneyScale).ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
+            SetText("commissionMapDetails", "Market cash " + Coins(port.MarketCash) +
+                (port.City == null ? "" : " · households " + Coins(port.City.HouseholdCash) + "\nPopulation " + port.City.Population + " · prosperity " + port.City.Prosperity + "/100") +
+                "\n\nSTARTING MARKET STOCK\n" + string.Join(" · ", port.Inventory.Select(item => content.GetGood(item.Key).Name + " " + Quantity(item.Value))) +
+                "\n\nPUBLIC PRODUCTION\n" + string.Join(", ", port.Facilities.Select(f => content.GetBuilding(f.Configuration.Instance.BuildingId).Name)) +
+                "\n\nYOU CAN BUILD\n" + string.Join(", ", commissionPreview.IndustryBlueprints.Values.Where(b => b.EligiblePortIds.Contains(portId)).Select(b => content.GetBuilding(b.BuildingId).Name)) +
+                "\n\nLOCAL NEEDS\n" + string.Join("\n", port.Consumption.Select(rule =>
+                    Quantity(rule.Configuration.PreviewDemand(port.City?.Population ?? 0, rule.DemandRemainder).Quantity) + " " + content.GetGood(rule.Configuration.GoodId).Name +
+                    " / " + rule.Configuration.IntervalDays + " days · " + NeedKind(rule.Configuration.Kind))) +
+                (commissionPreview.Economy?.Configuration.MintPortId == portId ? "\n\nRoyal Mint, shipwright and finite external contracts." : ""));
             var map = Element<ArchipelagoMap>("commissionPreviewMap");
             map.Present(commissionPreview, portId, null, false, 1);
             foreach (var town in commissionPreview.Ports.Values)

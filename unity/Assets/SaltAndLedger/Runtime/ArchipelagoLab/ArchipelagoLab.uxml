@@ -64,7 +64,7 @@
                     </ui:Foldout>
                 </ui:VisualElement>
                 <ui:VisualElement class="row context-actions">
-                    <ui:Button name="openTradeButton" text="Trade / inspect market" class="primary" />
+                    <ui:Button name="openTradeButton" text="Harbor · trade / load" class="primary" />
                     <ui:Button name="openIndustryButton" text="Your industries" />
                 </ui:VisualElement>
                 <ui:VisualElement name="voyageBar" class="voyage-bar">
@@ -163,7 +163,7 @@
             <ui:VisualElement name="tradeDialog" class="trade-modal" focusable="true">
                 <ui:VisualElement class="modal-heading">
                     <ui:VisualElement class="modal-heading-copy">
-                        <ui:Label text="HARBOUR EXCHANGE" class="eyebrow" />
+                        <ui:Label text="HARBOR · MARKET / SHIP / COMPANY" class="eyebrow" />
                         <ui:Label name="tradeTitle" class="modal-title" />
                     </ui:VisualElement>
                     <ui:Label name="tradeDay" class="day" />
@@ -177,15 +177,23 @@
                             <ui:Label text="COMMODITY" class="trade-good-name" />
                             <ui:Label text="TOWN" class="trade-cell" />
                             <ui:Label text="SHIP" class="trade-cell" />
-                            <ui:Label text="SELL / BID" class="trade-cell" />
-                            <ui:Label text="BUY / ASK" class="trade-cell" />
+                            <ui:Label text="LOCAL" class="trade-cell" />
+                            <ui:Label text="SELL&#10;BID" class="trade-cell" />
+                            <ui:Label text="BUY&#10;ASK" class="trade-cell" />
                         </ui:VisualElement>
                         <ui:VisualElement name="tradeGoodsRows" />
-                        <ui:Label text="Marginal quotes are coins per whole unit. The exact order total follows the stock-sensitive curve; it can differ from quantity × first quote." class="help" />
+                        <ui:Label text="BUY: company pays market · SELL: market pays company. Quotes are marginal coins per whole good." class="help" />
+                        <ui:DropdownField name="harborLegacyStore" label="Legacy store" class="hidden" />
+                        <ui:Label name="harborStockExplanation" class="help" />
+                        <ui:Foldout name="harborProduction" text="Local production and blockers" value="false">
+                            <ui:Label name="harborProductionLabel" class="help" />
+                        </ui:Foldout>
+                        <ui:Button name="harborIndustryButton" text="Build / manage local industries" />
                         <ui:Label name="tradeGoodDescription" class="trade-description" />
                     </ui:VisualElement>
                     <ui:VisualElement class="trade-order">
                         <ui:DropdownField name="goodDropdown" label="Good" />
+                        <ui:DropdownField name="harborTradeTarget" label="Paid trade stock" />
                         <ui:VisualElement class="row quantity-row">
                             <ui:Button name="quantityMinus" text="−" />
                             <ui:TextField name="quantityField" label="Quantity" value="2" />
@@ -198,14 +206,30 @@
                             <ui:Button name="quantityMaxSell" text="Max sell" />
                         </ui:VisualElement>
                         <ui:VisualElement class="trade-quote-card buy-card">
-                            <ui:Label text="BUY FROM TOWN" class="eyebrow" />
+                            <ui:Label text="PAID PURCHASE FROM MARKET" class="eyebrow" />
                             <ui:Label name="buyPreviewLabel" class="trade-exact" />
                             <ui:Button name="buyButton" text="Buy now" class="primary" />
                         </ui:VisualElement>
                         <ui:VisualElement class="trade-quote-card sell-card">
-                            <ui:Label text="SELL TO TOWN" class="eyebrow" />
+                            <ui:Label text="PAID SALE TO MARKET" class="eyebrow" />
                             <ui:Label name="sellPreviewLabel" class="trade-exact" />
                             <ui:Button name="sellButton" text="Sell now" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="trade-quote-card">
+                            <ui:Label text="LOAD / UNLOAD · NO CASH" class="eyebrow" />
+                            <ui:Label name="harborTransferPreview" class="help" />
+                            <ui:VisualElement class="row run-actions">
+                                <ui:Button name="harborUnloadButton" text="Unload → local stock" />
+                                <ui:Button name="harborLoadButton" text="Load → ship" />
+                                <ui:Button name="harborMaxUnload" text="Max unload" />
+                                <ui:Button name="harborMaxLoad" text="Max load" />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:Foldout name="harborCalculations" text="Exact price calculation" value="false">
+                            <ui:Label name="buyCalculation" class="help" />
+                            <ui:Label name="sellCalculation" class="help" />
+                        </ui:Foldout>
+                        <ui:VisualElement>
                         </ui:VisualElement>
                     </ui:VisualElement>
                   </ui:VisualElement>
@@ -213,6 +237,7 @@
                 <ui:VisualElement class="modal-footer">
                     <ui:Label name="tradeAvailabilityLabel" class="modal-explanation" />
                     <ui:Button name="tradeSailButton" text="Sail here" />
+                    <ui:Button name="harborDisableRoute" text="Pause ship automation" class="hidden" />
                 </ui:VisualElement>
                 <ui:Label name="tradeStatusLabel" class="modal-status" />
             </ui:VisualElement>
@@ -239,6 +264,7 @@
                     </ui:ScrollView>
                 </ui:Foldout>
                 <ui:DropdownField name="facilityDropdown" label="Your facility" />
+                <ui:Button name="industryHarborButton" text="Open Harbor · shared stock, paid trading &amp; cargo" />
                 <ui:Label name="noFacilityLabel" text="Choose an investment above. Public industries and public market stock remain separate from your company." class="summary" />
                 <ui:VisualElement name="facilityBody" class="industry-body hidden">
                     <ui:ScrollView name="industryPolicyScroll" mode="Vertical" class="industry-policy">

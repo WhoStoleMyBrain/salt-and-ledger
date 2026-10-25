@@ -370,10 +370,11 @@ namespace SaltAndLedger.UnityHost
             LastStatus = "Industry policy applied. Local purchases and sales run on whole days; inputs and outputs remain private.";
         }
 
-        public RegionalResult Transfer(string facilityId, TransferDirection direction, string goodId, int quantity)
+        public RegionalResult Transfer(string facilityId, TransferDirection direction, string goodId, int quantity,
+            RegionalWorldSnapshot expectedSnapshot = null)
         {
             Pause();
-            var result = world.TransferGoods(Player.OwnerId, Player.Id, facilityId, direction, goodId, quantity);
+            var result = world.TransferGoods(Player.OwnerId, Player.Id, facilityId, direction, goodId, quantity, expectedSnapshot);
             Observe(result);
             LastStatus = ReferenceEquals(result.Before, result.After)
                 ? "Transfer rejected: check source stock and destination capacity. Nothing changed."

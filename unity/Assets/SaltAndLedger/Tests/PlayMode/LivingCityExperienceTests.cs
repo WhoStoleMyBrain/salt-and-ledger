@@ -217,6 +217,8 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(controller.Session.Player.Cash, Is.EqualTo(664));
             Assert.That(final.Challenge.Recovery.Qualified, Is.True);
             Assert.That(final.Challenge.Recovery.Observations, Is.EqualTo(6));
+            Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Completion));
+            Click("completionResultsButton");
             Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Results));
             Assert.That(root.Q<Label>("resultOutcome").text, Is.EqualTo("VICTORY"));
             Assert.That(root.Q<Label>("resultObjective").text, Does.Contain("Paid food").And.Contain("Population"));

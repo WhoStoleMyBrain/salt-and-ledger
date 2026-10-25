@@ -98,6 +98,8 @@ namespace SaltAndLedger.UnityHost.Tests
             controller.Session.ApplyIndustrialPolicy(RunScenario.BakeryShippingPolicy(), true);
             for (var day = 0; day < 60 && !controller.Session.IsChallengeEnded; day++) Click("nextDayButton");
             Assert.That(controller.Session.Snapshot.Challenge.Status, Is.EqualTo(ChallengeStatus.Succeeded));
+            Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Completion));
+            Click("completionResultsButton");
             Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Results));
             Assert.That(root.Q<Label>("resultIdentity").text, Does.Contain("Seed -42").And.Contain("Ascension 1"));
             var terminal = controller.Session.Snapshot;

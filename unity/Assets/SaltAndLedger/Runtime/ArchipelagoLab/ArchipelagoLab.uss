@@ -136,6 +136,16 @@
 .trade-goods-row { flex-direction: row; align-items: center; height: auto; margin: 0; padding: 5px 8px; border-radius: 0; border-width: 0; border-bottom-width: 1px; border-bottom-color: #37515b; background-color: #203b48; min-height: var(--sl-table-row); flex-shrink: 0; }
 .trade-goods-row:hover { background-color: #345667; }
 .trade-goods-row.selected-good { background-color: #3b5e5b; border-left-width: 3px; border-left-color: #e7c580; }
+.trade-goods-row.stock-short > .trade-good-name { color: #ffd0a0; }
+.trade-goods-row.stock-adequate > .trade-good-name { color: #b8e5c5; }
+.trade-cell.stock-short { color: #ffd0a0; }
+.trade-cell.stock-adequate { color: #b8e5c5; }
+.trade-market > .unity-base-field { margin-top: 8px; }
+.trade-order > .unity-base-field { flex-direction: column; align-items: stretch; }
+.trade-order > .unity-base-field > .unity-base-field__label { max-width: 100%; margin-bottom: 4px; }
+.trade-order .run-actions { margin-top: 0; }
+.trade-order .run-actions > .unity-button { flex-grow: 1; flex-basis: 44%; margin-bottom: 4px; white-space: normal; }
+#startChallengeButton, #startSandboxButton, #resetButton { display: none; }
 .trade-column-header { height: auto; background-color: #152d38; color: #a8c7ca; font-size: var(--sl-caption); min-height: var(--sl-table-row); white-space: normal; }
 .trade-good-name { flex-grow: 1; min-width: 75px; -unity-text-align: middle-left; margin: 0; white-space: normal; flex-shrink: 1; }
 .trade-cell { width: var(--sl-trade-cell); -unity-text-align: middle-right; margin: 0; flex-shrink: 0; white-space: normal; }

@@ -10,6 +10,7 @@ namespace SaltAndLedger.UnityHost
     public sealed partial class ArchipelagoLabController
     {
         private RunIdentity setupIdentity;
+        private CompanyStorageRules setupStorageRules = CompanyStorageRules.Pooled;
         public RunIdentity SetupIdentity => setupIdentity;
 
         private void BuildRunSetup()
@@ -22,9 +23,12 @@ namespace SaltAndLedger.UnityHost
             var worldRow = Panel(scroll, null, "run-columns");
             var world = Panel(worldRow, null, "run-column run-card");
             Text(world, null, "YOUR WORLD", "run-eyebrow");
+            Text(world, "setupModeHeadline", "EXPANDING ECONOMY v3 · Shared company stock", "run-objective");
+            var legacy = new Foldout { name = "advancedWorldFoldout", text = "Advanced / Legacy world rules", value = false };
+            world.Add(legacy);
             var mode = new DropdownField("World type", new System.Collections.Generic.List<string>
-                { "Fixed / Classic Archipelago", "Seeded Archipelago · v1 geography", "Living Cities · v2 economy", "Expanding Economy · v3" }, 0) { name = "worldModePicker" };
-            world.Add(mode);
+                { "Fixed / Classic Archipelago", "Seeded Archipelago · v1 geography", "Living Cities · v2 economy", "Expanding Economy · v3" }, 3) { name = "worldModePicker" };
+            legacy.Add(mode);
             var seed = new TextField("Seed") { name = "seedField", value = "42" };
             world.Add(seed);
             var seedActions = Panel(world, null, "row run-actions");
@@ -34,19 +38,25 @@ namespace SaltAndLedger.UnityHost
             var difficulty = new DropdownField("Difficulty", new System.Collections.Generic.List<string>
                 { "Ascension 0: Normal", "Ascension 1: Slow Foundations" }, 0) { name = "difficultyPicker" };
             world.Add(difficulty);
-            Text(world, "setupDifficulty", "", "run-copy");
+            var rules = new Foldout { name = "setupRulesFoldout", text = "Construction and economy details", value = false };
+            world.Add(rules);
+            Text(rules, "setupDifficulty", "", "run-copy");
             var pricing = new DropdownField("Living pricing", new System.Collections.Generic.List<string>
                 { "Stock-sensitive baseline", "Coverage target hypothesis" }, 0) { name = "livingPricingPicker" };
             world.Add(pricing);
-            Text(world, "setupEconomyDescription", "", "run-footnote");
-            Text(world, null, "Seed syntax: optional + or − followed by ASCII digits, from −2147483648 to 2147483647; no spaces.", "run-footnote");
+            Text(rules, "setupEconomyDescription", "", "run-footnote");
+            seed.tooltip = "Signed 32-bit integer; optional + or − and ASCII digits, no spaces.";
             var preview = Panel(worldRow, null, "run-column run-card");
             Text(preview, null, "GEOGRAPHY PREVIEW", "run-eyebrow");
             Text(preview, "setupWorldIdentity", "", "run-objective");
-            Text(preview, "setupCoordinates", "", "run-copy");
-            Text(preview, "setupRoutes", "", "run-copy");
-            Text(preview, null, "Distances are abstract units. Direct sea connections do not avoid coastlines. Travel estimates use the authoritative starting ship speed.", "run-footnote");
-            var cities = Panel(scroll, "setupCities", "run-card hidden");
+            Button(preview, "previewWorldButton", "Explore full map", OpenCommissionMap, "primary");
+            Text(preview, null, "Inspect every town, starting stock, local needs and building opportunities before choosing your objectives.", "run-copy");
+            var distances = new Foldout { name = "setupDistances", text = "Coordinates and exact sea distances", value = false };
+            preview.Add(distances);
+            Text(distances, "setupCoordinates", "", "run-copy");
+            Text(distances, "setupRoutes", "", "run-copy");
+            var cities = new Foldout { name = "setupCities", text = "All city economies", value = false };
+            cities.AddToClassList("run-card"); scroll.Add(cities);
             Text(cities, null, "KNOWN CITY ECONOMIES", "run-eyebrow");
             Text(cities, "setupRecoveryTown", "", "run-objective");
             Panel(cities, "setupCityCards", "setup-city-cards");
@@ -120,6 +130,9 @@ namespace SaltAndLedger.UnityHost
                 (challenge.Configuration.MinimumCash / (SetupWorldMode() == RunWorldMode.ExpandingEconomy ? 10000 : 1)) +
                 "\nCompleting the objective wins immediately. Missing it at the deadline ends the run in defeat.");
             var mode = SetupWorldMode();
+            SetText("setupModeHeadline", mode == RunWorldMode.ExpandingEconomy ? "EXPANDING ECONOMY v3 · " +
+                (setupStorageRules == CompanyStorageRules.Pooled ? "Shared company stock" : "Legacy facility stores") :
+                "LEGACY · " + Element<DropdownField>("worldModePicker").value);
             var seeded = mode != RunWorldMode.Classic;
             var expanding = mode == RunWorldMode.ExpandingEconomy;
             var living = mode == RunWorldMode.LivingCities || expanding;
@@ -134,6 +147,7 @@ namespace SaltAndLedger.UnityHost
             if (commission && valid) EnsureCommissionDraft(seed);
             Element<Button>("startRunButton").text = commission ? "Reveal map & draft" : "Begin voyage";
             Element<Button>("startRunButton").SetEnabled(valid);
+            Element<Button>("previewWorldButton").SetEnabled(valid);
             Element<Button>("copySeedButton").SetEnabled(seeded && valid);
             SetText("seedValidation", valid ? "" : "Enter a signed 32-bit integer using ASCII digits. No spaces, decimals or exponents.");
             SetText("setupDifficulty", difficulty == RunDifficulty.Normal
@@ -143,7 +157,7 @@ namespace SaltAndLedger.UnityHost
             // An unfinished draft uses an ordinary day-zero sandbox preview; it cannot be started as a commission.
             setupIdentity = valid ? new RunIdentity(commission && plan == null ? null : id, charter.Id, mode,
                 seeded ? seed : (int?)null, difficulty, livingPricingMode: living ? pricing : LivingPricingMode.StockOnly,
-                commission: plan) : null;
+                commission: plan, companyStorageRules: expanding ? setupStorageRules : CompanyStorageRules.Legacy) : null;
             Root.Q<Button>("commissionBeginButton")?.SetEnabled(commission && valid && plan != null);
             if (valid) charter = RunScenario.GetCharter(setupIdentity);
             SetText("setupCharterDescription", charter.Description);
@@ -153,8 +167,8 @@ namespace SaltAndLedger.UnityHost
                 ? "Living Cities v2 varies geography, production roles, eligible private industries, population and initial finite accounts. Households pay for actual purchases; completed production pays wages. Economic viability is not guaranteed victory."
                 : "Historical economy: Classic keeps authored geography; seeded v1 changes geography only. Household finances, wages and population are not modeled.");
             SetText("setupWorldIdentity", valid ? WorldIdentityText(setupIdentity) : "Preview unavailable until the seed is valid.");
+            if (!valid) return;
             Element<VisualElement>("setupCityCards").Clear();
-            if (!valid) { SetText("setupCoordinates", ""); SetText("setupRoutes", ""); SetText("setupRecoveryTown", "Enter a valid seed to preview cities."); return; }
             var geography = RunScenario.PreviewGeography(setupIdentity);
             SetText("setupCoordinates", string.Join("\n", geography.Positions.Values.Select(p =>
                 PortName(p.PortId) + "  (" + p.X + ", " + p.Y + ")")));
@@ -197,6 +211,7 @@ namespace SaltAndLedger.UnityHost
 
         private void LoadSetupIdentity(RunIdentity identity)
         {
+            setupStorageRules = identity.CompanyStorageRules;
             RestoreCommissionSelection(identity);
             var mode = Element<DropdownField>("worldModePicker");
             mode.SetValueWithoutNotify(mode.choices[(int)identity.WorldMode]);
@@ -212,15 +227,23 @@ namespace SaltAndLedger.UnityHost
             RefreshSetup();
         }
 
-        private void OpenSetup(bool sandbox)
+        private void OpenSetup(bool sandbox, bool preserveSelections = false)
         {
             LeaveActiveRunForSetup();
+            setupStorageRules = CompanyStorageRules.Pooled;
+            if (!preserveSelections)
+            {
+                var mode = Element<DropdownField>("worldModePicker");
+                mode.SetValueWithoutNotify(mode.choices[3]);
+                Element<Foldout>("advancedWorldFoldout").SetValueWithoutNotify(false);
+                RefreshSetupChallenges();
+            }
             var field = Element<DropdownField>("challengePicker");
-            if (sandbox || field.index < 1) field.SetValueWithoutNotify(field.choices[sandbox ? 0 : 1]);
+            if (!preserveSelections || sandbox || field.index < 1) field.SetValueWithoutNotify(field.choices[sandbox ? 0 : 1]);
             RefreshSetup();
             ShowScreen(ArchipelagoScreen.Setup);
             Element<ScrollView>("setupScroll").scrollOffset = Vector2.zero;
-            Element<DropdownField>("worldModePicker").Focus();
+            Element<TextField>("seedField").Focus();
         }
 
         private void LeaveActiveRunForSetup()
@@ -233,7 +256,7 @@ namespace SaltAndLedger.UnityHost
         private void ChangeSetup()
         {
             if (Session.Identity != null) LoadSetupIdentity(Session.Identity);
-            OpenSetup(Session.Identity?.ChallengeId == null);
+            OpenSetup(Session.Identity?.ChallengeId == null, true);
         }
 
         private void RequestChangeSetup() => Confirm("Change Setup?",
@@ -273,7 +296,9 @@ namespace SaltAndLedger.UnityHost
                 (identity.WorldMode == RunWorldMode.ExpandingEconomy ? "Expanding Economy · " : identity.WorldMode == RunWorldMode.LivingCities ? "Living Cities · " : "") +
                 "Seed " + identity.Seed.Value.ToString(CultureInfo.InvariantCulture) + " · Generator v" + identity.GeneratorVersion +
                 (identity.WorldMode == RunWorldMode.LivingCities || identity.WorldMode == RunWorldMode.ExpandingEconomy ? " · " + identity.LivingPricingMode + " pricing" : "")) +
-                " · Ascension " + identity.Ascension + (identity.Difficulty == RunDifficulty.SlowFoundations ? ": Slow Foundations" : ": Normal");
+                " · Ascension " + identity.Ascension + (identity.Difficulty == RunDifficulty.SlowFoundations ? ": Slow Foundations" : ": Normal") +
+                (identity.WorldMode == RunWorldMode.ExpandingEconomy ? " · storage v" + (int)identity.CompanyStorageRules +
+                    (identity.CompanyStorageRules == CompanyStorageRules.Pooled ? " (shared town stock)" : " (legacy facility stores)") : "");
         }
     }
 }

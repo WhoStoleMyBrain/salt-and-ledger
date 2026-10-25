@@ -48,6 +48,8 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(root.Q<Button>("playButton").enabledInHierarchy, Is.False);
             Click("newRunButton");
             Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Setup));
+            root.Q<Foldout>("advancedWorldFoldout").value = true;
+            root.Q<DropdownField>("worldModePicker").value = root.Q<DropdownField>("worldModePicker").choices[0];
             Assert.That(root.Q<DropdownField>("charterPicker").choices.Count, Is.EqualTo(3));
             Assert.That(root.Q<DropdownField>("challengePicker").choices.Count, Is.EqualTo(4));
             root.Q<DropdownField>("charterPicker").value = RunScenario.GetCharter(RunScenario.IndustrialCharter).Name;
@@ -151,6 +153,8 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("logisticsBackButton");
             for (var day = 0; day < 60 && !controller.Session.IsChallengeEnded; day++) Click("nextDayButton");
             Assert.That(controller.Session.Snapshot.Challenge.Status, Is.EqualTo(ChallengeStatus.Succeeded));
+            Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Completion));
+            Click("completionResultsButton");
             Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Results));
             Assert.That(root.Q<Label>("resultOutcome").text, Is.EqualTo("VICTORY"));
             Assert.That(root.Q<Label>("resultFinances").text, Does.Contain("Cost of goods sold"));
@@ -233,6 +237,8 @@ namespace SaltAndLedger.UnityHost.Tests
         [UnityTest]
         public IEnumerator SettingsAndLedgerAreFunctionalAndPassive()
         {
+            root.Q<DropdownField>("textScaleDropdown").value = "Large";
+            controller.TextScale.Apply(ArchipelagoUiScale.Default, false);
             BeginMerchant();
             Click("ledgerButton");
             Assert.That(root.Q<Label>("ledgerFinances").text, Does.Contain("600"));
@@ -240,6 +246,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("ledgerBackButton");
             Click("menuButton");
             Click("pauseSettingsButton");
+            Assert.That(root.Q<DropdownField>("textScaleDropdown").value, Is.EqualTo("Default"));
             var before = controller.Session.Snapshot;
             root.Q<Toggle>("smoothMovementToggle").value = false;
             root.Q<DropdownField>("textScaleDropdown").value = "Large";
@@ -267,7 +274,7 @@ namespace SaltAndLedger.UnityHost.Tests
                 Contained("newRunButton"); Contained("menuExitButton");
                 Click("newRunButton");
                 yield return null;
-                Contained("worldModePicker"); Contained("startRunButton");
+                Contained("setupModeHeadline"); Contained("startRunButton");
                 foreach (var name in new[] { "challengePicker", "charterPicker", "setupAssets" })
                 {
                     root.Q<ScrollView>("setupScroll").ScrollTo(root.Q(name));

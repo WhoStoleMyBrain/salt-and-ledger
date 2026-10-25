@@ -73,7 +73,10 @@
 .setup-city-card { flex-grow: 1; flex-basis: 42%; min-width: 0; padding: 10px; margin: 5px; background-color: #142b36; border-radius: 5px; }
 .ui-narrow.ui-large-layout .setup-city-card { flex-basis: 100%; }
 
-.commission-map-host { height: 360px; flex-shrink: 0; border-width: 1px; border-color: #496672; border-radius: 7px; }
+.commission-chart-layout { flex-direction: row; align-items: stretch; }
+.commission-map-host { height: 680px; flex-grow: 1; flex-basis: 0; min-width: 0; border-width: 1px; border-color: #496672; border-radius: 7px; }
+.commission-town-details { width: 32%; min-width: 280px; margin-left: 14px; height: 680px; }
+.commission-town-details > .unity-scroll-view__content-viewport > .unity-scroll-view__content-container { padding-right: 8px; }
 .commission-map-host > .archipelago-map { flex-grow: 1; min-height: 0; }
 .commission-offers { flex-direction: row; align-items: stretch; }
 .commission-offer { flex-grow: 1; flex-basis: 0; min-width: 0; margin: 5px; border-width: 2px; }
@@ -94,4 +97,4 @@
 .ui-narrow.ui-large-layout .commission-offers { flex-direction: column; }
 .ui-narrow.ui-large-layout .commission-offer { flex-basis: auto; margin-bottom: 12px; }
 .ui-narrow.ui-large-layout .commission-progress-card { flex-basis: 100%; }
-.ui-short .commission-map-host { height: 310px; }
+.ui-short .commission-map-host, .ui-short .commission-town-details { height: 560px; }
