@@ -9,6 +9,8 @@ var marketMode = args.Length == 2 && args[1] == "--market";
 var shippingMode = args.Length == 2 && args[1] == "--shipping";
 var automationMode = args.Length == 2 && args[1] == "--automation";
 var commissionMode = args.Length >= 2 && args[1] == "--grand-commission";
+var circulationMode = args.Length >= 2 && args[1] == "--economic-circulation";
+var checkCirculation = circulationMode && args.Length >= 3 && args[2] == "--check";
 var pricingMode = args.Length >= 2 && args[1] == "--pricing";
 var checkPricing = pricingMode && args.Length >= 3 && args[2] == "--check";
 var archipelagoMode = args.Length >= 2 && args[1] == "--archipelago";
@@ -51,9 +53,10 @@ if (args.Length != 1 && !(worldMode && args.Length <= 3) && !marketMode && !ship
     !(enterpriseMode && args.Length <= (checkEnterprise ? 4 : 3)) &&
     !(industrialMode && args.Length <= (checkIndustrial ? 4 : 3)) &&
     !(runsMode && args.Length <= (checkRuns ? 4 : 3)) && !validSeeded && !validLiving && !validExpanding &&
-    !(commissionMode && args.Length <= 3 && (args.Length == 2 || args[2] == "--check")))
+    !(commissionMode && args.Length <= 3 && (args.Length == 2 || args[2] == "--check")) &&
+    !(circulationMode && args.Length <= (checkCirculation ? 4 : 3)))
 {
-    Console.Error.WriteLine("Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--world [initialLogs] | --market | --pricing [--check] [output.json] | --shipping | --automation | --archipelago [--check] [output.json] | --enterprise [--check] [output.json] | --industrial-logistics [--check] [output.json] | --runs [--check] [output.json] | --seeded-runs [--deep] [--check] [output.json] | --living-cities [--deep] [--check] [output.json] | --expanding-economy [--reinvestment] [--deep] [--check] [output.json] | --grand-commission [--check]]");
+    Console.Error.WriteLine("Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--world [initialLogs] | --market | --pricing [--check] [output.json] | --shipping | --automation | --archipelago [--check] [output.json] | --enterprise [--check] [output.json] | --industrial-logistics [--check] [output.json] | --runs [--check] [output.json] | --seeded-runs [--deep] [--check] [output.json] | --living-cities [--deep] [--check] [output.json] | --expanding-economy [--reinvestment] [--deep] [--check] [output.json] | --economic-circulation [--check] [output.json] | --grand-commission [--check]]");
     return 1;
 }
 
@@ -68,6 +71,8 @@ if (worldMode && args.Length == 3 &&
 try
 {
     var content = ContentLoader.Load(File.ReadAllText(args[0]));
+    if (circulationMode)
+        return EconomicCirculationExperiments.Run(content, args.Length > (checkCirculation ? 3 : 2) ? args[checkCirculation ? 3 : 2] : null, checkCirculation);
     if (commissionMode) return GrandCommissionWitness.Run(content);
     if (expandingMode)
         return ExpandingEconomyExperiments.Run(content, args.Length > expandingIndex ? args[expandingIndex] : null,
