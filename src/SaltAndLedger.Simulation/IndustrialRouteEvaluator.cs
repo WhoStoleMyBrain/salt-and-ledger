@@ -93,7 +93,7 @@ namespace SaltAndLedger.Simulation
                     next, departure: new SailCommand(destination));
             var market = snapshot.Ports[source];
             var sourceStock = leg.SourceKind == IndustrialEndpointKind.Warehouse
-                ? snapshot.PrivateFacilities[leg.SourceFacilityId!].Inventory[leg.GoodId] : market.Inventory[leg.GoodId];
+                ? snapshot.GetFacilityStorage(leg.SourceFacilityId!).Inventory[leg.GoodId] : market.Inventory[leg.GoodId];
             if (sourceStock < leg.MinimumSourceStock)
                 return AcquisitionWait(snapshot, ship, policy, outbound,
                     "Waiting for source stock to reach " + leg.MinimumSourceStock + " units before loading.");
@@ -137,7 +137,8 @@ namespace SaltAndLedger.Simulation
             if (leg.DestinationKind == IndustrialEndpointKind.Warehouse)
             {
                 var facility = snapshot.PrivateFacilities[leg.DestinationFacilityId!];
-                var quantity = WholeQuantity(snapshot, Math.Min(cargo, facility.Capacity - facility.StoredUnits));
+                var storage = snapshot.GetFacilityStorage(facility.Id);
+                var quantity = WholeQuantity(snapshot, Math.Min(cargo, storage.Capacity - storage.StoredUnits));
                 if (quantity == 0)
                     return Decision(snapshot, ship, IndustrialRouteAction.Wait,
                         "The destination warehouse is full; unsent cargo remains aboard.");

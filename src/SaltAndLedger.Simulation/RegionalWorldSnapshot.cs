@@ -177,12 +177,15 @@ namespace SaltAndLedger.Simulation
             IEnumerable<PrivateFacilitySnapshot> privateFacilities, ChallengeSnapshot? challenge,
             AccountingSnapshot accounting, RunDifficulty difficulty = RunDifficulty.Normal,
             RunIdentity? runIdentity = null, ExpandingEconomySnapshot? economy = null,
-            CommissionHistory? commissionHistory = null)
+            CommissionHistory? commissionHistory = null, IEnumerable<CompanyStockpileSnapshot>? companyStockpiles = null)
         {
             Day = day;
             Revision = revision;
             Difficulty = difficulty;
             RunIdentity = runIdentity;
+            CompanyStockpiles = new ReadOnlyDictionary<string, CompanyStockpileSnapshot>(
+                new SortedDictionary<string, CompanyStockpileSnapshot>((companyStockpiles ?? Array.Empty<CompanyStockpileSnapshot>())
+                    .ToDictionary(s => s.Id), StringComparer.Ordinal));
             Ports = new ReadOnlyDictionary<string, RegionalPortSnapshot>(
                 new SortedDictionary<string, RegionalPortSnapshot>(ports.ToDictionary(p => p.Id), StringComparer.Ordinal));
             Ships = new ReadOnlyDictionary<string, RegionalShipSnapshot>(
@@ -263,10 +266,11 @@ namespace SaltAndLedger.Simulation
         {
             if (command == null) throw new ArgumentNullException(nameof(command));
             var facility = OwnedFacility(ownerId, facilityId);
+            var storage = GetFacilityStorage(facilityId);
             var port = Ports[facility.PortId];
             return TradeCalculator.Preview(port.Quotes[command.GoodId], command, port.Inventory[command.GoodId],
-                facility.Inventory[command.GoodId], port.MarketCash, Companies[ownerId].Cash,
-                facility.Capacity - facility.StoredUnits);
+                storage.Inventory[command.GoodId], port.MarketCash, Companies[ownerId].Cash,
+                storage.Capacity - storage.StoredUnits);
         }
 
         public int MaximumTradeQuantity(string shipId, string portId, TradeDirection direction, string goodId)
@@ -281,10 +285,11 @@ namespace SaltAndLedger.Simulation
         public int MaximumWarehouseTradeQuantity(string ownerId, string facilityId, TradeDirection direction, string goodId)
         {
             var facility = OwnedFacility(ownerId, facilityId);
+            var storage = GetFacilityStorage(facilityId);
             var port = Ports[facility.PortId];
             return TradeQuantityCalculator.Maximum(port.Quotes[goodId], direction, port.Inventory[goodId],
-                facility.Inventory[goodId], port.MarketCash, Companies[ownerId].Cash,
-                facility.Capacity - facility.StoredUnits);
+                storage.Inventory[goodId], port.MarketCash, Companies[ownerId].Cash,
+                storage.Capacity - storage.StoredUnits);
         }
 
         private PrivateFacilitySnapshot OwnedFacility(string ownerId, string facilityId)

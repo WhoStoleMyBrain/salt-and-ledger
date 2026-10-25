@@ -34,6 +34,9 @@ namespace SaltAndLedger.Simulation
                 throw new ArgumentException("Run identity and world difficulty must agree.", nameof(runIdentity));
             if (runIdentity != null && runIdentity.ChallengeId != challenge?.Id)
                 throw new ArgumentException("Run identity and world challenge must agree.", nameof(runIdentity));
+            var pooledStorage = runIdentity?.CompanyStorageRules == CompanyStorageRules.Pooled;
+            if (pooledStorage && economy == null)
+                throw new ArgumentException("Pooled storage requires the v3 economy.", nameof(economy));
             if (challenge?.Kind == ChallengeKind.GrandCommission &&
                 (runIdentity?.Commission == null || economy == null))
                 throw new ArgumentException("A Grand Commission needs its resolved v3 run identity.", nameof(runIdentity));
@@ -116,6 +119,7 @@ namespace SaltAndLedger.Simulation
                     accounting.Grant("ship:" + vessel.Id, stock.Key, stock.Value, initialGrantProvenance);
             }
             var privateFacilities = new List<PrivateFacilitySnapshot>();
+            var stockpiles = new SortedDictionary<string, WorkingStockpile>(StringComparer.Ordinal);
             var facilityIds = new HashSet<string>(locations.SelectMany(p => p.Facilities)
                 .Select(f => f.Configuration.Instance.Id), StringComparer.Ordinal);
             foreach (var configured in (initialFacilities ?? Array.Empty<PrivateFacilityConfiguration>())
@@ -134,14 +138,32 @@ namespace SaltAndLedger.Simulation
                     economy == null ? 1 : EconomicUnits.QuantityScale).Snapshot();
                 if (inventory.Values.Sum(v => (long)v) > blueprint.WarehouseCapacity)
                     throw new ArgumentException("Starter inventory exceeds warehouse capacity.");
+                var storeId = pooledStorage ? CompanyStockpileSnapshot.StoreId(configured.OwnerId, configured.PortId) :
+                    "facility:" + configured.Id;
+                if (pooledStorage)
+                {
+                    if (!stockpiles.TryGetValue(storeId, out var store))
+                    {
+                        store = new WorkingStockpile(content, storeId, configured.OwnerId, configured.PortId, 0,
+                            new Inventory(content, quantityScale: EconomicUnits.QuantityScale).Snapshot(), EconomicUnits.QuantityScale);
+                        stockpiles.Add(storeId, store);
+                        accounting.RegisterStore(storeId, configured.OwnerId);
+                    }
+                    store.Capacity = checked(store.Capacity + blueprint.WarehouseCapacity);
+                    var quantities = inventory.ToDictionary(p => p.Key,
+                        p => checked(p.Value + store.Inventory.GetQuantity(p.Key)), StringComparer.Ordinal);
+                    store.Inventory.Commit(quantities);
+                    store.StoredUnits = checked(store.StoredUnits + (int)inventory.Values.Sum(v => (long)v));
+                }
+                else accounting.RegisterStore(storeId, configured.OwnerId);
                 var totals = content.Goods.ToDictionary(g => g.Id, _ => 0L, StringComparer.Ordinal);
                 privateFacilities.Add(new PrivateFacilitySnapshot(configured.Id, configured.OwnerId, configured.PortId,
                     blueprint, configured.Policy, configured.Enabled, initialDay, checked(initialDay + blueprint.IntervalDays),
-                    ScheduledProductionOutcome.NotDue, inventory, 0, 0, 0, totals, totals,
-                    IndustryWaitReason.None, IndustryWaitReason.None, true, configured.Provenance));
-                accounting.RegisterStore("facility:" + configured.Id, configured.OwnerId);
+                    ScheduledProductionOutcome.NotDue, pooledStorage ? new Inventory(content).Snapshot() : inventory, 0, 0, 0, totals, totals,
+                    IndustryWaitReason.None, IndustryWaitReason.None, true, configured.Provenance,
+                    sharedStockpileId: pooledStorage ? storeId : null));
                 foreach (var stock in inventory.Where(p => p.Value > 0).OrderBy(p => p.Key, StringComparer.Ordinal))
-                    accounting.Grant("facility:" + configured.Id, stock.Key, stock.Value, configured.Provenance);
+                    accounting.Grant(storeId, stock.Key, stock.Value, configured.Provenance);
             }
             var initialChallenge = challenge == null ? null : ChallengeRules.Create(challenge);
             if (challenge?.Kind == ChallengeKind.CityRecovery)
@@ -151,7 +173,8 @@ namespace SaltAndLedger.Simulation
                 accounts.Values, blueprints, privateFacilities,
                 initialChallenge, accounting.Snapshot(), difficulty, runIdentity,
                 economy == null ? null : ExpandingEconomySnapshot.Initial(economy),
-                runIdentity?.Commission == null ? null : CommissionHistory.Initial(vessels, challenge!.OwnerId, initialDay));
+                runIdentity?.Commission == null ? null : CommissionHistory.Initial(vessels, challenge!.OwnerId, initialDay),
+                stockpiles.Values.Select(s => s.Snapshot()));
             if (economy != null)
             {
                 ValidateExpandingConfiguration(economy);
@@ -222,9 +245,10 @@ namespace SaltAndLedger.Simulation
         }
 
         public RegionalResult TransferGoods(string ownerId, string shipId, string facilityId,
-            TransferDirection direction, string goodId, int quantity) =>
+            TransferDirection direction, string goodId, int quantity, RegionalWorldSnapshot? expectedSnapshot = null) =>
             Mutate(work =>
             {
+                EnsureCurrent(expectedSnapshot);
                 EnsureManual(work.Ships[shipId]);
                 work.Transfer(ownerId, shipId, facilityId, direction, goodId, quantity);
             });
@@ -463,6 +487,24 @@ namespace SaltAndLedger.Simulation
             internal CompanySnapshot Snapshot() => new CompanySnapshot(Id, Cash);
         }
 
+        private sealed class WorkingStockpile
+        {
+            internal string Id { get; }
+            internal string OwnerId { get; }
+            internal string PortId { get; }
+            internal int Capacity { get; set; }
+            internal Inventory Inventory { get; }
+            internal int StoredUnits { get; set; }
+            internal WorkingStockpile(ContentCatalog content, string id, string ownerId, string portId,
+                int capacity, IReadOnlyDictionary<string, int> inventory, int quantityScale)
+            {
+                Id = id; OwnerId = ownerId; PortId = portId; Capacity = capacity;
+                Inventory = new Inventory(content, inventory, quantityScale);
+                StoredUnits = checked((int)inventory.Values.Sum(v => (long)v));
+            }
+            internal CompanyStockpileSnapshot Snapshot() => new CompanyStockpileSnapshot(Id, OwnerId, PortId, Capacity, Inventory.Snapshot());
+        }
+
         private sealed class WorkingFacility
         {
             internal string Id { get; }
@@ -478,8 +520,17 @@ namespace SaltAndLedger.Simulation
             internal string Provenance { get; }
             internal long NextProductionDay { get; set; }
             internal ScheduledProductionOutcome LastOutcome { get; set; }
-            internal Inventory Inventory { get; }
-            internal int StoredUnits { get; set; }
+            private readonly Inventory privateInventory;
+            private readonly WorkingStockpile? sharedStore;
+            private int privateStoredUnits;
+            internal Inventory Inventory => sharedStore?.Inventory ?? privateInventory;
+            internal string StoreId => sharedStore?.Id ?? "facility:" + Id;
+            internal int Capacity => sharedStore?.Capacity ?? Blueprint.WarehouseCapacity;
+            internal int StoredUnits
+            {
+                get => sharedStore?.StoredUnits ?? privateStoredUnits;
+                set { if (sharedStore == null) privateStoredUnits = value; else sharedStore.StoredUnits = value; }
+            }
             internal long BatchesProduced { get; set; }
             internal long ProcurementCost { get; set; }
             internal long SalesRevenue { get; set; }
@@ -488,14 +539,16 @@ namespace SaltAndLedger.Simulation
             internal Dictionary<string, long> Consumed { get; }
             internal IndustryWaitReason ProcurementWaitReason { get; set; }
             internal IndustryWaitReason SalesWaitReason { get; set; }
-            internal WorkingFacility(ContentCatalog content, PrivateFacilitySnapshot before, int quantityScale = 1)
+            internal WorkingFacility(ContentCatalog content, PrivateFacilitySnapshot before, int quantityScale = 1,
+                WorkingStockpile? sharedStore = null)
             {
                 Id = before.Id; OwnerId = before.OwnerId; PortId = before.PortId; Blueprint = before.Blueprint;
                 Policy = before.Policy; Enabled = before.Enabled; CreatedDay = before.CreatedDay;
                 IsStarterGrant = before.IsStarterGrant; Provenance = before.Provenance;
                 ConstructionStatus = before.ConstructionStatus; ConstructionCompletionDay = before.ConstructionCompletionDay;
                 NextProductionDay = before.NextProductionDay; LastOutcome = before.LastOutcome;
-                Inventory = new Inventory(content, before.Inventory, quantityScale); StoredUnits = before.StoredUnits;
+                privateInventory = new Inventory(content, before.Inventory, quantityScale);
+                privateStoredUnits = before.StoredUnits; this.sharedStore = sharedStore;
                 BatchesProduced = before.BatchesProduced; ProcurementCost = before.ProcurementCost; SalesRevenue = before.SalesRevenue;
                 WagesPaid = before.WagesPaid;
                 Produced = before.ProducedQuantities.ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal);
@@ -503,9 +556,9 @@ namespace SaltAndLedger.Simulation
                 ProcurementWaitReason = before.ProcurementWaitReason; SalesWaitReason = before.SalesWaitReason;
             }
             internal PrivateFacilitySnapshot Snapshot(long day) => new PrivateFacilitySnapshot(Id, OwnerId, PortId, Blueprint,
-                Policy, Enabled, CreatedDay, NextProductionDay, LastOutcome, Inventory.Snapshot(), BatchesProduced,
+                Policy, Enabled, CreatedDay, NextProductionDay, LastOutcome, privateInventory.Snapshot(), BatchesProduced,
                 ProcurementCost, SalesRevenue, Produced, Consumed, ProcurementWaitReason, SalesWaitReason,
-                IsStarterGrant, Provenance, ConstructionStatus, ConstructionCompletionDay, day, WagesPaid);
+                IsStarterGrant, Provenance, ConstructionStatus, ConstructionCompletionDay, day, WagesPaid, sharedStore?.Id);
         }
 
         private sealed partial class WorkingWorld
@@ -518,6 +571,7 @@ namespace SaltAndLedger.Simulation
             internal SortedDictionary<string, WorkingShip> Ships { get; } = new SortedDictionary<string, WorkingShip>(StringComparer.Ordinal);
             internal SortedDictionary<string, WorkingCompany> Companies { get; } = new SortedDictionary<string, WorkingCompany>(StringComparer.Ordinal);
             internal SortedDictionary<string, WorkingFacility> PrivateFacilities { get; } = new SortedDictionary<string, WorkingFacility>(StringComparer.Ordinal);
+            internal SortedDictionary<string, WorkingStockpile> CompanyStockpiles { get; } = new SortedDictionary<string, WorkingStockpile>(StringComparer.Ordinal);
             internal ChallengeSnapshot? Challenge { get; set; }
             internal WorkingAccounting Accounting { get; }
             internal WorkingCommissionHistory? Commission { get; }
@@ -541,7 +595,12 @@ namespace SaltAndLedger.Simulation
                 foreach (var port in before.Ports.Values) Ports.Add(port.Id, new WorkingPort(content, port));
                 foreach (var ship in before.Ships.Values) Ships.Add(ship.Id, new WorkingShip(content, ship, before.QuantityScale));
                 foreach (var company in before.Companies.Values) Companies.Add(company.Id, new WorkingCompany(company));
-                foreach (var facility in before.PrivateFacilities.Values) PrivateFacilities.Add(facility.Id, new WorkingFacility(content, facility, before.QuantityScale));
+                foreach (var store in before.CompanyStockpiles.Values)
+                    CompanyStockpiles.Add(store.Id, new WorkingStockpile(content, store.Id, store.OwnerId, store.PortId,
+                        store.Capacity, store.Inventory, before.QuantityScale));
+                foreach (var facility in before.PrivateFacilities.Values)
+                    PrivateFacilities.Add(facility.Id, new WorkingFacility(content, facility, before.QuantityScale,
+                        before.UsesPooledCompanyStorage ? CompanyStockpiles[CompanyStockpileSnapshot.StoreId(facility.OwnerId, facility.PortId)] : null));
                 Challenge = before.Challenge;
                 Accounting = new WorkingAccounting(before.Accounting);
                 Economy = before.Economy == null ? null : new WorkingEconomy(before.Economy);
@@ -552,7 +611,8 @@ namespace SaltAndLedger.Simulation
                 Ships.Values.Select(s => s.Snapshot(Companies[s.Configuration.OwnerId].Cash)), before.Routes,
                 Companies.Values.Select(c => c.Snapshot()), before.IndustryBlueprints.Values,
                 PrivateFacilities.Values.Select(f => f.Snapshot(Day)), Challenge, Accounting.Snapshot(),
-                before.Difficulty, before.RunIdentity, Economy?.Snapshot(), Commission?.Snapshot());
+                before.Difficulty, before.RunIdentity, Economy?.Snapshot(), Commission?.Snapshot(),
+                CompanyStockpiles.Values.Select(s => s.Snapshot()));
 
             internal void EvaluateChallenge()
             {
@@ -635,9 +695,22 @@ namespace SaltAndLedger.Simulation
                     pending ? IndustryWaitReason.UnderConstruction : IndustryWaitReason.Disabled,
                     constructionStatus: pending ? FacilityConstructionStatus.UnderConstruction : FacilityConstructionStatus.Operational,
                     constructionCompletionDay: completionDay, snapshotDay: Day);
-                PrivateFacilities.Add(facilityId, new WorkingFacility(content, facility, before.QuantityScale));
-                Accounting.RegisterStore("facility:" + facilityId, ownerId);
-                Accounting.Construct(ownerId, facilityId, portId, blueprint.ConstructionCost);
+                WorkingStockpile? sharedStore = null;
+                if (before.UsesPooledCompanyStorage)
+                {
+                    var storeId = CompanyStockpileSnapshot.StoreId(ownerId, portId);
+                    if (!CompanyStockpiles.TryGetValue(storeId, out sharedStore))
+                    {
+                        sharedStore = new WorkingStockpile(content, storeId, ownerId, portId, 0,
+                            new Inventory(content, quantityScale: before.QuantityScale).Snapshot(), before.QuantityScale);
+                        CompanyStockpiles.Add(storeId, sharedStore);
+                        Accounting.RegisterStore(storeId, ownerId);
+                    }
+                    sharedStore.Capacity = checked(sharedStore.Capacity + blueprint.WarehouseCapacity);
+                }
+                else Accounting.RegisterStore("facility:" + facilityId, ownerId);
+                PrivateFacilities.Add(facilityId, new WorkingFacility(content, facility, before.QuantityScale, sharedStore));
+                Accounting.Construct(ownerId, facilityId, portId, blueprint.ConstructionCost, PrivateFacilities[facilityId].StoreId);
                 company.Cash -= blueprint.ConstructionCost;
                 port.Cash = nextCash;
                 Construction.Add(new RegionalConstruction(facilityId, ownerId, portId, blueprintId,
@@ -659,7 +732,7 @@ namespace SaltAndLedger.Simulation
                         ? IndustryWaitReason.None : IndustryWaitReason.Disabled;
                     facility.SalesWaitReason = facility.Enabled && facility.Policy.SalesEnabled
                         ? IndustryWaitReason.None : IndustryWaitReason.Disabled;
-                    Accounting.CompleteConstruction(facility.OwnerId, facility.Id, facility.PortId);
+                    Accounting.CompleteConstruction(facility.OwnerId, facility.Id, facility.PortId, facility.StoreId);
                     Construction.Add(new RegionalConstruction(facility.Id, facility.OwnerId, facility.PortId,
                         facility.Blueprint.Id, ConstructionOutcome.Completed, 0, facility.CreatedDay,
                         nextDay, facility.NextProductionDay));
@@ -681,10 +754,9 @@ namespace SaltAndLedger.Simulation
                 var toWarehouse = direction == TransferDirection.ShipToWarehouse;
                 var source = toWarehouse ? ship.Cargo : facility.Inventory;
                 var destination = toWarehouse ? facility.Inventory : ship.Cargo;
-                var free = toWarehouse ? facility.Blueprint.WarehouseCapacity - facility.StoredUnits
+                var free = toWarehouse ? facility.Capacity - facility.StoredUnits
                     : ship.Configuration.Ship.CargoCapacity - ship.CargoUnits;
-                var outcome = source.GetQuantity(goodId) < quantity ? TransferOutcome.InsufficientInventory :
-                    free < quantity ? TransferOutcome.InsufficientCapacity : TransferOutcome.Transferred;
+                var outcome = RegionalWorldSnapshot.TransferOutcomeFor(source.GetQuantity(goodId), free, quantity);
                 if (outcome == TransferOutcome.Transferred)
                 {
                     var nextSource = checked(source.GetQuantity(goodId) - quantity);
@@ -693,8 +765,8 @@ namespace SaltAndLedger.Simulation
                     destination.Commit(new Dictionary<string, int> { [goodId] = nextDestination });
                     facility.StoredUnits = checked(facility.StoredUnits + (toWarehouse ? quantity : -quantity));
                     ship.CargoUnits = checked(ship.CargoUnits + (toWarehouse ? -quantity : quantity));
-                    Accounting.Transfer(toWarehouse ? "ship:" + shipId : "facility:" + facilityId,
-                        toWarehouse ? "facility:" + facilityId : "ship:" + shipId, facility.PortId, goodId, quantity);
+                    Accounting.Transfer(toWarehouse ? "ship:" + shipId : facility.StoreId,
+                        toWarehouse ? facility.StoreId : "ship:" + shipId, facility.PortId, goodId, quantity);
                     Changed = true;
                 }
                 Transfers.Add(new RegionalTransfer(ownerId, shipId, facilityId, direction, goodId, quantity, outcome));
@@ -707,7 +779,7 @@ namespace SaltAndLedger.Simulation
                 var company = Companies[facility.OwnerId];
                 var attempt = TradeCalculator.Preview(port.Quotes[command.GoodId], command,
                     port.Inventory.GetQuantity(command.GoodId), facility.Inventory.GetQuantity(command.GoodId),
-                    port.Cash, company.Cash, facility.Blueprint.WarehouseCapacity - facility.StoredUnits);
+                    port.Cash, company.Cash, facility.Capacity - facility.StoredUnits);
                 TradeCalculator.Apply(attempt, port.Inventory, facility.Inventory);
                 facility.StoredUnits = checked(facility.StoredUnits + attempt.TraderInventoryChange.Delta);
                 port.Cash = attempt.MarketCashChange.After;
@@ -715,7 +787,7 @@ namespace SaltAndLedger.Simulation
                 WarehouseTrades.Add(new RegionalWarehouseTrade(facility.Id, facility.OwnerId, facility.PortId, attempt));
                 if (attempt.Outcome == TradeOutcome.Traded)
                 {
-                    AccountTrade("facility:" + facility.Id, facility.PortId, attempt);
+                    AccountTrade(facility.StoreId, facility.PortId, attempt);
                     if (company.Id == Challenge?.Configuration.OwnerId) Commission?.Trade(facility.PortId, attempt);
                     if (command.Direction == TradeDirection.Buy)
                         facility.ProcurementCost = checked(facility.ProcurementCost + attempt.ExecutedAmount);
@@ -746,7 +818,7 @@ namespace SaltAndLedger.Simulation
                         var company = Companies[facility.OwnerId];
                         var quote = port.Quotes[rule.GoodId];
                         var marketStock = port.Inventory.GetQuantity(rule.GoodId);
-                        var free = facility.Blueprint.WarehouseCapacity - facility.StoredUnits;
+                        var free = facility.Capacity - facility.StoredUnits;
                         var quantity = TradeQuantityCalculator.Maximum(quote, TradeDirection.Buy, marketStock,
                             facility.Inventory.GetQuantity(rule.GoodId), port.Cash, company.Cash, free, wanted,
                             rule.MaxBuyPrice, facility.Policy.CashReserve);
@@ -821,7 +893,12 @@ namespace SaltAndLedger.Simulation
                     var starting = facility.Inventory.Snapshot();
                     var outcome = PrivateProductionRules.Preview(recipe, facility.Blueprint,
                         facility.Inventory.GetQuantity, scale, facility.StoredUnits, Companies[facility.OwnerId].Cash,
-                        facility.Enabled, facility.ConstructionStatus, facility.NextProductionDay, nextDay);
+                        facility.Enabled, facility.ConstructionStatus, facility.NextProductionDay, nextDay,
+                        facility.Capacity, before.UsesPooledCompanyStorage,
+                        before.UsesPooledCompanyStorage ? RegionalWorldSnapshot.AggregateOutputLimit(PrivateFacilities.Values
+                            .Where(f => f.OwnerId == facility.OwnerId && f.PortId == facility.PortId &&
+                                f.Blueprint.RecipeId == facility.Blueprint.RecipeId && f.ConstructionStatus == FacilityConstructionStatus.Operational)
+                            .Select(f => f.Blueprint.OutputStockLimit)) : null);
                     if (outcome == ScheduledProductionOutcome.Produced)
                     {
                         outcome = Simulation.Production.TryRunBatch(facility.Inventory,
@@ -831,7 +908,7 @@ namespace SaltAndLedger.Simulation
                         {
                             PayWage(Ports[facility.PortId], facility.Blueprint.WagePerBatch, facility.Id, facility.OwnerId);
                             facility.WagesPaid = checked(facility.WagesPaid + facility.Blueprint.WagePerBatch);
-                            Accounting.Produce("facility:" + facility.Id, facility.PortId, recipe, scale);
+                            Accounting.Produce(facility.StoreId, facility.PortId, recipe, scale, facility.Id);
                             facility.BatchesProduced = checked(facility.BatchesProduced + 1);
                             foreach (var input in recipe.Inputs)
                                 facility.Consumed[input.GoodId] = checked(facility.Consumed[input.GoodId] + checked(input.Quantity * scale));
@@ -989,7 +1066,7 @@ namespace SaltAndLedger.Simulation
                 else
                 {
                     Companies[ownerId].Cash = checked(Companies[ownerId].Cash - amount);
-                    Accounting.PayWage(ownerId, facilityId, port.Configuration.Id, amount);
+                    Accounting.PayWage(ownerId, facilityId, port.Configuration.Id, amount, PrivateFacilities[facilityId].StoreId);
                 }
                 city.ReceiveWage(amount);
                 CashTransfers.Add(new CityCashTransfer(CityCashTransferKind.Wage,

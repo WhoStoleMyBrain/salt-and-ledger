@@ -318,7 +318,8 @@ namespace SaltAndLedger.Simulation
                 sourceStoreId, destinationStoreId, portId, goodId, quantity, 0, 0, moved.CostBasis,
                 null, null, "physical_transfer", new[] { moved }, new[] { moved }));
         }
-        internal void Produce(string storeId, string portId, RecipeDefinition recipe, int quantityScale = 1)
+        internal void Produce(string storeId, string portId, RecipeDefinition recipe, int quantityScale = 1,
+            string? facilityId = null)
         {
             if (recipe == null) throw new ArgumentNullException(nameof(recipe));
             if (quantityScale < 1) throw new ArgumentOutOfRangeException(nameof(quantityScale));
@@ -345,10 +346,10 @@ namespace SaltAndLedger.Simulation
             foreach (var input in recipe.Inputs) Add(company.Consumed, input.GoodId, checked(input.Quantity * quantityScale));
             events.Add(Event(EconomicEventKind.Production, store.OwnerId, store.OwnerId, store.OwnerId,
                 storeId, storeId, portId, null, totalOutput, 0, 0, totalCost, recipe.Id,
-                storeId.StartsWith("facility:", StringComparison.Ordinal) ? storeId.Substring(9) : null,
+                facilityId ?? (storeId.StartsWith("facility:", StringComparison.Ordinal) ? storeId.Substring(9) : null),
                 recipe.Id, consumed, produced));
         }
-        internal void Construct(string ownerId, string facilityId, string portId, long cost)
+        internal void Construct(string ownerId, string facilityId, string portId, long cost, string? storeId = null)
         {
             RuntimeIdentifier.Validate(facilityId, nameof(facilityId));
             RuntimeIdentifier.Validate(portId, nameof(portId));
@@ -356,24 +357,25 @@ namespace SaltAndLedger.Simulation
             var company = companies[ownerId];
             company.Construction = checked(company.Construction + cost);
             events.Add(Event(EconomicEventKind.Construction, ownerId, ownerId, "market:" + portId,
-                null, "facility:" + facilityId, portId, null, 0, cost, -cost, 0, null, facilityId,
+                null, storeId ?? "facility:" + facilityId, portId, null, 0, cost, -cost, 0, null, facilityId,
                 "construction", Array.Empty<EconomicGoodsMovement>(), Array.Empty<EconomicGoodsMovement>()));
         }
-        internal void CompleteConstruction(string ownerId, string facilityId, string portId)
+        internal void CompleteConstruction(string ownerId, string facilityId, string portId, string? storeId = null)
         {
-            if (stores["facility:" + facilityId].OwnerId != ownerId)
+            storeId = storeId ?? "facility:" + facilityId;
+            if (stores[storeId].OwnerId != ownerId)
                 throw new InvalidOperationException("Construction completion needs its owned facility store.");
             events.Add(Event(EconomicEventKind.ConstructionCompleted, ownerId, ownerId, ownerId,
-                "facility:" + facilityId, "facility:" + facilityId, portId, null, 0, 0, 0, 0, null, facilityId,
+                storeId, storeId, portId, null, 0, 0, 0, 0, null, facilityId,
                 "construction_completed", Array.Empty<EconomicGoodsMovement>(), Array.Empty<EconomicGoodsMovement>()));
         }
-        internal void PayWage(string ownerId, string facilityId, string portId, long amount)
+        internal void PayWage(string ownerId, string facilityId, string portId, long amount, string? storeId = null)
         {
             if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
             if (amount == 0) return;
             companies[ownerId].Wages = checked(companies[ownerId].Wages + amount);
             events.Add(Event(EconomicEventKind.Wage, ownerId, ownerId, "households:" + portId,
-                "facility:" + facilityId, null, portId, null, 0, amount, -amount, 0, null, facilityId,
+                storeId ?? "facility:" + facilityId, null, portId, null, 0, amount, -amount, 0, null, facilityId,
                 "production_wage_expense", Array.Empty<EconomicGoodsMovement>(), Array.Empty<EconomicGoodsMovement>()));
         }
         internal AccountingSnapshot Snapshot()

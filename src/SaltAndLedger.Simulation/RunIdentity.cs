@@ -5,6 +5,7 @@ namespace SaltAndLedger.Simulation
 {
     public enum RunWorldMode { Classic, Seeded, LivingCities, ExpandingEconomy }
     public enum RunDifficulty { Normal = 0, SlowFoundations = 1 }
+    public enum CompanyStorageRules { Legacy = 1, Pooled = 2 }
 
     /// <summary>Immutable setup retained by snapshots, retries and result comparison groups.</summary>
     public sealed class RunIdentity : IEquatable<RunIdentity>
@@ -17,6 +18,8 @@ namespace SaltAndLedger.Simulation
         public RunDifficulty Difficulty { get; }
         public LivingPricingMode LivingPricingMode { get; }
         public GrandCommissionPlan? Commission { get; }
+        public CompanyStorageRules CompanyStorageRules { get; }
+        public bool ShouldSerializeCompanyStorageRules() => CompanyStorageRules != CompanyStorageRules.Legacy;
         public bool ShouldSerializeCommission() => Commission != null;
         public bool ShouldSerializeLivingPricingMode() => WorldMode == RunWorldMode.LivingCities || WorldMode == RunWorldMode.ExpandingEconomy;
         public int ContentVersion => WorldMode == RunWorldMode.ExpandingEconomy ? 3 : 1;
@@ -33,17 +36,22 @@ namespace SaltAndLedger.Simulation
                 Seed!.Value.ToString(CultureInfo.InvariantCulture) +
                 (ShouldSerializeLivingPricingMode() ? "-" + LivingPricingMode.ToString().ToLowerInvariant() : "") +
                 (WorldMode == RunWorldMode.ExpandingEconomy ? "-content3-value1" : "")) +
-            (Commission == null ? "" : "/commission-v" + Commission.Version.ToString(CultureInfo.InvariantCulture) + "-" + Commission.Signature);
+            (Commission == null ? "" : "/commission-v" + Commission.Version.ToString(CultureInfo.InvariantCulture) + "-" + Commission.Signature) +
+            (CompanyStorageRules == CompanyStorageRules.Pooled ? "/storage-v2" : "");
 
         public RunIdentity(string? challengeId, string charterId, RunWorldMode worldMode = RunWorldMode.Classic,
             int? seed = null, RunDifficulty difficulty = RunDifficulty.Normal, int? generatorVersion = null,
             LivingPricingMode livingPricingMode = LivingPricingMode.StockOnly,
-            int? contentVersion = null, int? valuationVersion = null, GrandCommissionPlan? commission = null)
+            int? contentVersion = null, int? valuationVersion = null, GrandCommissionPlan? commission = null,
+            CompanyStorageRules companyStorageRules = CompanyStorageRules.Legacy)
         {
             if (challengeId != null) RunScenario.GetChallenge(challengeId);
             RunScenario.GetCharter(charterId);
             if (!Enum.IsDefined(typeof(RunWorldMode), worldMode))
                 throw new ArgumentOutOfRangeException(nameof(worldMode));
+            if (!Enum.IsDefined(typeof(CompanyStorageRules), companyStorageRules) ||
+                (companyStorageRules == CompanyStorageRules.Pooled && worldMode != RunWorldMode.ExpandingEconomy))
+                throw new ArgumentOutOfRangeException(nameof(companyStorageRules));
             if (difficulty != RunDifficulty.Normal && difficulty != RunDifficulty.SlowFoundations)
                 throw new ArgumentOutOfRangeException(nameof(difficulty));
             if ((worldMode != RunWorldMode.Classic) != seed.HasValue)
@@ -76,12 +84,14 @@ namespace SaltAndLedger.Simulation
             Difficulty = difficulty;
             LivingPricingMode = livingPricingMode;
             Commission = commission;
+            CompanyStorageRules = companyStorageRules;
         }
 
         public bool Equals(RunIdentity? other) => other != null &&
             ChallengeId == other.ChallengeId && CharterId == other.CharterId && WorldMode == other.WorldMode &&
             Seed == other.Seed && GeneratorVersion == other.GeneratorVersion && Difficulty == other.Difficulty &&
-            LivingPricingMode == other.LivingPricingMode && Commission?.Signature == other.Commission?.Signature;
+            LivingPricingMode == other.LivingPricingMode && Commission?.Signature == other.Commission?.Signature &&
+            CompanyStorageRules == other.CompanyStorageRules;
 
         public override bool Equals(object? obj) => obj is RunIdentity other && Equals(other);
 

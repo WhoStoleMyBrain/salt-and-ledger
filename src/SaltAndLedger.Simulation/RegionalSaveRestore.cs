@@ -68,6 +68,7 @@ namespace SaltAndLedger.Simulation
         {
             Count(data.Ports, 4, 4); Count(data.Ships, 1, 64); Count(data.Companies, 1, 64);
             Count(data.Facilities, 0, WorldSaveCodec.MaximumFacilities);
+            if (data.CompanyStockpiles != null) Count(data.CompanyStockpiles, 0, WorldSaveCodec.MaximumFacilities);
             Count(data.Stores, 1, WorldSaveCodec.MaximumFacilities + 64);
             var total = 0;
             foreach (var store in data.Stores)
@@ -102,6 +103,7 @@ namespace SaltAndLedger.Simulation
             var companies = data.Companies.Select(c => new CompanySnapshot(c.Id, Nonnegative(c.Cash))).ToArray();
             var ports = data.Ports.Select(p => RestorePort(content, initial.Ports[p.Id], p, data.Day)).ToArray();
             var facilities = data.Facilities.Select(f => RestoreFacility(content, initial, f, data.Day)).ToArray();
+            var stockpiles = RestoreCompanyStockpiles(content, initial, data, facilities);
             var facilityIds = ports.SelectMany(p => p.Facilities).Select(f => f.Configuration.Instance.Id)
                 .Concat(facilities.Select(f => f.Id)).ToArray();
             Unique(facilityIds, "facilities");
@@ -114,14 +116,14 @@ namespace SaltAndLedger.Simulation
             }
             var ships = data.Ships.Select(s => RestoreShip(content, initial, shipConfigurations[s.Id], s,
                 companies.Single(c => c.Id == shipConfigurations[s.Id].OwnerId).Cash)).ToArray();
-            var stores = RestoreStores(content, data, ships, facilities);
+            var stores = RestoreStores(content, data, ships, facilities, stockpiles);
             var financial = data.Companies.Select(c => RestoreCompany(content, initial, c, stores)).ToArray();
             var accounting = new AccountingSnapshot(financial, stores, data.NextLotId);
             var challenge = RestoreChallenge(initial, data, ports);
             var commissionHistory = RestoreCommissionHistory(content, initial, data, ships, economy);
             return new RegionalWorldSnapshot(data.Day, data.Revision, ports, ships, initial.Routes, companies,
                 initial.IndustryBlueprints.Values, facilities, challenge, accounting, initial.Difficulty, initial.RunIdentity, economy,
-                commissionHistory);
+                commissionHistory, stockpiles);
         }
 
         private static RegionalPortSnapshot RestorePort(ContentCatalog content, RegionalPortSnapshot initial, RegionalSavePort data, long day)
@@ -267,7 +269,19 @@ namespace SaltAndLedger.Simulation
             Require(f.CompletionDay == checked(f.CreatedDay + delay) &&
                 (f.ConstructionStatus == FacilityConstructionStatus.Operational) == (f.CompletionDay <= day), "Invalid construction lifecycle.");
             var inventory = Inventory(content, f.Inventory);
-            Require(inventory.Values.Sum(v => (long)v) <= blueprint.WarehouseCapacity, "Warehouse exceeds capacity.");
+            if (initial.UsesPooledCompanyStorage)
+            {
+                Require(f.SharedStockpileId == "company:" + f.OwnerId + ":" + f.PortId,
+                    "Facility does not reference its owning company's local stockpile.");
+                Require(inventory.Values.All(v => v == 0), "A pooled facility cannot duplicate physical company stock.");
+                Require(f.Batches <= Math.Max(0, day - f.CompletionDay) / blueprint.IntervalDays,
+                    "Pooled facility production precedes its funded batch schedule.");
+            }
+            else
+            {
+                Require(f.SharedStockpileId == null, "Legacy facilities cannot reference pooled stock.");
+                Require(inventory.Values.Sum(v => (long)v) <= blueprint.WarehouseCapacity, "Warehouse exceeds capacity.");
+            }
             Totals(content, f.Produced); Totals(content, f.Consumed);
             foreach (var good in content.Goods)
             {
@@ -281,14 +295,51 @@ namespace SaltAndLedger.Simulation
             return new PrivateFacilitySnapshot(f.Id, f.OwnerId, f.PortId, blueprint, f.Policy, f.Enabled,
                 f.CreatedDay, f.NextProductionDay, f.LastOutcome, inventory, f.Batches, f.Procurement, f.Revenue,
                 f.Produced, f.Consumed, f.ProcurementWait, f.SalesWait, f.StarterGrant, f.Provenance,
-                f.ConstructionStatus, f.CompletionDay, day, f.Wages);
+                f.ConstructionStatus, f.CompletionDay, day, f.Wages, f.SharedStockpileId);
+        }
+
+        private static CompanyStockpileSnapshot[] RestoreCompanyStockpiles(ContentCatalog content,
+            RegionalWorldSnapshot initial, RegionalSaveData data, PrivateFacilitySnapshot[] facilities)
+        {
+            Require(initial.UsesPooledCompanyStorage == (data.CompanyStockpiles != null),
+                "Company stockpile presence does not match storage rules.");
+            if (!initial.UsesPooledCompanyStorage) return Array.Empty<CompanyStockpileSnapshot>();
+            var capacities = facilities.GroupBy(f => "company:" + f.OwnerId + ":" + f.PortId, StringComparer.Ordinal)
+                .ToDictionary(g => g.Key, g => new { Owner = g.First().OwnerId, Port = g.First().PortId,
+                    Capacity = g.Aggregate(0, (sum, f) => checked(sum + f.Blueprint.WarehouseCapacity)) }, StringComparer.Ordinal);
+            SameIds(data.CompanyStockpiles!.Select(s => s.Id), capacities.Keys, "company stockpiles");
+            var stockpiles = data.CompanyStockpiles!.Select(s =>
+            {
+                var expected = capacities[s.Id];
+                Require(s.OwnerId == expected.Owner && s.PortId == expected.Port && s.Capacity == expected.Capacity,
+                    "Company stockpile ownership or installed capacity is inconsistent.");
+                var inventory = Inventory(content, s.Inventory);
+                Require(inventory.Values.Sum(v => (long)v) <= s.Capacity, "Company stockpile exceeds installed capacity.");
+                return new CompanyStockpileSnapshot(s.Id, s.OwnerId, s.PortId, s.Capacity, inventory);
+            }).ToArray();
+            // Facility labor and output remain individually attributed even when physical materials
+            // share one store. No saved facility can invent production already absent from company totals.
+            foreach (var company in data.Companies)
+            {
+                var owned = facilities.Where(f => f.OwnerId == company.Id).ToArray();
+                Require(owned.Aggregate(BigInteger.Zero, (sum, f) => sum + f.WagesPaid) == company.Wages,
+                    "Pooled facility payroll does not reconcile with company accounting.");
+                foreach (var good in content.Goods)
+                    Require(owned.Aggregate(BigInteger.Zero, (sum, f) => sum + Get(f.ProducedQuantities, good.Id)) == Get(company.Produced, good.Id) &&
+                        owned.Aggregate(BigInteger.Zero, (sum, f) => sum + Get(f.ConsumedQuantities, good.Id)) == Get(company.Consumed, good.Id),
+                        "Pooled facility production does not reconcile with company accounting.");
+            }
+            return stockpiles;
         }
 
         private static InventoryCostSnapshot[] RestoreStores(ContentCatalog content, RegionalSaveData data,
-            RegionalShipSnapshot[] ships, PrivateFacilitySnapshot[] facilities)
+            RegionalShipSnapshot[] ships, PrivateFacilitySnapshot[] facilities, CompanyStockpileSnapshot[] stockpiles)
         {
+            var local = data.Identity.CompanyStorageRules == CompanyStorageRules.Pooled ?
+                stockpiles.Select(s => (Id: s.Id, Owner: s.OwnerId, Stock: s.Inventory)) :
+                facilities.Select(f => (Id: "facility:" + f.Id, Owner: f.OwnerId, Stock: f.Inventory));
             var physical = ships.Select(s => (Id: "ship:" + s.Id, Owner: s.OwnerId, Stock: s.Cargo))
-                .Concat(facilities.Select(f => (Id: "facility:" + f.Id, Owner: f.OwnerId, Stock: f.Inventory)))
+                .Concat(local)
                 .ToDictionary(s => s.Id, StringComparer.Ordinal);
             SameIds(data.Stores.Select(s => s.Id), physical.Keys, "FIFO stores");
             var intervals = new Dictionary<long, List<(string Good, string Owner, InventoryCostLot Lot)>>();

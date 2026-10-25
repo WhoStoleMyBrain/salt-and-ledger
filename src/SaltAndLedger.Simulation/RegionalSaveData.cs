@@ -27,6 +27,9 @@ namespace SaltAndLedger.Simulation
         [JsonProperty(Required = Required.Default)]
         public RegionalSaveCommissionHistory? CommissionHistory { get; set; }
         public bool ShouldSerializeCommissionHistory() => CommissionHistory != null;
+        [JsonProperty(Required = Required.Default)]
+        public RegionalSaveCompanyStockpile[]? CompanyStockpiles { get; set; }
+        public bool ShouldSerializeCompanyStockpiles() => CompanyStockpiles != null;
     }
 
     [JsonObject(ItemRequired = Required.AllowNull)]
@@ -44,6 +47,9 @@ namespace SaltAndLedger.Simulation
         [JsonProperty(Required = Required.Default)]
         public RegionalSaveCommissionPlan? Commission { get; set; }
         public bool ShouldSerializeCommission() => Commission != null;
+        [JsonProperty(Required = Required.Default)]
+        public CompanyStorageRules CompanyStorageRules { get; set; } = CompanyStorageRules.Legacy;
+        public bool ShouldSerializeCompanyStorageRules() => CompanyStorageRules != CompanyStorageRules.Legacy;
     }
 
     [JsonObject(ItemRequired = Required.AllowNull)]
@@ -237,6 +243,19 @@ namespace SaltAndLedger.Simulation
         public IndustryWaitReason SalesWait { get; set; }
         public bool StarterGrant { get; set; }
         public string Provenance { get; set; } = "";
+        [JsonProperty(Required = Required.Default)]
+        public string? SharedStockpileId { get; set; }
+        public bool ShouldSerializeSharedStockpileId() => SharedStockpileId != null;
+    }
+
+    [JsonObject(ItemRequired = Required.AllowNull)]
+    internal sealed class RegionalSaveCompanyStockpile
+    {
+        public string Id { get; set; } = "";
+        public string OwnerId { get; set; } = "";
+        public string PortId { get; set; } = "";
+        public int Capacity { get; set; }
+        public Dictionary<string, int> Inventory { get; set; } = null!;
     }
 
     [JsonObject(ItemRequired = Required.AllowNull)]

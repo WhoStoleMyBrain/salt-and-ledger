@@ -16,8 +16,13 @@ namespace SaltAndLedger.Simulation
                     "Schema 1 cannot contain drafted commission state.");
                 return null;
             }
+            if (data.SchemaVersion == WorldSaveCodec.PooledStorageSchemaVersion && saved == null)
+            {
+                Require(data.CommissionHistory == null, "Commission history requires a resolved commission plan.");
+                return null;
+            }
             Require(saved != null && data.CommissionHistory != null,
-                "Schema 2 requires a complete commission plan and history.");
+                "A drafted save requires a complete commission plan and history.");
             Require(data.Identity.WorldMode == RunWorldMode.ExpandingEconomy &&
                 data.Identity.Seed == saved!.Seed, "Commission belongs to a different world.");
             Count(saved!.Goals, 4, 4);

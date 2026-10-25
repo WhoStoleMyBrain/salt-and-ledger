@@ -18,6 +18,7 @@ namespace SaltAndLedger.Simulation
                     WorldMode = identity.WorldMode, Seed = identity.Seed, GeneratorVersion = identity.GeneratorVersion,
                     Difficulty = identity.Difficulty, PricingMode = identity.LivingPricingMode,
                     ContentVersion = identity.ContentVersion, ValuationVersion = identity.ValuationVersion,
+                    CompanyStorageRules = identity.CompanyStorageRules,
                     Commission = identity.Commission == null ? null : new RegionalSaveCommissionPlan
                     {
                         Seed = identity.Commission.Seed, Version = identity.Commission.Version,
@@ -77,8 +78,11 @@ namespace SaltAndLedger.Simulation
                     Procurement = f.ProcurementCost, Revenue = f.SalesRevenue, Wages = f.WagesPaid,
                     Produced = Copy(f.ProducedQuantities), Consumed = Copy(f.ConsumedQuantities),
                     ProcurementWait = f.ProcurementWaitReason, SalesWait = f.SalesWaitReason,
-                    StarterGrant = f.IsStarterGrant, Provenance = f.Provenance
+                    StarterGrant = f.IsStarterGrant, Provenance = f.Provenance, SharedStockpileId = f.SharedStockpileId
                 }).ToArray(),
+                CompanyStockpiles = !state.UsesPooledCompanyStorage ? null : state.CompanyStockpiles.Values.Select(s =>
+                    new RegionalSaveCompanyStockpile { Id = s.Id, OwnerId = s.OwnerId, PortId = s.PortId,
+                        Capacity = s.Capacity, Inventory = Copy(s.Inventory) }).ToArray(),
                 Stores = state.Accounting.Stores.Values.Select(s => new RegionalSaveStore
                 {
                     Id = s.StoreId, OwnerId = s.OwnerId, Goods = s.Goods.Values.Select(g => new RegionalSaveGoodLots

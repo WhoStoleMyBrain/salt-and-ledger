@@ -160,6 +160,8 @@ namespace SaltAndLedger.Simulation
         public long NextProductionDay { get; }
         public ScheduledProductionOutcome LastOutcome { get; }
         public IReadOnlyDictionary<string, int> Inventory { get; }
+        public string? SharedStockpileId { get; }
+        public bool ShouldSerializeSharedStockpileId() => SharedStockpileId != null;
         public int StoredUnits { get; }
         public int Capacity => Blueprint.WarehouseCapacity;
         public long ConstructionCost => Blueprint.ConstructionCost;
@@ -180,13 +182,17 @@ namespace SaltAndLedger.Simulation
             IndustryWaitReason procurementWaitReason, IndustryWaitReason salesWaitReason,
             bool isStarterGrant = false, string provenance = "constructed",
             FacilityConstructionStatus constructionStatus = FacilityConstructionStatus.Operational,
-            long? constructionCompletionDay = null, long? snapshotDay = null, long wagesPaid = 0)
+            long? constructionCompletionDay = null, long? snapshotDay = null, long wagesPaid = 0,
+            string? sharedStockpileId = null)
         {
             Id = id; OwnerId = ownerId; PortId = portId; Blueprint = blueprint; Policy = policy;
             Enabled = enabled; CreatedDay = createdDay; NextProductionDay = nextProductionDay; LastOutcome = lastOutcome;
             var quantities = new SortedDictionary<string, int>(StringComparer.Ordinal);
             foreach (var quantity in inventory) quantities.Add(quantity.Key, quantity.Value);
             Inventory = new ReadOnlyDictionary<string, int>(quantities);
+            SharedStockpileId = sharedStockpileId;
+            if (sharedStockpileId != null && quantities.Values.Any(q => q != 0))
+                throw new ArgumentException("Pooled facility stock belongs only to its company stockpile.");
             StoredUnits = inventory.Values.Aggregate(0, (sum, value) => checked(sum + value));
             BatchesProduced = batchesProduced; ProcurementCost = procurementCost; SalesRevenue = salesRevenue;
             var producedTotals = new SortedDictionary<string, long>(StringComparer.Ordinal);

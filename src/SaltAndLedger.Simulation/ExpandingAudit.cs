@@ -56,7 +56,8 @@ namespace SaltAndLedger.Simulation
             foreach (var store in after.Accounting.Stores.Values)
             {
                 var inventory = store.StoreId.StartsWith("ship:", StringComparison.Ordinal)
-                    ? after.Ships[store.StoreId.Substring(5)].Cargo : after.PrivateFacilities[store.StoreId.Substring(9)].Inventory;
+                    ? after.Ships[store.StoreId.Substring(5)].Cargo : store.StoreId.StartsWith("company:", StringComparison.Ordinal)
+                        ? after.CompanyStockpiles[store.StoreId].Inventory : after.PrivateFacilities[store.StoreId.Substring(9)].Inventory;
                 foreach (var good in inventory)
                     if (store.GetQuantity(good.Key) != good.Value)
                         throw new InvalidOperationException("Physical store and FIFO slices disagree.");
@@ -67,6 +68,7 @@ namespace SaltAndLedger.Simulation
             world.Ports.Values.Aggregate(BigInteger.Zero, (sum, p) => sum + p.Inventory[goodId]) +
             world.Ships.Values.Aggregate(BigInteger.Zero, (sum, s) => sum + s.Cargo[goodId]) +
             world.PrivateFacilities.Values.Aggregate(BigInteger.Zero, (sum, f) => sum + f.Inventory[goodId]) +
+            world.CompanyStockpiles.Values.Aggregate(BigInteger.Zero, (sum, s) => sum + s.Inventory[goodId]) +
             (goodId == "silver" ? world.Economy?.SilverReserve ?? 0 : 0);
     }
 }

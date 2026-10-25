@@ -7,17 +7,19 @@ namespace SaltAndLedger.Simulation
     {
         internal static ScheduledProductionOutcome Preview(RecipeDefinition recipe, IndustryBlueprint blueprint,
             Func<string, int> quantity, int quantityScale, int storedUnits, long employerCash, bool enabled,
-            FacilityConstructionStatus status, long dueDay, long attemptDay)
+            FacilityConstructionStatus status, long dueDay, long attemptDay, int? capacity = null,
+            bool pooled = false, int? pooledOutputLimit = null)
         {
             if (status == FacilityConstructionStatus.UnderConstruction) return ScheduledProductionOutcome.UnderConstruction;
             if (attemptDay < dueDay) return ScheduledProductionOutcome.NotDue;
             if (!enabled) return ScheduledProductionOutcome.Disabled;
             if (recipe.Inputs.Any(i => quantity(i.GoodId) < checked(i.Quantity * quantityScale))) return ScheduledProductionOutcome.InputShortage;
-            if (blueprint.OutputStockLimit.HasValue && recipe.Outputs.Any(output => (long)quantity(output.GoodId) -
+            var outputLimit = pooled ? pooledOutputLimit : blueprint.OutputStockLimit;
+            if (outputLimit.HasValue && recipe.Outputs.Any(output => (long)quantity(output.GoodId) -
                 recipe.Inputs.Where(i => i.GoodId == output.GoodId).Sum(i => (long)checked(i.Quantity * quantityScale)) +
-                checked(output.Quantity * quantityScale) > blueprint.OutputStockLimit.Value)) return ScheduledProductionOutcome.OutputLimit;
+                checked(output.Quantity * quantityScale) > outputLimit.Value)) return ScheduledProductionOutcome.OutputLimit;
             if ((long)storedUnits - recipe.Inputs.Sum(i => (long)checked(i.Quantity * quantityScale)) +
-                recipe.Outputs.Sum(o => (long)checked(o.Quantity * quantityScale)) > blueprint.WarehouseCapacity)
+                recipe.Outputs.Sum(o => (long)checked(o.Quantity * quantityScale)) > (capacity ?? blueprint.WarehouseCapacity))
                 return ScheduledProductionOutcome.WarehouseCapacity;
             return employerCash < blueprint.WagePerBatch ? ScheduledProductionOutcome.PayrollShortage : ScheduledProductionOutcome.Produced;
         }
@@ -29,9 +31,11 @@ namespace SaltAndLedger.Simulation
         {
             if (content == null) throw new ArgumentNullException(nameof(content));
             var facility = PrivateFacilities[facilityId];
+            var storage = GetFacilityStorage(facilityId);
             return PrivateProductionRules.Preview(content.GetRecipe(facility.Blueprint.RecipeId), facility.Blueprint,
-                id => facility.Inventory[id], QuantityScale, facility.StoredUnits, Companies[facility.OwnerId].Cash,
-                facility.Enabled, facility.ConstructionStatus, facility.NextProductionDay, checked(Day + 1));
+                id => storage.Inventory[id], QuantityScale, storage.StoredUnits, Companies[facility.OwnerId].Cash,
+                facility.Enabled, facility.ConstructionStatus, facility.NextProductionDay, checked(Day + 1),
+                storage.Capacity, UsesPooledCompanyStorage, FacilityOutputStockLimit(facilityId));
         }
     }
 }

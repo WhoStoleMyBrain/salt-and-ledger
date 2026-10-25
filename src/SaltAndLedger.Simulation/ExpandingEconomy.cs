@@ -208,6 +208,8 @@ namespace SaltAndLedger.Simulation
                 if (facility.ConstructionStatus == FacilityConstructionStatus.UnderConstruction) pending += facility.Blueprint.ConstructionCost;
                 else facilities += facility.Blueprint.ConstructionCost;
             }
+            foreach (var store in CompanyStockpiles.Values.Where(s => s.OwnerId == ownerId))
+                foreach (var stock in store.Inventory) goods += (BigInteger)stock.Value * economy.Configuration.GoodsReferencePrices[stock.Key];
             foreach (var order in economy.ShipOrders.Where(o => o.OwnerId == ownerId)) pending += order.PaidCapital;
             economy.InitialCompanyValues.TryGetValue(ownerId, out var initial);
             return new CompanyValueSnapshot(Companies[ownerId].Cash, checked((long)goods), checked((long)ships),
