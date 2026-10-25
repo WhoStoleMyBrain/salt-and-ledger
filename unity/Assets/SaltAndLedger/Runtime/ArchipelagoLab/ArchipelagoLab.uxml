@@ -189,6 +189,7 @@
                             <ui:Label name="harborProductionLabel" class="help" />
                         </ui:Foldout>
                         <ui:Button name="harborIndustryButton" text="Build / manage local industries" />
+                        <ui:Button name="harborRoutePlannerButton" text="Selected ship / Route planner" class="hidden" />
                         <ui:Label name="tradeGoodDescription" class="trade-description" />
                     </ui:VisualElement>
                     <ui:VisualElement class="trade-order">

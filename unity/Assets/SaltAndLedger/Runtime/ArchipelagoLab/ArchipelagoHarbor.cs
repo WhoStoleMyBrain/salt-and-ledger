@@ -28,6 +28,7 @@ namespace SaltAndLedger.UnityHost
             Click("harborMaxLoad", () => MaximumHarborTransfer(TransferDirection.WarehouseToShip));
             Click("harborIndustryButton", () => OpenIndustryFromHarbor());
             Click("harborDisableRoute", () => Run(() => Session.SetAutomationEnabled(false)));
+            Click("harborRoutePlannerButton", () => OpenRoutePlanner(tradeShipId));
             Click("industryHarborButton", () => { var port = Session.SelectedPortId; CloseModals(); OpenTrade(port); SetIndex("harborTradeTarget", 1); RefreshHarbor(); });
         }
 
@@ -83,6 +84,8 @@ namespace SaltAndLedger.UnityHost
             sail.text = ship.DockedPortId != null && !local && Session.HasRoute(ship.DockedPortId, port.Id)
                 ? "Sail here · " + tradeSnapshot.TravelDays(ship.Id, port.Id) + " days" : "At sea · await arrival";
             Element<Button>("harborDisableRoute").EnableInClassList("hidden", !ownedShip || !ship.AutomationEnabled || Session.IsChallengeEnded);
+            Element<Button>("harborRoutePlannerButton").EnableInClassList("hidden", !UsesItineraries);
+            Element<Button>("harborRoutePlannerButton").SetEnabled(ownedShip);
             RefreshHarborRows(ship, port, stock, local);
             SetText("tradeGoodDescription", Session.Content.GetGood(SelectedGoodId()).Description);
             SetText("harborStockExplanation", stock == null ? "Construct an eligible local facility to gain finite company storage." :

@@ -39,7 +39,7 @@ namespace SaltAndLedger.UnityHost
             overview.Add(Element<VisualElement>("voyageBar"));
             var controls = Panel(context, "contextControls", "hidden");
             foreach (var name in new[] { "automationFoldout", "activityFoldout", "latestEventLabel", "mapHelpFoldout",
-                "runIdentityFoldout", "profitLabel", "logisticsButton", "gameHelpButton" })
+                "runIdentityFoldout", "profitLabel", "logisticsButton", "routePlannerButton", "gameHelpButton" })
                 controls.Add(Element<VisualElement>(name));
             var actions = Root.Q(className: "context-actions");
             shell.Add(actions);

@@ -122,8 +122,9 @@ namespace SaltAndLedger.UnityHost
                     (ship.IndustrialPolicy == null ? "" : " · " + ship.IndustrialStage), "run-copy");
                 var buttons = Panel(row, null, "row");
                 Button(buttons, "selectOwned_" + id, id == Session.Player.Id ? "Selected" : "Select ship", () => Run(() => Session.SelectShip(id)));
-                Button(buttons, "routeOwned_" + id, "Configure route", () =>
+                Button(buttons, "routeOwned_" + id, UsesItineraries ? "Route planner" : "Legacy route", () =>
                 {
+                    if (UsesItineraries) { OpenRoutePlanner(id); return; }
                     Session.SelectShip(id); LoadPolicy(); ShowScreen(ArchipelagoScreen.Gameplay);
                     SelectContextTab(2); Element<Foldout>("automationFoldout").SetValueWithoutNotify(true); Refresh();
                 });
@@ -245,6 +246,7 @@ namespace SaltAndLedger.UnityHost
         private void LoadSlot(int slot) => Run(() =>
         {
             Session.LoadSaveText(saveStore.ReadText(slot));
+            ClearItineraryDrafts();
             CloseModals(); RefreshRunChoices(); LoadSetupIdentity(Session.Identity);
             HasActiveRun = true; presentedResult = null; tradeShipId = Session.Player.Id; selectedFacilityId = null;
             LoadPolicy(); ShowScreen(ArchipelagoScreen.Gameplay); status = "Loaded slot " + slot + "; paused at the exact saved revision.";

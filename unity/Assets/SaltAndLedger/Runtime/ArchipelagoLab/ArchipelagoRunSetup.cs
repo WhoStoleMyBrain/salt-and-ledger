@@ -11,6 +11,7 @@ namespace SaltAndLedger.UnityHost
     {
         private RunIdentity setupIdentity;
         private CompanyStorageRules setupStorageRules = CompanyStorageRules.Pooled;
+        private int setupItineraryVersion = 1;
         public RunIdentity SetupIdentity => setupIdentity;
 
         private void BuildRunSetup()
@@ -157,7 +158,8 @@ namespace SaltAndLedger.UnityHost
             // An unfinished draft uses an ordinary day-zero sandbox preview; it cannot be started as a commission.
             setupIdentity = valid ? new RunIdentity(commission && plan == null ? null : id, charter.Id, mode,
                 seeded ? seed : (int?)null, difficulty, livingPricingMode: living ? pricing : LivingPricingMode.StockOnly,
-                commission: plan, companyStorageRules: expanding ? setupStorageRules : CompanyStorageRules.Legacy) : null;
+                commission: plan, companyStorageRules: expanding ? setupStorageRules : CompanyStorageRules.Legacy,
+                itineraryVersion: expanding && setupStorageRules == CompanyStorageRules.Pooled ? setupItineraryVersion : 0) : null;
             Root.Q<Button>("commissionBeginButton")?.SetEnabled(commission && valid && plan != null);
             if (valid) charter = RunScenario.GetCharter(setupIdentity);
             SetText("setupCharterDescription", charter.Description);
@@ -212,6 +214,7 @@ namespace SaltAndLedger.UnityHost
         private void LoadSetupIdentity(RunIdentity identity)
         {
             setupStorageRules = identity.CompanyStorageRules;
+            setupItineraryVersion = identity.ItineraryVersion;
             RestoreCommissionSelection(identity);
             var mode = Element<DropdownField>("worldModePicker");
             mode.SetValueWithoutNotify(mode.choices[(int)identity.WorldMode]);
@@ -231,6 +234,7 @@ namespace SaltAndLedger.UnityHost
         {
             LeaveActiveRunForSetup();
             setupStorageRules = CompanyStorageRules.Pooled;
+            setupItineraryVersion = 1;
             if (!preserveSelections)
             {
                 var mode = Element<DropdownField>("worldModePicker");
@@ -298,7 +302,8 @@ namespace SaltAndLedger.UnityHost
                 (identity.WorldMode == RunWorldMode.LivingCities || identity.WorldMode == RunWorldMode.ExpandingEconomy ? " · " + identity.LivingPricingMode + " pricing" : "")) +
                 " · Ascension " + identity.Ascension + (identity.Difficulty == RunDifficulty.SlowFoundations ? ": Slow Foundations" : ": Normal") +
                 (identity.WorldMode == RunWorldMode.ExpandingEconomy ? " · storage v" + (int)identity.CompanyStorageRules +
-                    (identity.CompanyStorageRules == CompanyStorageRules.Pooled ? " (shared town stock)" : " (legacy facility stores)") : "");
+                    (identity.CompanyStorageRules == CompanyStorageRules.Pooled ? " (shared town stock)" : " (legacy facility stores)") : "") +
+                (identity.ItineraryVersion > 0 ? " · itinerary v" + identity.ItineraryVersion : "");
         }
     }
 }

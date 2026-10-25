@@ -57,6 +57,7 @@ namespace SaltAndLedger.UnityHost
             });
             Click("industryShippingButton", () =>
             {
+                if (UsesItineraries) { OpenRoutePlanner(Session.Player.Id); return; }
                 var facilityId = selectedFacilityId;
                 CloseModals();
                 OpenLogistics();
@@ -229,6 +230,16 @@ namespace SaltAndLedger.UnityHost
         private string FacilityShipping(PrivateFacilitySnapshot facility)
         {
             var ship = Session.Player;
+            if (UsesItineraries)
+            {
+                var stop = ship.Itinerary?.Stops.FirstOrDefault(item => item.PortId == facility.PortId);
+                var movesCompanyStock = stop != null && stop.Commands.Any(command => command.Kind == CargoItineraryCommandKind.LoadFromCompanyTownStock ||
+                    command.Kind == CargoItineraryCommandKind.UnloadToCompanyTownStock);
+                return !movesCompanyStock ? "NO CONFIGURED TOWN-STOCK SHIPPING\n" + ship.Name +
+                    " has no Load/Unload instruction here. Draft the physical connection in Route planner; mixed cargo is preserved." :
+                    "TOWN-STOCK ITINERARY · " + ship.Name + "\n" + (ship.AutomationEnabled ? "Enabled" : "Manual control") +
+                    " · " + Session.CurrentDecision.Reason + "\n" + string.Join(" → ", ship.Itinerary.Stops.Select(item => PortName(item.PortId)));
+            }
             var route = ship.IndustrialPolicy;
             var connected = route != null && (LegUsesFacility(route.Outbound, facility.Id) || LegUsesFacility(route.ReturnLeg, facility.Id));
             if (!connected) return "NO PHYSICAL SHIPPING LINK\n" + ship.Name + " does not currently use this warehouse. Open Industrial shipping, choose this source, review a draft and Apply; enablement is separate.";

@@ -379,6 +379,10 @@ namespace SaltAndLedger.UnityHost
                 "\nMinimum source stock: " + Q(ship.Configuration.MinimumOriginStock) +
                 "; return source stock: " + Q(ship.Configuration.MinimumReturnStock) +
                 "\nReserve " + Money(policy.CashReserve) + (policy.AllowEmptyReturn ? " · empty return allowed" : " · loaded return only"));
+            if (ship.Itinerary != null)
+                SetText("shipPolicyLabel", "Ordered itinerary · " + string.Join(" → ", ship.Itinerary.Stops.Select(stop => PortName(stop.PortId))) +
+                    " → loop\n" + ship.Itinerary.Stops.Sum(stop => stop.Commands.Count) + " actions · mixed cargo retained · open Route planner to inspect each action.");
+            else if (UsesItineraries && ship.IsPlayer) SetText("shipPolicyLabel", "No itinerary assigned. Open Fleet / Route planner to draft this ship's ordered work.");
             var decision = Session.DecisionFor(ship.Id);
             SetText("shipDecisionLabel", DecisionText(decision));
             SetText("shipControlLabel", ship.IsPlayer ? "You may disable your route and trade or plan a voyage manually." :
@@ -419,6 +423,9 @@ namespace SaltAndLedger.UnityHost
         private string DecisionText(RegionalDecision decision)
         {
             var actor = decision.Before.Ships[decision.ShipId];
+            if (UsesItineraries && actor.IsPlayer && actor.Itinerary == null) return "Manual control · no itinerary assigned. Draft one in Fleet / Route planner.";
+            if (decision.ItineraryDetail != null)
+                return "Itinerary · " + decision.ItineraryDetail.Kind + "\n" + decision.Reason;
             if (decision.IndustrialDetail != null)
                 return actor.IndustrialStage + " · " + decision.IndustrialDetail.Action + "\n" + decision.Reason;
             var text = !actor.AutomationEnabled

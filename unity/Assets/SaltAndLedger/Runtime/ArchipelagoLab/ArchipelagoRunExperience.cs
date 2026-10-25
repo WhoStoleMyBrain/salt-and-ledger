@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 
 namespace SaltAndLedger.UnityHost
 {
-    public enum ArchipelagoScreen { Gameplay, MainMenu, Setup, Pause, Results, Encyclopedia, Settings, Ledger, Logistics, CityEconomy, Development, Saves, CommissionMap, CommissionDraft, CommissionReview, Objectives, Completion }
+    public enum ArchipelagoScreen { Gameplay, MainMenu, Setup, Pause, Results, Encyclopedia, Settings, Ledger, Logistics, CityEconomy, Development, Saves, CommissionMap, CommissionDraft, CommissionReview, Objectives, Completion, RoutePlanner }
 
     public static class ArchipelagoApplicationExit
     {
@@ -45,6 +45,7 @@ namespace SaltAndLedger.UnityHost
             BuildEncyclopedia();
             BuildLedgerAndLogistics();
             BuildDevelopment();
+            BuildRoutePlanner();
             Text(navigationRoot, "navigationStatus", "", "run-copy error");
             var confirmation = Panel(Root.Q("archipelagoLab"), "confirmationBackdrop", "run-confirmation hidden");
             var card = Panel(confirmation, "confirmationCard", "run-confirmation-card");
@@ -80,6 +81,8 @@ namespace SaltAndLedger.UnityHost
             Button(bar, "menuButton", "Menu", OpenPauseMenu);
             Button(Element<VisualElement>("contextScroll").contentContainer, "logisticsButton",
                 "Industrial shipping", OpenLogistics);
+            Button(Element<VisualElement>("contextScroll").contentContainer, "routePlannerButton",
+                "Fleet / Route planner", () => OpenRoutePlanner(Session.Player.Id));
             Button(Element<VisualElement>("contextScroll").contentContainer, "gameHelpButton",
                 "Encyclopedia / help", () => OpenSecondary(ArchipelagoScreen.Encyclopedia));
             Button(Element<Label>("challengeLabel").parent, "objectivesButton", "Objectives", OpenObjectives);
@@ -125,6 +128,7 @@ namespace SaltAndLedger.UnityHost
         {
             CloseModals();
             Session.StartRun(identity);
+            ClearItineraryDrafts();
             RefreshRunChoices();
             LoadSetupIdentity(identity);
             HasActiveRun = true;
@@ -375,6 +379,7 @@ namespace SaltAndLedger.UnityHost
             if (Screen == ArchipelagoScreen.CommissionReview) { ShowCommissionRound(3); return; }
             if (Screen == ArchipelagoScreen.Objectives) { CloseObjectives(); return; }
             if (Screen == ArchipelagoScreen.Completion) { PresentResults(); return; }
+            if (Screen == ArchipelagoScreen.RoutePlanner) { CloseRoutePlanner(); return; }
             if (Screen == ArchipelagoScreen.Settings || Screen == ArchipelagoScreen.Ledger || Screen == ArchipelagoScreen.Logistics ||
                 Screen == ArchipelagoScreen.Development || Screen == ArchipelagoScreen.Saves)
             { ShowScreen(secondaryParent); return; }
@@ -418,6 +423,8 @@ namespace SaltAndLedger.UnityHost
             if (Screen == ArchipelagoScreen.Objectives) RefreshObjectives();
             if (Screen == ArchipelagoScreen.Ledger) RefreshLedger();
             if (Screen == ArchipelagoScreen.Logistics) RefreshLogisticsStatus();
+            RefreshItineraryAvailability();
+            if (Screen == ArchipelagoScreen.RoutePlanner) RefreshRoutePlannerStatus();
         }
 
         private string ObjectiveText()

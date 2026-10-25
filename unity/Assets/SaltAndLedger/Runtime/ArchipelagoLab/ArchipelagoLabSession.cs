@@ -337,10 +337,18 @@ namespace SaltAndLedger.UnityHost
         public RegionalResult RunDockside()
         {
             Pause();
-            var result = world.RunAutomation(Player.Id, 4);
+            var limit = Player.Itinerary == null ? 4 : 8;
+            var result = world.RunAutomation(Player.Id, limit);
             Observe(result);
-            LastStatus = "Up to four dockside decisions resolved without advancing a day. " + CurrentDecision.Reason;
+            LastStatus = "Up to " + limit + " dockside decisions resolved without advancing a day. " + CurrentDecision.Reason;
             return result;
+        }
+
+        public void ApplyItinerary(CargoItineraryPolicy policy, RegionalWorldSnapshot expectedSnapshot = null)
+        {
+            Pause();
+            Observe(world.ConfigureItinerary(Player.Id, policy, false, expectedSnapshot));
+            LastStatus = "Itinerary applied with manual control. Cargo, cash and day are unchanged. Enable route actions when ready.";
         }
 
         public RegionalResult Construct(string blueprintId)
@@ -431,7 +439,8 @@ namespace SaltAndLedger.UnityHost
                 result.After.Ships[d.ShipId].OwnerId == Player.OwnerId &&
                 (d.Detail?.Trade != null || d.Detail?.Departure != null ||
                  d.IndustrialDetail?.Transfer != null || d.IndustrialDetail?.Trade != null ||
-                 d.IndustrialDetail?.Departure != null));
+                 d.IndustrialDetail?.Departure != null || d.ItineraryDetail?.Transfer != null ||
+                 d.ItineraryDetail?.Trade != null || d.ItineraryDetail?.Departure != null));
             foreach (var entry in result.EconomicEvents.Where(e => e.CompanyId == Player.OwnerId))
                 journal.Insert(0, entry);
             if (journal.Count > MaximumJournalEntries) journal.RemoveRange(MaximumJournalEntries, journal.Count - MaximumJournalEntries);
