@@ -11,7 +11,6 @@ namespace SaltAndLedger.UnityHost
         private GrandCommissionDraft commissionDraft;
         private readonly string[] commissionSelections = new string[4];
         private int commissionRound;
-        private bool objectiveResumePlayback;
         private RegionalWorldSnapshot commissionPreview;
         public RegionalWorldSnapshot CommissionPreview => commissionPreview;
 
@@ -253,8 +252,6 @@ namespace SaltAndLedger.UnityHost
 
         private void OpenObjectives()
         {
-            if (Session.Identity?.Commission == null) return;
-            objectiveResumePlayback = Screen == ArchipelagoScreen.Gameplay && Session.IsPlaying;
             OpenSecondary(ArchipelagoScreen.Objectives);
             Element<Button>("objectivesBackButton").Focus();
         }
@@ -263,15 +260,19 @@ namespace SaltAndLedger.UnityHost
         {
             var parent = secondaryParent;
             ShowScreen(parent);
-            if (parent == ArchipelagoScreen.Gameplay && objectiveResumePlayback && !Session.IsChallengeEnded) Session.Play();
-            objectiveResumePlayback = false;
             Refresh();
             if (parent == ArchipelagoScreen.Gameplay) Element<Button>("objectivesButton").Focus();
         }
 
         private void RefreshObjectives()
         {
-            if (Session.Identity?.Commission == null) return;
+            if (Session.Identity?.Commission == null)
+            {
+                SetText("objectivesOverview", Session.Snapshot.Challenge?.Configuration.Title ?? "Sandbox");
+                SetText("objectivesDeadline", ObjectiveText());
+                Element<VisualElement>("objectiveCards").Clear();
+                return;
+            }
             var snapshot = Session.Snapshot;
             var progress = GrandCommission.Progress(snapshot);
             SetText("objectivesOverview", progress.CurrentlyMetCount + "/4 goals currently met · " +

@@ -250,6 +250,7 @@ namespace SaltAndLedger.UnityHost
             ClearItineraryDrafts();
             CloseModals(); RefreshRunChoices(); LoadSetupIdentity(Session.Identity);
             HasActiveRun = true; presentedResult = null; tradeShipId = Session.Player.Id; selectedFacilityId = null;
+            ResetPresentation();
             LoadPolicy(); ShowScreen(ArchipelagoScreen.Gameplay); status = "Loaded slot " + slot + "; paused at the exact saved revision.";
             if (Session.IsChallengeEnded) PresentResults();
         });

@@ -12,6 +12,7 @@ namespace SaltAndLedger.UnityHost
         private string tradeShipId;
         private RegionalWorldSnapshot tradeSnapshot;
         private VisualElement returnFocus;
+        private string returnFocusName;
         public bool TradeIsOpen => !Element<VisualElement>("tradeBackdrop").ClassListContains("hidden");
         public bool IndustryIsOpen => !Element<VisualElement>("industryBackdrop").ClassListContains("hidden");
 
@@ -73,6 +74,7 @@ namespace SaltAndLedger.UnityHost
                 tradeShipId = selectedShip ?? Session.Player.Id;
                 harborFacilityId = null;
                 Session.InspectTradePort(portId);
+                Presentation.HasSelection = true;
                 ShowModal("tradeBackdrop", "closeTradeButton");
                 RefreshHarborStorageSelection();
                 SetIndex("harborTradeTarget", !HarborShipIsLocal() && harborFacilityId != null ? 1 : 0);
@@ -82,22 +84,52 @@ namespace SaltAndLedger.UnityHost
 
         private void ShowModal(string backdropId, string focusId)
         {
-            if (!TradeIsOpen && !IndustryIsOpen) returnFocus = Root.focusController?.focusedElement as VisualElement;
+            if (!TradeIsOpen && !IndustryIsOpen)
+            {
+                returnFocus = Root.focusController?.focusedElement as VisualElement;
+                returnFocusName = returnFocus?.name;
+            }
             Element<VisualElement>("tradeBackdrop").EnableInClassList("hidden", backdropId != "tradeBackdrop");
             Element<VisualElement>("industryBackdrop").EnableInClassList("hidden", backdropId != "industryBackdrop");
             Element<VisualElement>("topBar").SetEnabled(false);
             Element<VisualElement>("mainLayout").SetEnabled(false);
+            Root.Q("commandModeNav")?.SetEnabled(false);
+            Root.Q("commandDeck")?.SetEnabled(false);
+            RefreshCommandMode();
             Element<Button>(focusId).Focus();
         }
 
         public void CloseModals()
         {
+            var wasOpen = TradeIsOpen || IndustryIsOpen;
             Element<VisualElement>("tradeBackdrop").AddToClassList("hidden");
             Element<VisualElement>("industryBackdrop").AddToClassList("hidden");
             Element<VisualElement>("topBar").SetEnabled(true);
             Element<VisualElement>("mainLayout").SetEnabled(true);
-            returnFocus?.Focus();
+            Root.Q("commandModeNav")?.SetEnabled(Screen == ArchipelagoScreen.Gameplay);
+            Root.Q("commandDeck")?.SetEnabled(Screen == ArchipelagoScreen.Gameplay);
+            RefreshCommandMode();
+            var candidate = CanRestoreModalFocus(returnFocus) ? returnFocus :
+                string.IsNullOrEmpty(returnFocusName) ? null : Root.Q(returnFocusName);
             returnFocus = null;
+            returnFocusName = null;
+            if (!wasOpen) return;
+            if (ConfirmationIsOpen) { Element<Button>("confirmCancelButton").Focus(); return; }
+            if (ReturnToPlannerAfterHarbor()) return;
+            if (!CanRestoreModalFocus(candidate))
+            {
+                candidate = Screen == ArchipelagoScreen.Gameplay ? Root.Q<Button>("mode" + Presentation.Mode) :
+                    screens.TryGetValue(Screen, out var active) ? active.Query<Button>().ToList().FirstOrDefault(CanRestoreModalFocus) : null;
+            }
+            if (CanRestoreModalFocus(candidate)) candidate.Focus();
+        }
+
+        private bool CanRestoreModalFocus(VisualElement element)
+        {
+            if (element == null || element.panel != Root.panel || !element.focusable || !element.enabledInHierarchy) return false;
+            for (var current = element; current != null; current = current.parent)
+                if (current.ClassListContains("hidden") || current.style.display.value == DisplayStyle.None) return false;
+            return true;
         }
 
         private void SetQuantity(int quantity)

@@ -110,6 +110,7 @@ namespace SaltAndLedger.UnityHost
             if (selectedFacilityId == null) return;
             var facility = snapshot.PrivateFacilities[selectedFacilityId];
             var recipe = Session.Content.GetRecipe(facility.Blueprint.RecipeId);
+            RefreshIndustryRecipeSymbols(facility);
             SetText("facilityRecipeLabel", Session.Content.GetBuilding(facility.Blueprint.BuildingId).Name + " · private production\n" +
                 (recipe.Inputs.Count == 0 ? "Natural extraction" : Quantities(recipe.Inputs)) + " → " + Quantities(recipe.Outputs) +
                 "\nOne batch every " + facility.Blueprint.IntervalDays + " days" +

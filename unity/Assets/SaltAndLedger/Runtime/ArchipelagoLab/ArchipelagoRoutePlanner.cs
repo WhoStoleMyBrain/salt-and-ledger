@@ -37,6 +37,7 @@ namespace SaltAndLedger.UnityHost
         private VisualElement plannerReturnFocus;
         private string plannerHarborReturn;
         private string plannerIndustryReturn;
+        private bool harborReturnsToPlanner;
         private string itineraryApplyError;
         private long itineraryApplyErrorRevision = -1;
         private int plannerStop = -1, plannerAction = -1;
@@ -46,6 +47,7 @@ namespace SaltAndLedger.UnityHost
         private void ClearItineraryDrafts()
         {
             itineraryDrafts.Clear(); plannerStop = -1; plannerAction = -1; plannerHarborReturn = null; plannerIndustryReturn = null;
+            harborReturnsToPlanner = false;
             itineraryApplyError = null;
         }
 
@@ -108,7 +110,7 @@ namespace SaltAndLedger.UnityHost
             if (!UsesItineraries) { Validation("This saved world retains its legacy route controls. Start a new v3 run to use itineraries."); return; }
             if (!Session.Snapshot.Ships.TryGetValue(shipId, out var ship) || !ship.IsPlayer || ship.OwnerId != Session.Player.OwnerId)
             { Validation("Select an owned ship to plan its route."); return; }
-            if (Screen != ArchipelagoScreen.RoutePlanner)
+            if (Screen != ArchipelagoScreen.RoutePlanner && !harborReturnsToPlanner)
             {
                 plannerParent = Screen;
                 plannerReturnFocus = Root.focusController?.focusedElement as VisualElement;
@@ -136,6 +138,17 @@ namespace SaltAndLedger.UnityHost
         {
             if (portId == null) return;
             ShowScreen(ArchipelagoScreen.Gameplay); Refresh(); OpenTrade(portId);
+            harborReturnsToPlanner = TradeIsOpen;
+        }
+
+        private bool ReturnToPlannerAfterHarbor()
+        {
+            if (!harborReturnsToPlanner) return false;
+            harborReturnsToPlanner = false;
+            ShowScreen(ArchipelagoScreen.RoutePlanner);
+            Refresh();
+            Element<Button>("itineraryHarborButton").Focus();
+            return true;
         }
 
         private void EnsureItineraryDraft()

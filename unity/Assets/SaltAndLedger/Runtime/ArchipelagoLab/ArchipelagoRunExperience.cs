@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 
 namespace SaltAndLedger.UnityHost
 {
-    public enum ArchipelagoScreen { Gameplay, MainMenu, Setup, Pause, Results, Encyclopedia, Settings, Ledger, Logistics, CityEconomy, Development, Saves, CommissionMap, CommissionDraft, CommissionReview, Objectives, Completion, RoutePlanner }
+    public enum ArchipelagoScreen { Gameplay, MainMenu, Setup, Pause, Results, Encyclopedia, Settings, Ledger, Logistics, CityEconomy, Development, Saves, CommissionMap, CommissionDraft, CommissionReview, Objectives, Completion, RoutePlanner, Inspector }
 
     public static class ArchipelagoApplicationExit
     {
@@ -143,6 +143,7 @@ namespace SaltAndLedger.UnityHost
             Element<Foldout>("automationFoldout").SetValueWithoutNotify(false);
             Element<ScrollView>("contextScroll").scrollOffset = Vector2.zero;
             SelectContextTab(0);
+            ResetPresentation();
             ShowScreen(ArchipelagoScreen.Gameplay);
             Refresh();
             Element<Button>("playButton").Focus();
@@ -278,6 +279,7 @@ namespace SaltAndLedger.UnityHost
             Button(actions, "resultsMenuButton", "Main Menu", ReturnToMainMenu);
             Button(actions, "resultsHelpButton", "Encyclopedia", () => OpenSecondary(ArchipelagoScreen.Encyclopedia));
             Button(actions, "resultsObjectivesButton", "Objectives", OpenObjectives);
+            Button(actions, "resultsInspectButton", "Inspect frozen map", () => { ShowScreen(ArchipelagoScreen.Gameplay); Refresh(); });
             Button(actions, "resultsSaveButton", "Save result", OpenSaveSlots);
             AddDiagnosticExport(screen, "resultsExportButton");
         }
@@ -380,11 +382,13 @@ namespace SaltAndLedger.UnityHost
             if (Screen == ArchipelagoScreen.Objectives) { CloseObjectives(); return; }
             if (Screen == ArchipelagoScreen.Completion) { PresentResults(); return; }
             if (Screen == ArchipelagoScreen.RoutePlanner) { CloseRoutePlanner(); return; }
+            if (Screen == ArchipelagoScreen.Inspector) { ShowScreen(secondaryParent); Refresh(); return; }
             if (Screen == ArchipelagoScreen.Settings || Screen == ArchipelagoScreen.Ledger || Screen == ArchipelagoScreen.Logistics ||
                 Screen == ArchipelagoScreen.Development || Screen == ArchipelagoScreen.Saves)
             { ShowScreen(secondaryParent); return; }
             if (Screen == ArchipelagoScreen.Setup) { ShowScreen(ArchipelagoScreen.MainMenu); return; }
             if (Screen == ArchipelagoScreen.Pause) { ResumeGame(); return; }
+            if (Screen == ArchipelagoScreen.Gameplay && CancelCommandView()) return;
             if (Screen == ArchipelagoScreen.Gameplay) OpenPauseMenu();
         }
 
@@ -397,6 +401,8 @@ namespace SaltAndLedger.UnityHost
             foreach (var pair in screens) pair.Value.EnableInClassList("hidden", pair.Key != screen);
             Element<VisualElement>("topBar").SetEnabled(screen == ArchipelagoScreen.Gameplay);
             Element<VisualElement>("mainLayout").SetEnabled(screen == ArchipelagoScreen.Gameplay);
+            Root.Q("commandModeNav")?.SetEnabled(screen == ArchipelagoScreen.Gameplay);
+            Root.Q("commandDeck")?.SetEnabled(screen == ArchipelagoScreen.Gameplay);
             if (screen == ArchipelagoScreen.Gameplay) Root.Q<Button>("menuButton")?.Focus();
             else if (screens.TryGetValue(screen, out var active)) active.Q<Button>()?.Focus();
         }

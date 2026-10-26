@@ -162,6 +162,13 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(controller.Session.ShipDeliveries["bread"], Is.GreaterThanOrEqualTo(24));
             Assert.That(controller.Session.IsPlaying, Is.False);
             var terminal = controller.Session.Snapshot;
+            var savedTerminal = controller.Session.SaveText();
+            Click("resultsInspectButton");
+            Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Gameplay));
+            Assert.That(root.Q<Button>("nextDayButton").enabledSelf, Is.False);
+            Click("modeEconomy"); Click("modeMap"); Click("menuButton");
+            Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Results));
+            Assert.That(controller.Session.SaveText(), Is.EqualTo(savedTerminal));
             yield return null;
             Assert.That(controller.Session.Snapshot, Is.SameAs(terminal));
             Click("retryRunButton");

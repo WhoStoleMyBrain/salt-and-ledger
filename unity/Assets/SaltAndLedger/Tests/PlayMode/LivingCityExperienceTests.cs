@@ -75,6 +75,9 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("port_" + generation.FurniturePortId);
             var before = controller.Session.Snapshot;
             Click("cityEconomyButton");
+            Assert.That(controller.Presentation.Mode, Is.EqualTo(CommandMode.Economy));
+            Assert.That(controller.Session.SelectedPortId, Is.EqualTo(generation.FurniturePortId));
+            Click("economyDetailsButton");
             Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.CityEconomy));
             Assert.That(controller.Session.IsPlaying, Is.False);
             var port = before.Ports[generation.FurniturePortId];
@@ -96,14 +99,17 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.CityEconomy));
             Cancel();
             Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Gameplay));
+            Assert.That(controller.Presentation.Mode, Is.EqualTo(CommandMode.Economy));
             Assert.That(controller.Session.Snapshot, Is.SameAs(before));
-            Click("openIndustryButton");
+            Click("modeIndustry");
             Assert.That(root.Q<DropdownField>("blueprintDropdown").choices, Does.Not.Contain("Sawmill"));
             Assert.Throws<InvalidOperationException>(() => controller.Session.Construct(EnterpriseScenario.SawmillBlueprint));
             Assert.That(controller.Session.Snapshot, Is.SameAs(before));
             Click("closeIndustryButton");
+            Click("modeMap");
             for (var day = 0; day < 12; day++) Click("nextDayButton");
             Click("cityEconomyButton");
+            Click("economyDetailsButton");
             port = controller.Session.Snapshot.Ports[generation.FurniturePortId];
             Assert.That(root.Q<Label>("cityPopulationDetail").text, Does.Contain("Population " + port.City.Population));
             Assert.That(root.Q<Label>("cityProsperityDetail").text, Does.Contain(port.City.ProsperityReason));
@@ -116,6 +122,7 @@ namespace SaltAndLedger.UnityHost.Tests
         public IEnumerator CoreSummaryAndMarketFitDefaultAndCriticalActionsRemainReachableAtEveryScale()
         {
             controller.BeginRun(new RunIdentity(null, RunScenario.MerchantCharter, RunWorldMode.LivingCities, -42));
+            Click("port_" + controller.Session.Player.DockedPortId);
             var before = controller.Session.Snapshot;
             foreach (var size in new[] { new Vector2(1366, 768), new Vector2(1920, 1080) })
             foreach (ArchipelagoUiScale scale in Enum.GetValues(typeof(ArchipelagoUiScale)))
@@ -124,21 +131,32 @@ namespace SaltAndLedger.UnityHost.Tests
                 root.style.width = size.x; root.style.height = size.y;
                 controller.TextScale.Apply(scale, false);
                 yield return null; yield return null;
-                foreach (var tab in new[] { "contextOverviewTab", "contextMarketTab" })
+                Visible("openTradeButton"); Visible("openIndustryButton"); Visible("cityEconomyButton");
+                if (scale == ArchipelagoUiScale.Default)
                 {
-                    Click(tab); yield return null; yield return null;
-                    Visible("openTradeButton"); Visible("openIndustryButton"); Visible("cityEconomyButton");
-                    if (scale == ArchipelagoUiScale.Default)
-                    {
-                        var scroll = root.Q<ScrollView>("contextScroll");
-                        Assert.That(scroll.contentContainer.layout.height, Is.LessThanOrEqualTo(scroll.contentViewport.layout.height + 1),
-                            "Default primary " + tab + " must fit without a persistent content scrollbar at " + size);
-                    }
+                    Visible("deckFact0"); Visible("deckFact1"); Visible("deckFact2"); Visible("deckReason");
+                    Assert.That(root.Q("deckBody").GetFirstAncestorOfType<ScrollView>(), Is.Null,
+                        "The default primary deck must fit without an internal scrollbar at " + size);
+                    Assert.That(controller.Map.worldBound.Overlaps(root.Q("commandDeck").worldBound), Is.False,
+                        "The command deck must not cover map markers at " + size);
                 }
+                Click("mapDetailsButton");
+                yield return Reachable("contextOverviewTab");
+                Click("contextOverviewTab");
+                yield return Reachable("cityFundsLabel");
+                yield return Reachable("contextMarketTab");
+                Click("contextMarketTab");
+                yield return Reachable("marketCashLabel");
+                Click("inspectorBackButton");
                 Click("cityEconomyButton");
+                yield return null; yield return null;
+                Visible("economyDetailsButton"); Visible("economyBackButton");
+                Click("economyDetailsButton");
                 yield return null; yield return null;
                 Visible("cityOverviewTab"); Visible("cityNeedsTab"); Visible("cityIndustryTab"); Visible("cityEconomyBackButton");
                 Click("cityEconomyBackButton");
+                Assert.That(controller.Presentation.Mode, Is.EqualTo(CommandMode.Economy));
+                Click("economyBackButton");
                 Click("openTradeButton");
                 yield return null; yield return null;
                 if (scale == ArchipelagoUiScale.Default)

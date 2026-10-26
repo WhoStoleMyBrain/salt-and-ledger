@@ -141,6 +141,7 @@ namespace SaltAndLedger.UnityHost
                     var captured = goodId;
                     var row = new Button(() => { SetIndex("goodDropdown", goodIds.IndexOf(captured)); RefreshHarbor(); }) { name = "tradeGood_" + goodId };
                     row.AddToClassList("trade-goods-row");
+                    var glyph = new MaritimeGlyph(goodId); glyph.AddToClassList("sl-glyph-small"); row.Add(glyph);
                     var name = new Label { name = "name", pickingMode = PickingMode.Ignore }; name.AddToClassList("trade-good-name"); row.Add(name);
                     foreach (var field in new[] { "town", "ship", "local", "bid", "ask" })
                     { var cell = new Label { name = field, pickingMode = PickingMode.Ignore }; cell.AddToClassList("trade-cell"); row.Add(cell); }

@@ -232,12 +232,16 @@ namespace SaltAndLedger.UnityHost.Tests
             var initial = controller.Map.DisplayedShipPosition(ArchipelagoScenario.TimberShipId);
             Click("nextDayButton");
             Assert.That(controller.Map.DisplayedShipPosition(ArchipelagoScenario.TimberShipId), Is.Not.EqualTo(initial));
-            Assert.That(root.Q<Button>("port_" + ArchipelagoScenario.North).text, Does.Contain("1 player · 0 NPC"));
+            var north = controller.Session.Snapshot.Ports[ArchipelagoScenario.North];
+            Assert.That(root.Q<Button>("port_" + north.Id).text, Is.EqualTo(north.Name + "\n" + ArchipelagoMap.ShortRole(north.Role)));
+            Assert.That(root.Q<Button>("ship_" + controller.Session.Player.Id).tooltip, Does.Contain("Docked at " + north.Name));
+            Assert.That(root.Q<Button>("ship_" + ArchipelagoScenario.TimberShipId).ClassListContains("npc-marker"), Is.True);
             for (var day = 1; day < 6; day++) Click("nextDayButton");
             Click("port_" + ArchipelagoScenario.North);
             Assert.That(root.Q<Label>("consumptionLabel").text, Does.Contain("cumulative unmet"));
             Assert.That(controller.Session.Activity.Any(item => item.Message.Contains("Harvest") || item.Message.Contains("consumed") ||
                 item.Message.Contains("unmet demand")), Is.True);
+            Click("mapDetailsButton");
             Click("contextControlsTab");
             root.Q<Foldout>("automationFoldout").value = true;
             Set("outBuy", "1");

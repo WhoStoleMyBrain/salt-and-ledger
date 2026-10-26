@@ -1,0 +1,59 @@
+.sl-command-shell { padding: 8px; }
+.command-mode-nav { flex-direction: row; flex-shrink: 0; margin-bottom: 6px; }
+.command-mode-nav > .unity-button { flex-grow: 1; flex-basis: 0; margin-top: 0; }
+.sl-command-shell .main-layout { min-height: 0; position: relative; }
+.sl-command-shell .map-side { margin-right: 0; }
+.sl-command-shell .map-frame { min-height: 0; }
+.sl-command-shell .map-footer { padding: 3px 7px; }
+.command-inspector.context-shell { width: auto; flex-grow: 1; min-height: 0; }
+.command-deck { flex-shrink: 0; margin-top: 6px; padding: 8px 12px; }
+.command-deck-top { flex-direction: row; align-items: center; justify-content: flex-end; }
+.command-deck-hint { flex-grow: 1; }
+.command-deck-top > .unity-button { min-height: 24px; margin: 0; padding: 1px 8px; font-size: var(--sl-caption); }
+.command-deck-body { flex-direction: row; align-items: center; min-width: 0; }
+.command-deck-identity { width: 22%; flex-shrink: 1; min-width: 0; padding-right: 12px; }
+.command-deck-identity .selection-subtitle { margin-bottom: 0; }
+.command-deck-identity .selection-title { font-size: var(--sl-emphasis); }
+.command-deck-facts { flex-direction: row; flex-grow: 1; flex-basis: 0; min-width: 0; align-items: stretch; }
+.command-fact { flex-basis: 0; flex-grow: 1; min-width: 0; white-space: normal; margin: 0 6px 0 0; padding: 7px; font-size: var(--sl-caption); }
+.command-deck-actions { flex-direction: row; flex-shrink: 0; align-items: center; }
+.command-deck-actions > .unity-button { min-width: 85px; max-width: 145px; margin-top: 0; }
+.command-deck-reason { white-space: normal; font-size: var(--sl-caption); margin: 5px 0 0 0; padding: 4px 7px; }
+.command-deck .voyage-bar { margin-top: 4px; padding: 3px 6px; }
+.command-deck .voyage-copy { font-size: var(--sl-caption); }
+.command-copy { white-space: normal; margin: 6px 0; }
+.command-muted { white-space: normal; font-size: var(--sl-caption); margin: 6px 0; }
+.command-scroll { flex-grow: 1; min-height: 0; min-width: 0; }
+.command-scroll > .unity-scroll-view__content-viewport > .unity-scroll-view__content-container { padding-right: 8px; }
+.command-fleet-list { width: 210px; flex-shrink: 0; margin-right: 8px; padding: 10px; min-height: 0; }
+.command-fleet-inspector { width: 320px; flex-shrink: 0; margin-left: 8px; padding: 10px; min-height: 0; }
+.command-fleet-row { margin: 6px 0; padding: 10px; -unity-text-align: middle-left; }
+.command-fleet-mode .map-footer { flex-wrap: wrap; }
+.command-fleet-mode .map-footer .fleet-picker { width: 100%; }
+.command-economy { flex-grow: 1; padding: 12px 18px; min-height: 0; }
+.command-economy-heading { flex-direction: row; align-items: center; flex-shrink: 0; margin-bottom: 8px; }
+.command-economy-heading > .unity-label { flex-grow: 1; }
+.command-economy-heading > .unity-base-field { width: 260px; }
+.command-economy-metrics { flex-direction: row; flex-wrap: wrap; }
+.command-economy-metric { flex-grow: 1; flex-basis: 0; min-width: 180px; padding: 14px; margin: 0 8px 8px 0; white-space: normal; }
+.command-production-card { padding: 12px; margin: 6px 0; }
+.command-notices { position: absolute; right: 8px; top: 8px; width: 560px; max-width: 95%; max-height: 95%; padding: 14px; }
+.command-notices .unity-button { white-space: normal; }
+.command-chooser { flex-grow: 1; padding: 22px; }
+.command-chooser-towns { flex-grow: 1; justify-content: center; }
+.command-chooser-towns > .unity-button { margin: 8px; }
+.ui-large-layout .command-deck-body { flex-wrap: wrap; }
+.ui-large-layout .command-deck-identity { width: 27%; }
+.ui-large-layout .command-deck-actions { width: 100%; justify-content: flex-end; margin-top: 5px; }
+.ui-large-layout .command-fleet-list { width: 205px; }
+.ui-large-layout .command-fleet-inspector { width: 340px; }
+.ui-text-extra-large.ui-narrow .command-fleet-list { width: 185px; }
+.ui-text-extra-large.ui-narrow .command-fleet-inspector { width: 360px; }
+.sl-command-shell .top-bar { margin-bottom: 5px; }
+.sl-command-shell .top-summary { min-width: 180px; }
+.sl-command-shell .brand { font-size: var(--sl-caption); margin-right: 8px; }
+.sl-command-shell .playback-label { display: none; }
+.sl-command-shell .speed-picker { width: 80px; }
+.sl-command-shell .day { font-size: var(--sl-body); }
+.sl-command-shell .command-goals { margin-right: 10px; }
+.ui-narrow .sl-command-shell .brand { display: none; }

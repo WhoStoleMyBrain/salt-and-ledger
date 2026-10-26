@@ -43,6 +43,7 @@ namespace SaltAndLedger.UnityHost.Tests
         public IEnumerator ScaleChangesReachLiveAndNewControlsWithoutAnyEconomicMutation()
         {
             controller.BeginRun(null, RunScenario.IndustrialCharter);
+            Click("port_" + controller.Session.Player.DockedPortId);
             var before = controller.Session.Snapshot;
             var dynamicCopy = new Label("Newly created account detail") { name = "readabilityProbe" };
             dynamicCopy.AddToClassList("run-copy");
@@ -128,6 +129,9 @@ namespace SaltAndLedger.UnityHost.Tests
                     Assert.That(controller.Map.worldBound.Contains(marker.worldBound.min), Is.True, marker.name);
                     Assert.That(controller.Map.worldBound.Contains(marker.worldBound.max), Is.True, marker.name);
                 }
+                Assert.That(controller.Presentation.HasSelection, Is.False);
+                Assert.That(root.Q("deckBody").ClassListContains("hidden"), Is.True);
+                Click("port_" + controller.Session.Player.DockedPortId);
                 yield return Reachable("openTradeButton");
                 Click("openTradeButton");
                 yield return null; yield return null;
@@ -173,7 +177,10 @@ namespace SaltAndLedger.UnityHost.Tests
                 yield return Reachable("warehouseSell");
                 Assert.That(root.panel.Pick(town.worldBound.center), Is.Not.SameAs(town), "Industry backdrop blocks the town marker.");
                 Cancel();
+                Click("mapDetailsButton");
+                yield return Reachable("contextControlsTab");
                 Click("contextControlsTab");
+                yield return Reachable("logisticsButton");
                 Click("logisticsButton");
                 yield return Reachable("applyLogisticsButton");
                 yield return Reachable("logisticsQuantity");
@@ -181,6 +188,7 @@ namespace SaltAndLedger.UnityHost.Tests
                 Click("ledgerButton");
                 yield return Reachable("ledgerBackButton");
                 Click("ledgerBackButton");
+                Click("inspectorBackButton");
                 Click("menuButton");
                 yield return Reachable("resumeButton");
                 yield return Reachable("restartRunButton");
@@ -203,6 +211,7 @@ namespace SaltAndLedger.UnityHost.Tests
         public IEnumerator TradeTableAndOrderFormNeverOverlapAtAnyScaleOrSupportedResolution()
         {
             controller.BeginRun(null, RunScenario.IndustrialCharter);
+            Click("port_" + controller.Session.Player.DockedPortId);
             var before = controller.Session.Snapshot;
             Click("openTradeButton");
             foreach (var size in new[] { new Vector2(1366, 768), new Vector2(1920, 1080) })

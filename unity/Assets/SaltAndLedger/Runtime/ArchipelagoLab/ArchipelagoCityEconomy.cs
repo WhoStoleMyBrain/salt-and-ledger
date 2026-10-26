@@ -43,7 +43,7 @@ namespace SaltAndLedger.UnityHost
                 controls.Add(Element<VisualElement>(name));
             var actions = Root.Q(className: "context-actions");
             shell.Add(actions);
-            Button(shell, "cityEconomyButton", "City economy & capabilities", () => OpenSecondary(ArchipelagoScreen.CityEconomy));
+            Button(shell, "cityEconomyButton", "Economy", () => SwitchCommandMode(CommandMode.Economy));
 
             var screen = CreateScreen(ArchipelagoScreen.CityEconomy, "City economy",
                 "Committed town accounts, paid needs and productive opportunities. Inspecting this screen spends no day.");
@@ -115,7 +115,7 @@ namespace SaltAndLedger.UnityHost
             for (var index = 0; index < 3; index++)
                 Element<Button>(new[] { "contextOverviewTab", "contextMarketTab", "contextControlsTab" }[index])
                     .EnableInClassList("selected-tab", index == contextTab);
-            Element<Button>("cityEconomyButton").text = PortName(Session.SelectedPortId) + " · city economy";
+            Element<Button>("cityEconomyButton").text = "Economy";
         }
 
         private void SelectCityTab(int tab)

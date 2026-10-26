@@ -30,6 +30,8 @@ namespace SaltAndLedger.UnityHost.Tests
                 controller.TextScale.Apply(scale, false);
                 controller.BeginRun(new RunIdentity(null, RunScenario.IndustrialCharter,
                     seed.HasValue ? RunWorldMode.Seeded : RunWorldMode.Classic, seed));
+                Assert.That(controller.Map.VisibleRouteCount, Is.Zero, "Unselected map does not display six permanent distance captions.");
+                controller.Map.ShowAllRoutes = true;
                 yield return null;
                 yield return null;
                 var captions = controller.Map.Query<Label>(className: "route-distance").ToList();
@@ -55,6 +57,7 @@ namespace SaltAndLedger.UnityHost.Tests
                     foreach (var previous in captions.Take(index))
                         Assert.That(bounds.Overlaps(previous.worldBound), Is.False, context + " / another caption");
                 }
+                controller.Map.ShowAllRoutes = false;
             }
         }
     }

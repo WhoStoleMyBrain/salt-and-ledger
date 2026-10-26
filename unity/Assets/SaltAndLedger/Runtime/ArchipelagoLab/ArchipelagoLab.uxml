@@ -1,6 +1,8 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <ui:Style src="ArchipelagoLab.uss" />
     <ui:Style src="ArchipelagoRunExperience.uss" />
+    <ui:Style src="ArchipelagoCommandDeck.uss" />
+    <ui:Style src="IllustratedMaritime.uss" />
     <ui:VisualElement name="archipelagoLab" class="archipelago-lab">
         <ui:VisualElement name="topBar" class="top-bar">
             <ui:Label text="SALT &amp; LEDGER" class="brand" />

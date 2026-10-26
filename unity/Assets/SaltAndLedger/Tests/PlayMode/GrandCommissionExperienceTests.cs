@@ -113,8 +113,10 @@ namespace SaltAndLedger.UnityHost.Tests
                 Assert.That(bar.value, Is.InRange(0, 100));
             Cancel();
             Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Gameplay));
-            Assert.That(controller.Session.IsPlaying, Is.True);
+            Assert.That(controller.Session.IsPlaying, Is.False, "Closing a management view must not silently restart playback.");
             Assert.That(controller.Session.Snapshot, Is.SameAs(before));
+            Click("playButton");
+            Assert.That(controller.Session.IsPlaying, Is.True, "Playback resumes only on the explicit Play command.");
             Click("pauseButton");
             Click("menuButton"); Click("pauseObjectivesButton"); Cancel();
             Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Pause));

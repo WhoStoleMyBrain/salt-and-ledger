@@ -35,11 +35,12 @@ namespace SaltAndLedger.UnityHost
                 Session = new ArchipelagoLabSession(ContentLoader.Load(canonical.text));
                 Map = new ArchipelagoMap();
                 Element<VisualElement>("mapContainer").Add(Map);
-                Map.PortSelected += id => Run(() => Session.SelectPort(id));
-                Map.ShipSelected += id => Run(() => Session.SelectShip(id));
+                Map.PortSelected += SelectCommandPort;
+                Map.ShipSelected += SelectCommandShip;
                 Map.PortTradeRequested += OpenTrade;
                 Bind();
                 BindRunExperience();
+                BuildCommandDeck();
                 LoadPolicy();
                 Refresh();
                 ShowScreen(ArchipelagoScreen.MainMenu);
@@ -77,7 +78,7 @@ namespace SaltAndLedger.UnityHost
             Element<DropdownField>("shipPicker").RegisterValueChangedCallback(_ =>
             {
                 var index = Element<DropdownField>("shipPicker").index;
-                if (index > 0) Run(() => Session.SelectShip(shipIds[index - 1]));
+                if (index > 0) SelectCommandShip(shipIds[index - 1]);
             });
             var goodNames = goods.Select(good => good.Name).ToList();
             foreach (var name in new[] { "goodDropdown", "outGoodDropdown" })
@@ -94,7 +95,7 @@ namespace SaltAndLedger.UnityHost
             Click("playButton", () => Run(Session.Play));
             Click("pauseButton", () => Run(Session.Pause));
             Click("nextDayButton", () => Run(() => Session.NextDay()));
-            Click("playerShipButton", () => Run(() => Session.SelectShip(Session.Player.Id)));
+            Click("playerShipButton", () => SelectCommandShip(Session.Player.Id));
             Click("resetButton", RequestRestart);
             Click("sailButton", () => Run(() => Session.Sail()));
             Click("buyButton", () => Trade(TradeDirection.Buy));
@@ -249,7 +250,8 @@ namespace SaltAndLedger.UnityHost
             Element<Button>("playButton").SetEnabled(!Session.IsPlaying && !Session.IsChallengeEnded);
             Element<Button>("nextDayButton").SetEnabled(!Session.IsChallengeEnded);
             Element<Button>("pauseButton").SetEnabled(Session.IsPlaying);
-            Map.Present(snapshot, Session.SelectedPortId, Session.SelectedShipId, Session.IsPlaying && SmoothMovement, Session.PlaybackInterval);
+            Map.Present(snapshot, Presentation.HasSelection ? Session.SelectedPortId : null,
+                Presentation.HasSelection ? Session.SelectedShipId : null, Session.IsPlaying && SmoothMovement, Session.PlaybackInterval);
             Map.AdvanceVisual(0, Session.IsPlaying && SmoothMovement);
             SetIndex("shipPicker", Session.SelectedShipId == null ? 0 : shipIds.IndexOf(Session.SelectedShipId) + 1);
             SetText("mapHint", Session.NavigationArmed
@@ -274,6 +276,7 @@ namespace SaltAndLedger.UnityHost
             RefreshCityEconomy();
             RefreshContextLayout();
             RefreshDevelopment();
+            RefreshCommandDeck();
         }
 
         private void RefreshNavigation()
