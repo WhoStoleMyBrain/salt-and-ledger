@@ -10,11 +10,13 @@ Complete canonical recipes run at explicitly scheduled economic days\.
 
 A recipe lists its actual input and output quantities\. Transformation requires every input\. Extraction has no tradeable inputs and creates its configured output\. Canonical recipe pages describe quantities; the active scenario supplies intervals and limits\.
 
-A private factory consumes and produces only within its own storage\. A successful batch schedules the next opportunity one interval later\. Missing inputs, disabled production, or full output storage keep the batch due without accumulating catch\-up batches\.
+A private factory consumes and produces only within its actual owned store: a shared company town stockpile in pooled runs, or its separate warehouse in older runs\. Public market goods never silently supply a private batch\. A successful batch schedules the next opportunity one interval later\. Missing inputs, disabled production or full output storage keep the batch due without accumulating catch\-up batches\.
 
 Daily ship actions occur before procurement and production\. Operational private procurement is followed by public production, private production, private sales, scheduled consumption, voyage progress and due construction completion\. Fresh output cannot be loaded by an earlier ship action in that same daily operation\. Pending factories skip their automatic phases even on completion day\.
 
 In Living Cities, a successful public batch pays the configured wage from market cash to local households; a private batch pays from its company\. Insufficient payroll blocks the whole batch and keeps it due\. Blocked, disabled, input\-starved and pending batches pay nothing\. After retail, city observations and population reviews occur before voyages and construction completion\.
+
+Economy shows each existing facility's current inputs, one canonical batch output, employer funds, payroll, capacity, output ceiling and next eligible day\. Ready from current state is conditional: earlier operations or another facility sharing the stockpile can consume the inputs first\. Last committed outcome describes the previous attempt, not current readiness\. Open Industry to manage an owned facility; inspecting the signal never runs a batch\.
 
 ## Related entries
 

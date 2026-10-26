@@ -16,6 +16,8 @@ Municipal Planks are a separate public own\-use sink every 12 days\. They move n
 
 Food coverage estimates physical stock divided by scheduled eligible household demand; it is not a guaranteed spending forecast\. Goods without household demand show not applicable\. Stock\-only pricing remains the baseline\. Experimental coverage pricing derives bounded stock targets from a seven\-day need horizon constrained by actual household funds\. Effective pricing parameters stay fixed until the next daily boundary; marginal bid/ask prices still respond to every inventory change\.
 
+The command deck and Economy show next Bread due day and exact prospective quantity at current population, including the saved fractional demand remainder\. Compare it with current public stock; the separate retail preview uses current quotes and household money\. Awaiting first need means no meal has yet been observed\. These read\-only facts do not promise future stock, funds or prices\. Classic and seeded\-v1 household needs are not modeled, rather than a zero\-food crisis\.
+
 ## Related entries
 
 - [Living city accounts and wages](../mechanics/help_city_accounts.md)

@@ -8,7 +8,7 @@ title: "Industrial shipping automation"
 
 Connect owned production to physical transport and a chosen destination\.
 
-This entry describes the preserved historical two\-port policy\. New v3 pooled worlds instead expose ordered cargo itineraries in Fleet &gt; Route planner, with multiple market and company\-stock actions and mixed cargo\. Loading an older run keeps its original controls and policy semantics\.
+This entry describes the preserved historical two\-port policy, available through Details / log &gt; Controls\. New v3 pooled worlds instead expose ordered cargo itineraries in Fleet &gt; Inspect / edit route, with multiple market and company\-stock actions and mixed cargo\. Loading an older run keeps its original controls and policy semantics\.
 
 Choose a source market or owned warehouse, commodity, stock threshold, retained reserve, shipment target and minimum, destination, and selling limit\. A route may deliver into an owned destination warehouse instead of selling\. Optional return cargo can make the return voyage useful\.
 

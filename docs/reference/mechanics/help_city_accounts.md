@@ -16,7 +16,7 @@ If households then buy Bread for an exact order total of 18, household cash beco
 
 Market insolvency can block your sale even when households still have money\. Retail may later fund the market only if food exists, households can afford it and a need is due\. Buying locally, exports and private employment can move real funds; none guarantees a recovery day\.
 
-Open City Economy for separate cash balances, actual wage and retail payments, due needs, food failure causes and next opportunities\. A missing item and an unaffordable stocked item are different constraints\.
+Select the town and open Economy for current food, production and separate market/household funds\. Full city accounts / pricing opens City Economy for actual wage and retail payments, observed food outcomes and fiscal detail\. Back retains the selected town and prior workspace\. A missing item and an unaffordable stocked item are different constraints\.
 
 Modern circulation towns review accounts every four days before public production\. Only ready public work can trigger a payroll levy, and households keep twice their next essential food budget\. Otherwise food relief requires actual food on the shelf and protects upcoming public payroll\. Each direction is limited to the shortfall, 12 coins and 10% of the payer's unreserved cash\. The town screen shows recorded reserves, reason, totals and next review\. No money or food is created\.
 

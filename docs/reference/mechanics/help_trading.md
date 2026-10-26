@@ -12,7 +12,7 @@ Buy moves goods from the public market into your ship or private warehouse and p
 
 Choose a good and quantity, then read the exact order total before confirming\. Manual trades execute the complete requested quantity or leave goods and cash unchanged\. Quantity shortcuts only edit the proposal\. Transactions do not advance the economic day\.
 
-Opening trade pauses playback\. Close the window and resume deliberately when ready\. Disable that ship's automation before issuing manual trades or sailing orders\.
+Select a town or owned ship, then use Harbor on its command deck or the Trade mode\. Without a selection, Trade offers a town chooser\. Opening Harbor pauses playback; closing it returns to the previous context and stays paused\. Disable that ship's automation before issuing manual trades or sailing orders\.
 
 Harbor shows public market stock, the selected ship hold and local company stock together\. Choose paid Buy/Sell for either accessible destination, or no\-cash Load/Unload at the actual dock\. Exact previews, quantity presets and specific blockers explain what can execute; a remote ship cannot move cargo here\.
 

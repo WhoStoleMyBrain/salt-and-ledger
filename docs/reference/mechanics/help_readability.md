@@ -10,14 +10,16 @@ Choose one presentation scale for every ArchipelagoLab screen\.
 
 Settings offers Compact, Default, Large and Extra Large text throughout gameplay, map labels, trade, industry, automation, ledger, encyclopedia, setup, pause and results\. Default body text is 17 pixels; Large and Extra Large use 21 and 25\. Compact uses 14 for a deliberately denser presentation\.
 
-The primary sidebar groups Overview, Market and Controls into tabs and keeps ordinary actions separate\. City Economy opens paused detail; industry advanced rules are collapsible\. Panels wrap and scroll internally where text grows\. Buttons, numeric fields and hit targets adjust with text rather than using paint\-only zoom; long documents and advanced configuration intentionally retain scrolling\.
+The map keeps the main play area while a collapsible parchment command deck shows the selected town or ship\. Dedicated Fleet and Economy workspaces expose focused facts; Details / log retains longer inspector and historical route controls\. Panels wrap and scroll internally where text grows\. Buttons, numeric fields and hit targets adjust with text rather than using paint\-only zoom; long documents and advanced configuration intentionally retain scrolling\.
+
+Goods and status symbols keep visible labels or tooltips; warnings use words as well as color\. HUD cash and reference value use at most one decimal, with an exact tooltip; a positive value below 0\.1 appears as &lt;0\.1\. Harbor totals and Ledger money keep exact precision\. Display rounding never changes an order, affordability or score\.
 
 Changing text size is passive: it does not advance time, change revision, spend cash, alter rules or reroll a seed\. The text preference is remembered locally through Unity PlayerPrefs for the application environment, across menus and fresh runs\. Other presentation settings last for the session\. This does not save an economic run or synchronize preferences between devices\.
 
 ## Related entries
 
 - [Owning a factory](../mechanics/help_factories.md)
-- [Menus, pause, and the encyclopedia](../mechanics/help_navigation.md)
+- [Map, command deck, pause and navigation](../mechanics/help_navigation.md)
 - [Seeded worlds and exact retries](../mechanics/help_seeded_worlds.md)
 - [Buying and selling](../mechanics/help_trading.md)
 

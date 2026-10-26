@@ -25,7 +25,7 @@ Expanding Economy v3 offers the Grand Commission objective draft alongside separ
 - [Starting company charters](../mechanics/help_charters.md)
 - [Financial reports and the ledger](../mechanics/help_finances.md)
 - [The Grand Commission and Objectives Journal](../mechanics/help_grand_commission.md)
-- [Menus, pause, and the encyclopedia](../mechanics/help_navigation.md)
+- [Map, command deck, pause and navigation](../mechanics/help_navigation.md)
 - [Results and scoring](../mechanics/help_scoring.md)
 
 [All player mechanics](../catalog-mechanics.md) · [All content](../index.md)

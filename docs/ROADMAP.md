@@ -1,6 +1,6 @@
 # Provisional roadmap
 
-This sequence describes planned work, not completed features or a fixed delivery commitment. Revisit it based on prototype results, especially whether each system creates understandable economic decisions and useful automation.
+This roadmap separates implemented milestones from proposals; it is not a fixed delivery commitment. Revisit future work based on prototype results, especially whether each system creates understandable economic decisions and useful automation. Actual test and player evidence belongs to each milestone's verification record.
 
 | Phase | Planned scope | Status |
 | --- | --- | --- |
@@ -12,6 +12,17 @@ This sequence describes planned work, not completed features or a fixed delivery
 | 4 | Modifiers, curses, difficulty levels, and challenge combinations | Task 1.8 adds selectable Ascension 0/1; broader modifiers remain deferred |
 | 5 | Lateral meta progression through starting packages, alternative production capabilities, and new economic problems | Three replacement starting packages available immediately; persistent unlocks and broader progression remain planned |
 | 6+ | Advanced competitors, piracy, political systems, optional combat, and other features justified by gameplay testing | Deferred |
+
+Recent integrated milestones:
+
+| Task | Delivered scope | Verification status |
+| --- | --- | --- |
+| 2.0 | Exact v3 economy, expandable production, public Mint, finite contracts, three-ship fleet and local saves | [Recorded acceptance](TASK-2.0-VERIFICATION.md) |
+| 2.1 | Four-round Grand Commission draft and live objective Journal | [Recorded acceptance](TASK-2.1-VERIFICATION.md) |
+| 2.2 | Harbor, shared company town stock, completion acknowledgment and diagnostic export | [Recorded acceptance](TASK-2.2-VERIFICATION.md) |
+| 2.3 | Ordered multi-stop cargo itineraries and guarded Fleet route planner | [Recorded acceptance](TASK-2.3-VERIFICATION.md) |
+| 2.4 | Versioned fees, reserve-protected municipal circulation, finite initial imports and measured A/B outcomes | [Recorded acceptance and counterexamples](ECONOMIC_CIRCULATION_REVIEW.md) |
+| 2.5 | Map-first command deck, Fleet/Economy workspaces, pure economic signals and a reusable illustrated maritime UI kit | Implemented; [acceptance evidence and limitations](TASK-2.5-VERIFICATION.md) |
 
 Phase 0 includes logs, planks, a sawmill, one production conversion, validation, a console demo, headless tests, and generated reference output. Phase 0.5 exposes the same behavior through a Unity component and integration tests. Task 1.1 adds one fixed location, multiple runtime building instances, an abstract 64-bit tick, enable/disable commands, deterministic production scheduling, atomic world steps, and structured immutable results. Task 1.2 extends that world with one finite market, one trader, separate goods/cash accounts, and explicit trading. Task 1.2b adds exact stock-sensitive pricing, read-only trade previews, and reproducible pricing comparisons. Task 1.3a adds two ports, one shared trader account, and one manually sailed cargo ship. Task 1.3b executes configurable route policies through the same maritime commands. Task 1.4 makes that world playable through a focused Unity UI Toolkit interface. All reuse the same canonical content, transaction/pricing calculations, and production operation.
 
@@ -111,12 +122,12 @@ Proposed next assignment: observe players from application startup through a com
 
 Record whether ownership, actual consumption versus delivery, route stage, deadlines, abandonment, and retry are understandable. Compare attention required by merchant and industrial approaches without treating fewer commands as proof of enjoyment. Review whether Independent Traders' larger hold and Industrial Consortium's lower liquidity create meaningful choices under different objectives.
 
-Pair observed confusion with focused presentation fixes, then isolate one finite-circulation or distribution change against the measured five-/ten-year stalls under prescribed policies. Investigate the unfunded employer with wealthy households, stock ceilings that stop wages, input shortages, unsold food, price floors and capital opportunity costs before changing several parameters. Retain the old accounting, recovery and idle-control evidence. Use the now-implemented household finance and role specialization to diagnose failures; do not add more ascensions, commodities, fleets, rescue income or random risk merely to keep activity running. Human playtesting and resulting revisions remain a proposed assignment, not completed user-research evidence.
+Use the Task 2.5 map, deck and focused workspaces for these observations. Pair confusion with focused presentation fixes, then isolate any later circulation or distribution proposal against the [Task 2.4 measured controls](ECONOMIC_CIRCULATION_REVIEW.md). Bounded fees and municipal review already exist in modern runs; they did not establish universal long-run recovery. Investigate unfunded employers, stock ceilings, input shortages, unsold food and capital opportunity cost before changing several parameters. Retain historical accounting, recovery and idle-control evidence. Human playtesting and resulting revisions remain proposed work, not completed user-research evidence.
 
 ## Other follow-up work
 
 1. **Verify the intended player backend and stripping configuration.** Run the Bootstrap smoke scene in an IL2CPP player if that is the intended shipping backend, recording platform and stripping level. Diagnose concrete compatibility failures before adding preservation rules.
-2. **Calibrate the enterprise network and run choices.** Vary existing construction costs, procurement limits, source thresholds, production/consumption schedules, sale floors, and finite initial liquidity. Keep all challenge/charter feasibility and idle-failure checks. Distinguish temporary stock shortage, distribution failure, policy blockage, and liquidity exhaustion without introducing hidden money. Do not normalize scores across packages using an invented ship value.
+2. **Calibrate the enterprise network and run choices.** Vary existing construction costs, procurement limits, source thresholds, production/consumption schedules, sale floors, and finite initial liquidity only in a separately scoped experiment. Keep challenge/charter feasibility and idle-failure checks. Distinguish stock shortage, distribution failure, policy blockage and liquidity exhaustion without hidden money. Existing reference Company Value is not a universal score normalization or a liquidation guarantee.
 3. **Measure simulation cost before enlarging the world.** Snapshot copying and result allocation favor clear atomicity. Live cost lots depend on held acquisitions; bounded event journals do not imply a constant bound on all inventory-lot counts. Extend representative performance/allocation measurements before adding larger maps or fleets.
 
 These follow-ups are proposals, not selected final economic rules. Keep randomness confined to explicit versioned geography/economic initialization until another mechanic has its own approved scope and reproducible design.
@@ -125,10 +136,26 @@ These follow-ups are proposals, not selected final economic rules. Keep randomne
 
 Task 2.0 combines productive expansion and strategic company development in one opt-in v3 milestone. Its implementation includes exact proportional paid needs, all original player-buildable industry kinds and repeatable sites, the Silver Mine and unique public Royal Mint, finite outside contracts, a bounded three-ship player fleet, reference Company Value, complete local save/restore and three distinct objectives. [Expanding Economy](EXPANDING_ECONOMY.md) records the rules and provisional parameters. Classic/v1/v2 remain historical controls.
 
-Acceptance requires exact headless/continuation tests, unchanged historical reports, bounded comparative/deep economic evidence, and actual Editor/player journeys. [Unity integration](UNITY.md) is the evidence record; writing code alone does not establish completion. Further work should follow measured bottlenecks and observed usability. Banking, debt, unrestricted fleets, taxes, additional metals/ascensions, online saves and a route optimizer remain outside this milestone.
+Acceptance requires exact headless/continuation tests, unchanged historical reports, bounded comparative/deep economic evidence, and actual Editor/player journeys. [Unity integration](UNITY.md) is the evidence record; writing code alone does not establish completion. Further work should follow measured bottlenecks and observed usability. Task 2.0 did not add banking, debt, unrestricted fleets, taxes, additional metals/ascensions, online saves or a route optimizer. The later Task 2.4 introduces only its explicitly versioned municipal mechanism and fees.
 
 ## Task 2.1: the Grand Commission
 
 Task 2.1's focused [Grand Commission](GRAND_COMMISSION.md) builds on this v3 milestone: four deterministic category rounds, three choices from each four-template pool, and four compulsory goals frozen into run identity. Authoritative progress measures funded private production, actual owned-ship visits, reversible destination-specific net sales and civic/capital outcomes. The dedicated Journal explains exact values, permanent accomplishments and remaining blockers; the map HUD stays compact. Schema-2 drafted saves retain the resolved plan and bounded history while valid schema-1 saves remain supported.
 
 Two small real-command winning witnesses and an idle failure provide feasibility evidence. This objective pass does not retune the economy or run another large long-horizon sweep. Actual UI/player evidence is recorded separately in [Unity integration](UNITY.md). Captain, independent charter draft, curse, blessing and post-result sandbox designs remain deferred. Observe whether players can read town dependencies, select a meaningful four-goal combination and explain regressing conditions before adding those systems.
+
+## Tasks 2.2–2.4: physical operations and measured circulation
+
+[Harbor](HARBOR.md) puts public stock, selected cargo and owned local stock in one exact trade/transfer surface. Independently versioned pooled storage supports real local chains while old saves retain separate warehouses. Completion acknowledgment and read-only diagnostic export make frozen outcomes inspectable.
+
+[Cargo itineraries](AUTOMATION.md#ordered-cargo-itineraries) support two to four ordered stops, bounded Buy/Sell/Load/Unload commands, mixed holds, finite daily work and exact continuation. The planner drafts policies; it does not discover routes, manufacture stock or correct a blocked economy.
+
+[Measured circulation](ECONOMIC_CIRCULATION_REVIEW.md) adds modern economic rules1 with explicit sale fees and one reserve-protected municipal review. Exact accounts and matched ordinary-command comparisons show both benefits and costs, including surviving shortages and operating losses. Earlier reports and schemas remain historical controls.
+
+## Task 2.5: map-first command deck and illustrated maritime UI
+
+The bounded presentation milestone adds Map/Trade/Industry/Fleet/Economy/Objectives navigation, a collapsible contextual deck, current-state food and production signals, selected-ship route inspection and a shared world-to-viewport transform. Existing Harbor, Industry and route execution remain authoritative. Deep-sea chart surfaces, parchment management panels and a coherent commodity/status icon family form a reusable style kit; they do not replace real controls with concept art.
+
+The implementation is in place. The [Task 2.5 verification record](TASK-2.5-VERIFICATION.md) audits all 21 criteria and distinguishes actual Editor/Windows Mono journeys, target-resolution/text-scale captures, exact inspection/save checks and any unverified integration points. See the [UI design system](UI_DESIGN_SYSTEM.md) for the shared contracts. The task adds no economy retuning, save migration, new commodity or playable camera controls.
+
+Captain or character choices, curse/blessing tiers, deeper forecasting, larger maps and zoom/pan/minimap controls remain **deferred design proposals**. None is a placeholder mode or implied current feature. Any forecasting proposal must distinguish assumptions from facts and cannot promise future prices. First observe whether players can identify a real blocker, reach the correct action and return to the same town or ship without losing context.

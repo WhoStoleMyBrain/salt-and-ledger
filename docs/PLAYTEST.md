@@ -1,6 +1,14 @@
 # Playtest guides
 
-Start with [Task 2.2 Harbor acceptance](#task-22-harbor-shared-stock-and-export-acceptance) for current default v3 play, shared town stock and diagnostics. [Grand Commission acceptance](#task-21-grand-commission-acceptance) covers the four mandatory objectives. [Complete runs](#complete-runs) covers the historical Classic lifecycle; explicitly select Classic when repeating its measured outcomes. Historical TradingLab and prior-milestone checkpoints below retain their original scenarios.
+## Current Task 2.5 command-deck acceptance
+
+Use the [current player guide](PLAYER_GUIDE.md), [design system](UI_DESIGN_SYSTEM.md) and [Task 2.5 evidence](TASK-2.5-VERIFICATION.md) for the current interface. The milestone sections below retain their historical scenarios and expected economics; their old sidebar entry paths are now available through **Details / log**.
+
+At 1366×768 and 1920×1080, Default and Large: start seed-99 Merchant/StockOnly/A0 Grand Commission, reveal the map and draft four goals. Select Northport, compare current public/private production inputs, use Harbor for a legitimate local-stock purchase, then return to Industry/Economy. Distinguish a current funded batch from guaranteed future production. Select the owned ship, enter Fleet and its existing planner, then return through Harbor and Map with the same ship selected. The Routes toggle, deck collapse, notices and Journal must not change saved economic bytes. Journal and management returns remain paused until explicit Play.
+
+Inspect upcoming Bread day/quantity, stock, carried demand remainder and current affordability separately. Continue a mid-voyage schema-5 save, then inspect a supported legacy save without migration. Results → **Inspect frozen map** retains terminal freeze. At Large, scroll inside Harbor/Industry/Fleet/Economy while keeping navigation and Close/Back reachable. Compare actual screenshots with the illustrated references; symbols must supplement text and exact trade totals remain readable. Native OS input availability is recorded separately from submitted Unity UI events in the verification record.
+
+The [Task 2.2 Harbor scenarios](#task-22-harbor-shared-stock-and-export-acceptance) remain regressions for paid trades, shared town stock and diagnostics. [Grand Commission acceptance](#task-21-grand-commission-acceptance) covers the four mandatory objectives. [Complete runs](#complete-runs) covers the historical Classic lifecycle; explicitly select Classic when repeating its measured outcomes. Historical TradingLab and prior-milestone checkpoints below retain their original scenarios.
 
 ## Complete runs
 

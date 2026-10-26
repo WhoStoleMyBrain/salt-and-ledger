@@ -8,7 +8,7 @@ title: "Ordered cargo itineraries"
 
 Plan mixed cargo and ordered market or company\-stock work through two to four towns\.
 
-New v3 pooled runs offer Company &gt; Fleet &gt; Route planner\. Choose an owned ship, then draft two to four unique town stops with one to eight ordered actions each, at most 24 total\. Add, remove or reorder cards and expand an action to edit its fields\. Drafting and inspecting pause playback without changing stocks, cash or time\.
+New v3 pooled runs offer Fleet &gt; Inspect / edit route, also reachable from a selected owned ship's deck or Harbor\. Choose an owned ship, then draft two to four unique town stops with one to eight ordered actions each, at most 24 total\. Add, remove or reorder cards and expand an action to edit its fields\. Drafting and inspecting pause playback without changing stocks, cash or time\.
 
 Buy and Sell exchange the named good with the public market for its exact bulk price\. Load and Unload transfer owned stock between the actual docked ship and its company town stock without payment\. No owned facility means no town warehouse\. Different goods can remain aboard together within the combined hold capacity; unmentioned goods are never discarded\.
 
@@ -24,7 +24,7 @@ Draft Grain–Flour–Bread loop resolves the actual role towns: A unloads two F
 
 The live planner shows actual dock or voyage, next stop and action, cargo and an authoritative blocker\. Expand Cargo and committed route state for daily budget and last outcome; inspect an action for current source stock, market funds and quote\. Pass count advances when leaving the last listed stop, so an initial middle\-stop pass is not a completed circuit\. Inspect harbor returns to ordinary trading\. Back returns to the prior screen or overlay\.
 
-New itinerary identities use policy format 1 and save schema 4\. Complete plans, exact stop/action/pass, last outcome and remaining daily budget survive mid\-stop and mid\-voyage saves\. Old schema 1/2/3 worlds retain historical route controls and bytes\. Load continues exact saved work; Retry recreates the original initial world\. Route edits cannot reroll geography or the objective draft\.
+Itinerary format 1 uses schema 4, or schema 5 with modern circulation rules\. Complete plans, exact stop/action/pass, last outcome and remaining daily budget survive mid\-stop and mid\-voyage saves\. Old schema 1/2/3 worlds retain historical route controls and bytes\. Load continues exact saved work; Retry recreates the original initial world\. Route edits cannot reroll geography or the objective draft\.
 
 ## Related entries
 

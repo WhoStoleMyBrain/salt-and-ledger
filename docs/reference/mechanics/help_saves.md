@@ -16,7 +16,7 @@ A load validates the complete file, identity, content and configuration before r
 
 Retry Same World always reconstructs the original initial identity and assets, even when a saved later state exists\. Reroll explicitly chooses a new draft seed and requires preview/start\. Neither action silently loads or overwrites your saved progress\.
 
-New v3 pooled runs explicitly use itinerary format 1 and save schema 4, retaining the complete plan, exact next stop/action/pass, last decision and used daily budget\. Older pooled schema 3 retains itinerary version zero; original schema 1/2 retains its old storage identity\. Valid older files keep their fields and behavior; loading never silently combines warehouses or converts a route\. Development Export Run Report writes an exact save and diagnostic under displayed Exports paths without changing the world or save slots\. Recent activity is partial bounded history\.
+V3 pooled itinerary runs use itinerary format 1 and save schema 4, or schema 5 with modern circulation rules, retaining the complete plan, exact next stop/action/pass, last decision and used daily budget\. Older pooled schema 3 retains itinerary version zero; original schema 1/2 retains its old storage identity\. Valid older files keep their fields and behavior; loading never silently combines warehouses or converts a route\. Development Export Run Report writes an exact save and diagnostic under displayed Exports paths without changing the world or save slots\. Recent activity is partial bounded history\.
 
 New circulation runs use economic rules revision 1 and save schema 5\. Fees, local receipts and municipal review dates continue exactly after loading\. Historical saves and Retry keep their original economic rules; Change setup creates a fresh modern revision\. Initial imported basics are finite starting stock, never recurring deliveries\.
 
@@ -26,7 +26,7 @@ New circulation runs use economic rules revision 1 and save schema 5\. Fees, loc
 - [Challenges and run outcomes](../mechanics/help_challenges.md)
 - [Fractional goods and exact coins](../mechanics/help_exact_units.md)
 - [The Grand Commission and Objectives Journal](../mechanics/help_grand_commission.md)
-- [Menus, pause, and the encyclopedia](../mechanics/help_navigation.md)
+- [Map, command deck, pause and navigation](../mechanics/help_navigation.md)
 - [Seeded worlds and exact retries](../mechanics/help_seeded_worlds.md)
 
 [All player mechanics](../catalog-mechanics.md) · [All content](../index.md)

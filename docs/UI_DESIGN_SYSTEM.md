@@ -1,0 +1,137 @@
+# Illustrated Maritime Ledger UI
+
+Task 2.5 organizes the playable archipelago around a nautical chart, a compact contextual deck and focused management views. Dark sea surfaces hold navigation and geography; calm parchment surfaces hold decisions and exact numbers. Illustration identifies goods, ships and production rather than supplying fictional game data.
+
+This document describes the implemented component and interaction contracts. The [verification record](TASK-2.5-VERIFICATION.md) separates actual Editor/player captures and operation tests from unsupported native-device checks; the concept sheets remain inspiration only.
+
+## Surface hierarchy and player flow
+
+| Surface | First information | Working destination |
+| --- | --- | --- |
+| Global bar | Day/deadline, spendable company cash, reference Company Value, goal cue, notices, time controls, menu | Real Journal, current notices, explicit Play/Pause/Next day and pause menu |
+| Map | Real seeded positions, town names/roles, distinct owned/NPC ships and contextual routes | Select a town or ship; the bottom deck opens without a world command |
+| Town deck | Name/short role, three compact facts, one prioritized current reason | Harbor, Industry and Economy for that town |
+| Ship deck | Dock/voyage, hold occupancy, manual/automation state and current instruction | Docked Harbor, owned Route Planner, Fleet or inspection details |
+| Trade | Existing Harbor market/hold/local-stock table and exact proposals | Paid Buy/Sell or no-cash docked Load/Unload through existing operations |
+| Industry | Actual facility/recipe, construction, current readiness, stock and policy | Existing construction, warehouse and per-facility controls |
+| Fleet | Owned ship list, the same map, selected ship's actual route and inspector | Existing planner for the chosen ship, docked Harbor and Company/shipwright |
+| Economy | Next Bread opportunity, separate market/household cash, population/prosperity and current batch readiness | Full City Economy/pricing, Ledger, Harbor and selected private-facility management |
+| Objectives | Existing typed Journal with permanent and reversible conditions | Original goals/results navigation; no independent UI objective counter |
+
+An unselected new run has a quiet collapsed deck. A deliberate selection opens it; Collapse preserves that context and Expand restores it. Map is the return point from Fleet/Economy. Trade and Industry are existing overlays over the originating workspace, so closing them restores that context. Without a selection, their mode buttons open a real town chooser.
+
+The representative loop is **Map → town → Harbor → Industry → Fleet/Economy → Map**. Select the processing town, compare its public or owned input shortage and next opportunity, then use Harbor to make a legitimate transaction. Return to inspect the newly committed stock. Industry keeps actual recipes and shared-stock policies; buying an input does not promise production if payroll, capacity or earlier facilities can still block it. Fleet follows the selected owned ship into the existing planner and back. Economy distinguishes a physical Bread shortfall from affordability at current quotes, then offers detailed accounting one level deeper.
+
+The old operational inspector remains available through **Details / log**. Its original route controls, activity, identity, pricing, Ledger, Company and help destinations remain reachable. The redesign composes those working systems rather than introducing another trade or itinerary engine. See [Harbor](HARBOR.md), [automation](AUTOMATION.md) and the [player guide](PLAYER_GUIDE.md).
+
+## Ownership, input and return contracts
+
+`ArchipelagoLabSession` remains the sole host-facing selection and command owner. Its selected port, inspected ship and owned command ship retain their existing meanings. `PresentationContext` stores only the active command mode, whether a deliberate selection exists and deck collapse. Existing screen/overlay parent state handles returns. No economic quantity, route cursor or save field lives in this presentation context.
+
+- Mode navigation and management overlays pause playback. Returning from those views does not resume playback or enable an automation policy. Explicit time controls remain the only source of requested economic days.
+- Map selection, the Routes overlay, hover, focus, deck collapse and pure projections do not issue world commands. A visual ship interpolation never changes the authoritative dock or voyage.
+- Harbor retains the selected ship and town. NPC inspection is read-only; a remote hold is information, not permission to trade or transfer. Company stock uses the actual local store and can trade remotely under the existing rules.
+- Fleet lists owned ships separately. It keeps the selected owned ship through Map, Harbor and planner returns. NPC markers remain inspectable; their automation is not editable.
+- Escape/NavigationCancel closes the active Harbor/Industry overlay first, then follows the existing secondary-screen return path. Fleet/Economy/choosers return to Map; ordinary Map opens pause. Confirmation keeps its existing priority and destructive-progress safeguards.
+- UI Toolkit buttons own pointer and keyboard picking. Decorative glyphs and child text ignore picking. Modal opening records return focus, disables the underlying map/deck/navigation, and focuses Close. Closing restores focus without an economic operation.
+- Stable fleet/market rows update bound values. Economy cards refresh on committed snapshot or selected-town change, rather than rebuilding every frame. Internal detail scrolling is separate from the full-screen layout.
+
+Classic, seeded-v1, Living Cities-v2 and historical v3 saves retain their existing economic meaning. Household facts say **Not modeled** when no household system exists; old separate warehouses are never presented as a pooled store. The UI adds no schema and no migration. Terminal worlds remain frozen while their Map, Journal and results can be inspected.
+
+## Exact facts and display precision
+
+`EconomicSignals` is a pure portable projection over the committed `RegionalWorldSnapshot` and canonical content. It does not construct a world, advance a day, reserve material, consume random draws or replace a snapshot.
+
+| Projection | Source and meaning | Explicit limit |
+| --- | --- | --- |
+| `NextEssentialNeed` | Actual schedule; current population; persisted demand remainder; canonical `PreviewDemand`; current public stock; shared retail proposal | Current quantities/quotes/funds only. Stock and affordability shortfalls are separate. Before any food observation, say Awaiting first need. |
+| `PublicProduction` | Canonical recipe, actual public stock and employer cash, controls, schedule, output/numeric limits and shared batch readiness | One conditional batch; not a projection of future imports or procurement |
+| `PrivateProduction` | Same canonical production rules, actual legacy or pooled material owner, company payroll, construction, capacity and output ceilings | Shared stock can be consumed by earlier facilities; no reservation or guaranteed completion |
+| Fleet instruction | Existing `CargoItineraryEvaluator` / `RegionalAutomation`, immutable policy and committed progress | Current reason is separate from last committed outcome; no route optimization or predicted prices |
+
+Next eligible date, current readiness and last committed outcome answer different questions and remain separate fields. **Ready from current state** means a complete canonical batch can use today's stock/funds at the stated opportunity if intervening operations leave them available. Pending construction and disabled facilities do not appear as immediately productive. A numeric receiver limit is not mislabeled as household poverty.
+
+The HUD formats coins with invariant `0.#` precision: at most one decimal, with values strictly between zero and 0.1 shown as **<0.1**. Its tooltip preserves the exact cash/reference-value amounts. Harbor execution previews and Ledger retain existing exact precision up to four decimal places. The simulation still receives integer subunits; display formatting never supplies affordability, score, price or command amounts. Reference Company Value is explicitly distinct from spendable cash, realized earnings and liquidation proceeds.
+
+## Shared visual tokens
+
+`IllustratedMaritime.uss` owns the palette under the root `sl-theme` class. The original `ArchipelagoLab.uss` remains the source of inherited text/layout size tokens. New surfaces use semantic classes; existing Harbor, Industry and run cards receive shared adapters rather than independent color copies.
+
+| Token | HEX | Use |
+| --- | --- | --- |
+| `--sl-sea-900` | `#103B45` | Chart and primary action surfaces |
+| `--sl-sea-700` | `#2F6C73` | Ocean accent and hover/active navigation |
+| `--sl-navy-950` | `#0D2631` | Compact HUD and dark framing |
+| `--sl-paper-100` | `#F4ECD8` | Quiet cards, fields and highlighted paper |
+| `--sl-paper-200` | `#E9DFC6` | Parchment workspaces |
+| `--sl-paper-300` | `#DDD0AE` | Table headers and paper separation |
+| `--sl-ink-900` | `#26343B` | Paper text and precise numbers |
+| `--sl-gold-500` | `#C4A36A` | Restrained trim and art accents |
+| `--sl-gold-ink` | `#775527` | Readable small category labels on paper |
+| `--sl-green-700` | `#396C60` | Primary/selected/ready treatment |
+| `--sl-rust-600` | `#A45139` | Warning trim, artwork and danger fill |
+| `--sl-rust-ink` | `#93452F` | Readable small warning text on paper |
+| `--sl-border-300` | `#B7AA8F` | Quiet paper boundaries |
+| `--sl-muted-600` | `#536067` | Secondary paper labels |
+| `--sl-paper-selection` | `#D2E0D2` | Selected goods and calm status rows |
+| `--sl-paper-warning` | `#F1DFC4` | Grounded warning rows |
+| `--sl-focus-light` | `#FFE6A6` | Focus against dark chrome |
+
+Calculated sRGB solid-swatch contrast is **9.67:1** for ink/parchment, **4.89:1** muted/parchment, **5.09:1** dark gold/parchment, **5.05:1** warning ink/parchment, **4.54:1** green/parchment, **5.11:1** cream/primary green and **13.32:1** cream/navy. Actual screenshot review remains necessary: those ratios do not establish layout, icon recognition or rendered focus quality. The darker muted/warning text is an intentional adjustment to the reference palette.
+
+Shared spacing tokens are 4/8/12/18px. Gold is trim, not vital pale numerical text. Calm/manual/ready states do not receive rust styling; `sl-warning` is attached only when a current fact warrants it. Warnings retain a reason or symbol as well as color.
+
+## Typography and reusable components
+
+The existing readable runtime font remains in use, with no new font file or license dependency. Heading hierarchy comes from weight, size and spacing. This deliberately favors legibility over reproducing the moodboard's decorative serif lettering.
+
+| Scale | Body | Caption | Emphasis | Page heading | Minimum standard control |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Compact | 14px | 12px | 16px | 24px | 32px |
+| Default | 17px | 15px | 20px | 28px | 37px |
+| Large | 21px | 19px | 24px | 34px | 43px |
+| Extra Large | 25px | 23px | 29px | 40px | 49px |
+
+These are actual inherited glyph/layout sizes, not a transform. Larger layouts wrap the deck/actions and retain internal scrolling in detailed views. Text preference alone persists in PlayerPrefs, independently of run saves.
+
+| Component/classes | Contract |
+| --- | --- |
+| `sl-hud`, `sl-mode-nav` | Dark compact bar and one clear active mode; actual navigation buttons |
+| `sl-paper`, `sl-card` | Warm matte surface with ink text and restrained boundaries |
+| `sl-header`, `sl-heading`, `sl-section-title`, `sl-group-label` | Shared context/page/group hierarchy |
+| `sl-metric`, `sl-primary-value` | Label, actual quantity/unit and optional grounded comparison |
+| `sl-problem`, `sl-warning`, `sl-calm` | Concise current reason; calm by default, warning only when appropriate |
+| `sl-goods-row`, `sl-recipe`, `sl-recipe-good` | Recognizable good symbol plus text; exact canonical input/output identity |
+| `sl-primary`, `sl-secondary`, `sl-danger`, `sl-selected` | Consistent command and selection treatments |
+| `MaritimeGlyph`, `sl-glyph-small`, `sl-glyph`, `sl-glyph-large` | Source-native vector symbols in 24/30/48px defaults, 28/34/56px for larger text layouts |
+| `MaritimeIllustration`, `sl-illustration-small`, `sl-illustration-banner` | Restrained decorative harbor/workshop/ship tile; never a building census or economic state |
+
+Buttons retain distinct hover, pressed, keyboard focus and disabled states. Dark chrome uses a light focus border; paper actions use an ink border. Fields have an explicit focused border, readable input text and matching popup/toggle styling. Semantic state never depends solely on color. The shared style adapters preserve the existing Harbor table, exact gross/fee/net previews, Industry forms and route-editor layout rather than replacing their controls.
+
+## Artwork and asset ownership
+
+The seven goods are **Logs** (round bark logs), **Planks** (milled boards), **Grain** (sheaf), **Flour** (sack), **Bread** (scored loaf), **Furniture** (chair) and **Silver** (ingot). Ship, workshop, balance scales, coins, warehouse, warning and information symbols share their palette and outline language. Map landmarks add food-source, forest, processing and coastal identity.
+
+All new runtime drawings are original project-authored Painter2D geometry, with production source and stable `.meta` files in the host directory. No moodboard pixels, game screenshots, stock art, external font, SVG package or runtime network asset fetch is used. The modest workshop/harbor and ship illustrations are reusable source-native vignettes, not unique town paintings or a new ship type. See the [production asset inventory and provenance](design/task-2.5/PRODUCTION-ASSETS.md).
+
+The [visual reference guide](design/task-2.5/UI-REFERENCE.md) distinguishes functional wireframes, illustrated inspiration and actual running-game evidence. The map remains live geography rather than a pasted background.
+
+## Map viewport contract
+
+`MapViewport` is a UI-only, aspect-preserving transform. `Fit(worldBounds, viewportBounds, padding)` accepts actual geographic bounds and viewport-local bounds; padding is left/top/right/bottom. It rejects invalid non-finite inputs, expands a degenerate world dimension to one, and proportionally limits opposing padding to 80% of the corresponding viewport dimension. The result exposes world/content bounds, centers and one scale.
+
+`WorldToViewport` and `ViewportToWorld` are inverse operations over that same transform. `ArchipelagoMap` obtains bounds from the real ports and refreshes the transform when layout/marker dimensions change. Port markers, ship interpolation, route lines/captions, art anchors and setup preview use that same map implementation. Docked marker groups use presentation berth offsets converted through the inverse; they do not change the actual port position or sailing distance. UI Toolkit buttons perform picking, so there is no competing custom hit-test coordinate system.
+
+Crowded town labels and ship buttons use bounded screen-space callouts. Ships are placed in stable player-first/ordinal order; a displaced rectangle retains a leader and dot at its true chart anchor. Route captions avoid those displayed rectangles. Callout placement never changes the interpolated world point, seeded geography, voyage progress or save data. This keeps the early seed-99 P1/N3 crossing individually selectable at Large text without inventing a different voyage.
+
+Default fit-all is the only camera mode. The exposed centers/scale/inverse are the extension point for later camera work; this milestone has no zoom, panning or minimap controls and stores no camera data in a save.
+
+The unselected chart does not display six permanent distance captions. Selecting a town shows its connected routes; selecting a ship shows its actual configured route or voyage. A modern manually controlled ship with no assigned itinerary does not expose a compatibility policy as a fictitious route. **Routes** explicitly reveals the connections. Durations still come from authoritative `SeaRoute.DurationDays` for the selected ship's speed. Ordered itinerary overlays follow the actual stop sequence.
+
+## Implementation and verification boundaries
+
+The main source boundaries are `ArchipelagoCommandDeck.cs` (shell/context/navigation), `ArchipelagoWorkspaces.cs` (Fleet/Economy), `ArchipelagoMaritimeKit.cs` (binding the shared visual components), `EconomicSignals.cs` (pure current facts), and `ArchipelagoMap.cs` / `MapViewport.cs` (chart projection). Existing Harbor/Industry/Route Planner partials remain the operation destinations.
+
+Focused tests cover projections, viewport transforms, bound shell values and inspection/navigation without mutation. The [milestone verification record](TASK-2.5-VERIFICATION.md) contains the completed full suites, ordinary production/trade/route witnesses, exact save continuation and actual 1366×768 / 1920×1080 Default/Large captures. It separately records the unavailable native-device input check and remaining density/polish debts.
+
+Deferred work remains deliberately small and explicit: polished bespoke town paintings, a licensed serif-heading option, larger-map camera controls and deeper economic forecasting are future proposals. No placeholder captain, curse, blessing or other future-mode control is added to this UI.
