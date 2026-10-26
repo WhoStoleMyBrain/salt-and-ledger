@@ -81,3 +81,22 @@ jobs:
         run: python tools/prepare_unity.py
       - name: Check Unity integration asset freshness
         run: python tools/prepare_unity.py --check
+
+  economic-circulation:
+    runs-on: ubuntu-latest
+    # Separate from the 20-minute historical gate: fixed 80-world matrix, no deep sweep.
+    timeout-minutes: 15
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: Restore locked standalone dependencies
+        run: dotnet restore SaltAndLedger.sln --locked-mode
+      - name: Build circulation report runner
+        run: dotnet build samples/SaltAndLedger.Demo/SaltAndLedger.Demo.csproj --configuration Release --no-restore
+      - name: Verify measured circulation report
+        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --economic-circulation --check
