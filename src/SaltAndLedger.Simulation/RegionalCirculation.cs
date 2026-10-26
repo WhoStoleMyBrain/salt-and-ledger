@@ -128,19 +128,8 @@ namespace SaltAndLedger.Simulation
             private ScheduledProductionOutcome PreviewPublicBatch(Inventory inventory, ScheduledFacilitySnapshot facility,
                 long attemptDay, long employerCash)
             {
-                if (attemptDay < facility.NextDueDay) return ScheduledProductionOutcome.NotDue;
-                if (!facility.Enabled) return ScheduledProductionOutcome.Disabled;
-                var config = facility.Configuration;
-                var recipe = content.GetRecipe(config.Instance.RecipeId);
-                var scale = inventory.QuantityScale;
-                if (recipe.Inputs.Any(i => inventory.GetQuantity(i.GoodId) < checked(i.Quantity * scale)))
-                    return ScheduledProductionOutcome.InputShortage;
-                if (config.OutputStockLimit.HasValue && recipe.Outputs.Any(output =>
-                    (long)inventory.GetQuantity(output.GoodId) -
-                    recipe.Inputs.Where(i => i.GoodId == output.GoodId).Sum(i => (long)checked(i.Quantity * scale)) +
-                    checked(output.Quantity * scale) > config.OutputStockLimit.Value))
-                    return ScheduledProductionOutcome.OutputLimit;
-                return employerCash < config.WagePerBatch ? ScheduledProductionOutcome.PayrollShortage : ScheduledProductionOutcome.Produced;
+                return PublicProductionRules.Preview(content.GetRecipe(facility.Configuration.Instance.RecipeId),
+                    facility, inventory.GetQuantity, inventory.QuantityScale, attemptDay, employerCash);
             }
         }
     }
