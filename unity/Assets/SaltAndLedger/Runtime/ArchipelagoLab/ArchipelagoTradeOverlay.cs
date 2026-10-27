@@ -58,13 +58,6 @@ namespace SaltAndLedger.UnityHost
             }
         }
 
-        private void StartScenario(bool challenge) => Run(() =>
-        {
-            CloseModals();
-            Session.StartScenario(challenge);
-            LoadPolicy();
-            Element<DropdownField>("speedDropdown").SetValueWithoutNotify("1×");
-        });
 
         public void OpenTrade(string portId)
         {
@@ -167,10 +160,10 @@ namespace SaltAndLedger.UnityHost
 
         private string DetailedTradeText(TradeAttempt preview, long cash, long units, int capacity)
         {
-            if (preview.Price == null) return TradingLabText.Outcome(preview.Outcome) + ".";
+            if (preview.Price == null) return EconomicText.Outcome(preview.Outcome) + ".";
             var text = "Total " + Money(preview.TotalAmount) + "   ·   Average " + AverageExecutionPrice(preview) + " / unit" +
                 "\nFirst " + Number(preview.Price.FirstMarginalPrice) + "  →  last " + Number(preview.Price.LastMarginalPrice);
-            if (preview.Outcome != TradeOutcome.Traded) return text + "\n" + TradingLabText.Outcome(preview.Outcome);
+            if (preview.Outcome != TradeOutcome.Traded) return text + "\n" + EconomicText.Outcome(preview.Outcome);
             var buying = preview.Direction == TradeDirection.Buy;
             return text + ServiceFeeText(preview) + "\nAfter: cash " + Money(preview.TraderCashChange.After) +
                 "   ·   cargo " + Q(buying ? units + preview.Quantity : units - preview.Quantity) + "/" + Q(capacity);
@@ -202,24 +195,6 @@ namespace SaltAndLedger.UnityHost
             {
                 SetText("challengeLabel", ObjectiveText());
                 Element<Label>("challengeLabel").tooltip = "All four drafted objectives and the cash minimum must hold together. Open Objectives for exact conditions and blockers.";
-                return;
-            }
-            if (Session.Snapshot.Economy != null)
-            {
-                var progress = ExpandingChallenges.Progress(Session.Snapshot);
-                SetText("challengeLabel", challenge.Configuration.Title + " · " + challenge.Status + " · " + progress.Percent + "%\n" +
-                    Math.Max(0, challenge.Configuration.DeadlineDay - Session.Snapshot.Day) + " days remaining · Cash " + Money(Session.Player.Cash));
-                Element<Label>("challengeLabel").tooltip = ObjectiveText();
-                return;
-            }
-            if (challenge.Recovery != null)
-            {
-                var recovery = challenge.Recovery;
-                SetText("challengeLabel", "CITY RECOVERY · " + PortName(challenge.Configuration.PortId) + " · " + challenge.Status +
-                    "\nPaid food " + recovery.FulfillmentPercent + "% / " + challenge.Configuration.RequiredQuantity + "% · " +
-                    recovery.Observations + "/" + recovery.RequiredObservations + " observations · prosperity " + recovery.Prosperity + "/" + recovery.MinimumProsperity +
-                    "\n" + Math.Max(0, challenge.Configuration.DeadlineDay - Session.Snapshot.Day) + " days left · Cash " + Session.Player.Cash + "/" + challenge.Configuration.MinimumCash);
-                Element<Label>("challengeLabel").tooltip = ObjectiveText();
                 return;
             }
             SetText("challengeLabel", ObjectiveText());

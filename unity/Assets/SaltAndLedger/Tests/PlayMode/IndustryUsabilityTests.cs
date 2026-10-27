@@ -35,7 +35,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(facility.Policy.ProcurementEnabled, Is.False);
             Click("recommendIndustryPresetButton");
             Assert.That(root.Q<Label>("industryPolicyDraftLabel").text, Does.Contain("draft only"));
-            Assert.That(root.Q<Label>("industryPolicyPreviewLabel").text, Does.Contain("Retain company cash 100"));
+            Assert.That(root.Q<Label>("industryPolicyPreviewLabel").text, Does.Contain("Retain company cash 80"));
             Assert.That(root.Q<Label>("industryPolicyPreviewLabel").text, Does.Contain("Automatic local sales OFF"));
             Assert.That(controller.Session.Snapshot, Is.SameAs(before));
             root.Q<Foldout>("industryAdvancedFoldout").value = true;
@@ -47,7 +47,7 @@ namespace SaltAndLedger.UnityHost.Tests
             facility = controller.Session.Snapshot.PrivateFacilities[facility.Id];
             Assert.That(facility.Policy.ProcurementEnabled, Is.True);
             Assert.That(facility.Policy.SalesEnabled, Is.False);
-            Assert.That(facility.Policy.Inputs.Single(rule => rule.GoodId == "flour").MaxBuyPrice, Is.EqualTo(24));
+            Assert.That(facility.Policy.Inputs.Single(rule => rule.GoodId == "flour").MaxBuyPrice, Is.EqualTo(28));
             Assert.That(facility.StoredUnits, Is.Zero);
             Assert.That(facility.ProcurementCost, Is.Zero);
             Assert.That(controller.Session.Snapshot.Day, Is.EqualTo(before.Day));
@@ -63,19 +63,19 @@ namespace SaltAndLedger.UnityHost.Tests
             OpenBakeryInvestment(); Click("constructButton");
             var facility = controller.Session.Snapshot.PrivateFacilities.Values.Single();
             var preview = controller.Session.Snapshot.PreviewWarehouseTrade(facility.OwnerId, facility.Id,
-                new TradeCommand(TradeDirection.Buy, "flour", 1));
+                new TradeCommand(TradeDirection.Buy, "flour", 10000));
             var ask = controller.Session.Snapshot.GetMarketQuote(facility.PortId, "flour").Ask.Value;
             Assert.That(root.Q<Label>("facilityStateLabel").text, Does.Contain("CURRENT STOCK/FUNDS: scheduled; not due yet"));
             Assert.That(root.Q<Label>("facilityInputStatusLabel").text, Does.Contain("next buy " + ask));
-            Assert.That(root.Q<Label>("facilityInputStatusLabel").text, Does.Contain("exact " + preview.TotalAmount + " for 1"));
+            Assert.That(root.Q<Label>("facilityInputStatusLabel").text, Does.Contain("exact " + controller.Session.Coins(preview.TotalAmount) + " for 1"));
             root.Q<DropdownField>("storageGoodDropdown").value = "Flour";
             root.Q<TextField>("storageQuantity").value = "1";
             Click("warehouseBuy");
-            Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Contain("Market purchases addressed through this facility " + preview.TotalAmount));
-            Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Contain("Capital paid " + facility.ConstructionCost));
+            Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Contain("Market purchases addressed through this facility " + controller.Session.Coins(preview.TotalAmount)));
+            Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Contain("Capital paid " + controller.Session.Coins(facility.ConstructionCost)));
             Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Contain("not this recipe's material cost or profit"));
-            Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Contain("Inputs remain in this facility's separate store"));
-            Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Not.Contain("Shared inputs can serve other local facilities"));
+            Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Not.Contain("Inputs remain in this facility's separate store"));
+            Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Contain("Shared inputs can serve other local facilities"));
             Assert.That(root.Q<Label>("facilityInputStatusLabel").text, Does.Contain("Flour: private 1/1 · missing 0"));
             yield return null;
         }
@@ -88,7 +88,7 @@ namespace SaltAndLedger.UnityHost.Tests
                 controller.BeginRun(new RunIdentity(null, RunScenario.MerchantCharter, difficulty: difficulty));
                 OpenBakeryInvestment();
                 var schedule = controller.Session.Snapshot.PreviewConstructionSchedule(controller.Session.Player.OwnerId,
-                    EnterpriseScenario.BakeryBlueprint);
+                    WorldIds.BakeryBlueprint);
                 Assert.That(root.Q<Label>("constructionLabel").text, Does.Contain("first batch eligible day " + schedule.FirstProductionDay));
                 Click("constructButton");
                 var facility = controller.Session.Snapshot.PrivateFacilities.Values.Single();
@@ -132,18 +132,15 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("openIndustryButton");
             Assert.That(root.Q<Label>("facilityScheduleLabel").text, Does.Contain("Already-built starter grant"));
             Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Contain("Capital paid 0"));
-            Assert.That(root.Q<Label>("industryShippingLabel").text, Does.Contain("NO PHYSICAL SHIPPING LINK"));
+            Assert.That(root.Q<Label>("industryShippingLabel").text, Does.Contain("NO CONFIGURED TOWN-STOCK SHIPPING"));
             var before = controller.Session.Snapshot;
             root.Q<Foldout>("industryAdvancedFoldout").value = true;
             root.Q<Foldout>("industryShippingFoldout").value = true;
             Click("industryShippingButton");
-            Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Logistics));
+            Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.RoutePlanner));
             Assert.That(controller.Session.Snapshot, Is.SameAs(before));
-            Click("applyLogisticsButton");
-            root.Q<Toggle>("logisticsEnabled").value = true;
-            Click("logisticsBackButton"); Click("openIndustryButton");
-            Assert.That(root.Q<Label>("industryShippingLabel").text, Does.Contain("Enabled"));
-            Assert.That(root.Q<Label>("industryShippingLabel").text, Does.Contain(controller.Session.CurrentDecision.Reason));
+            Click("itineraryBackButton");
+            Assert.That(controller.Session.Snapshot, Is.SameAs(before));
             Assert.That(controller.Session.Snapshot.Day, Is.Zero);
             Assert.That(controller.Session.Player.CargoUnits, Is.Zero);
             yield return null;
@@ -176,7 +173,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("applyIndustryPolicy"); Click("closeIndustryButton");
             Click("nextDayButton"); Click("nextDayButton"); Click("openIndustryButton");
             var facility = controller.Session.Snapshot.PrivateFacilities[RunScenario.StarterBakery];
-            Assert.That(facility.Inventory["bread"], Is.GreaterThan(0));
+            Assert.That(controller.Session.Snapshot.GetFacilityStorage(facility.Id).Inventory["bread"], Is.GreaterThan(0));
             Assert.That(facility.SalesRevenue, Is.Zero);
             Assert.That(facility.SalesWaitReason, Is.EqualTo(IndustryWaitReason.SellPriceLimit));
             Assert.That(root.Q<Label>("industryAppliedPolicyLabel").text, Does.Contain("bid below limit"));

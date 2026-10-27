@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 
 namespace SaltAndLedger.UnityHost
 {
-    public enum ArchipelagoScreen { Gameplay, MainMenu, Setup, Pause, Results, Encyclopedia, Settings, Ledger, Logistics, CityEconomy, Development, Saves, CommissionMap, CommissionDraft, CommissionReview, Objectives, Completion, RoutePlanner, Inspector }
+    public enum ArchipelagoScreen { Gameplay, MainMenu, Setup, Pause, Results, Encyclopedia, Settings, Ledger, CityEconomy, Development, Saves, CommissionMap, CommissionDraft, CommissionReview, Objectives, Completion, RoutePlanner, Inspector }
 
     public static class ArchipelagoApplicationExit
     {
@@ -43,7 +43,7 @@ namespace SaltAndLedger.UnityHost
             BuildCompletion();
             BuildSettings();
             BuildEncyclopedia();
-            BuildLedgerAndLogistics();
+            BuildLedger();
             BuildDevelopment();
             BuildRoutePlanner();
             Text(navigationRoot, "navigationStatus", "", "run-copy error");
@@ -79,8 +79,6 @@ namespace SaltAndLedger.UnityHost
             Button(bar, "ledgerButton", "Ledger", () => OpenSecondary(ArchipelagoScreen.Ledger));
             Button(bar, "royalServicesButton", "Company", () => OpenSecondary(ArchipelagoScreen.Development));
             Button(bar, "menuButton", "Menu", OpenPauseMenu);
-            Button(Element<VisualElement>("contextScroll").contentContainer, "logisticsButton",
-                "Industrial shipping", OpenLogistics);
             Button(Element<VisualElement>("contextScroll").contentContainer, "routePlannerButton",
                 "Fleet / Route planner", () => OpenRoutePlanner(Session.Player.Id));
             Button(Element<VisualElement>("contextScroll").contentContainer, "gameHelpButton",
@@ -137,10 +135,8 @@ namespace SaltAndLedger.UnityHost
             selectedFacilityId = null;
             status = null;
             statusIsError = false;
-            LoadPolicy();
             Element<DropdownField>("speedDropdown").SetValueWithoutNotify("1×");
             Element<TextField>("quantityField").SetValueWithoutNotify("2");
-            Element<Foldout>("automationFoldout").SetValueWithoutNotify(false);
             Element<ScrollView>("contextScroll").scrollOffset = Vector2.zero;
             SelectContextTab(0);
             ResetPresentation();
@@ -313,7 +309,7 @@ namespace SaltAndLedger.UnityHost
             Session.Pause();
             CloseModals();
             presentedResult = Session.Snapshot;
-            var result = new RunResults(presentedResult, Session.CharterId);
+            var result = new RunResults(presentedResult);
             SetText("resultOutcome", result.Challenge.Status == ChallengeStatus.Succeeded ? "VICTORY" :
                 result.Challenge.Status == ChallengeStatus.Abandoned ? "RUN ABANDONED" : "DEFEAT");
             SetText("resultIdentity", result.Challenge.Configuration.Title + "\n" + result.Charter.Name +
@@ -383,7 +379,7 @@ namespace SaltAndLedger.UnityHost
             if (Screen == ArchipelagoScreen.Completion) { PresentResults(); return; }
             if (Screen == ArchipelagoScreen.RoutePlanner) { CloseRoutePlanner(); return; }
             if (Screen == ArchipelagoScreen.Inspector) { ShowScreen(secondaryParent); Refresh(); return; }
-            if (Screen == ArchipelagoScreen.Settings || Screen == ArchipelagoScreen.Ledger || Screen == ArchipelagoScreen.Logistics ||
+            if (Screen == ArchipelagoScreen.Settings || Screen == ArchipelagoScreen.Ledger ||
                 Screen == ArchipelagoScreen.Development || Screen == ArchipelagoScreen.Saves)
             { ShowScreen(secondaryParent); return; }
             if (Screen == ArchipelagoScreen.Setup) { ShowScreen(ArchipelagoScreen.MainMenu); return; }
@@ -428,7 +424,6 @@ namespace SaltAndLedger.UnityHost
             Element<Button>("resultsObjectivesButton").EnableInClassList("hidden", !drafted);
             if (Screen == ArchipelagoScreen.Objectives) RefreshObjectives();
             if (Screen == ArchipelagoScreen.Ledger) RefreshLedger();
-            if (Screen == ArchipelagoScreen.Logistics) RefreshLogisticsStatus();
             RefreshItineraryAvailability();
             if (Screen == ArchipelagoScreen.RoutePlanner) RefreshRoutePlannerStatus();
         }
@@ -445,30 +440,7 @@ namespace SaltAndLedger.UnityHost
                     Math.Max(0, config.DeadlineDay - Session.Snapshot.Day) + " days left · cash " +
                     Money(Session.Player.Cash) + "/" + Money(config.MinimumCash) + " min";
             }
-            if (Session.Snapshot.Economy != null)
-            {
-                var progress = ExpandingChallenges.Progress(Session.Snapshot);
-                return config.Title + " · " + challenge.Status + " · " + progress.Percent + "% · day " + Session.Snapshot.Day + "/" + config.DeadlineDay +
-                    "\n" + string.Join(" · ", progress.Components.Select(c => c.Key + " " + c.Value + "%"));
-            }
-            if (challenge.Recovery != null)
-            {
-                var recovery = challenge.Recovery;
-                return config.Title + " · " + challenge.Status + " · " + PortName(config.PortId) +
-                    "\nPaid food " + recovery.FulfillmentPercent + "% / " + config.RequiredQuantity + "% · observations " +
-                    recovery.Observations + "/" + recovery.RequiredObservations + " · prosperity " + recovery.Prosperity + "/" + recovery.MinimumProsperity +
-                    "\nPopulation " + recovery.Population + " / " + recovery.InitialPopulation + " minimum · " +
-                    Math.Max(0, config.DeadlineDay - Session.Snapshot.Day) + " days left · cash " + Session.Player.Cash + "/" + config.MinimumCash +
-                    "\n" + recovery.Reason;
-            }
-            var measure = config.Kind == ChallengeKind.RegionalRelief ? "Bread consumed regionally" :
-                config.Kind == ChallengeKind.EnterpriseAmbition ? "Bread produced privately" : "Net Bread supplied to Eastport";
-            return config.Title + " · " + challenge.Status + "\n" + measure + ": " + challenge.ObjectiveQuantity +
-                " / " + config.RequiredQuantity +
-                (config.Kind == ChallengeKind.EnterpriseAmbition ? " · Realized margin " + challenge.RealizedGrossMargin +
-                    " / " + config.RequiredMargin : "") +
-                "\n" + Math.Max(0, config.DeadlineDay - Session.Snapshot.Day) + " days remaining · Cash " +
-                Session.Player.Cash + " / " + config.MinimumCash + " minimum";
+            throw new InvalidOperationException("A scored run requires its Grand Commission plan.");
         }
 
         private static VisualElement Panel(VisualElement parent, string name, string classes)

@@ -110,17 +110,6 @@ namespace SaltAndLedger.UnityHost.Tests
         }
 
         [Test]
-        public void HistoricalPlayerRetainsItsRealMerchantPolicyOverlay()
-        {
-            var session = CreateSession();
-            session.StartRun(new RunIdentity(null, RunScenario.MerchantCharter));
-            var map = new ArchipelagoMap();
-            map.Present(session.Snapshot, null, session.Player.Id, false, 1);
-            Assert.That(map.VisibleRouteCount, Is.EqualTo(1));
-            Assert.That(map.HighlightedRoutePortIds, Is.EqualTo(new[] { session.Player.Policy.OriginPortId, session.Player.Policy.DestinationPortId }));
-        }
-
-        [Test]
         public void ItineraryOverlayKeepsExactStopOrderAndInspectionDoesNotEnableIt()
         {
             var session = CreateSession();
@@ -191,7 +180,7 @@ namespace SaltAndLedger.UnityHost.Tests
         public void Seed99DayOneShipCalloutsSeparatePlayerAndNpcWhileKeepingExactVoyageAnchors()
         {
             var session = CreateSession();
-            session.SailTo(EnterpriseScenario.West);
+            session.SailTo(WorldIds.West);
             session.NextDay();
             var snapshot = session.Snapshot;
             var saved = session.SaveText();
@@ -207,7 +196,7 @@ namespace SaltAndLedger.UnityHost.Tests
                     (ship.VoyageDurationDays - ship.RemainingTravelDays) / (float)ship.VoyageDurationDays);
             }
             var player = session.Player;
-            var npc = snapshot.Ships[ArchipelagoScenario.TimberShipId];
+            var npc = snapshot.Ships[WorldIds.TimberShipId];
             Assert.That(player.DockedPortId, Is.Null);
             Assert.That(npc.DockedPortId, Is.Null);
             var playerAnchor = transform.WorldToViewport(VoyagePoint(player));
@@ -223,7 +212,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(viewport.Contains(npcCallout.min) && viewport.Contains(npcCallout.max), Is.True);
 
             var map = new ArchipelagoMap();
-            map.Present(snapshot, EnterpriseScenario.North, null, false, 1);
+            map.Present(snapshot, WorldIds.North, null, false, 1);
             map.ShowAllRoutes = true;
             foreach (var ship in snapshot.Ships.Values.Where(ship => ship.DockedPortId == null))
             {

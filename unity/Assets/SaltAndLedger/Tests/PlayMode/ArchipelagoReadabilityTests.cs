@@ -148,7 +148,7 @@ namespace SaltAndLedger.UnityHost.Tests
                 yield return Reachable("closeTradeButton");
                 yield return Reachable("tradeAvailabilityLabel");
                 Assert.That(root.Q<Button>("nextDayButton").enabledInHierarchy, Is.False);
-                var town = root.Q<Button>("port_" + EnterpriseScenario.West);
+                var town = root.Q<Button>("port_" + WorldIds.West);
                 Assert.That(root.panel.Pick(town.worldBound.center), Is.Not.SameAs(town), "Trade backdrop blocks the town marker.");
                 Cancel();
                 Click("openIndustryButton");
@@ -180,11 +180,11 @@ namespace SaltAndLedger.UnityHost.Tests
                 Click("mapDetailsButton");
                 yield return Reachable("contextControlsTab");
                 Click("contextControlsTab");
-                yield return Reachable("logisticsButton");
-                Click("logisticsButton");
-                yield return Reachable("applyLogisticsButton");
-                yield return Reachable("logisticsQuantity");
-                Click("logisticsBackButton");
+                yield return Reachable("routePlannerButton");
+                Click("routePlannerButton");
+                yield return Reachable("itineraryApplyButton");
+                yield return Reachable("itineraryShip");
+                Click("itineraryBackButton");
                 Click("ledgerButton");
                 yield return Reachable("ledgerBackButton");
                 Click("ledgerBackButton");
@@ -198,7 +198,7 @@ namespace SaltAndLedger.UnityHost.Tests
                 yield return Reachable("confirmCancelButton");
                 yield return Reachable("confirmAcceptButton");
                 Cancel(); Click("resumeButton");
-                controller.BeginRun(RunScenario.CoastalChallenge, RunScenario.IndustrialCharter);
+                controller.BeginRun(CurrentPlayTestRun.Commission(RunScenario.IndustrialCharter));
                 Click("menuButton"); Click("abandonRunButton"); Click("confirmAcceptButton");
                 Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Results));
                 yield return Reachable("retryRunButton");

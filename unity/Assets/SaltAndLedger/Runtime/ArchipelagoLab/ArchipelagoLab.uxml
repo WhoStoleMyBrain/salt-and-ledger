@@ -79,85 +79,12 @@
                         <ui:VisualElement name="activityEntries" />
                     </ui:ScrollView>
                 </ui:Foldout>
-                <ui:Foldout name="automationFoldout" text="Your trade route" value="false">
-                    <ui:Label name="activeRouteLabel" class="summary" />
-                    <ui:Toggle name="automationToggle" label="Enable player automation" class="switch" />
-                    <ui:Label text="Enabled routes act at each day boundary. Run dockside actions explicitly to act now without spending a day." class="help" />
-                    <ui:VisualElement class="policy-card">
-                        <ui:Label name="decisionLabel" class="decision" />
-                    </ui:VisualElement>
-                    <ui:Button name="runDocksideButton" text="Run dockside actions (up to 4)" class="primary" />
-                    <ui:Label text="ROUTE PORTS" class="section-label" />
-                    <ui:Label text="Origin port" class="field-caption" />
-                    <ui:DropdownField name="routeOriginDropdown" />
-                    <ui:Label text="Destination port" class="field-caption" />
-                    <ui:DropdownField name="routeDestinationDropdown" />
-                    <ui:Label text="OUTBOUND PURCHASES → DESTINATION SALES" class="section-label" />
-                    <ui:DropdownField name="outGoodDropdown" label="Good" />
-                    <ui:VisualElement class="row">
-                        <ui:VisualElement class="field-block">
-                            <ui:Label text="Maximum quantity" class="field-caption" />
-                            <ui:TextField name="outMaxQty" />
-                        </ui:VisualElement>
-                        <ui:VisualElement class="field-block">
-                            <ui:Label text="Minimum shipment" class="field-caption" />
-                            <ui:TextField name="outMinQty" />
-                        </ui:VisualElement>
-                    </ui:VisualElement>
-                    <ui:VisualElement class="row">
-                        <ui:VisualElement class="field-block">
-                            <ui:Label text="Buy ≤ per unit" class="field-caption" />
-                            <ui:TextField name="outBuy" />
-                        </ui:VisualElement>
-                        <ui:VisualElement class="field-block">
-                            <ui:Label text="Sell ≥ per unit" class="field-caption" />
-                            <ui:TextField name="outSell" />
-                        </ui:VisualElement>
-                    </ui:VisualElement>
-                    <ui:Label text="Purchase spend cap (blank = unlimited)" class="field-caption" />
-                    <ui:TextField name="outBudget" />
-                    <ui:Label text="RETURN PURCHASES → ORIGIN SALES" class="section-label" />
-                    <ui:DropdownField name="returnGoodDropdown" label="Good" />
-                    <ui:VisualElement name="returnFields">
-                        <ui:VisualElement class="row">
-                            <ui:VisualElement class="field-block">
-                                <ui:Label text="Maximum quantity" class="field-caption" />
-                                <ui:TextField name="returnMaxQty" />
-                            </ui:VisualElement>
-                            <ui:VisualElement class="field-block">
-                                <ui:Label text="Minimum shipment" class="field-caption" />
-                                <ui:TextField name="returnMinQty" />
-                            </ui:VisualElement>
-                        </ui:VisualElement>
-                        <ui:VisualElement class="row">
-                            <ui:VisualElement class="field-block">
-                                <ui:Label text="Buy ≤ per unit" class="field-caption" />
-                                <ui:TextField name="returnBuy" />
-                            </ui:VisualElement>
-                            <ui:VisualElement class="field-block">
-                                <ui:Label text="Sell ≥ per unit" class="field-caption" />
-                                <ui:TextField name="returnSell" />
-                            </ui:VisualElement>
-                        </ui:VisualElement>
-                        <ui:Label text="Purchase spend cap (blank = unlimited)" class="field-caption" />
-                        <ui:TextField name="returnBudget" />
-                    </ui:VisualElement>
-                    <ui:Label text="Cash reserve (0 or more)" class="field-caption" />
-                    <ui:TextField name="cashReserveField" />
-                    <ui:Toggle name="emptyReturnToggle" label="Allow an empty return voyage" class="switch" />
-                    <ui:Label name="policyDraftLabel" class="help" />
-                    <ui:VisualElement class="row">
-                        <ui:Button name="applyPolicyButton" text="Apply route · no day" class="primary" />
-                        <ui:Button name="presetButton" text="Default preset" />
-                    </ui:VisualElement>
-                    <ui:Label text="Different goods on each leg keep cargo intent explicit. Unsold cargo stays aboard. Changing limits never replenishes cash or stock." class="help" />
-                </ui:Foldout>
+
                 <ui:Foldout name="mapHelpFoldout" text="Map controls and legend" value="false">
                     <ui:Label name="mapHint" class="map-hint" />
                         <ui:Label text="Gold P · you     Blue markers · NPC merchants     Dashed · sea routes" class="map-legend" />
                     <ui:Label text="Distances use abstract units. Straight sea connections do not use coastline pathfinding." class="help" />
                 </ui:Foldout>
-                <ui:Label name="profitLabel" class="help" />
             </ui:ScrollView>
         </ui:VisualElement>
         <ui:Label name="statusLabel" class="status" />
@@ -185,7 +112,6 @@
                         </ui:VisualElement>
                         <ui:VisualElement name="tradeGoodsRows" />
                         <ui:Label text="BUY: company pays market · SELL: market pays company. Quotes are marginal coins per whole good." class="help" />
-                        <ui:DropdownField name="harborLegacyStore" label="Legacy store" class="hidden" />
                         <ui:Label name="harborStockExplanation" class="help" />
                         <ui:Foldout name="harborProduction" text="Local production and blockers" value="false">
                             <ui:Label name="harborProductionLabel" class="help" />

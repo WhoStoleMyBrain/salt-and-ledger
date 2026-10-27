@@ -57,8 +57,8 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(map.ShipMarkerCount, Is.EqualTo(session.Snapshot.Ships.Count));
             Assert.That(map.Query<Label>(className: "route-distance").ToList().All(label =>
                 label.tooltip.Contains(session.Snapshot.Ships["player_ship_2"].Name)), Is.True);
-            map.Present(session.Snapshot, session.SelectedPortId, ArchipelagoScenario.TimberShipId, false, 1);
-            Assert.That(map.Q<Button>("ship_" + ArchipelagoScenario.TimberShipId).ClassListContains("selected-marker"), Is.True);
+            map.Present(session.Snapshot, session.SelectedPortId, WorldIds.TimberShipId, false, 1);
+            Assert.That(map.Q<Button>("ship_" + WorldIds.TimberShipId).ClassListContains("selected-marker"), Is.True);
             Assert.That(map.Query<Label>(className: "route-distance").ToList().All(label => label.text.Contains(" units")), Is.True);
         }
     }

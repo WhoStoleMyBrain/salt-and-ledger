@@ -48,20 +48,18 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(root.Q<Button>("playButton").enabledInHierarchy, Is.False);
             Click("newRunButton");
             Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Setup));
-            root.Q<Foldout>("advancedWorldFoldout").value = true;
-            root.Q<DropdownField>("worldModePicker").value = root.Q<DropdownField>("worldModePicker").choices[0];
             Assert.That(root.Q<DropdownField>("charterPicker").choices.Count, Is.EqualTo(3));
-            Assert.That(root.Q<DropdownField>("challengePicker").choices.Count, Is.EqualTo(4));
+            Assert.That(root.Q<DropdownField>("challengePicker").choices.Count, Is.EqualTo(2));
             root.Q<DropdownField>("charterPicker").value = RunScenario.GetCharter(RunScenario.IndustrialCharter).Name;
-            Assert.That(root.Q<Label>("setupAssets").text, Does.Contain("300"));
-            Assert.That(root.Q<Label>("setupTradeoff").text, Does.Contain("8-unit"));
-            Assert.That(root.Q<Label>("setupObjective").text, Does.Contain("24"));
+            Assert.That(root.Q<Label>("setupAssets").text, Does.Contain("1200"));
+            Assert.That(root.Q<Label>("setupTradeoff").text, Does.Contain("smaller hold"));
+            root.Q<DropdownField>("challengePicker").value = "Unlimited sandbox";
             Click("startRunButton");
             Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Gameplay));
             Assert.That(controller.Session.CharterId, Is.EqualTo(RunScenario.IndustrialCharter));
-            Assert.That(controller.Session.Player.Cash, Is.EqualTo(300));
-            Assert.That(controller.Session.Player.CargoCapacity, Is.EqualTo(8));
-            Assert.That(controller.Session.Player.DockedPortId, Is.EqualTo(EnterpriseScenario.West));
+            Assert.That(controller.Session.Player.Cash, Is.EqualTo(12000000));
+            Assert.That(controller.Session.Player.CargoCapacity, Is.EqualTo(80000));
+            Assert.That(controller.Session.Player.DockedPortId, Is.EqualTo(ExpandingEconomyGeneration.Generate(42).ProcessingPortId));
             Assert.That(controller.Session.Snapshot.PrivateFacilities.ContainsKey(RunScenario.StarterBakery), Is.True);
             Assert.That(controller.Session.Snapshot.Day, Is.Zero);
             yield return null;
@@ -132,57 +130,12 @@ namespace SaltAndLedger.UnityHost.Tests
             yield return null;
         }
 
-        [UnityTest]
-        public IEnumerator IndustrialPanelConfiguresAnAutomaticSupplyVictoryAndReloadsAppliedDraft()
-        {
-            controller.BeginRun(RunScenario.CoastalChallenge, RunScenario.IndustrialCharter);
-            Click("contextControlsTab");
-            Click("logisticsButton");
-            Assert.That(root.Q<Toggle>("logisticsEnabled").enabledInHierarchy, Is.False);
-            Click("logisticsProcurementButton");
-            root.Q<TextField>("logisticsQuantity").value = "6";
-            root.Q<TextField>("logisticsThreshold").value = "6";
-            Click("applyLogisticsButton");
-            Assert.That(controller.Session.Player.IndustrialPolicy.Outbound.MaximumShipmentQuantity, Is.EqualTo(6));
-            Assert.That(root.Q<Toggle>("logisticsEnabled").enabledInHierarchy, Is.True);
-            Click("logisticsBackButton");
-            Click("logisticsButton");
-            Assert.That(root.Q<TextField>("logisticsQuantity").value, Is.EqualTo("6"));
-            Assert.That(root.Q<Label>("logisticsDraft").text, Does.Contain("applied"));
-            root.Q<Toggle>("logisticsEnabled").value = true;
-            Click("logisticsBackButton");
-            for (var day = 0; day < 60 && !controller.Session.IsChallengeEnded; day++) Click("nextDayButton");
-            Assert.That(controller.Session.Snapshot.Challenge.Status, Is.EqualTo(ChallengeStatus.Succeeded));
-            Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Completion));
-            Click("completionResultsButton");
-            Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Results));
-            Assert.That(root.Q<Label>("resultOutcome").text, Is.EqualTo("VICTORY"));
-            Assert.That(root.Q<Label>("resultFinances").text, Does.Contain("Cost of goods sold"));
-            Assert.That(controller.Session.AutomatedActions, Is.GreaterThan(0));
-            Assert.That(controller.Session.ShipDeliveries["bread"], Is.GreaterThanOrEqualTo(24));
-            Assert.That(controller.Session.IsPlaying, Is.False);
-            var terminal = controller.Session.Snapshot;
-            var savedTerminal = controller.Session.SaveText();
-            Click("resultsInspectButton");
-            Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Gameplay));
-            Assert.That(root.Q<Button>("nextDayButton").enabledSelf, Is.False);
-            Click("modeEconomy"); Click("modeMap"); Click("menuButton");
-            Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Results));
-            Assert.That(controller.Session.SaveText(), Is.EqualTo(savedTerminal));
-            yield return null;
-            Assert.That(controller.Session.Snapshot, Is.SameAs(terminal));
-            Click("retryRunButton");
-            Assert.That(controller.Session.CharterId, Is.EqualTo(RunScenario.IndustrialCharter));
-            Assert.That(controller.Session.ChallengeId, Is.EqualTo(RunScenario.CoastalChallenge));
-            Assert.That(controller.Session.Snapshot.Day, Is.Zero);
-            Assert.That(controller.Session.Player.Cash, Is.EqualTo(300));
-        }
 
         [UnityTest]
         public IEnumerator DeadlineFailureShowsResultsAndCanStartAnotherCompanyWithoutReloadingScene()
         {
             BeginMerchant();
-            for (var day = 0; day < 60; day++) Click("nextDayButton");
+            for (var day = 0; day < 180; day++) Click("nextDayButton");
             Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Results));
             Assert.That(root.Q<Label>("resultOutcome").text, Is.EqualTo("DEFEAT"));
             Assert.That(root.Q<Label>("resultScore").text, Does.Contain("Victory 0"));
@@ -191,8 +144,8 @@ namespace SaltAndLedger.UnityHost.Tests
             root.Q<DropdownField>("charterPicker").value = RunScenario.GetCharter(RunScenario.IndependentCharter).Name;
             root.Q<DropdownField>("challengePicker").value = "Unlimited sandbox";
             Click("startRunButton");
-            Assert.That(controller.Session.Player.Cash, Is.EqualTo(480));
-            Assert.That(controller.Session.Player.CargoUnits, Is.EqualTo(6));
+            Assert.That(controller.Session.Player.Cash, Is.EqualTo(15000000));
+            Assert.That(controller.Session.Player.CargoUnits, Is.EqualTo(60000));
             Assert.That(controller.Session.Snapshot.Challenge, Is.Null);
             yield return null;
         }
@@ -233,10 +186,11 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(finance.SalesRevenue, Is.GreaterThan(0));
             Assert.That(finance.CostOfGoodsSold, Is.Zero, "Granted starter cargo has no paid material basis.");
             Assert.That(finance.RealizedGrossMargin, Is.EqualTo(finance.SalesRevenue));
-            var text = root.Q<Label>("profitLabel").text;
-            Assert.That(text, Does.Contain("Realized material gross margin +" + finance.RealizedGrossMargin));
-            Assert.That(text, Does.Contain("held material basis 0"));
-            Assert.That(text, Does.Contain("Grants have zero paid basis"));
+            Click("ledgerButton");
+            var text = root.Q<Label>("ledgerFinances").text;
+            Assert.That(text, Does.Contain("Realized material margin  +" + controller.Session.Coins(finance.RealizedGrossMargin)));
+            Assert.That(text, Does.Contain("Held inventory material basis  0"));
+            Assert.That(text, Does.Contain("Port service fees paid"));
             Assert.That(text, Does.Not.Contain("closed cash profit"));
             yield return null;
         }
@@ -248,7 +202,7 @@ namespace SaltAndLedger.UnityHost.Tests
             controller.TextScale.Apply(ArchipelagoUiScale.Default, false);
             BeginMerchant();
             Click("ledgerButton");
-            Assert.That(root.Q<Label>("ledgerFinances").text, Does.Contain("600"));
+            Assert.That(root.Q<Label>("ledgerFinances").text, Does.Contain("1800"));
             Assert.That(root.Q<Label>("ledgerAssets").text, Does.Contain("HELD GOODS"));
             Click("ledgerBackButton");
             Click("menuButton");
@@ -296,7 +250,7 @@ namespace SaltAndLedger.UnityHost.Tests
             }
         }
 
-        private void BeginMerchant() => controller.BeginRun(RunScenario.CoastalChallenge, RunScenario.MerchantCharter);
+        private void BeginMerchant() => controller.BeginRun(CurrentPlayTestRun.Commission(RunScenario.MerchantCharter));
         private void Contained(string name)
         {
             var bounds = root.Q(name).worldBound;

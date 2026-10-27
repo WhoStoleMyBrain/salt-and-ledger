@@ -38,8 +38,8 @@ namespace SaltAndLedger.UnityHost
             overview.Add(Element<Label>("dockedLabel"));
             overview.Add(Element<VisualElement>("voyageBar"));
             var controls = Panel(context, "contextControls", "hidden");
-            foreach (var name in new[] { "automationFoldout", "activityFoldout", "latestEventLabel", "mapHelpFoldout",
-                "runIdentityFoldout", "profitLabel", "logisticsButton", "routePlannerButton", "gameHelpButton" })
+            foreach (var name in new[] { "activityFoldout", "latestEventLabel", "mapHelpFoldout",
+                "runIdentityFoldout", "routePlannerButton", "gameHelpButton" })
                 controls.Add(Element<VisualElement>(name));
             var actions = Root.Q(className: "context-actions");
             shell.Add(actions);
@@ -164,22 +164,6 @@ namespace SaltAndLedger.UnityHost
                 Session.Content.GetGood(id).Name + ": public stock " + Q(port.Inventory[id]) + "; no existing public producer.")) +
                 "\n\nMarket cash " + Money(port.MarketCash) + ". All player and NPC sales need this account to fund their exact bid total. " +
                 "Buying locally transfers actual company cash into this market. Shipping requires the real dock, cargo and voyage.");
-            if (city == null)
-            {
-                SetText("cityVitalsLabel", "Historical economy");
-                SetText("cityFundsLabel", "Market cash " + Money(port.MarketCash));
-                SetText("cityFoodLabel", "Population and household funds are not modeled.");
-                SetText("cityReasonLabel", "Classic and seeded v1 preserve their original physical demand and unpaid production.");
-                SetText("cityPopulationDetail", "Historical fixture · no population account");
-                SetText("cityProsperityDetail", "Prosperity and household welfare are not modeled in this run.");
-                SetText("cityMarketAccount", Money(port.MarketCash) + " cash");
-                SetText("cityHouseholdAccount", "Not modeled");
-                SetText("cityCashFlows", "This legacy mode preserves its original finite company/market money model. Household payments and production wages are disabled.");
-                SetText("cityNeedsDetail", Element<Label>("consumptionLabel").text);
-                SetText("cityCoverageDetail", "Population-based coverage is not applicable to this historical fixture.");
-                SetText("cityPricingDetail", "Historical authored stock-sensitive quotes are unchanged.");
-                return;
-            }
             var food = port.Consumption.FirstOrDefault(rule => rule.Configuration.Kind == ConsumptionKind.Essential);
             var direction = city.PopulationDelta > 0 ? "growing" : city.PopulationDelta < 0 ? "declining" : "stable";
             SetText("cityVitalsLabel", "Population " + city.Population + " · " + direction + "\nProsperity " + city.Prosperity + " / 100");

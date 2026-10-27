@@ -29,7 +29,7 @@ namespace SaltAndLedger.UnityHost.Tests
                 root.style.height = size.y;
                 controller.TextScale.Apply(scale, false);
                 controller.BeginRun(new RunIdentity(null, RunScenario.IndustrialCharter,
-                    seed.HasValue ? RunWorldMode.Seeded : RunWorldMode.Classic, seed));
+                    RunWorldMode.ExpandingEconomy, seed ?? 42));
                 Assert.That(controller.Map.VisibleRouteCount, Is.Zero, "Unselected map does not display six permanent distance captions.");
                 controller.Map.ShowAllRoutes = true;
                 yield return null;

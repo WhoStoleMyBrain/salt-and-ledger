@@ -26,7 +26,6 @@ namespace SaltAndLedger.UnityHost.Tests
             if (Directory.Exists(directory)) Directory.Delete(directory, true);
         }
 
-        [TestCase(CompanyStorageRules.Legacy)]
         [TestCase(CompanyStorageRules.Pooled)]
         public void ExactSaveAndReadableReportAreNewFilesWithoutChangingStateOrSlots(CompanyStorageRules rules)
         {

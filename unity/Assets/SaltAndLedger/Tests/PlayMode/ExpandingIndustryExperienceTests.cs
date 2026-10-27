@@ -42,8 +42,8 @@ namespace SaltAndLedger.UnityHost.Tests
             root.Q<TextField>("storageQuantity").value = "0.75";
             var before = controller.Session.Snapshot;
             Click("warehouseBuy");
-            var stocked = controller.Session.Snapshot.PrivateFacilities.Values.Single(f => f.Blueprint.BuildingId == "mill" && f.Inventory["grain"] > 0);
-            Assert.That(stocked.Inventory["grain"], Is.EqualTo(7500));
+            var stocked = controller.Session.Snapshot.PrivateFacilities.Values.Single(f => f.Blueprint.BuildingId == "mill" && root.Q<DropdownField>("facilityDropdown").value.Contains("[" + f.Id + "]"));
+            Assert.That(controller.Session.Snapshot.GetFacilityStorage(stocked.Id).Inventory["grain"], Is.EqualTo(7500));
             Assert.That(controller.Session.Snapshot.Day, Is.EqualTo(before.Day));
             Assert.That(root.Q<Button>("warehouseToShip").enabledInHierarchy, Is.False);
             Assert.That(root.Q<Label>("facilityInputStatusLabel").text, Does.Contain("private 0.75/2").And.Contain("missing 1.25"));
@@ -75,26 +75,14 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("ledgerBackButton");
             for (var day = 0; day < 4; day++) Click("nextDayButton");
             Assert.That(session.OwnedShips.Count, Is.EqualTo(2));
-            Click("logisticsButton");
-            var selector = root.Q<DropdownField>("logisticsShip");
+            Click("routePlannerButton");
+            var selector = root.Q<DropdownField>("itineraryShip");
             Assert.That(selector.choices.Count, Is.EqualTo(2));
-            var unchanged = session.Snapshot.Ships[EnterpriseScenario.PlayerShipId];
             var passive = session.Snapshot;
-            selector.value = selector.choices.Single(value => value.Contains("[player_ship_2]"));
+            selector.value = selector.choices.Single(value => value.Contains("player_ship_2"));
             Assert.That(session.Snapshot, Is.SameAs(passive));
             Assert.That(session.Player.Id, Is.EqualTo("player_ship_2"));
-            root.Q<TextField>("logisticsQuantity").value = "3";
-            root.Q<TextField>("logisticsMinimum").value = "1";
-            root.Q<TextField>("logisticsThreshold").value = "2";
-            Click("applyLogisticsButton");
-            Assert.That(session.Player.IndustrialPolicy.Outbound.MaximumShipmentQuantity, Is.EqualTo(30000));
-            Assert.That(session.Snapshot.Ships[EnterpriseScenario.PlayerShipId].IndustrialPolicy, Is.SameAs(unchanged.IndustrialPolicy));
-            Assert.That(session.Snapshot.Ships[EnterpriseScenario.PlayerShipId].Policy, Is.SameAs(unchanged.Policy));
-            selector.value = selector.choices.Single(value => value.Contains("[" + EnterpriseScenario.PlayerShipId + "]"));
-            Assert.That(session.Player.Id, Is.EqualTo(EnterpriseScenario.PlayerShipId));
-            selector.value = selector.choices.Single(value => value.Contains("[player_ship_2]"));
-            Assert.That(root.Q<TextField>("logisticsQuantity").value, Is.EqualTo("3"));
-            Assert.That(root.Q<TextField>("logisticsCashReserve").value, Is.EqualTo("80"));
+            Assert.That(session.Snapshot.Ships[WorldIds.PlayerShipId].AutomationEnabled, Is.False);
             yield return null;
         }
 

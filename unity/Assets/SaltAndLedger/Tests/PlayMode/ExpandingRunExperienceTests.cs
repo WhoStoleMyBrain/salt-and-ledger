@@ -45,14 +45,11 @@ namespace SaltAndLedger.UnityHost.Tests
         {
             var before = controller.Session.Snapshot;
             Click("newRunButton");
-            var mode = root.Q<DropdownField>("worldModePicker");
-            Assert.That(mode.choices.Count, Is.EqualTo(4));
-            mode.value = mode.choices[3];
             root.Q<TextField>("seedField").value = "-2147483648";
             var difficulty = root.Q<DropdownField>("difficultyPicker"); difficulty.value = difficulty.choices[1];
             var pricing = root.Q<DropdownField>("livingPricingPicker"); pricing.value = pricing.choices[1];
             root.Q<DropdownField>("charterPicker").value = RunScenario.GetCharter(RunScenario.MerchantCharter).Name;
-            root.Q<DropdownField>("challengePicker").value = RunScenario.GetChallenge(RunScenario.RoyalChallenge).Name;
+            root.Q<DropdownField>("challengePicker").value = "Unlimited sandbox";
             var identity = controller.SetupIdentity;
             Assert.That(identity.WorldMode, Is.EqualTo(RunWorldMode.ExpandingEconomy));
             Assert.That(identity.GeneratorVersion, Is.EqualTo(3));
@@ -60,7 +57,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(identity.ValuationVersion, Is.EqualTo(1));
             Assert.That(identity.Ascension, Is.EqualTo(1));
             Assert.That(identity.LivingPricingMode, Is.EqualTo(LivingPricingMode.Coverage));
-            Assert.That(root.Q<Label>("setupWorldIdentity").text, Does.Contain("Expanding Economy").And.Contain("Generator v3"));
+            Assert.That(root.Q<Label>("setupWorldIdentity").text, Does.Contain("Expanding Economy"));
             Assert.That(root.Q<Label>("setupAssets").text, Does.Contain("1800 coins"));
             var generation = ExpandingEconomyGeneration.Generate(identity.Seed.Value, pricingMode: identity.LivingPricingMode);
             var cards = string.Join("\n", generation.Ports.Select(p => root.Q<Label>("setupCapabilities_" + p.Id).text));
@@ -104,7 +101,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("constructButton"); Click("closeIndustryButton");
             for (var day = 0; day < 4; day++) Click("nextDayButton");
             var mine = session.Snapshot.PrivateFacilities.Values.Single(f => f.Blueprint.BuildingId == "silver_mine");
-            Assert.That(mine.Inventory["silver"], Is.EqualTo(10000));
+            Assert.That(session.Snapshot.GetFacilityStorage(mine.Id).Inventory["silver"], Is.EqualTo(10000));
             Assert.That(mine.WagesPaid, Is.GreaterThan(0));
             Assert.That(session.Snapshot.Economy.MintStatus, Is.EqualTo(MintStatus.Active));
             Click("royalServicesButton"); Click("developmentTab0"); Click("selectOwned_player_ship_2");
@@ -163,11 +160,11 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("buyButton");
             Assert.That(session.Player.Id, Is.EqualTo("player_ship_2"));
             Assert.That(session.Player.Cargo[goodId], Is.EqualTo(10000));
-            Assert.That(session.Snapshot.Ships[EnterpriseScenario.PlayerShipId].Cargo, Is.EqualTo(before.Ships[EnterpriseScenario.PlayerShipId].Cargo));
+            Assert.That(session.Snapshot.Ships[WorldIds.PlayerShipId].Cargo, Is.EqualTo(before.Ships[WorldIds.PlayerShipId].Cargo));
             Assert.That(session.Snapshot.Day, Is.EqualTo(before.Day));
             Assert.That(session.Player.Cash, Is.EqualTo(before.Companies[ship.OwnerId].Cash - preview.TotalAmount));
             Click("closeTradeButton");
-            session.SelectShip(ArchipelagoScenario.TimberShipId);
+            session.SelectShip(WorldIds.TimberShipId);
             controller.OpenTrade(portId);
             Assert.That(root.Q<Button>("buyButton").enabledInHierarchy, Is.False);
             Assert.That(root.Q<Label>("tradeAvailabilityLabel").text, Does.Contain("NPC inspection only"));
@@ -178,7 +175,7 @@ namespace SaltAndLedger.UnityHost.Tests
         [UnityTest]
         public IEnumerator LocalSaveFlowRestoresPendingTravelAndProjectsRejectsCorruptionAndReturnsThroughNestedScreens()
         {
-            controller.BeginRun(new RunIdentity(RunScenario.RoyalChallenge, RunScenario.MerchantCharter, RunWorldMode.ExpandingEconomy, 42));
+            controller.BeginRun(new RunIdentity(null, RunScenario.MerchantCharter, RunWorldMode.ExpandingEconomy, 42));
             var session = controller.Session;
             var mintPort = session.Snapshot.Economy.Configuration.MintPortId;
             Click("royalServicesButton"); Click("commissionShipButton"); Click("developmentTab1"); Click("commissionMintButton");
@@ -223,7 +220,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.MainMenu));
             Click("continueRunButton");
             Assert.That(session.SaveText(), Is.EqualTo(saved));
-            Assert.That(session.Snapshot.Challenge.Status, Is.EqualTo(ChallengeStatus.Active));
+            Assert.That(session.Snapshot.Challenge, Is.Null);
             Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Gameplay));
             yield return null;
         }

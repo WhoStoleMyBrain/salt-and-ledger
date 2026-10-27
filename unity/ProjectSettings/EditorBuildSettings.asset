@@ -6,15 +6,6 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/Bootstrap.unity
-    guid: 0dd121df883d1844b9ffe5b9a873a391
-  - enabled: 0
-    path: Assets/Scenes/SampleScene.unity
-    guid: 8c9cfa26abfee488c85f1582747f6a02
-  - enabled: 1
-    path: Assets/Scenes/TradingLab.unity
-    guid: 576b341abb31f7e49a9276793a791f04
-  - enabled: 1
     path: Assets/Scenes/ArchipelagoLab.unity
     guid: 0e5f5809e6002fa43b1aab1dd70d051f
   m_configObjects:

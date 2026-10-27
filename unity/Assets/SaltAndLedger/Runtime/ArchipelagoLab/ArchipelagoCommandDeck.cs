@@ -174,13 +174,7 @@ namespace SaltAndLedger.UnityHost
         private void OpenSelectedShipRoute()
         {
             if (Session.SelectedShipId != null && !Session.Snapshot.Ships[Session.SelectedShipId].IsPlayer) return;
-            if (UsesItineraries) OpenRoutePlanner(Session.SelectedShipId ?? Session.Player.Id);
-            else
-            {
-                OpenSecondary(ArchipelagoScreen.Inspector);
-                SelectContextTab(2);
-                Element<Foldout>("automationFoldout").value = true;
-            }
+            OpenRoutePlanner(Session.SelectedShipId ?? Session.Player.Id);
         }
 
         private void BuildCommandChooser(CommandMode mode)
@@ -265,7 +259,7 @@ namespace SaltAndLedger.UnityHost
             Element<Button>("openIndustryButton").EnableInClassList("hidden", ship != null);
             Element<Button>("cityEconomyButton").EnableInClassList("hidden", ship != null);
             Element<Button>("deckRouteButton").EnableInClassList("hidden", ship == null || !ship.IsPlayer);
-            Element<Button>("deckRouteButton").text = UsesItineraries ? "Route planner" : "Route controls";
+            Element<Button>("deckRouteButton").text = "Route planner";
             Element<Button>("deckFleetButton").EnableInClassList("hidden", ship == null || !ship.IsPlayer);
             Element<Button>("deckInspectButton").EnableInClassList("hidden", ship == null || ship.IsPlayer);
             if (ship == null) RefreshTownDeck(port);

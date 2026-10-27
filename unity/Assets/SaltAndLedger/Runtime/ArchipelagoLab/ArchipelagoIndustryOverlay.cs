@@ -55,20 +55,7 @@ namespace SaltAndLedger.UnityHost
                     "Recommended draft only. Review these limits, then Apply to authorize future purchases. Output stays private for shipping.");
                 Element<Foldout>("industryDraftFoldout").value = true;
             });
-            Click("industryShippingButton", () =>
-            {
-                if (UsesItineraries) { OpenRoutePlanner(Session.Player.Id); return; }
-                var facilityId = selectedFacilityId;
-                CloseModals();
-                OpenLogistics();
-                var route = Session.Player.IndustrialPolicy;
-                if (facilityId != null && logisticsFacilities.Contains(facilityId) &&
-                    (route == null || !LegUsesFacility(route.Outbound, facilityId) && !LegUsesFacility(route.ReturnLeg, facilityId)))
-                {
-                    SetIndex("logisticsFacility", logisticsFacilities.IndexOf(facilityId));
-                    LoadLogisticsPreset();
-                }
-            });
+            Click("industryShippingButton", () => OpenRoutePlanner(Session.Player.Id));
             foreach (var name in new[] { "facilityEnabled", "procurementEnabled", "salesEnabled" })
                 Element<Toggle>(name).RegisterValueChangedCallback(_ => IndustryDraftChanged());
             Element<TextField>("industryCashReserve").RegisterValueChangedCallback(_ => IndustryDraftChanged());
@@ -124,7 +111,7 @@ namespace SaltAndLedger.UnityHost
                 "\nProduced: " + QuantityTotals(facility.ProducedQuantities) +
                 "\n" + (snapshot.UsesPooledCompanyStorage ? "Shared town stock basis (once across all facilities) " : "Held material basis ") + Money(snapshot.Accounting.Stores[snapshot.GetFacilityStorage(facility.Id).Id].TotalCostBasis) +
                 ". Transferred inputs retain their original paid basis. Transaction totals describe orders addressed through this facility, not this recipe's material cost or profit. " +
-                (snapshot.UsesPooledCompanyStorage ? "Shared inputs can serve other local facilities. " : "Inputs remain in this facility's separate store. ") +
+                "Shared inputs can serve other local facilities. " +
                 "Company material margin and wages are separate in the Ledger.");
             SetText("facilityStateLabel", IndustryStatus(facility));
             SetText("facilityScheduleLabel", FacilitySchedule(facility));
@@ -231,32 +218,20 @@ namespace SaltAndLedger.UnityHost
         private string FacilityShipping(PrivateFacilitySnapshot facility)
         {
             var ship = Session.Player;
-            if (UsesItineraries)
-            {
-                var stop = ship.Itinerary?.Stops.FirstOrDefault(item => item.PortId == facility.PortId);
-                var movesCompanyStock = stop != null && stop.Commands.Any(command => command.Kind == CargoItineraryCommandKind.LoadFromCompanyTownStock ||
-                    command.Kind == CargoItineraryCommandKind.UnloadToCompanyTownStock);
-                return !movesCompanyStock ? "NO CONFIGURED TOWN-STOCK SHIPPING\n" + ship.Name +
-                    " has no Load/Unload instruction here. Draft the physical connection in Route planner; mixed cargo is preserved." :
-                    "TOWN-STOCK ITINERARY · " + ship.Name + "\n" + (ship.AutomationEnabled ? "Enabled" : "Manual control") +
-                    " · " + Session.CurrentDecision.Reason + "\n" + string.Join(" → ", ship.Itinerary.Stops.Select(item => PortName(item.PortId)));
-            }
-            var route = ship.IndustrialPolicy;
-            var connected = route != null && (LegUsesFacility(route.Outbound, facility.Id) || LegUsesFacility(route.ReturnLeg, facility.Id));
-            if (!connected) return "NO PHYSICAL SHIPPING LINK\n" + ship.Name + " does not currently use this warehouse. Open Industrial shipping, choose this source, review a draft and Apply; enablement is separate.";
-            return "PHYSICAL SHIPPING · " + ship.Name + "\n" + (ship.AutomationEnabled ? "Enabled" : "Disabled") +
-                " · stage " + ship.IndustrialStage + " · cargo " + Q(ship.CargoUnits) + "/" + Q(ship.CargoCapacity) +
-                "\n" + Session.CurrentDecision.Reason + "\n" + PortName(route.OriginPortId) + " ↔ " + PortName(route.DestinationPortId);
+            var stop = ship.Itinerary?.Stops.FirstOrDefault(item => item.PortId == facility.PortId);
+            var movesCompanyStock = stop != null && stop.Commands.Any(command => command.Kind == CargoItineraryCommandKind.LoadFromCompanyTownStock ||
+                command.Kind == CargoItineraryCommandKind.UnloadToCompanyTownStock);
+            return !movesCompanyStock ? "NO CONFIGURED TOWN-STOCK SHIPPING\n" + ship.Name +
+                " has no Load/Unload instruction here. Draft the physical connection in Route planner; mixed cargo is preserved." :
+                "TOWN-STOCK ITINERARY · " + ship.Name + "\n" + (ship.AutomationEnabled ? "Enabled" : "Manual control") +
+                " · " + Session.CurrentDecision.Reason + "\n" + string.Join(" → ", ship.Itinerary.Stops.Select(item => PortName(item.PortId)));
         }
-
-        private static bool LegUsesFacility(IndustrialRouteLeg leg, string id) =>
-            leg != null && (leg.SourceFacilityId == id || leg.DestinationFacilityId == id);
 
         private IndustryPolicy RecommendedIndustryPolicy(string blueprintId)
         {
             if (Session.Snapshot.Economy != null)
             {
-                if (blueprintId == EnterpriseScenario.BakeryBlueprint) return ExpandingEconomyScenario.BakeryPolicy();
+                if (blueprintId == WorldIds.BakeryBlueprint) return ExpandingEconomyScenario.BakeryPolicy();
                 if (blueprintId == ExpandingEconomyGeneration.MillBlueprint)
                 {
                     var mill = ExpandingEconomyScenario.MillPolicy(false);
@@ -269,9 +244,7 @@ namespace SaltAndLedger.UnityHost
                         checked(input.Quantity * 4 * Session.Snapshot.QuantityScale), 50)),
                     recipe.Outputs.Select(output => new OutputSaleRule(output.GoodId, 0, 1)));
             }
-            var preset = Session.Identity?.WorldMode == RunWorldMode.LivingCities && blueprintId == EnterpriseScenario.BakeryBlueprint
-                ? LivingCityScenario.BakeryPolicy() : EnterpriseScenario.DefaultIndustryPolicy(blueprintId);
-            return new IndustryPolicy(preset.ProcurementEnabled, false, preset.CashReserve, preset.Inputs, preset.Outputs);
+            throw new InvalidOperationException("Production presets require the current regional economy.");
         }
 
         private void LoadIndustryPolicy(PrivateFacilitySnapshot facility)
@@ -438,7 +411,7 @@ namespace SaltAndLedger.UnityHost
 
         private static string WarehouseTradeOutcome(TradeOutcome outcome) =>
             outcome == TradeOutcome.InsufficientTraderInventory ? "Private storage does not contain enough of this good" :
-            TradingLabText.Outcome(outcome);
+            EconomicText.Outcome(outcome);
 
         private void TransferStorage(TransferDirection direction) => Run(() => Session.Transfer(selectedFacilityId, direction,
             goodIds[Element<DropdownField>("storageGoodDropdown").index], ReadIndustryQuantity("storageQuantity", "Transfer quantity", false), warehouseSnapshot));

@@ -173,7 +173,6 @@ namespace SaltAndLedger.UnityHost.Tests
         private void OpenMap(int seed)
         {
             Click("newRunButton");
-            var mode = root.Q<DropdownField>("worldModePicker"); mode.value = mode.choices[3];
             Assert.That(root.Q<DropdownField>("challengePicker").value, Is.EqualTo(RunScenario.GetChallenge(GrandCommission.ChallengeId).Name));
             root.Q<TextField>("seedField").value = seed.ToString(System.Globalization.CultureInfo.InvariantCulture);
             Click("startRunButton");

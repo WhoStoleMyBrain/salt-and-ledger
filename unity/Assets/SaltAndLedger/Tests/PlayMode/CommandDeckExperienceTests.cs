@@ -297,7 +297,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(controller.Session.CommissionShip().Development.Single().Outcome, Is.EqualTo(DevelopmentOutcome.Started));
             for (var day = 0; day < 4; day++) controller.Session.NextDay();
             Click("modeFleet");
-            var second = controller.Session.Snapshot.Ships.Values.Single(s => s.IsPlayer && s.Id != ArchipelagoScenario.PlayerShipId);
+            var second = controller.Session.Snapshot.Ships.Values.Single(s => s.IsPlayer && s.Id != WorldIds.PlayerShipId);
             Click("fleetSelect_" + second.Id);
             var before = controller.Session.Snapshot;
             var saved = controller.Session.SaveText();
@@ -364,36 +364,6 @@ namespace SaltAndLedger.UnityHost.Tests
             yield return null;
         }
 
-        [UnityTest]
-        public IEnumerator HistoricalModesAndSeparateWarehouseSavesRemainInspectableWithoutMigration()
-        {
-            foreach (var identity in new[]
-            {
-                new RunIdentity(null, RunScenario.IndustrialCharter),
-                new RunIdentity(null, RunScenario.IndustrialCharter, RunWorldMode.Seeded, 99),
-                new RunIdentity(null, RunScenario.IndustrialCharter, RunWorldMode.LivingCities, 99),
-                new RunIdentity(null, RunScenario.IndustrialCharter, RunWorldMode.ExpandingEconomy, 99)
-            })
-            {
-                controller.BeginRun(identity);
-                var before = controller.Session.Snapshot;
-                var saved = controller.Session.SaveText();
-                Click("port_" + controller.Session.Player.DockedPortId); Click("modeEconomy");
-                Assert.That(controller.Session.Snapshot.UsesPooledCompanyStorage, Is.False);
-                if (identity.WorldMode == RunWorldMode.Classic || identity.WorldMode == RunWorldMode.Seeded)
-                    Assert.That(root.Q<Label>("economyFoodFact").text, Does.Contain("Not modeled"));
-                Click("economyHarborButton");
-                Assert.That(root.Q<DropdownField>("harborLegacyStore").ClassListContains("hidden"), Is.False);
-                Cancel(); Click("modeIndustry"); Cancel(); Click("modeFleet");
-                Click("fleetEditRouteButton");
-                Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Inspector));
-                Cancel(); Click("modeObjectives");
-                Assert.That(root.Q<Label>("objectivesOverview").text, Is.EqualTo("Sandbox"));
-                Cancel(); Click("modeMap");
-                AssertUnchanged(before, saved);
-                yield return null;
-            }
-        }
 
         [UnityTest]
         public IEnumerator MidVoyageSchemaFiveSaveLoadsThroughSlotsAndInspectionRetainsExactBytes()

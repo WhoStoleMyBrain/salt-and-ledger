@@ -54,22 +54,6 @@ namespace SaltAndLedger.UnityHost.Tests
             yield return null;
         }
 
-        [UnityTest]
-        public IEnumerator LegacyRetryRetainsOldRoutesAndFreshSetupOptsIntoItineraries()
-        {
-            controller.BeginRun(new RunIdentity(null, RunScenario.MerchantCharter, RunWorldMode.ExpandingEconomy, 42,
-                companyStorageRules: CompanyStorageRules.Pooled));
-            Assert.That(controller.Session.Identity.ItineraryVersion, Is.Zero);
-            Assert.That(root.Q<Button>("routePlannerButton").ClassListContains("hidden"), Is.True);
-            Assert.That(root.Q<Foldout>("automationFoldout").ClassListContains("hidden"), Is.False);
-            Click("menuButton"); Click("restartRunButton"); Click("confirmAcceptButton");
-            Assert.That(controller.Session.Identity.ItineraryVersion, Is.Zero);
-            Click("menuButton"); Click("changeSetupButton"); Click("confirmAcceptButton");
-            Assert.That(controller.SetupIdentity.ItineraryVersion, Is.EqualTo(1));
-            Click("startRunButton");
-            Assert.That(root.Q<Foldout>("automationFoldout").ClassListContains("hidden"), Is.True);
-            yield return null;
-        }
 
         [UnityTest]
         public IEnumerator TwoPaidActionsThenWaitPreserveTheCursorAndManualControl()

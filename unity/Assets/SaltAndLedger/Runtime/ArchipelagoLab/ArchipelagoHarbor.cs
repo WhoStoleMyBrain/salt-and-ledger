@@ -16,12 +16,6 @@ namespace SaltAndLedger.UnityHost
         {
             SetChoices("harborTradeTarget", new List<string> { "Selected ship hold", "Company local stock" });
             Element<DropdownField>("harborTradeTarget").RegisterValueChangedCallback(_ => RefreshHarbor());
-            Element<DropdownField>("harborLegacyStore").RegisterValueChangedCallback(_ =>
-            {
-                var index = Element<DropdownField>("harborLegacyStore").index;
-                harborFacilityId = index < 0 || index >= harborFacilityIds.Count ? null : harborFacilityIds[index];
-                RefreshHarbor();
-            });
             Click("harborUnloadButton", () => HarborTransfer(TransferDirection.ShipToWarehouse));
             Click("harborLoadButton", () => HarborTransfer(TransferDirection.WarehouseToShip));
             Click("harborMaxUnload", () => MaximumHarborTransfer(TransferDirection.ShipToWarehouse));
@@ -42,11 +36,6 @@ namespace SaltAndLedger.UnityHost
                 .OrderBy(f => f.Id, StringComparer.Ordinal).ToArray();
             harborFacilityIds.Clear(); harborFacilityIds.AddRange(owned.Select(f => f.Id));
             if (!harborFacilityIds.Contains(harborFacilityId)) harborFacilityId = harborFacilityIds.FirstOrDefault();
-            var picker = Element<DropdownField>("harborLegacyStore");
-            picker.choices = owned.Length == 0 ? new List<string> { "No company store here" } : owned.Select(f =>
-                Session.Content.GetBuilding(f.Blueprint.BuildingId).Name + " [" + f.Id + "]").ToList();
-            picker.SetValueWithoutNotify(picker.choices[Math.Max(0, harborFacilityIds.IndexOf(harborFacilityId))]);
-            picker.EnableInClassList("hidden", snapshot.UsesPooledCompanyStorage || owned.Length == 0);
         }
 
         private void OpenIndustryFromHarbor()
@@ -71,7 +60,7 @@ namespace SaltAndLedger.UnityHost
             SetText("tradeDay", "DAY " + Number(tradeSnapshot.Day));
             SetText("tradeHeader", "Company cash " + Money(Session.Player.Cash) + " · Market cash " + Money(port.MarketCash) +
                 "\n" + ship.Name + (local ? " · DOCKED · hold " + Q(ship.CargoUnits) + "/" + Q(ship.CargoCapacity) + " (" + Q(ship.CargoCapacity - ship.CargoUnits) + " free)" : " · REMOTE MARKET, cargo inaccessible") +
-                " · " + (stock == null ? "No company store" : (tradeSnapshot.UsesPooledCompanyStorage ? "Company local stock " : "Selected legacy store ") +
+                " · " + (stock == null ? "No company store" : "Company local stock " +
                 Q(stock.StoredUnits) + "/" + Q(stock.Capacity)));
             SetText("tradeAvailabilityLabel", !ownedShip ? "NPC inspection only. Select your ship for company actions." :
                 Session.IsChallengeEnded ? "Run concluded. Stocks are frozen; use Menu to view results or save." :
@@ -89,8 +78,7 @@ namespace SaltAndLedger.UnityHost
             RefreshHarborRows(ship, port, stock, local);
             SetText("tradeGoodDescription", Session.Content.GetGood(SelectedGoodId()).Description);
             SetText("harborStockExplanation", stock == null ? "Construct an eligible local facility to gain finite company storage." :
-                tradeSnapshot.UsesPooledCompanyStorage ? "One town stockpile. All your local facilities draw inputs and deposit output here; capacity includes paid pending sites." :
-                "Legacy run: each facility has its own stock and FIFO lots. Choose the actual store above; no inventories have been merged.");
+                "One town stockpile. All your local facilities draw inputs and deposit output here; capacity includes paid pending sites.");
             SetText("harborProductionLabel", string.Join("\n", tradeSnapshot.PrivateFacilities.Values.Where(f => f.OwnerId == Session.Player.OwnerId && f.PortId == port.Id)
                 .OrderBy(f => f.Id, StringComparer.Ordinal).Select(f => Session.Content.GetBuilding(f.Blueprint.BuildingId).Name + " [" + f.Id + "] · " +
                     (f.IsOperational ? f.Enabled ? ProductionRemedy(tradeSnapshot.PreviewFacilityProduction(f.Id, Session.Content)) : "Disabled — enable its operating policy." :
@@ -234,7 +222,7 @@ namespace SaltAndLedger.UnityHost
                 case TradeOutcome.InsufficientTraderFunds: return "Company cash is too low. Reduce the order or earn cash from a funded sale.";
                 case TradeOutcome.InsufficientMarketFunds: return "Market does not have enough cash. Reduce the sale or choose another funded customer.";
                 case TradeOutcome.InsufficientCargoCapacity: return "Storage is full. Sell/unload goods or add real storage capacity.";
-                default: return TradingLabText.Outcome(outcome) + ". Adjust the good or order quantity.";
+                default: return EconomicText.Outcome(outcome) + ". Adjust the good or order quantity.";
             }
         }
 

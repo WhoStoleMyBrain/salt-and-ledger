@@ -87,20 +87,6 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(controller.Session.SaveText(), Is.EqualTo(saved));
         }
 
-        [UnityTest]
-        public IEnumerator LegacyRetryPreservesRulesAndChangeSetupSelectsTheNewRevision()
-        {
-            var old = new RunIdentity(null, RunScenario.MerchantCharter, RunWorldMode.ExpandingEconomy, 42,
-                companyStorageRules: CompanyStorageRules.Pooled, itineraryVersion: 1);
-            controller.BeginRun(old);
-            Click("menuButton"); Click("restartRunButton"); Click("confirmAcceptButton");
-            Assert.That(controller.Session.Identity.EconomicRulesVersion, Is.Zero);
-            Assert.That(controller.Session.Snapshot.Circulation, Is.Null);
-            Click("menuButton"); Click("changeSetupButton"); Click("confirmAcceptButton");
-            Assert.That(controller.SetupIdentity.EconomicRulesVersion, Is.EqualTo(1));
-            Assert.That(controller.SetupIdentity.Seed, Is.EqualTo(old.Seed));
-            yield return null;
-        }
 
         private static RunIdentity Modern() => new RunIdentity(null, RunScenario.IndustrialCharter,
             RunWorldMode.ExpandingEconomy, 42, companyStorageRules: CompanyStorageRules.Pooled,

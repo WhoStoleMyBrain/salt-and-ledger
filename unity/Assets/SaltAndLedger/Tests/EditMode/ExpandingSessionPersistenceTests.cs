@@ -40,21 +40,39 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(session.Snapshot.Day, Is.Zero);
             Assert.That(session.HasUnsavedChanges, Is.True);
             session.StartRun(new RunIdentity(null, RunScenario.MerchantCharter));
-            Assert.That(session.Content.Goods.Count, Is.EqualTo(6));
-            Assert.That(session.Snapshot.Economy, Is.Null);
+            Assert.That(session.Content.Goods.Count, Is.EqualTo(7));
+            Assert.That(session.Snapshot.Economy, Is.Not.Null);
         }
 
         [Test]
         public void CorruptLoadPreservesCurrentSnapshotSelectionAndPlayback()
         {
             var session = Session();
-            session.SelectShip(EnterpriseScenario.PlayerShipId);
+            session.SelectShip(WorldIds.PlayerShipId);
             session.Play();
             var before = session.Snapshot;
             var selection = session.SelectedShipId;
             Assert.Throws<WorldSaveException>(() => session.LoadSaveText("{invalid"));
             Assert.That(session.Snapshot, Is.SameAs(before));
             Assert.That(session.SelectedShipId, Is.EqualTo(selection));
+            Assert.That(session.IsPlaying, Is.True);
+        }
+
+        [TestCase(1)]
+        [TestCase(2)]
+        [TestCase(3)]
+        [TestCase(4)]
+        public void UnsupportedSchemaPreservesTheActiveSession(int schema)
+        {
+            var session = Session();
+            var saved = Newtonsoft.Json.Linq.JObject.Parse(session.SaveText());
+            saved["SchemaVersion"] = schema;
+            session.SelectShip(session.Player.Id);
+            session.Play();
+            var before = session.Snapshot;
+            Assert.Throws<WorldSaveException>(() => session.LoadSaveText(saved.ToString()));
+            Assert.That(session.Snapshot, Is.SameAs(before));
+            Assert.That(session.SelectedShipId, Is.EqualTo(session.Player.Id));
             Assert.That(session.IsPlaying, Is.True);
         }
 
@@ -68,20 +86,23 @@ namespace SaltAndLedger.UnityHost.Tests
             for (var day = 0; day < economy.Configuration.ShipConstructionDays; day++) session.NextDay();
             Assert.That(session.OwnedShips.Count, Is.EqualTo(2));
             session.SelectShip("player_ship_2");
-            var starter = session.Snapshot.Ships[EnterpriseScenario.PlayerShipId];
-            var route = new TradeRoutePolicy(economy.Configuration.ShipwrightPortId, economy.Configuration.SilverPortId,
-                new RouteLeg("planks", 20000, 10000, 100, 1), allowEmptyReturn: true);
-            session.ApplyPolicy(route);
+            var starter = session.Snapshot.Ships[WorldIds.PlayerShipId];
+            var route = new CargoItineraryPolicy("second_ship", new[] {
+                new CargoItineraryStop(economy.Configuration.ShipwrightPortId, new[] {
+                    new CargoItineraryCommand(CargoItineraryCommandKind.BuyFromMarket, "planks", 20000) }),
+                new CargoItineraryStop(economy.Configuration.SilverPortId, new[] {
+                    new CargoItineraryCommand(CargoItineraryCommandKind.SellToMarket, "planks", 20000) }) });
+            session.ApplyItinerary(route);
             session.SetAutomationEnabled(true);
             Assert.That(session.Player.Id, Is.EqualTo("player_ship_2"));
-            Assert.That(session.Snapshot.Ships[EnterpriseScenario.PlayerShipId].Policy, Is.SameAs(starter.Policy));
-            Assert.That(session.Snapshot.Ships[EnterpriseScenario.PlayerShipId].AutomationEnabled, Is.False);
-            session.SelectShip(ArchipelagoScenario.TimberShipId);
+            Assert.That(session.Snapshot.Ships[WorldIds.PlayerShipId].Policy, Is.SameAs(starter.Policy));
+            Assert.That(session.Snapshot.Ships[WorldIds.PlayerShipId].AutomationEnabled, Is.False);
+            session.SelectShip(WorldIds.TimberShipId);
             Assert.That(session.Player.Id, Is.EqualTo("player_ship_2"));
             session.SelectPort(economy.Configuration.ShipwrightPortId);
             session.SetAutomationEnabled(false);
             Assert.That(session.Snapshot.Ships["player_ship_2"].AutomationEnabled, Is.False);
-            Assert.That(session.Snapshot.Ships[ArchipelagoScenario.TimberShipId].AutomationEnabled, Is.True);
+            Assert.That(session.Snapshot.Ships[WorldIds.TimberShipId].AutomationEnabled, Is.True);
             var saved = session.SaveText();
             session.LoadSaveText(saved);
             Assert.That(session.OwnedShips.Count, Is.EqualTo(2));
@@ -100,27 +121,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(session.Quantity(7500), Is.EqualTo("0.75"));
             Assert.That(session.Coins(15001), Is.EqualTo("1.5001"));
             Assert.That(session.WholeOrderQuantity(2), Is.EqualTo(20000));
-            Assert.That(session.RecommendedMerchantPolicy().Outbound.MaxPurchaseQuantity % 10000, Is.Zero);
         }
 
-        [Test]
-        public void V3NeverLabelsCashChangeAsClosedShippingProfitAfterTradeOrShipSelection()
-        {
-            var session = Session();
-            session.Trade(TradeDirection.Buy, "bread", 10000);
-            session.Trade(TradeDirection.Sell, "bread", 10000);
-            Assert.That(session.Player.CargoUnits, Is.Zero);
-            Assert.That(session.Snapshot.Accounting.Companies[session.Player.OwnerId].SalesRevenue, Is.GreaterThan(0));
-            Assert.That(session.ClosedCashProfit, Is.Null, "V3 uses attributed finance even after a closed cargo cycle.");
-            session.Trade(TradeDirection.Buy, "bread", 10000);
-            var starterId = session.Player.Id;
-            session.SelectPort(session.Snapshot.Economy.Configuration.ShipwrightPortId);
-            session.CommissionShip();
-            for (var day = 0; day < 4; day++) session.NextDay();
-            session.SelectShip("player_ship_2");
-            Assert.That(session.Player.CargoUnits, Is.Zero);
-            Assert.That(session.Snapshot.Ships[starterId].CargoUnits, Is.EqualTo(10000));
-            Assert.That(session.ClosedCashProfit, Is.Null, "An empty selected ship cannot close another ship's held inventory.");
-        }
     }
 }

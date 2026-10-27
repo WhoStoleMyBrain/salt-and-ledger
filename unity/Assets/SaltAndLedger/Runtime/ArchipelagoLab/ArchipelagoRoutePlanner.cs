@@ -41,7 +41,7 @@ namespace SaltAndLedger.UnityHost
         private string itineraryApplyError;
         private long itineraryApplyErrorRevision = -1;
         private int plannerStop = -1, plannerAction = -1;
-        private bool UsesItineraries => Session?.Identity?.ItineraryVersion == 1;
+        private bool UsesItineraries => Session != null;
         private ItineraryDraft ActiveItineraryDraft => itineraryDrafts[Session.Player.Id];
 
         private void ClearItineraryDrafts()
@@ -107,7 +107,7 @@ namespace SaltAndLedger.UnityHost
 
         public void OpenRoutePlanner(string shipId)
         {
-            if (!UsesItineraries) { Validation("This saved world retains its legacy route controls. Start a new v3 run to use itineraries."); return; }
+            if (!UsesItineraries) { Validation("Start a run before opening its route planner."); return; }
             if (!Session.Snapshot.Ships.TryGetValue(shipId, out var ship) || !ship.IsPlayer || ship.OwnerId != Session.Player.OwnerId)
             { Validation("Select an owned ship to plan its route."); return; }
             if (Screen != ArchipelagoScreen.RoutePlanner && !harborReturnsToPlanner)
@@ -413,10 +413,8 @@ namespace SaltAndLedger.UnityHost
         private void RefreshItineraryAvailability()
         {
             Root.Q<Button>("routePlannerButton")?.EnableInClassList("hidden", !UsesItineraries);
-            Element<Foldout>("automationFoldout").EnableInClassList("hidden", UsesItineraries);
-            Root.Q<Button>("logisticsButton")?.EnableInClassList("hidden", UsesItineraries);
             Root.Q<Button>("harborRoutePlannerButton")?.EnableInClassList("hidden", !UsesItineraries);
-            Element<Button>("industryShippingButton").text = UsesItineraries ? "Connect / inspect Route planner" : "Connect / inspect industrial shipping";
+            Element<Button>("industryShippingButton").text = "Connect / inspect Route planner";
         }
 
         private void RefreshRoutePlannerStatus()

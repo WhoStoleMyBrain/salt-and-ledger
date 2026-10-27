@@ -41,8 +41,6 @@ namespace SaltAndLedger.UnityHost
         private readonly Dictionary<string, string> lastReasons = new Dictionary<string, string>(StringComparer.Ordinal);
         private double accumulatedSeconds;
         private long initialPlayerCash;
-        private bool hasPlayerTrade;
-        private readonly bool legacyScenario;
         private bool configuredRun;
         private readonly List<EconomicEvent> journal = new List<EconomicEvent>();
         private readonly SortedDictionary<string, long> shipDeliveries = new SortedDictionary<string, long>(StringComparer.Ordinal);
@@ -60,13 +58,12 @@ namespace SaltAndLedger.UnityHost
         public ContentCatalog Content { get; private set; }
         public ContentCatalog CanonicalContent => baseContent;
         public RegionalWorldSnapshot Snapshot => world.Snapshot();
-        public string ActivePlayerShipId { get; private set; } = ArchipelagoScenario.PlayerShipId;
+        public string ActivePlayerShipId { get; private set; } = WorldIds.PlayerShipId;
         public RegionalShipSnapshot Player => Snapshot.Ships[ActivePlayerShipId];
         public IReadOnlyList<RegionalShipSnapshot> OwnedShips => Array.AsReadOnly(Snapshot.Ships.Values
             .Where(s => s.IsPlayer && s.OwnerId == Player.OwnerId).OrderBy(s => s.Id, StringComparer.Ordinal).ToArray());
         public long? LastSavedRevision { get; private set; }
         public bool HasUnsavedChanges => configuredRun && LastSavedRevision != Snapshot.Revision;
-        public TradeRoutePolicy Policy => Player.Policy ?? RecommendedMerchantPolicy();
         public RegionalDecision CurrentDecision => world.EvaluateAutomation(Player.Id);
         public IReadOnlyList<ArchipelagoActivity> Activity => activityView;
         public string SelectedPortId { get; private set; }
@@ -78,39 +75,28 @@ namespace SaltAndLedger.UnityHost
         public double PlaybackInterval => SecondsPerDay / PlaybackSpeed;
         public string LastStatus { get; private set; }
         public long CashChange => checked(Player.Cash - initialPlayerCash);
-        // Compatibility for the original shipping-only lab. V3 cash includes capital and public
-        // monetary receipts; its UI uses attributed material margin and operating surplus instead.
-        public long? ClosedCashProfit => Snapshot.Economy == null && hasPlayerTrade &&
-            OwnedShips.All(ship => ship.CargoUnits == 0) && Snapshot.PrivateFacilities.Count == 0 ? CashChange : (long?)null;
-
-        public ArchipelagoLabSession(ContentCatalog content, bool challenge = false, bool legacyScenario = false)
+        public ArchipelagoLabSession(ContentCatalog content)
         {
             baseContent = content ?? throw new ArgumentNullException(nameof(content));
             Content = baseContent;
-            this.legacyScenario = legacyScenario;
-            ChallengeMode = challenge;
             activityView = activity.AsReadOnly();
             Reset();
         }
 
         public void Reset()
         {
-            var replacement = configuredRun ? RunScenario.Create(baseContent, Identity) :
-                legacyScenario ? ArchipelagoScenario.Create(baseContent) : EnterpriseScenario.Create(baseContent, ChallengeMode);
+            var replacement = RunScenario.Create(baseContent, Identity ?? new RunIdentity(null, RunScenario.MerchantCharter));
             InstallWorld(replacement, false);
         }
 
         private void InstallWorld(RegionalWorldState replacement, bool loaded)
         {
             world = replacement;
-            Content = replacement.Snapshot().RunIdentity?.WorldMode == RunWorldMode.ExpandingEconomy
-                ? baseContent.ForExpandingEconomy() : baseContent;
-            ActivePlayerShipId = ArchipelagoScenario.PlayerShipId;
+            Content = baseContent.ForExpandingEconomy();
+            ActivePlayerShipId = WorldIds.PlayerShipId;
             initialPlayerCash = Snapshot.Accounting.Companies[Player.OwnerId].InitialCash;
-            hasPlayerTrade = Snapshot.Accounting.Companies[Player.OwnerId].SalesRevenue > 0 ||
-                Snapshot.Accounting.Companies[Player.OwnerId].InventoryPurchases > 0;
             LastSavedRevision = loaded ? Snapshot.Revision : (long?)null;
-            SelectedPortId = Player.DockedPortId ?? ArchipelagoScenario.North;
+            SelectedPortId = Player.DockedPortId ?? WorldIds.North;
             SelectedShipId = null;
             PendingDestinationId = null;
             NavigationArmed = false;
@@ -127,17 +113,6 @@ namespace SaltAndLedger.UnityHost
                 "New archipelago. Paused on day 0. Select a port to inspect, or your ship to plan a voyage.";
             Add(null, null, LastStatus);
         }
-
-        public void StartScenario(bool challenge)
-        {
-            configuredRun = false;
-            Identity = null;
-            ChallengeMode = challenge;
-            Reset();
-        }
-
-        public void StartRun(string challengeId, string charterId) =>
-            StartRun(new RunIdentity(challengeId, charterId));
 
         public void StartRun(RunIdentity identity)
         {
@@ -182,12 +157,6 @@ namespace SaltAndLedger.UnityHost
             return result;
         }
 
-        public void ApplyIndustrialPolicy(IndustrialRoutePolicy policy, bool enabled)
-        {
-            var result = world.ConfigureIndustrialAutomation(Player.Id, policy, enabled);
-            Observe(result);
-            LastStatus = "Industrial shipping applied. Goods move only through your docked ship and actual market trades.";
-        }
 
         public void InspectTradePort(string portId)
         {
@@ -220,7 +189,7 @@ namespace SaltAndLedger.UnityHost
         {
             var ship = Snapshot.Ships[shipId];
             SelectedShipId = ship.Id;
-            if (ship.IsPlayer && ship.OwnerId == Snapshot.Ships[ArchipelagoScenario.PlayerShipId].OwnerId)
+            if (ship.IsPlayer && ship.OwnerId == Snapshot.Ships[WorldIds.PlayerShipId].OwnerId)
                 ActivePlayerShipId = ship.Id;
             NavigationArmed = ship.IsPlayer;
             PendingDestinationId = null;
@@ -303,7 +272,7 @@ namespace SaltAndLedger.UnityHost
                 ? (direction == TradeDirection.Buy ? "Bought " : "Sold ") + Quantity(trade.ExecutedQuantity) + " " +
                   Content.GetGood(goodId).Name + " for " + Coins(trade.ExecutedAmount) +
                   ". Still day " + Number(Snapshot.Day) + "."
-                : "Trade rejected: " + TradingLabText.Outcome(trade.Outcome) + ". No economic state or day changed.";
+                : "Trade rejected: " + EconomicText.Outcome(trade.Outcome) + ". No economic state or day changed.";
             return result;
         }
 
@@ -328,11 +297,6 @@ namespace SaltAndLedger.UnityHost
                 : "Player route disabled. Manual orders are available; existing voyages continue when days advance.";
         }
 
-        public void ApplyPolicy(TradeRoutePolicy policy)
-        {
-            Observe(world.ConfigureAutomation(Player.Id, policy, Player.AutomationEnabled));
-            LastStatus = "Route applied. No day, goods or money changed. The next evaluation uses the new policy.";
-        }
 
         public RegionalResult RunDockside()
         {
@@ -404,13 +368,6 @@ namespace SaltAndLedger.UnityHost
 
         public RegionalDecision DecisionFor(string shipId) => world.EvaluateAutomation(shipId);
 
-        public TradeRoutePolicy RecommendedMerchantPolicy() => Identity?.WorldMode == RunWorldMode.ExpandingEconomy
-            ? ExpandingEconomyScenario.MerchantPolicy(ExpandingEconomyGeneration.Generate(Identity.Seed.Value,
-                Identity.GeneratorVersion, Identity.LivingPricingMode))
-            : Identity?.WorldMode == RunWorldMode.LivingCities
-                ? LivingCityScenario.MerchantPolicy(LivingCityGeneration.Generate(Identity.Seed.Value, Identity.GeneratorVersion, Identity.LivingPricingMode))
-                : EnterpriseScenario.MerchantPolicy();
-
         public RegionalResult CommissionMint() => Development(() => world.CommissionMint(Player.OwnerId));
         public RegionalResult CommissionShip() => Development(() => world.CommissionShip(Player.OwnerId, SelectedPortId));
         public RegionalResult MintSilver() => Development(() => world.MintSilver(Player.Id, Snapshot.Economy.Configuration.SilverPerBatch));
@@ -464,7 +421,6 @@ namespace SaltAndLedger.UnityHost
                 var trade = item.Trade;
                 var ship = result.After.Ships[item.ShipId];
                 if (trade.Outcome != TradeOutcome.Traded) continue;
-                if (ship.IsPlayer) hasPlayerTrade = true;
                 if (ship.IsPlayer && trade.Direction == TradeDirection.Sell)
                     shipDeliveries[trade.GoodId] = checked((shipDeliveries.TryGetValue(trade.GoodId, out var delivered) ? delivered : 0) + trade.ExecutedQuantity);
                 Add(item.PortId, item.ShipId, ship.Name + " " +

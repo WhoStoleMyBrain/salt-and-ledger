@@ -27,10 +27,8 @@ namespace SaltAndLedger.UnityHost.Tests
         public IEnumerator NewRunDefaultsToPooledCommissionAndMapInspectionIsPassive()
         {
             Click("newRunButton");
-            Assert.That(root.Q<DropdownField>("worldModePicker").index, Is.EqualTo(3));
             Assert.That(root.Q<DropdownField>("challengePicker").value, Is.EqualTo(RunScenario.GetChallenge(GrandCommission.ChallengeId).Name));
             Assert.That(controller.SetupIdentity.CompanyStorageRules, Is.EqualTo(CompanyStorageRules.Pooled));
-            Assert.That(root.Q<Foldout>("advancedWorldFoldout").value, Is.False);
             var active = controller.Session.Snapshot;
             Click("previewWorldButton");
             Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.CommissionMap));
@@ -87,7 +85,6 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("openIndustryButton");
             root.Q<DropdownField>("blueprintDropdown").value = "Mill"; Click("constructButton");
             Click("industryHarborButton"); LocalStock(); Good("grain"); Quantity("2"); Click("buyButton");
-            Assert.That(root.Q<DropdownField>("harborLegacyStore").ClassListContains("hidden"), Is.True);
             Click("closeTradeButton");
             for (var day = 0; day < 4; day++) Click("nextDayButton");
             var snapshot = controller.Session.Snapshot;
@@ -106,41 +103,7 @@ namespace SaltAndLedger.UnityHost.Tests
             yield return null;
         }
 
-        [UnityTest]
-        public IEnumerator RetryPreservesLegacyStorageButChangeSetupStartsTheNewStorageRules()
-        {
-            BeginIndustrial(CompanyStorageRules.Legacy);
-            var legacy = controller.Session.Identity;
-            Click("nextDayButton"); Click("menuButton"); Click("restartRunButton"); Click("confirmAcceptButton");
-            Assert.That(controller.Session.Identity, Is.EqualTo(legacy));
-            Assert.That(controller.Session.Snapshot.UsesPooledCompanyStorage, Is.False);
-            Assert.That(controller.Session.Snapshot.Day, Is.Zero);
-            Click("menuButton"); Click("changeSetupButton"); Click("confirmAcceptButton");
-            Assert.That(controller.SetupIdentity.Seed, Is.EqualTo(legacy.Seed));
-            Assert.That(controller.SetupIdentity.CharterId, Is.EqualTo(legacy.CharterId));
-            Assert.That(controller.SetupIdentity.CompanyStorageRules, Is.EqualTo(CompanyStorageRules.Pooled));
-            Click("startRunButton");
-            Assert.That(controller.Session.Snapshot.UsesPooledCompanyStorage, Is.True);
-            Assert.That(controller.Session.Identity.Seed, Is.EqualTo(legacy.Seed));
-            yield return null;
-        }
 
-        [UnityTest]
-        public IEnumerator LegacyHarborNamesTheActualSeparateStoreAndNpcCannotAct()
-        {
-            BeginIndustrial(CompanyStorageRules.Legacy);
-            controller.OpenTrade(controller.Session.SelectedPortId);
-            Assert.That(root.Q<DropdownField>("harborLegacyStore").ClassListContains("hidden"), Is.False);
-            Assert.That(root.Q<Label>("harborStockExplanation").text, Does.Contain("no inventories have been merged"));
-            Assert.That(controller.Session.Snapshot.CompanyStockpiles.Count, Is.Zero);
-            Click("closeTradeButton");
-            var npc = controller.Session.Snapshot.Ships.Values.First(ship => !ship.IsPlayer);
-            controller.Session.SelectShip(npc.Id); controller.OpenTrade(npc.DockedPortId);
-            Assert.That(root.Q<Label>("tradeAvailabilityLabel").text, Does.Contain("NPC inspection only"));
-            foreach (var id in new[] { "buyButton", "sellButton", "harborLoadButton", "harborUnloadButton" })
-                Assert.That(root.Q<Button>(id).enabledSelf, Is.False, id);
-            yield return null;
-        }
 
         private void BeginIndustrial(CompanyStorageRules storage) => controller.BeginRun(new RunIdentity(null,
             RunScenario.IndustrialCharter, RunWorldMode.ExpandingEconomy, 42, companyStorageRules: storage));

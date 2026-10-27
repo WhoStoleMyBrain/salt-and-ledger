@@ -150,7 +150,7 @@ namespace SaltAndLedger.UnityHost
         {
             var port = commissionPreview.Ports[portId];
             SetText("commissionMapSelection", port.Name + " · " + port.Role);
-            var content = setupIdentity.WorldMode == RunWorldMode.ExpandingEconomy ? Session.CanonicalContent.ForExpandingEconomy() : Session.CanonicalContent;
+            var content = Session.CanonicalContent.ForExpandingEconomy();
             string Quantity(long value) => ((decimal)value / commissionPreview.QuantityScale).ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
             string Coins(long value) => ((decimal)value / commissionPreview.MoneyScale).ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
             SetText("commissionMapDetails", "Market cash " + Coins(port.MarketCash) +
