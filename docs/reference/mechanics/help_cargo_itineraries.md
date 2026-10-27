@@ -24,7 +24,7 @@ Draft Grain–Flour–Bread loop resolves the actual role towns: A unloads two F
 
 The live planner shows actual dock or voyage, next stop and action, cargo and an authoritative blocker\. Expand Cargo and committed route state for daily budget and last outcome; inspect an action for current source stock, market funds and quote\. Pass count advances when leaving the last listed stop, so an initial middle\-stop pass is not a completed circuit\. Inspect harbor returns to ordinary trading\. Back returns to the prior screen or overlay\.
 
-Itinerary format 1 uses schema 4, or schema 5 with modern circulation rules\. Complete plans, exact stop/action/pass, last outcome and remaining daily budget survive mid\-stop and mid\-voyage saves\. Old schema 1/2/3 worlds retain historical route controls and bytes\. Load continues exact saved work; Retry recreates the original initial world\. Route edits cannot reroll geography or the objective draft\.
+Schema5 retains itinerary format1 plans, exact stop/action/cycle, last outcome and daily budget across mid\-stop and mid\-voyage saves\. Load continues the exact next work; Retry starts fresh with the same identity\.
 
 ## Related entries
 

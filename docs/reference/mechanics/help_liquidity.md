@@ -12,7 +12,7 @@ A town can have goods to sell but too little cash to buy your cargo\. Your compa
 
 A blocked automated sale keeps unsold cargo aboard and explains the wait\. Lowering a price limit cannot create buyer cash\. Nothing silently replenishes stock or funds\.
 
-Classic and seeded v1 consumption removes goods without payment\. Living Cities v2 households instead pay exact retail prices from their separate finite cash account; municipal Plank use remains an unpaid physical sink\. Extraction creates goods, not money\. Wages, retail, construction and trading transfer existing cash between named accounts\.
+Households pay exact retail prices from their separate finite cash account; municipal Plank use is unpaid own\-use\. Extraction creates goods, not money\. Wages, retail, construction and trade transfer actual cash between named accounts\.
 
 ## Related entries
 

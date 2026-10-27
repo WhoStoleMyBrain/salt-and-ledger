@@ -19,16 +19,6 @@ Open `http://127.0.0.1:8000/`. Check the welcome page, Player guide navigation, 
 
 For the exact built artifact, serve `site/` with `python -m http.server 8000 --bind 127.0.0.1 --directory site`. Search fetches a local JSON index, so use HTTP instead of opening HTML directly with `file://`. `site/` is generated and ignored.
 
-### Task 1.7 local review
-
-The built site was rendered in installed Chrome 155 at **1366×900** and **390×844**. The welcome page, player guide, run/charter guide, production chains, Bread reference, and historical-cost help were checked at both sizes. Screenshots showed readable text and tables; DOM checks found no horizontal page overflow or broken images. The review followed Bread → Bake bread → Bakery, opened the mobile Player guide menu and Getting started, and confirmed that local search found the shared historical-cost explanation.
-
-The connected browser inventory was unavailable. An isolated headless Chrome profile served the local site instead; its first sandboxed renderer launch failed, and a permitted process launch succeeded. This was a local static-site review, separate from Unity Editor/player verification.
-
-![Desktop documentation welcome page](images/website-desktop.png)
-
-![Mobile generated production-chain reference](images/website-mobile-chains.png)
-
 ## One reference, two presentations
 
 `data/content.json` remains the only authored source of canonical commodity, building, and recipe facts. `data/player-help.json` contains the compact player explanations for non-data-derived behavior. Its schema and semantic validator reject unknown properties, invalid or duplicate IDs, blank text, and broken links to canonical or other help entries.

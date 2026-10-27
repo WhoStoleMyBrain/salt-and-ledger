@@ -1,237 +1,47 @@
 # Salt & Ledger
 
-A single-player maritime trading and economic strategy game intended for Unity 6. The long-term focus is building, optimizing, and automating trading networks within a simulated economy, inspired by Port Royale 2, Patrician 2, Antimatter Dimensions, and economic roguelikes.
+A deterministic maritime economic strategy game in Unity 6. Explore a seeded four-town archipelago, draft four mandatory Grand Commission goals, and build a company through physical trade, private production and automated cargo itineraries. Sandbox uses the same economy without a deadline.
 
-This repository contains **Expanding Economy v3**: exact fractional paid household needs, all existing private production types, multiple facilities, physically transported Silver for a public Royal Mint, finite external contracts, up to three owned ships, reference Company Value and local Save/Load/Continue. Four towns, physical shipping, wages and material FIFO share one portable atomic simulation. Classic, seeded geography v1, Living Cities v2, Bootstrap, TradingLab and historical reports remain compatibility fixtures. Read the [v3 mechanics](docs/EXPANDING_ECONOMY.md) and [Task 2.0 acceptance record](docs/TASK-2.0-VERIFICATION.md) for that economic foundation.
+The supported game is **Expanding Economy v3, circulation rules1, pooled storage2, itinerary1**. Classic, seeded-v1 and Living Cities-v2 playable modes, fixed challenge prototypes, TradingLab and Bootstrap have been retired. Pure geography/role generation and NPC route algorithms remain because the current game uses them. Git history preserves the retired prototypes.
 
-## Play the expanding archipelago
+## Run locally
 
-**Task 2.5 implements the map-first command deck and Illustrated Maritime Ledger UI.** Select a town or ship on the dark nautical chart to reveal a compact parchment deck. **Map / Trade / Industry / Fleet / Economy / Objectives** lead to real controls: Harbor keeps exact paid trades and docked transfers; Fleet shows the selected ship's actual route and next work; Economy separates the next Bread request, current funds and conditional production readiness. **Details / log** retains the full inspector and historical route controls. Inspection and mode changes do not execute economic commands. The [player guide](docs/PLAYER_GUIDE.md#use-the-command-deck) describes navigation and the difference between current facts and future outcomes. The [Task 2.5 verification record](docs/TASK-2.5-VERIFICATION.md) records each acceptance criterion, actual Editor/player evidence and remaining limitations; the [UI design system](docs/UI_DESIGN_SYSTEM.md) documents the reusable visual kit.
-
-**Task 2.4 adds [measured economic circulation](docs/ECONOMIC_CIRCULATION_REVIEW.md).** New modern v3 runs use economic rules1 and save schema5: ordinary company sales pay bounded handling fees, municipal reviews protect real food/payroll reserves, and initial imports are finite. Older saves retain their original versions. The measured report records improvements and remaining economic failures; the UI redesign does not retune these rules.
-
-**Task 2.3 adds [ordered cargo itineraries](docs/AUTOMATION.md#ordered-cargo-itineraries).** New v3 pooled runs offer **Fleet → Inspect / edit route** for two to four towns, ordered Buy/Sell/Load/Unload actions and mixed cargo. Draft the role-aware Grain–Flour–Bread loop, inspect current quotes and explicit blockers, then apply and enable it. Actual stock, finite cash, shared FIFO and real voyages remain authoritative. Itinerary format1 introduced schema4; modern circulation runs use schema5, while older runs keep their original controls and saves. The [60-day headless witness](docs/AUTOMATION.md#bounded-ordinary-world-witness) completed four genuine loops without manual cargo moves; the [Task 2.3 acceptance record](docs/TASK-2.3-VERIFICATION.md) records that milestone's actual Editor/player journeys and limitations.
-
-**Task 2.2 adds [Harbor and shared company town stock](docs/HARBOR.md).** New Run defaults to v3 Grand Commission, with historical modes under Advanced / Legacy. New v3 industries at a town share one finite owned inventory and FIFO account; paid public-market trades and no-cash docked loading are available together in Harbor. Legacy-storage saves retain their actual separate factory warehouses. Completion acknowledgment and development-only run export support reviewing the frozen economy. The [Task 2.2 acceptance record](docs/TASK-2.2-VERIFICATION.md) distinguishes executed checks, screenshots and platform limitations.
-
-**Task 2.1 adds [The Grand Commission](docs/GRAND_COMMISSION.md)** as the default scored v3 choice: inspect the full economic map, draft one of three objectives in each of four rounds, and satisfy all four by day 180 with 100 company coins. A dedicated Objectives / Journal distinguishes permanent accomplishments from reversible net sales, welfare and liquidity; save/Continue and Retry preserve the exact chosen commission. The three earlier v3 challenges and sandbox remain available.
-
-Run `python tools/generate_docs.py` and `python tools/prepare_unity.py` to stage the simulation, canonical content and encyclopedia. Open `unity/` in Unity **6000.6.6f1**, open **`Assets/Scenes/ArchipelagoLab.unity`**, and press Play. New Run and Sandbox open setup: review the charter, challenge, world preview and ascension before starting paused on day 0. Seeded worlds accept signed 32-bit integer seeds; copy the seed and record generator version, charter, challenge and ascension to reproduce a run. **Retry Same World** preserves all those choices; **New World / Reroll** changes the draft seed and returns to preview before starting.
-
-**Expanding Economy** retains seeded geography while adding proportional needs and construction eligibility for every existing producer somewhere in the world. Open Company from pause or **Fleet → Company / shipwright** for ship construction, the public Mint, finite contracts and funded public works. Select an owned ship before trading, sailing or editing its independent route. The planner's **Manual control** pauses route actions while retaining cargo and exact next work. **Apply draft** requires an appropriate dock and safe stop boundary; replacement after itinerary work today waits until the next day. Town and private-stock displays may be fractional; ship orders remain whole units. Economy and pause link to the Ledger, which separates cash, reference Company Value, paid material basis, wages, service fees and issuance receipts. These rules permit productive recovery without guaranteeing lasting solvency.
-
-**Living Cities** also previews population, household purchasing power, production roles and eligible private industries. Its complete identity includes StockOnly/Coverage pricing. Town selection distinguishes market cash, household money, paid food needs, wages and prosperity. A market unable to buy your cargo may later receive actual resident retail payments; this requires stocked goods and funded residents, not a guaranteed bailout. See [Living Cities](docs/LIVING_CITIES.md) for exact rules, numerical examples, generation and observed outcomes.
-
-Settings offers **Compact, Default, Large and Extra Large** text throughout ArchipelagoLab. Default body text is 17 px, with 21/25 px Large/Extra Large options and responsive scrolling. This presentation preference is remembered locally through Unity PlayerPrefs. Economic progress uses three separate explicit local save slots; there is no automatic or cloud save. See [Seeded runs](docs/SEEDED_RUNS.md) for generation/timing contracts and [Unity verification](docs/UNITY.md) for the actual resolutions, interactions and platform checks performed.
-
-Select an owned ship and right-click a town, or use the deck's **Harbor** action or **Trade** mode. Compare market, selected ship and company local stock in one surface. Choose ship cargo or local stock for paid **Buy / Sell** orders; use **Load / Unload** for a no-cash physical transfer at the actual dock. Local company stock can trade while the ship is away. Exact totals, display-only average prices and specific blockers come from simulation previews. Opening Harbor pauses playback; closing it returns to the previous context without resuming. **Next day**, **Play/Pause**, and **1×/3×/10×** control economic playback.
-
-Select a town to construct or manage private industry. Ascension 0 builds immediately. Ascension 1 pays immediately but completes new player sites after two economic days; a day-0 bakery completes on day 2 and first becomes eligible to produce on day 4, with inputs and capacity still required. Granted starter factories are already built. Industry summaries show status, timing, inputs, real expenditure and shipping waits; preview a recommended procurement draft before explicitly applying it. Transfers require physical docking and preserve ownership and cost basis. The Ledger separates cash, revenue, released/held basis, realized material margin, capital spending and actual living-city wages.
-
-Historical Classic/v1 runs offer the **Coastal Supply Charter**, **Regional Relief** and **Enterprise Ambition**, with their preserved day-60 objectives. Living Cities offers **A City Back on Its Feet**: by day 90 restore at least 90% paid Bread fulfillment across six scheduled opportunities, preserve initial population, reach prosperity 55 and retain 100 company cash. Sandbox has no deadline. Escape respects open overlays before opening pause. Victory freezes immediately and presents an acknowledgment with **View results**; the frozen map and Journal remain inspectable. V3 also offers Sustainable Provisioning, Industrial Network and Royal Commission. Save/Load is available from pause and Company; Continue restores the latest compatible local slot. Retry starts a fresh copy of the same identity, including storage rules, and leaves saved slots intact.
-
-In the Editor and development players, **Export Run Report** on Save/Load, results or Ledger writes a new exact save/report pair under `Application.persistentDataPath/Exports` and displays both paths. It does not advance the world or overwrite a save slot. Reports include finite accounts, physical stores, material FIFO, prices, production blockers and explicitly partial recent activity.
+Install the .NET10 SDK selected by `global.json`, Python with `requirements.txt`, and the Unity version in `unity/ProjectSettings/ProjectVersion.txt`.
 
 ```text
-dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --runs
-dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --runs --check
-dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --industrial-logistics --check
-dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --seeded-runs --check
-dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --living-cities --check
-dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --expanding-economy --check
-dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --expanding-economy --reinvestment --check
-dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --grand-commission --check
-dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --economic-circulation --check
-```
-
-CI checks the bounded circulation report in a separate 15-minute job, with locked restore and a Release runner build. This keeps its 80-world matrix outside the historical headless job's 20-minute budget. Both jobs validate existing output; neither publishes documentation or regenerates reports.
-
-The preserved **Classic/Ascension 0** complete-run report demonstrates all nine charter/challenge pairings and nine idle failures, with per-operation financial reconciliation. Merchant and industrial charters complete the main supply challenge on days 29 and 39 respectively. Those fixed-world measurements are not guarantees for every seed or policy. The separate [seeded experiment](docs/SEEDED_RUNS.md) examines geography and construction pressure without hidden economic assistance. Read [Runs and charters](docs/RUNS.md), [Player guide](docs/PLAYER_GUIDE.md), [Playtest](docs/PLAYTEST.md), and the actual [Unity verification record](docs/UNITY.md).
-
-Historical `--archipelago` and `--enterprise` reports remain unchanged and retain their original strategies and measurements. [Living archipelago](docs/LIVING_ARCHIPELAGO.md) and [Commerce and industry](docs/ENTERPRISE.md) distinguish those fixtures from the new run scenarios.
-
-## Prerequisites
-
-- A stable .NET 10 SDK, including its runtime for the demo and tests. `global.json` permits SDK 10.0.100 or later stable 10.0 feature bands; it does not roll forward to .NET 11.
-- Python 3.13 or newer and pip.
-- Unity **6000.6.6f1**, matching `unity/ProjectSettings/ProjectVersion.txt`, for Editor/player verification. Standalone checks do not require Unity.
-
-The simulation targets `netstandard2.1` with C# 8 and Newtonsoft.Json 13.0.3. The demo and test projects target `net10.0`. NuGet lock files pin resolved dependencies; Unity supplies its own single Newtonsoft assembly through UPM package 3.2.2. CI runs without the Unity Editor.
-
-## Setup and run
-
-Create a project-local Python environment from the repository root:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
-
-On macOS/Linux, activate it with `source .venv/bin/activate` instead. If PowerShell activation is restricted, invoke `.\.venv\Scripts\python.exe` in place of `python`; changing machine execution policy is not required.
-
-Then run:
-
-```powershell
+dotnet restore SaltAndLedger.sln --locked-mode
+dotnet test SaltAndLedger.sln -c Release
 python -m pip install -r requirements.txt
 python tools/validate_data.py
-dotnet restore SaltAndLedger.sln --locked-mode
-dotnet build SaltAndLedger.sln -c Release --no-restore
-dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json
-python tools/generate_docs.py
-python -m mkdocs serve
-```
-
-The original sample demonstrates the recipe `saw_planks`: one command consumes **2 logs and produces 1 plank** in a sawmill. Starting with 6 logs, the demo completes three batches, rejects a fourth for insufficient inputs, and ends with 0 logs and 3 planks. The historical base catalog contains six goods, six buildings, and six recipes. The explicitly selected v3 extension adds Silver, Silver Mine, Royal Mint and the canonical Silver extraction recipe. The explicit one-batch command remains usable without a world or clock. Legacy mode demonstrations use a two-good projection referencing the same canonical objects, preserving their transcripts and report fixtures without duplicating definitions.
-
-## Run the deterministic world example
-
-```powershell
-dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --world
-dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --world 2
-```
-
-The optional final argument sets initial logs from 0 through 2,147,483,647; the default is 6. The fixed scenario has one port, one shared inventory, and two instances of the canonical sawmill. The host calls `Step` five times and prints per-tick controls, ordered attempts, inventory changes, and final stock. With the default stock:
-
-| Starting tick | Controls at start | Production outcome |
-| --- | --- | --- |
-| 0 | Disable A | B produces; 4 logs / 1 plank remain |
-| 1 | Enable A, disable B | A produces; 2 logs / 2 planks remain |
-| 2 | Enable B | A produces, then B reports shortage; 0 logs / 3 planks remain |
-| 3 | None | Both report shortage; stock is unchanged |
-| 4 | Disable both | No attempts; the clock still advances |
-
-The final world tick is **5**, with **0 logs and 3 planks**. The example reruns the same scenario and compares the complete transcript, then compares another run with reversed building input order. A mismatch fails explicitly. Different initial stock changes the outcomes while keeping the controls and schedule fixed.
-
-Each enabled building in this legacy world attempts one batch per abstract tick, ordered by ascending priority and ordinal instance ID. Controls affect that tick. Shortage is an expected outcome; exceptional failure rolls back the entire tick. Immutable snapshots and structured results expose outcomes without unbounded history. See [Mechanics](docs/MECHANICS.md) and [Architecture](docs/ARCHITECTURE.md). These original ticks remain abstract; the separate regional owner uses daily schedules. Final balance, wages, and production-optimization policies remain unresolved.
-
-## Run the finite market example
-
-```powershell
-dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --market
-```
-
-One sawmill produces into the existing location inventory, now the market's stock. The trader owns separate goods and cash. This public-market ownership of production is a prototype assumption, not a permanent factory-ownership model. Prices are fixed experimental bid/ask quotes: logs 2/3, planks 4/5. The trader buys at ask and sells at bid. Money uses checked `long` arithmetic in indivisible units; prices, currency scale, and initial balances are experimental.
-
-The market starts with 2 logs and 20 cash; the trader starts with 4 logs and 7 cash. Four ticks demonstrate purchases, sales, stock/funds rejections, and production using sold logs. Trades execute in declared order before production: sold logs can be consumed this tick; newly produced planks are tradeable next tick. The final state is market **0 logs, 1 plank, 25 cash** and trader **0 logs, 2 planks, 2 cash**, at tick **4**. Combined cash stays **27**. There is no automatic replenishment or income.
-
-Expected shortages reject one whole trade and allow later commands to continue. Invalid requests or overflow roll back the entire tick, including both inventories, cash, production, controls, and clock. The demo prints each transaction's before/after balances, checks its final state, and compares repeated/reordered setup runs. A headless test verifies the [documented per-tick example](docs/MECHANICS.md#executable-market-example).
-
-## Run the pricing experiments
-
-```powershell
-dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --pricing
-dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --pricing --check
-```
-
-The first command prints a comparison and writes `docs/experiments/pricing-results.json`; the second checks that the committed report matches a fresh run without rewriting it. Supply an optional final output path to generate or check a separate report. The pricing report is separate from canonical reference generation; do not edit its measurements by hand.
-
-The runner compares the fixed baseline with **linear** and **piecewise scarcity** pricing through the existing world API. Scenarios cover abundant stock, moderate/severe scarcity, sawmill production, repeated trades and order splitting, finite liquidity, and numeric limits. Every dynamic bulk total sums the inventory transitions it crosses, using exact integer arithmetic and a bounded summation algorithm. No per-unit execution loop, price clock, or artificial replenishment is introduced.
-
-Snapshot marginal quotes and read-only trade previews use execution's own calculation. Reports expose first/last marginal prices and the complete total; the first price multiplied by quantity is generally not a dynamic trade's cost. Reversing trades cannot create cash profit without another economic change, and splitting an uninterrupted order preserves its total. Fixed pricing and the original `--market` transcript remain unchanged.
-
-Read [Pricing experiments](docs/PRICING_EXPERIMENTS.md) for parameters, measured comparisons, limitations, and the provisional recommendation, and [Mechanics](docs/MECHANICS.md#inventory-sensitive-pricing-hypotheses) for exact formulas and boundaries. These curves are experiments; passing accounting tests does not establish balance or enjoyable gameplay.
-
-## Run the manual shipping comparison
-
-```powershell
-dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --shipping
-```
-
-The handcrafted scenario connects Northport and Southhaven with a two-tick route. One trader has one cash account and one ship with capacity 6; its cargo is the trader's only goods inventory. Each port has independent finite stock, cash, and linear pricing, and Southhaven owns one active sawmill. A single `MaritimeWorldState` owns both ports, the ship, trader, and global tick; it reuses the existing transaction, pricing, and production calculations.
-
-Two equivalent runs buy 2 or 6 logs, sail to Southhaven, sell there, then carry 2 planks back to Northport. Both finish at tick 6 with empty cargo. Measured gross trading profits are **69** and **119**, respectively; starting trader cash is 100. The full load earns more here but less profit per log and leaves a different local market state. This is a controlled comparison, not a claim about optimal strategy or final balance.
-
-The demo prints per-tick accounts, local quotes, production, and voyage progress; rejects an oversized purchase; shows that trading while sailing fails without advancing time; and verifies exact results across repeated and reversed-port setup runs. Read [Manual shipping comparison](docs/SHIPPING_DEMO.md) for complete parameters and measured balances. Travel has no costs or risks, capacity counts items, market-owned production remains provisional, and no automatic replenishment is implemented.
-
-## Run configurable route automation
-
-```powershell
-dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --automation
-```
-
-Choose shipment targets/minimums, maximum marginal buy prices, minimum marginal sell prices, a cash reserve, and optional empty return. A stateless policy evaluates the committed maritime snapshot and submits the same manual commands, with at most one trade per tick and a safe optional departure. `MaritimeWorldState` still owns every account, cargo unit, voyage, and global tick. Automation executes the player's rules; it does not discover strategies or guarantee profit.
-
-The demo shares the manual starting fixture. A log buying limit of 10 carries six logs and realizes **119 gross profit in six ticks**; lowering it to 8 carries two and realizes **69**, also in six ticks. Both return with two planks and finish empty. Every committed state matches its equivalent manual itinerary. With destination cash set to zero, the ship instead retains six logs and stops after three unchanged waiting ticks, at tick 5; it reports the liquidity reason and no completed-interval profit. No impossible sale is repeatedly submitted.
-
-The runner prints decisions, exact prices, commands, transactions, cargo, local markets, and bounded stop reasons. It asserts repeated, reversed-port, and alternate-culture output. Four useful manual action batches become one policy configuration; both still need six host advances. See [Automation](docs/AUTOMATION.md) for exact rules, measurements, pausing/reconfiguration, safe execution, and limitations.
-
-## Play the Unity Trading Lab
-
-After installing the Python dependencies, run from the repository root:
-
-```powershell
-python tools/prepare_unity.py
-python tools/prepare_unity.py --check
-```
-
-Preparation validates content and generated-reference freshness, rebuilds the existing simulation with locked NuGet dependencies, and stages its DLL plus canonical JSON and offline encyclopedia under ignored `unity/Assets/Generated/`. Open `unity/` through Unity Hub using **6000.6.6f1**, let packages resolve, open **`Assets/Scenes/TradingLab.unity`** for the historical two-port lab, and enter Play mode.
-
-Inspect Northport and Southhaven, preview exact bulk prices, buy and sell cargo, and sail the two-tick route. Time advances only through explicit actions. Enable the full or restrictive route policy to compare the documented six-tick expeditions; the zero-liquidity scenario shows why a ship can retain goods despite an attractive price. Pause, change a limit, or intervene manually without a hidden clock. Follow [Playtest](docs/PLAYTEST.md) for controls, complete itineraries, blocked-route diagnosis, and a recovery experiment.
-
-The separate **`Assets/Scenes/Bootstrap.unity`** remains the production smoke. Entering Play mode there should report three successful batches, an unchanged rejected batch, and `Salt & Ledger smoke passed: logs=0, planks=3; rejected batch left inventory unchanged.`
-
-Rerun preparation after simulation, content, or relevant build configuration changes. Do not copy simulation sources or a NuGet `Newtonsoft.Json.dll` into Unity. See [Unity integration](docs/UNITY.md) for Edit Mode/Play Mode tests, player build commands, and actual verification limits.
-
-## Verify changes
-
-```powershell
-dotnet restore SaltAndLedger.sln --locked-mode
-dotnet build SaltAndLedger.sln -c Release --no-restore
-dotnet test SaltAndLedger.sln -c Release --no-build
-dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json
-dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --world
-dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --market
-dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --pricing --check
-dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --shipping
-dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --automation
-dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --archipelago --check
-dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --enterprise --check
-dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --industrial-logistics --check
-dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --runs --check
-dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --seeded-runs --check
-dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --living-cities --check
-dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --expanding-economy --check
-dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --expanding-economy --reinvestment --check
-dotnet run --project samples/SaltAndLedger.Demo -c Release --no-build -- data/content.json --grand-commission --check
-python -m unittest discover -s tests/python -v
-python tools/validate_data.py
 python tools/generate_docs.py --check
+python -m unittest discover -s tests/python -v
 python -m mkdocs build --strict
 python tools/prepare_unity.py
-python tools/prepare_unity.py --check
 ```
 
-The documentation `--check` verifies committed reference files without rewriting them. When content changes, regenerate documentation, review it, and commit it with the data. The Unity preparation `--check` verifies local staged assets against source and output hashes. GitHub Actions runs these standalone checks; Editor and player verification remain separate. Publishing remains manual: after the reviewed changes reach `main`, run GitHub Actions **Publish documentation** when ready. Validation alone does not update the published site.
+Open `unity/`, then `Assets/Scenes/ArchipelagoLab.unity` and Play. Start at the main menu, choose New Run, inspect the full map, draft the commission and Begin. The only build scene is ArchipelagoLab. See [Unity setup and verification](docs/UNITY.md).
 
-For an intentional NuGet dependency change, run `dotnet restore SaltAndLedger.sln --force-evaluate`, review the changed `packages.lock.json` files, and rerun verification. Keep Unity's `Packages/manifest.json` and `Packages/packages-lock.json` together when changing UPM dependencies.
+```text
+dotnet run --project samples/SaltAndLedger.Demo -c Release -- data/content.json --grand-commission --check
+dotnet run --project samples/SaltAndLedger.Demo -c Release -- data/content.json --expanding-economy --check
+dotnet run --project samples/SaltAndLedger.Demo -c Release -- data/content.json --economic-circulation --check
+```
 
-## Repository map
+These run real commands and validate current objectives, exact continuation, physical flows and both cash boundaries. The optional `--expanding-economy --reinvestment --check` is a longer prescribed-policy comparison; `--deep` sweeps are opt-in. Successful examples do not imply universal economic recovery.
 
-| Path | Purpose |
-| --- | --- |
-| `src/SaltAndLedger.Simulation/` | Unity-independent economic operations, legacy/regional worlds, company ownership, private industry, challenge rules, schedules, routes, and shared scenarios |
-| `samples/SaltAndLedger.Demo/` | Legacy demonstrations plus reproducible pricing, living-archipelago, and enterprise reports |
-| `tests/SaltAndLedger.Simulation.Tests/` | Standalone C# tests |
-| `unity/` | Unity 6 ArchipelagoLab and TradingLab scenes/UI, Bootstrap smoke, and integration tests |
-| `data/content.json` | Canonical goods, buildings, and production recipes |
-| `data/content.schema.json` | JSON Schema for content format version 1 |
-| `data/player-help.json` | Validated authored mechanics shared by the offline encyclopedia and website |
-| `tools/` | Data validation, deterministic documentation generation, and Unity preparation |
-| `tests/python/` | Schema, semantic validation, generator, and Unity preparation checks |
-| `docs/` | Authored design, architecture, and mechanics specifications |
-| `docs/experiments/pricing-results.json` | Reproducible measurements emitted by the pricing runner; checked independently of canonical references |
-| `docs/experiments/archipelago-results.json` | Five sixty-day strategies with daily state, physical flows, transactions, and accounting checks |
-| `docs/experiments/enterprise-results.json` | Five ninety-day enterprise strategies and separate charter trials, with company/private-stock accounting and six-good flow reconciliation |
-| `docs/reference/` | Generated Markdown reference pages; do not edit manually |
-| `docs/experiments/industrial-logistics-results.json` | Private shipping, manual equivalence, restrictive policies, supply/liquidity and demand variants |
-| `docs/experiments/run-results.json` | All nine charter/challenge pairings, idle failures, exact accounting and scored results |
-| `generated/encyclopedia.json` | Versioned offline encyclopedia generated from canonical definitions and shared player help |
-| `.github/workflows/` | Headless CI |
+## Project boundaries
 
-Start with the [documentation index](docs/index.md), [design principles](docs/GAME_DESIGN.md), and [implemented architecture](docs/ARCHITECTURE.md). The [roadmap](docs/ROADMAP.md) is provisional; [economy](docs/ECONOMY.md) and [ideas](docs/IDEAS.md) distinguish accepted direction from open hypotheses and deferred work. Contribution and agent guidance is in [AGENTS.md](AGENTS.md).
+- `src/SaltAndLedger.Simulation/`: authoritative C#8 / `netstandard2.1` simulation, independent of Unity and filesystem policy.
+- `data/content.json`: canonical goods, buildings and recipes; `data/player-help.json`: shared mechanics help.
+- `unity/Assets/SaltAndLedger/`: UI Toolkit host, Editor build command and integration tests.
+- `samples/SaltAndLedger.Demo/`: current commission witnesses and bounded economic experiments.
+- `tests/`: deterministic accounting, pricing, generation, production, itinerary, objective, persistence and documentation protection.
+- `tools/`: content validation, shared documentation generation and reproducible DLL/content staging.
 
-## Task 2.4: measured economic circulation
+`prepare_unity.py` stages one simulation DLL and canonical JSON into ignored `Assets/Generated/`. Unity's pinned Newtonsoft package provides JSON; do not duplicate simulation sources or JSON assemblies. Generated reference outputs are committed and must be regenerated, never edited by hand.
 
-Fresh modern v3 runs now use economic rules revision 1: exact 2% company sale handling fees, a bounded four-day municipal payroll/food review, a sane Coverage Furniture target floor and finite role-based starting imports. Harbor shows gross payment, fees and net receipts; town accounts explain receipts, reserves and the next review. Schema 5 preserves this state, while older saves and Retry retain their original rules. See the [fixture diagnosis, rules and matched A/B evidence](docs/ECONOMIC_CIRCULATION_REVIEW.md). No recurring stock grant, wealth cap or automatic currency creation is added.
+## Read next
 
-Verify the separate bounded report with `dotnet run --project samples/SaltAndLedger.Demo -c Release -- data/content.json --economic-circulation --check`.
+[Player guide](docs/PLAYER_GUIDE.md) · [Grand Commission](docs/GRAND_COMMISSION.md) · [Architecture](docs/ARCHITECTURE.md) · [Mechanics](docs/MECHANICS.md) · [Save policy](docs/SAVES.md) · [Roadmap](docs/ROADMAP.md) · [Cleanup verification](docs/REPOSITORY-CLEANUP.md).
+
+Local saves support current schema5 only. Unsupported or damaged files fail without replacing the active session. This pre-release project does not promise migration of historical saves. GitHub Pages publication remains manual and is not part of ordinary validation.

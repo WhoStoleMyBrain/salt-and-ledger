@@ -8,17 +8,13 @@ title: "Save, Continue and exact retry"
 
 Local explicit saves preserve an economic run; retry starts its identity fresh\.
 
-Save explicitly to a local slot before leaving\. Continue or Load restores a saved Classic, seeded\-v1, Living Cities\-v2 or Expanding Economy\-v3 run without advancing its day\. Saves are local to this installation; there is no cloud account or automatic cross\-device recovery\.
+Save explicitly to one of three local slots\. Continue or Load restores a current Expanding Economy v3 Grand Commission or Sandbox run without advancing time\. Saves are local; there is no cloud recovery\.
 
-The save retains exact accounts, fractional stock and demand residuals, every ship and route stage, voyages, factories, pending construction, household history, FIFO lots, challenges and v3 contracts, Mint and treasury state\. Grand Commission saves also retain the exact selected plan, per\-ship visits and signed target\-market history\. Visual interpolation and focus are presentation state, while text size remains an independent local preference\.
+Only current schema5, circulation1, storage2 and itinerary1 are supported\. Historical prototype saves are intentionally unsupported during pre\-release development\. No migration or command replay is performed\.
 
-A load validates the complete file, identity, content and configuration before replacing the current session\. Unsupported versions, damaged files, inconsistent stock or impossible states produce an error and preserve the valid active run\. A saved terminal run remains frozen and inspectable\.
+Saves retain exact identity and drafted goals, accounts, fractional stock and demand residuals, FIFO lots, every voyage and route cursor/budget, pending construction, household history, fees, contracts, Mint and public treasury\. Terminal outcomes remain frozen\.
 
-Retry Same World always reconstructs the original initial identity and assets, even when a saved later state exists\. Reroll explicitly chooses a new draft seed and requires preview/start\. Neither action silently loads or overwrites your saved progress\.
-
-V3 pooled itinerary runs use itinerary format 1 and save schema 4, or schema 5 with modern circulation rules, retaining the complete plan, exact next stop/action/pass, last decision and used daily budget\. Older pooled schema 3 retains itinerary version zero; original schema 1/2 retains its old storage identity\. Valid older files keep their fields and behavior; loading never silently combines warehouses or converts a route\. Development Export Run Report writes an exact save and diagnostic under displayed Exports paths without changing the world or save slots\. Recent activity is partial bounded history\.
-
-New circulation runs use economic rules revision 1 and save schema 5\. Fees, local receipts and municipal review dates continue exactly after loading\. Historical saves and Retry keep their original economic rules; Change setup creates a fresh modern revision\. Initial imported basics are finite starting stock, never recurring deliveries\.
+Complete validation precedes session replacement\. Unsupported versions, damage or inconsistent state show an error and preserve the active world, selection and playback\. Retry starts the original identity fresh\. Text size remains an independent preference\.
 
 ## Related entries
 

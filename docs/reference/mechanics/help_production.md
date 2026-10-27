@@ -20,8 +20,8 @@ Economy shows each existing facility's current inputs, one canonical batch outpu
 
 ## Related entries
 
+- [Ordered cargo itineraries](../mechanics/help_cargo_itineraries.md)
 - [Owning a factory](../mechanics/help_factories.md)
-- [Industrial shipping automation](../mechanics/help_industrial_routes.md)
 - [Private procurement and local sales](../mechanics/help_procurement.md)
 
 [All player mechanics](../catalog-mechanics.md) · [All content](../index.md)

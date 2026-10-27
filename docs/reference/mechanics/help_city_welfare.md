@@ -14,7 +14,7 @@ Furniture demand turns on after three consecutive qualifying observations with p
 
 Population reviews occur every 12 days after six food observations\. At most one resident is gained after sustained adequate food and prosperity at least 65, or lost after sustained severe deprivation and prosperity at most 35\. Generated bounds are 10 to 80\. New population changes subsequent desired need, not past records\.
 
-A city can keep household money yet decline because food is absent; another may have food but no purchasing power\. Production inputs, payroll, market buying power and transport can all stall a chain\. The model has no guaranteed long\-run equilibrium\. The City Recovery challenge tests sustained real recovery on a declared baseline, not a one\-time shipment\.
+A city can keep household money yet decline because food is absent; another may have food but no purchasing power\. Production inputs, payroll, market buying power and transport can all stall a chain\. The model has no guaranteed long\-run equilibrium\. Grand Commission welfare cards test sustained paid food against the declared baseline, not a one\-time shipment\.
 
 ## Related entries
 

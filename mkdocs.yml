@@ -15,51 +15,31 @@ nav:
   - Welcome: index.md
   - Player guide:
       - Getting started: PLAYER_GUIDE.md
-      - Run choices and measured outcomes: RUNS.md
-      - Seeds, Ascension and readability: SEEDED_RUNS.md
-      - Living cities and recovery: LIVING_CITIES.md
-      - Expanding economy: EXPANDING_ECONOMY.md
-      - Grand Commission objectives: GRAND_COMMISSION.md
-      - Harbor and company stock: HARBOR.md
-      - Local saves and continue: reference/mechanics/help_saves.md
-      - Readability settings: reference/mechanics/help_readability.md
-      - Trade and prices: reference/mechanics/help_trading.md
-      - Shipping: reference/mechanics/help_shipping.md
-      - Factory ownership: reference/mechanics/help_factories.md
-      - Industrial automation: reference/mechanics/help_industrial_routes.md
-      - Financial reports: reference/mechanics/help_finances.md
-      - Charters: reference/mechanics/help_charters.md
-      - Challenges and outcomes: reference/mechanics/help_challenges.md
-      - Results and scoring: reference/mechanics/help_scoring.md
+      - Grand Commission: GRAND_COMMISSION.md
+      - Harbor and stock: HARBOR.md
+      - Cargo itineraries: AUTOMATION.md
+      - Production and money: EXPANDING_ECONOMY.md
+      - Households and welfare: LIVING_CITIES.md
+      - Local saves: SAVES.md
   - Game reference:
       - Encyclopedia: reference/index.md
       - Production chains: reference/chains.md
       - Commodities: reference/catalog-goods.md
       - Buildings: reference/catalog-buildings.md
       - Recipes: reference/catalog-recipes.md
-      - All player mechanics: reference/catalog-mechanics.md
+      - Mechanics: reference/catalog-mechanics.md
   - Development:
-      - Game design: GAME_DESIGN.md
       - Architecture: ARCHITECTURE.md
-      - Exact mechanics contracts: MECHANICS.md
-      - Economy questions: ECONOMY.md
+      - Exact mechanics: MECHANICS.md
+      - Game design: GAME_DESIGN.md
       - Measured circulation: ECONOMIC_CIRCULATION_REVIEW.md
-      - Commerce and industry experiment: ENTERPRISE.md
-      - Automation experiments: AUTOMATION.md
-      - Historical archipelago experiment: LIVING_ARCHIPELAGO.md
-      - Pricing experiments: PRICING_EXPERIMENTS.md
-      - Expanding economy experiments: EXPANDING_ECONOMY_EXPERIMENTS.md
-      - Historical shipping comparison: SHIPPING_DEMO.md
-      - Playtest guides: PLAYTEST.md
-      - Unity integration: UNITY.md
-      - Task 2.0 acceptance evidence: TASK-2.0-VERIFICATION.md
-      - Task 2.1 acceptance evidence: TASK-2.1-VERIFICATION.md
-      - Task 2.2 acceptance evidence: TASK-2.2-VERIFICATION.md
-      - Readability verification gallery: READABILITY_VERIFICATION.md
-      - Website and publishing: WEBSITE.md
+      - Current experiments: EXPANDING_ECONOMY_EXPERIMENTS.md
+      - Unity setup: UNITY.md
+      - Playtest checklist: PLAYTEST.md
+      - UI design system: UI_DESIGN_SYSTEM.md
+      - Cleanup verification: REPOSITORY-CLEANUP.md
       - Roadmap: ROADMAP.md
-      - Decisions: DECISIONS.md
-      - Deferred ideas: IDEAS.md
+      - Website: WEBSITE.md
 validation:
   nav:
     omitted_files: ignore

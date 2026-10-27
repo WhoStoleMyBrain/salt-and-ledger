@@ -16,8 +16,8 @@ Targets compete for shared cash and warehouse space\. A price, liquidity, stock,
 
 ## Related entries
 
+- [Ordered cargo itineraries](../mechanics/help_cargo_itineraries.md)
 - [Owning a factory](../mechanics/help_factories.md)
-- [Industrial shipping automation](../mechanics/help_industrial_routes.md)
 - [Market liquidity](../mechanics/help_liquidity.md)
 - [Marginal prices and execution averages](../mechanics/help_prices.md)
 

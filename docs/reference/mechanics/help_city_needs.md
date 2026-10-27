@@ -8,7 +8,7 @@ title: "Food, furniture and municipal use"
 
 Different consumers need different goods on explicit schedules\.
 
-Bread is the essential household good, due every four days\. Living Cities v2 rounds one Bread per 20 residents upward: population 20 needs one and 21 needs two\. Expanding Economy v3 uses exact proportional quantities instead: population 10 needs 0\.50, 15 needs 0\.75, 20 needs 1\.00, 21 needs 1\.05 and 30 needs 1\.50 Bread\. Retail buys only actual affordable stock\.
+Bread is the essential household good, due every four days\. The current economy uses exact proportional quantities: population 10 needs 0\.50, 15 needs 0\.75, 20 needs 1\.00, 21 needs 1\.05 and 30 needs 1\.50 Bread\. Retail buys only actual affordable stock\.
 
 Essentials run before luxuries\. Furniture is an infrequent durable household need: one per 80 residents every 24 days when sustained welfare enables it\. V2 rounds upward; v3 is proportional with exact residual carry\. Luxury spending reserves the exact current price of the next Bread need and cannot spend an unlimited future income\.
 
@@ -16,7 +16,7 @@ Municipal Planks are a separate public own\-use sink every 12 days\. They move n
 
 Food coverage estimates physical stock divided by scheduled eligible household demand; it is not a guaranteed spending forecast\. Goods without household demand show not applicable\. Stock\-only pricing remains the baseline\. Experimental coverage pricing derives bounded stock targets from a seven\-day need horizon constrained by actual household funds\. Effective pricing parameters stay fixed until the next daily boundary; marginal bid/ask prices still respond to every inventory change\.
 
-The command deck and Economy show next Bread due day and exact prospective quantity at current population, including the saved fractional demand remainder\. Compare it with current public stock; the separate retail preview uses current quotes and household money\. Awaiting first need means no meal has yet been observed\. These read\-only facts do not promise future stock, funds or prices\. Classic and seeded\-v1 household needs are not modeled, rather than a zero\-food crisis\.
+The command deck and Economy show next Bread due day and exact prospective quantity at current population, including the saved fractional demand remainder\. Compare it with current public stock; the separate retail preview uses current quotes and household money\. Awaiting first need means no meal has yet been observed\. These read\-only facts do not promise future stock, funds or prices\.
 
 ## Related entries
 

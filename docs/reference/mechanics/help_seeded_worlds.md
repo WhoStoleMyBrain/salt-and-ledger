@@ -6,19 +6,15 @@ title: "Seeded worlds and exact retries"
 
 # Seeded worlds and exact retries
 
-Choose geography\-only v1 or Living Cities v2 economic roles, then retry the exact run identity\.
+Inspect the seeded economic map and retry the exact current run identity\.
 
-Fixed / Classic Archipelago retains the original map positions and authored sea distances\. Seeded Archipelago moves the existing four towns, preserving their IDs, industries, markets, NPCs, initial goods and cash, ship speeds, demand and challenge deadlines\. No seed receives secret assistance\.
+Current runs use Expanding Economy v3\. Enter an ASCII signed integer from\-2147483648 through2147483647, without spaces or separators\. The same seed retains exact geography and role draws; no world is repaired after observing strategy performance\.
 
-Enter an ASCII integer from \-2147483648 through 2147483647, with an optional leading plus or minus and no spaces or separators\. Generator version 1 uses a fixed integer algorithm with bounded slot placement and jitter\. Its six direct distances derive from the same coordinates shown in the preview and map\. Ordinary speed\-100 ships take three to seven days per direct voyage\.
+Pure integer geography uses four separated jittered slots and six integer ceiling\-square\-root distances\. A separate bounded stream permutes food supply, processing, forest furniture and vulnerable coast roles\. Forest furniture needs imported Planks because it cannot build a Sawmill\.
 
-Record the world mode, seed and generator version together with challenge, charter, ascension and Living Cities pricing hypothesis\. That complete identity determines the initial run under current scenario definitions\. Retry Same World restores original funds, stock, cargo, policies, facilities and clocks and clears the host journal\. It does not preserve accumulated progress\.
+Identity includes seed, generator/content3, valuation1, pricing, charter, Ascension, objective draft, storage2, itinerary1 and circulation1\. Retry restores this original initial world\. Loading restores a saved position\.
 
-Randomize seed or New World / Reroll explicitly chooses a different draft seed in the host, previews it and waits for a separate start\. Menus, encyclopedia and text settings cannot accidentally reroll\. A valid navigable layout does not guarantee that any unchanged route policy will win\.
-
-Living Cities version 2 uses the same geography stream plus a separate bounded economy stream\. Four authored role packages permute food supply, processing, forest furniture and vulnerable coast across the existing towns, with different population, cash, stocks and private capabilities\. The forest furniture town has logging and furniture production but no Sawmill capability; it depends on imported Planks\. Structural production paths do not guarantee perpetual solvency or victory\.
-
-Expanding Economy v3 reuses exactly the same seed geography and economic role permutation, while explicitly selecting fractional goods, new monetary rules, expandable industry and fleets\. Content and reference\-valuation versions belong to its identity\. A v2 identity is never silently treated as v3\.
+Randomize or Reroll explicitly chooses another draft seed, shows the preview and waits for a separate start\. Menus and inspection never reroll\. Structural production paths do not guarantee perpetual solvency or victory\.
 
 ## Related entries
 

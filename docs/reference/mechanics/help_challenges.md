@@ -8,17 +8,13 @@ title: "Challenges and run outcomes"
 
 A challenge ends in victory, deadline defeat, or confirmed voluntary abandonment\.
 
-Run setup states the objective, deadline, and required cash\. The supply charter counts signed net target\-market sales minus purchases by your company\. Buying back and reselling that market's goods cannot create delivery credit; merely arriving or transferring stock does not count\.
+Grand Commission offers one choice from three cards in each of four deterministic category rounds, after exploring the full seeded map\. All four selected goals must be currently met by day180 alongside100 liquid company coins\. Sandbox has no objective deadline\.
 
-Regional relief measures real scheduled consumption fulfilled in the configured towns\. It is regional performance, not a claim that your company alone supplied every consumed item\. An enterprise objective combines attributed financial performance with actual private production\.
+The Journal distinguishes cumulative visits, actual funded production and public receipts from reversible net sales, welfare, ownership and value conditions\. Buying back a target\-market good reverses signed delivery credit\. Transfers and previews do not count as sales\.
 
-The complete economic operation finishes before the objective is evaluated\. Success or deadline failure immediately freezes further economic actions\. A victory acknowledgment offers View results while the frozen map, Journal and save remain inspectable\. The final daily operation can succeed before the deadline failure check\.
+Every complete atomic operation evaluates all conditions\. Success takes precedence on the exact deadline; success, failure or confirmed abandonment freezes economic actions\. The acknowledgment offers results or frozen inspection, and terminal saves stay frozen\.
 
-Sandbox has no victory deadline\. An active run can be deliberately abandoned with confirmation\. Explicit local saves preserve supported run modes; there is no cloud recovery or hidden automatic save\. Retry Same World starts fresh rather than loading saved progress\.
-
-City Recovery in Living Cities measures six recent scheduled paid Bread opportunities at the vulnerable town\. It requires at least 90 percent fulfillment against the greater of current and starting\-population need, population at least its starting value, prosperity at least 55 and company cash at least 100 by day 90\. Deliveries alone do not count; regional public/NPC contributions may help\. A shrinking population cannot lower the baseline denominator\.
-
-Expanding Economy v3 offers the Grand Commission objective draft alongside separate provisioning, industrial\-network and royal\-commission objectives\. Read the actual setup thresholds: paid welfare, real production, Company Value, liquid cash and monetary development are different requirements\. Public Mint funding alone is not a victory or private company asset\.
+Retry Same World reconstructs the original identity and assets\. Continue restores an explicit local save instead\. There is no hidden auto\-save or cloud recovery\.
 
 ## Related entries
 

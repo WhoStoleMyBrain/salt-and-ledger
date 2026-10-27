@@ -2,7 +2,7 @@
 
 The Grand Commission is the default scored choice for **Expanding Economy v3**. Reveal the seeded map first, then choose one objective from three offers in each of four rounds. All four chosen cards become mandatory. Complete them **together by day 180**, with **at least 100 liquid company coins**. A high partial score cannot substitute for victory.
 
-The existing Sustainable Provisioning, Industrial Network, Royal Commission and unlimited sandbox remain available with their original objectives. Classic, seeded-v1 and Living Cities-v2 do not use this draft. Task 2.2 keeps these mission rules, world generation and monetary parameters unchanged while adding independently versioned [shared company town stock and Harbor](HARBOR.md) for new v3 runs.
+Sandbox is the unlimited alternative. Both use current circulation rules and [shared company town stock](HARBOR.md).
 
 ## Read the map, then commit
 
@@ -85,17 +85,11 @@ The selected plan stores stable IDs and typed rule, target, unit, semantic, port
 
 ## Saves and compatibility
 
-New pooled v3 runs with itinerary format 1 use world-save **schema 4**, including Grand Commission runs. Prior pooled runs retain **schema 3** and their original route controls. Older drafted runs retain **schema 2** and separate facility stores; other legacy runs retain schema 1. Absent `CompanyStorageRules` and `ItineraryVersion` fields retain their original rules, never automatic consolidation or route conversion. Restore reconstructs the offered catalogue and compares the saved plan's seed/version, choices, signature and every canonical resolved parameter. It validates bounded visit dates and ownership, market totals, public-flow adjustments, private production/payroll, terminal predicates, exact storage/FIFO ownership and any itinerary cursor. Loading neither advances a day nor grants credit again. A bad load leaves the active host session intact. See [ordered itineraries](AUTOMATION.md) for route format and continuation rules.
+Current schema5 retains the exact draft, bounded history, all economic state and itinerary progress. Unsupported historical saves fail safely. See [save policy](SAVES.md).
 
-Fingerprints detect accidental damage and mismatches; they are not cryptographic authentication of a player-controlled save. Bounded first-visit records cannot prove an entire historical voyage sequence against a coordinated rewrite of otherwise plausible world state. The save format intentionally does not introduce a replay log or arbitrary quest counters. Valid older schema-1/2 saves remain supported byte-for-byte under their original rules. Development-only diagnostic exports retain the exact raw save and label recent activity as partial; they do not add history or change objective progress.
+## Verification
 
-## Verification and limits
-
-`GrandCommissionDraftTests` fixes ordered offers for seeds 42, -42, 99 and both signed-int32 extremes, checks three distinct offers from four templates, invalid choices/version/identity rejection, independent cultures and unchanged economic state across choices. A bounded 67-seed sample checks role targets, available recipes, distinct-town Mill/Bakery eligibility and connected routes.
-
-`GrandCommissionProgressTests` uses ordinary operations for funded distinct-town industry, Ascension timing, signed net reversal, fractional warehouse trades, NPC exclusion, commissioned-ship arrivals, paid-food recovery followed by decline, and reversible Company Value versus permanent visits. The draft/progress targeted run passed 16 tests. Local-save tests and the reproducible witness add continuation and terminal evidence. Actual Editor/player interactions and visual limitations are recorded separately in [Unity integration](UNITY.md) and the [playtest guide](PLAYTEST.md); passing a headless test is not visual verification.
-
-The [Task 2.2 acceptance record](TASK-2.2-VERIFICATION.md) covers pooled-storage integration, Harbor, acknowledgment, schema-3 continuation and diagnostic exports. Historical Task 2.1 captures and report outcomes below remain identified separately.
+See [current verification](REPOSITORY-CLEANUP.md) for executed tests and Unity evidence.
 
 ### Reproduce two actual winning commissions
 
@@ -103,12 +97,12 @@ The [Task 2.2 acceptance record](TASK-2.2-VERIFICATION.md) covers pooled-storage
 dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --grand-commission --check
 ```
 
-The compact `GrandCommissionWitness` executes ordinary construction, paid warehouse/ship purchases, funded production, physical transfers/voyages, sales, contracts and Mint operations. It does not edit world state, add grants or change economic parameters. This preserved report uses legacy facility storage and checks exact mid-voyage and terminal schema-2 round trips as well as the outcomes below. Separate pooled tests cover new schema-3 runs without rewriting this historical report.
+The compact `GrandCommissionWitness` executes ordinary construction, paid warehouse/ship purchases, funded production, physical transfers/voyages, sales, contracts and Mint operations. It does not edit world state, add grants or change economic parameters. It uses current circulation1/storage2/itinerary1 and exact mid-voyage/terminal schema5 restoration. A third journey replaces the first Bread leg with an enabled itinerary, saves during its voyage and wins with the same economic outcome.
 
 | Seed / charter | Mandatory selection | Result | Final company coins | Inventory purchase coins | Private wage coins | Private capital / public commission coins | Score |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| 99 / Merchant | All Harbors; A New Industry; Flour for the Bakers; Royal Institution | Victory day 18 | 648.6668 | 261.3331 | 24 | 880 / 400 | 2,164 |
-| 42 / Independent | All Harbors; Timber Chain; Royal Exporter; Royal Institution | Victory day 13 | 295.6668 | 302.9998 | 42 | 820 / 400 | 2,129 |
+| 99 / Merchant | All Harbors; A New Industry; Flour for the Bakers; Royal Institution | Victory day 18 | 622.6936 | 260.6664 | 24 | 880 / 400 | 2,162 |
+| 42 / Independent | All Harbors; Timber Chain; Royal Exporter; Royal Institution | Victory day 13 | 285.8935 | 296.9998 | 42 | 820 / 400 | 2,128 |
 | 99 / Merchant, idle control | Same commission as the first trial | Defeat day 180, 0/4 currently met | See witness output | 0 | 0 | 0 / 0 | Partial score only |
 
 The first run builds the Mill/Bakery in distinct towns, ships Flour to the food-source destination and transports extracted Silver to the public Mint. The second operates a timber chain and physically fulfills a finite export contract before its Silver issuance. These selected plans fit different seed offer sets. Their paid inputs, wages and construction compete with shipment liquidity; final cash is not a profit comparison between differently endowed charters. Known strategies finish well before day 180, leaving room to learn rather than proving all offered combinations easy or economically sustainable.
@@ -121,7 +115,7 @@ Use Expanding Economy, seed **99**, Merchant Company, StockOnly pricing and Asce
 2. At Southhaven, buy **four Bread** aboard Ledger, then sail to Westhaven. Step days until arrival. After each advance inspect the three facilities: disable the Mill and Bakery after their first funded batch, and the Mine after its first Silver batch. This preserves their actual output and avoids additional wages. An operational site with completed batch evidence remains valid when production is disabled.
 3. Save after the first voyage day, then Load/Continue the same slot. Inspect Journal and the voyage before another advance: nothing should gain an extra visit or batch during loading. At Westhaven, sell all four Bread. This is useful paid commerce, but it does not substitute for the drafted Flour destination.
 4. Sail to Eastport. Load **one Silver** from the owned Mine through a physical warehouse-to-ship transfer, then buy **one Furniture** from the local market. Sail to Northport. Through Company, fulfill **one Furniture** against the finite royal Furniture contract, then exchange the physically carried Silver at the completed Mint. Inspect the Journal's public-institution completion.
-5. At Northport buy **four Flour** aboard Ledger, sail to Southhaven, and sell all four there. The visit history now covers all towns, the distinct-town factories have their own funded batches, the food-source market has four net imported Flour, and the public Mint has an actual issuance. With the same step sequence the headless witness wins on day 18 with **648.6668 coins**. Results and Journal should show all four met; terminal save/load retains that frozen result.
+5. At Northport buy **four Flour** aboard Ledger, sail to Southhaven, and sell all four there. The visit history now covers all towns, the distinct-town factories have their own funded batches, the food-source market has four net imported Flour, and the public Mint has an actual issuance. With the same step sequence the headless witness wins on day 18 with **622.6936 coins**. Results and Journal should show all four met; terminal save/load retains that frozen result.
 
 These are reproducible player actions, not a claim that every UI platform has been exercised. Extra days, enabled production, different purchases or a different pricing/difficulty setting can change cash and completion day. Use the [actual Unity evidence](UNITY.md) to distinguish observed Editor/player journeys from this headless reference route.
 

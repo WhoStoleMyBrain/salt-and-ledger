@@ -1,161 +1,23 @@
-# Provisional roadmap
+# Roadmap
 
-This roadmap separates implemented milestones from proposals; it is not a fixed delivery commitment. Revisit future work based on prototype results, especially whether each system creates understandable economic decisions and useful automation. Actual test and player evidence belongs to each milestone's verification record.
+## Supported now
 
-| Phase | Planned scope | Status |
-| --- | --- | --- |
-| 0 | Project foundation, small architecture, automated tests, canonical content, and documentation pipeline | Implemented |
-| 0.5 | .NET 10 toolchain and minimal Unity integration using the existing simulation | Implemented; verification scope in [Unity integration](UNITY.md) |
-| 1 | Deterministic simulation, finite markets, shipping, automation, private industry, and a living economy slice | Tasks 1.1–1.9 add six goods, four towns, factories/logistics, material FIFO and opt-in household finance/welfare |
-| 2 | Scenario objectives, time limits, and replayable runs | Three handcrafted challenges, starting companies, terminal results and capped scoring; Task 1.8 adds exact world retry |
-| 3 | Constrained procedural world generation with economic viability checks | Task 1.8 preserves geography-only v1; Task 1.9 adds opt-in v2 role/capability packages and long-horizon structural/economic experiments |
-| 4 | Modifiers, curses, difficulty levels, and challenge combinations | Task 1.8 adds selectable Ascension 0/1; broader modifiers remain deferred |
-| 5 | Lateral meta progression through starting packages, alternative production capabilities, and new economic problems | Three replacement starting packages available immediately; persistent unlocks and broader progression remain planned |
-| 6+ | Advanced competitors, piracy, political systems, optional combat, and other features justified by gameplay testing | Deferred |
+- One deterministic Expanding Economy v3 game, current circulation1/storage2/itinerary1.
+- Grand Commission map preview, four-round objective draft, Journal, terminal outcomes and exact retry; optional Sandbox.
+- Seven goods, complementary town roles, paid household demand, wages, population/prosperity, expandable private chains and shared local stock.
+- Finite contracts, Silver-backed public Mint, up to three physical ships and ordered cargo itineraries.
+- Exact FIFO and separate cash/value/material-margin/wage/service accounting; schema5 local saves.
+- Map-first illustrated UI Toolkit host, Harbor/Industry/Fleet/Economy/Objectives and generated offline help.
 
-Recent integrated milestones:
+The repository consolidation retires historical playable modes, fixed challenges and separate prototype scenes. Reused deterministic generation and NPC algorithms remain. See [cleanup verification](REPOSITORY-CLEANUP.md).
 
-| Task | Delivered scope | Verification status |
-| --- | --- | --- |
-| 2.0 | Exact v3 economy, expandable production, public Mint, finite contracts, three-ship fleet and local saves | [Recorded acceptance](TASK-2.0-VERIFICATION.md) |
-| 2.1 | Four-round Grand Commission draft and live objective Journal | [Recorded acceptance](TASK-2.1-VERIFICATION.md) |
-| 2.2 | Harbor, shared company town stock, completion acknowledgment and diagnostic export | [Recorded acceptance](TASK-2.2-VERIFICATION.md) |
-| 2.3 | Ordered multi-stop cargo itineraries and guarded Fleet route planner | [Recorded acceptance](TASK-2.3-VERIFICATION.md) |
-| 2.4 | Versioned fees, reserve-protected municipal circulation, finite initial imports and measured A/B outcomes | [Recorded acceptance and counterexamples](ECONOMIC_CIRCULATION_REVIEW.md) |
-| 2.5 | Map-first command deck, Fleet/Economy workspaces, pure economic signals and a reusable illustrated maritime UI kit | Implemented; [acceptance evidence and limitations](TASK-2.5-VERIFICATION.md) |
+## Next measured work
 
-Phase 0 includes logs, planks, a sawmill, one production conversion, validation, a console demo, headless tests, and generated reference output. Phase 0.5 exposes the same behavior through a Unity component and integration tests. Task 1.1 adds one fixed location, multiple runtime building instances, an abstract 64-bit tick, enable/disable commands, deterministic production scheduling, atomic world steps, and structured immutable results. Task 1.2 extends that world with one finite market, one trader, separate goods/cash accounts, and explicit trading. Task 1.2b adds exact stock-sensitive pricing, read-only trade previews, and reproducible pricing comparisons. Task 1.3a adds two ports, one shared trader account, and one manually sailed cargo ship. Task 1.3b executes configurable route policies through the same maritime commands. Task 1.4 makes that world playable through a focused Unity UI Toolkit interface. All reuse the same canonical content, transaction/pricing calculations, and production operation.
+1. Human playtests of the full commission journey and clear remedies for food, payroll and transport blockages.
+2. Improve route and Industry discoverability where observed use warrants it; retain snapshot-bound previews and passive inspection.
+3. Investigate long-horizon productive and circulation counterexamples using bounded matched policies before any economic change.
+4. Maintain current save integrity, performance and readable layouts at supported resolutions/scales.
 
-## Task 1.1 scope and remaining questions
+## Deferred proposals
 
-The world example uses two sawmills and configurable initial stock. It advances five ticks, demonstrates controls and resource exhaustion, and compares repeated runs including reversed building input order. Tests cover scheduling, scarcity, state ownership, and failures; actual Unity verification and its limits are recorded in [Unity integration](UNITY.md).
-
-The legacy one-batch-per-abstract-tick schedule remains intact. Task 1.5 adds a separate provisional daily cadence and explicit consumption phase rather than changing that API. Allocation fairness and unmodeled labor/operating costs remain open; Task 1.7 attributes actual private input-material expenditure. Fixed priority/ID ordering can starve later facilities. Representative small-world measurements do not establish large-map scalability. That early phase did not promise save/replay compatibility or concurrent access. Task 2.0 adds the bounded regional save contract; concurrent mutation remains unsupported.
-
-## Task 1.2: finite markets, trading, and accounting
-
-Implemented: positive fixed bid/ask quotes, nonnegative 64-bit integer cash, separate inventories, ordered all-or-nothing buy/sell commands, four explicit stock/funds rejections, and complete exceptional tick rollback. The existing world inventory is market stock, also used by production; public-market ownership of factories is a prototype assumption.
-
-The `--market` demo exposes goods/cash changes across four ticks, checks its documented final state, and compares repeated/reordered setups. Tests verify accounting, conservation, numeric boundaries, ordering, immutability, culture independence, and rollback. A Unity Edit Mode test exercises a sale feeding production and a later purchase using the staged DLL. [Unity integration](UNITY.md) records actual execution and limits; [Mechanics](MECHANICS.md) specifies the implemented rules.
-
-Task 1.2's fixed quotes remain an unchanged experimental baseline alongside the dynamic alternatives below. Its single-location demo remains unchanged by later milestones and has no extraction or consumption schedule. Task 1.5 introduces those explicit physical flows only in the regional scenario; hidden stock/cash replenishment remains excluded.
-
-## Task 1.2b: dynamic market pricing experiments
-
-Implemented: selectable linear and piecewise scarcity pricing alongside the fixed baseline; exact marginal totals for bulk orders; read-only quotes/previews using execution's calculation; immutable historical prices; and a bounded summation algorithm for large quantities. Prices follow authoritative inventory through trading and production, with no independent price clock. Whole-tick rollback and finite account constraints remain intact.
-
-The `--pricing` runner compares high/moderate/severe stock conditions, production, repeated trades, finite liquidity, and numeric limits. It emits a deterministic JSON report with a read-only freshness check. Tests cover marginal sums, preview agreement, bounds, rounding, order splitting, closed inventory cycles, failures, and fixed-mode compatibility. The [experiment report](PRICING_EXPERIMENTS.md) contains observed comparisons and a provisional recommendation; [Unity integration](UNITY.md) records the verification actually performed.
-
-These implementations establish pricing correctness under the stated contracts, not final balance or enjoyable gameplay. Clamping and integer rounding can flatten responses; the scarcity knee can amplify late purchases; finite cash may prevent an otherwise attractive trade. Targets smaller than 8 do not expose a distinct scarcity branch. The relationship between price depth and the existing production conversion still needs calibration.
-
-## Task 1.3a: two ports, one ship, manual trading
-
-Implemented: one `MaritimeWorldState` owns two independent finite markets, a shared trader cash account, one ship with capacity-limited cargo, and one atomic global tick. Buy/sell commands require the starting dock. Manual departure uses one fixed bidirectional connection, with travel progressing once at the end of each tick, including departure. Arrival permits destination trading on the following step. Each port produces locally using the existing operation; both use existing fixed, linear, or scarcity pricing and the shared transaction calculator.
-
-The `--shipping` demo compares 2-log and 6-log outbound shipments followed by identical 2-plank returns. Both end after six successful ticks with empty cargo; realized gross profits are 69 and 119 under the documented parameters. The runner checks exact balances, capacity rejection, illegal transit trading, repeatability, and reversed port input order. [Manual shipping comparison](SHIPPING_DEMO.md) records parameters, timing, measurements, and limits. [Unity integration](UNITY.md) records the integration checks actually executed.
-
-Cargo uses one unit per item; the ship is the trader's sole warehouse. The ports are handcrafted, information is perfect, production is market-owned, and travel has no costs or risk. Only one trader and one ship are supported. Those are provisional scope choices, not final balance or gameplay claims.
-
-## Task 1.3b: configurable trade-route automation
-
-Implemented: immutable two-port policies with one distinct commodity per direction, shipment target/minimum, worst marginal buy/sell limits, a cash reserve, and optional empty return. Stateless evaluation selects the largest feasible quantity using bounded search over existing exact calculations, then returns ordinary commands or explicit wait/pause reasons. Snapshot-bound execution prevents stale buy-and-depart decisions and preserves manual timing, account conservation, and whole-tick rollback. Host enablement/reconfiguration adds no mutable route state or second clock.
-
-The `--automation` demo reproduces the six-log manual expedition's 119 gross profit and the restrictive two-log expedition's 69, both over six ticks with identical manual states. A zero-liquidity destination instead produces three unchanged waits, then a bounded stop at tick 5 with all six logs retained. The [automation guide](AUTOMATION.md) records parameters, measurements, input-count conventions, exact waiting rules, and limits. Existing pricing reports and canonical content remain unchanged. [Unity integration](UNITY.md) records actual integration verification.
-
-This policy does not forecast destination prices, guarantee recovery, optimize strategy, or resolve mixed cargo. Finite markets can remain blocked indefinitely; the host runner limits observation and reports no progress without repairing the economy. Mechanical equivalence and fewer prescribed action batches do not establish enjoyable or balanced gameplay.
-
-## Task 1.4: first playable Unity Trading Lab
-
-Implemented: a separate TradingLab scene with a two-port map, ship/cargo/cash status, canonical market information, exact trade previews, manual trading/sailing, explicit tick controls, editable outbound automation limits, bounded execution, and a finite recent-activity display. The Standard, Restrictive, and No destination cash scenarios expose the existing comparison outcomes. Pausing, applying policy edits, and inspecting markets leave time and the economy unchanged; reset clearly starts a new test world. Bootstrap remains the production smoke.
-
-The [playtest guide](PLAYTEST.md) provides a manual expedition, automated comparisons, a price-limit recovery, and a liquidity-blocked diagnosis. [Unity integration](UNITY.md) records actual scene/control, visual, and player verification separately. This is a working host for experiments, not proof of usability, economic sustainability, final balance, or a complete game.
-
-## Task 1.5: living archipelago
-
-Implemented: one regional owner with instant revisioned trade/departure, daily atomic advancement, four finite towns, scheduled extraction/processing, physical consumption, three independently owned ships/accounts, integer geographic routes, and bounded same-day policies. The map-first ArchipelagoLab exposes port/ship selection, confirmed voyages, smooth presentation, pause/step/speed controls, exact trading, and fully editable outbound/return rules. Bootstrap, TradingLab, and legacy examples remain available.
-
-The [sixty-day report](LIVING_ARCHIPELAGO.md#reproducible-sixty-day-experiments) demonstrates recurring NPC shipments and materially different player strategies under one starting world. It also reveals unmet demand at unserved towns, price-floor waits, idle production ceilings, and competition that reduces NPC deliveries. These are measured limitations, not reasons for hidden subsidies or a claim that the economy is balanced. [Unity integration](UNITY.md) records actual tests, visuals, and player checks.
-
-## Task 1.6: commerce, industry, and economic challenge
-
-Implemented: a centered contextual trading overlay with authoritative exact totals and average execution prices; six canonical goods and interconnected food/timber chains; company accounts; private facilities with finite storage; real construction payments; local procurement and surplus-sale policies; and physical ship/warehouse transfers. `EnterpriseScenario` supplies the current ArchipelagoLab and the new deterministic report. `LegacyContent.Timber` reuses canonical definition objects to preserve older demonstrations and the unchanged Task 1.5 report.
-
-The optional Coastal Supply Charter requires 24 net Bread supplied to Eastport by day 60 with at least 100 company cash. Completed owner transactions determine progress; target-market buybacks subtract credit. The same authoritative clock controls production, voyages, and the deadline. Merchant and manufacturing/shipping trials succeed on days 29 and 46 respectively; idle play fails at day 60. The unlimited sandbox remains available.
-
-Five ninety-day experiments reconcile all company/market cash and six-good physical flows, recording capital, purchases, actual revenue, private output, and held goods separately. They show different outcomes rather than equalizing strategies: workshop investment leaves cash 356, local food production 705, and manufacturing/shipping 1,637 from an initial 600. These are cash observations with different unsold assets, not ranked profitability claims. See [Commerce and industry](ENTERPRISE.md) for assumptions, rules, and the report; [Unity integration](UNITY.md) records actual verification scope.
-
-Task 1.6 deliberately deferred historical acquisition-cost attribution. Task 1.7 implements it below; the earlier report's fields and measured strategies remain unchanged. Current market quotes are never used as fabricated acquisition history. Scenario balance, long-horizon liquidity, and human usability remain open.
-
-## Task 1.7: the complete run experience
-
-Task 1.7 introduced a main menu, challenge/charter setup, pause/navigation, confirmed active-run replacement or abandonment, terminal results, and retry without relaunching. Three replacement charters trade liquidity, initial private industry, cargo, capacity, and location. All are available immediately; that milestone added no stacking upgrades, saves, persistent unlocks or ascensions. Task 1.8's narrow construction modifier is described below. [Runs](RUNS.md) records the exact initial assets and their limited replacement-quote comparisons.
-
-Coastal Supply preserves its signed net-delivery protection. Regional Relief counts actual scheduled Bread consumption across the region, including public and NPC contributions. Enterprise Ambition requires private Bread production, attributed realized material gross margin, and cash. All use the same authoritative clock, day-60 deadline, terminal freeze, and transparent capped results score. The complete-run experiment demonstrates active success and idle failure for every challenge/charter pairing; it does not claim every strategy is viable or packages are equally advantaged.
-
-Industrial policies connect private production to real loading, voyages, destination sales/unloading, and optional useful return inputs. Explicit stages support same-good directional legs; finite stock, warehouse reserves, exact price constraints, cash, capacity, and ownership remain enforced. A four-action dockside bound removes artificial transaction-day delays while preserving one clock. Manual/automatic comparisons reconcile identically, and blocked shipments retain cargo.
-
-FIFO open acquisition lots retain exact historical paid basis through partial sales, physical transfers, and private transformations. Structured per-operation events and authoritative aggregates distinguish inventory purchases, released and held basis, sale revenue, construction capital, and liquid cash. Starter grants keep provenance and zero paid expenditure. This is material-cost accounting, not a complete model of labor, depreciation, freight fees, taxes, or realizable asset values.
-
-The offline in-game encyclopedia consumes the generated canonical reference and shared authored help; the external MkDocs site separates player help from development evidence. Canonical recipes are not duplicated in the host. GitHub Pages preparation remains separate from publishing status, documented in [Website](WEBSITE.md). [Unity integration](UNITY.md) records actual Editor/player checks and remaining platform limitations rather than treating a headless test as visual verification.
-
-The new `--runs` and `--industrial-logistics` reports are separate from historical pricing, archipelago, and enterprise regression fixtures. [Automation](AUTOMATION.md#reproducible-industrial-shipping-comparison) explains actual shipment/input reductions and finite blockage. The complete-run and reference changes add no procedural generation, general route programming, fleet optimization, multiplayer, or online service.
-
-## Task 1.8: seeded geography, Ascension 1 and readability
-
-The same four-town economy now supports Classic or versioned seeded geography. Pure bounded integer generation changes positions and the six direct route distances without altering roles, resources, prices, charters or objectives. Immutable run identity captures world, seed/version, difficulty, challenge and charter; Retry Same World restores it while an explicit reroll returns to preview before starting. Classic/Ascension 0 APIs and historical benchmark files remain regression fixtures.
-
-Ascension 1 delays new player construction by two complete days after payment, with no automatic facility operation before completion and a full interval before the first batch. Granted starter facilities remain operational, preserving the Industrial Consortium's real advantage under this particular modifier. Construction dates, zero-cash completion events and accounting live within the existing atomic owner. No additional ascension, adaptive rescue or persistent progression is included.
-
-Four layout-aware text scales cover ArchipelagoLab, with a 17 px Default body and local presentation-preference persistence. Industry summaries and visible recommended drafts help explain stock gaps, timing, policies, real costs and physical delivery waits. [Seeded runs](SEEDED_RUNS.md) records generation constraints and experiment methodology; [Unity integration](UNITY.md) separates actual Editor/player verification from headless checks. Generated-world validity and benchmark performance are evidence for a later tuning pass, not proof of universal strategy viability or human usability.
-
-## Task 1.9: living cities and economic specialization
-
-Implemented as explicit opt-in v2: one finite household account per town; exact paid Bread/Furniture consumption with separate stock/funds shortfalls; wages paid only for completed funded public/private batches; bounded population/prosperity and durable-demand hysteresis; generated complementary industries and authoritative private eligibility; and a day-90 sustained city-recovery challenge. Private wages are expensed separately from historical material FIFO. Classic, geography-only v1, old challenges, Ascension 0/1 and golden reports remain regression fixtures.
-
-The [living-city report](LIVING_CITIES.md) compares 36 one-year worlds, two five-year controls, 18 recovery trials and nine controlled diagnoses. Its optional deep sweep extends 25 seeds to 300 three-year comparisons and two ten-year controls. Real merchant and manufacturing/employment choices achieve recovery victories, while long-run worlds expose food-distribution and payroll deadlocks despite conserved cash. Those failures are evidence to investigate, not justification for hidden support or claims of full balance.
-
-Town UI exposes separate household/market money, wages, needs, population/prosperity and capabilities while grouping detail away from ordinary trade controls. Actual Editor/player rendering, interactions and remaining verification limits belong to [Unity integration](UNITY.md), not the numerical report. Pages remains manual-only.
-
-## Recommended next milestone: observed playtesting
-
-Proposed next assignment: observe players from application startup through a completed result without source-code explanations. Ask them to select a charter, interpret the objective and bulk execution price, choose between a shipment and a factory, configure an entire industrial route, and diagnose a blocked shipment. Have them use the encyclopedia and explain the difference between liquid cash, granted assets, held basis, sale revenue, material margin, and construction spending.
-
-Record whether ownership, actual consumption versus delivery, route stage, deadlines, abandonment, and retry are understandable. Compare attention required by merchant and industrial approaches without treating fewer commands as proof of enjoyment. Review whether Independent Traders' larger hold and Industrial Consortium's lower liquidity create meaningful choices under different objectives.
-
-Use the Task 2.5 map, deck and focused workspaces for these observations. Pair confusion with focused presentation fixes, then isolate any later circulation or distribution proposal against the [Task 2.4 measured controls](ECONOMIC_CIRCULATION_REVIEW.md). Bounded fees and municipal review already exist in modern runs; they did not establish universal long-run recovery. Investigate unfunded employers, stock ceilings, input shortages, unsold food and capital opportunity cost before changing several parameters. Retain historical accounting, recovery and idle-control evidence. Human playtesting and resulting revisions remain proposed work, not completed user-research evidence.
-
-## Other follow-up work
-
-1. **Verify the intended player backend and stripping configuration.** Run the Bootstrap smoke scene in an IL2CPP player if that is the intended shipping backend, recording platform and stripping level. Diagnose concrete compatibility failures before adding preservation rules.
-2. **Calibrate the enterprise network and run choices.** Vary existing construction costs, procurement limits, source thresholds, production/consumption schedules, sale floors, and finite initial liquidity only in a separately scoped experiment. Keep challenge/charter feasibility and idle-failure checks. Distinguish stock shortage, distribution failure, policy blockage and liquidity exhaustion without hidden money. Existing reference Company Value is not a universal score normalization or a liquidation guarantee.
-3. **Measure simulation cost before enlarging the world.** Snapshot copying and result allocation favor clear atomicity. Live cost lots depend on held acquisitions; bounded event journals do not imply a constant bound on all inventory-lot counts. Extend representative performance/allocation measurements before adding larger maps or fleets.
-
-These follow-ups are proposals, not selected final economic rules. Keep randomness confined to explicit versioned geography/economic initialization until another mechanic has its own approved scope and reproducible design.
-
-## Task 2.0: integrated expanding economy
-
-Task 2.0 combines productive expansion and strategic company development in one opt-in v3 milestone. Its implementation includes exact proportional paid needs, all original player-buildable industry kinds and repeatable sites, the Silver Mine and unique public Royal Mint, finite outside contracts, a bounded three-ship player fleet, reference Company Value, complete local save/restore and three distinct objectives. [Expanding Economy](EXPANDING_ECONOMY.md) records the rules and provisional parameters. Classic/v1/v2 remain historical controls.
-
-Acceptance requires exact headless/continuation tests, unchanged historical reports, bounded comparative/deep economic evidence, and actual Editor/player journeys. [Unity integration](UNITY.md) is the evidence record; writing code alone does not establish completion. Further work should follow measured bottlenecks and observed usability. Task 2.0 did not add banking, debt, unrestricted fleets, taxes, additional metals/ascensions, online saves or a route optimizer. The later Task 2.4 introduces only its explicitly versioned municipal mechanism and fees.
-
-## Task 2.1: the Grand Commission
-
-Task 2.1's focused [Grand Commission](GRAND_COMMISSION.md) builds on this v3 milestone: four deterministic category rounds, three choices from each four-template pool, and four compulsory goals frozen into run identity. Authoritative progress measures funded private production, actual owned-ship visits, reversible destination-specific net sales and civic/capital outcomes. The dedicated Journal explains exact values, permanent accomplishments and remaining blockers; the map HUD stays compact. Schema-2 drafted saves retain the resolved plan and bounded history while valid schema-1 saves remain supported.
-
-Two small real-command winning witnesses and an idle failure provide feasibility evidence. This objective pass does not retune the economy or run another large long-horizon sweep. Actual UI/player evidence is recorded separately in [Unity integration](UNITY.md). Captain, independent charter draft, curse, blessing and post-result sandbox designs remain deferred. Observe whether players can read town dependencies, select a meaningful four-goal combination and explain regressing conditions before adding those systems.
-
-## Tasks 2.2–2.4: physical operations and measured circulation
-
-[Harbor](HARBOR.md) puts public stock, selected cargo and owned local stock in one exact trade/transfer surface. Independently versioned pooled storage supports real local chains while old saves retain separate warehouses. Completion acknowledgment and read-only diagnostic export make frozen outcomes inspectable.
-
-[Cargo itineraries](AUTOMATION.md#ordered-cargo-itineraries) support two to four ordered stops, bounded Buy/Sell/Load/Unload commands, mixed holds, finite daily work and exact continuation. The planner drafts policies; it does not discover routes, manufacture stock or correct a blocked economy.
-
-[Measured circulation](ECONOMIC_CIRCULATION_REVIEW.md) adds modern economic rules1 with explicit sale fees and one reserve-protected municipal review. Exact accounts and matched ordinary-command comparisons show both benefits and costs, including surviving shortages and operating losses. Earlier reports and schemas remain historical controls.
-
-## Task 2.5: map-first command deck and illustrated maritime UI
-
-The bounded presentation milestone adds Map/Trade/Industry/Fleet/Economy/Objectives navigation, a collapsible contextual deck, current-state food and production signals, selected-ship route inspection and a shared world-to-viewport transform. Existing Harbor, Industry and route execution remain authoritative. Deep-sea chart surfaces, parchment management panels and a coherent commodity/status icon family form a reusable style kit; they do not replace real controls with concept art.
-
-The implementation is in place. The [Task 2.5 verification record](TASK-2.5-VERIFICATION.md) audits all 21 criteria and distinguishes actual Editor/Windows Mono journeys, target-resolution/text-scale captures, exact inspection/save checks and any unverified integration points. See the [UI design system](UI_DESIGN_SYSTEM.md) for the shared contracts. The task adds no economy retuning, save migration, new commodity or playable camera controls.
-
-Captain or character choices, curse/blessing tiers, deeper forecasting, larger maps and zoom/pan/minimap controls remain **deferred design proposals**. None is a placeholder mode or implied current feature. Any forecasting proposal must distinguish assumptions from facts and cannot promise future prices. First observe whether players can identify a real blocker, reach the correct action and return to the same town or ship without losing context.
+Characters/captains, independent charter drafting, curses/blessings, additional commodities, larger worlds, camera zoom/pan/minimap and deeper visual polish remain design possibilities. They are not implemented features, placeholder menu options or commitments to a generic quest/plugin framework. Future additions must preserve one authoritative simulation and explicit versioned identities.

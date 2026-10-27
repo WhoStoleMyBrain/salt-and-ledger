@@ -20,7 +20,6 @@ These explanations are shared with the offline in-game encyclopedia. For exact d
 - [Financial reports and the ledger](mechanics/help_finances.md) — Separate cash, revenue, attributed costs, realized margin, and capital\.
 - [Commission and direct a fleet](mechanics/help_fleet_expansion.md) — Up to three owned ships share cash but keep separate cargo and routes\.
 - [The Grand Commission and Objectives Journal](mechanics/help_grand_commission.md) — Read the seeded map, draft four mandatory goals, and track real economic accomplishments\.
-- [Industrial shipping automation](mechanics/help_industrial_routes.md) — Connect owned production to physical transport and a chosen destination\.
 - [Market liquidity](mechanics/help_liquidity.md) — Stock and money are separate finite limits\.
 - [Map, command deck, pause and navigation](mechanics/help_navigation.md) — Inspect, pause, and begin another run without accidentally advancing the economy\.
 - [Company, market, and private ownership](mechanics/help_ownership.md) — One company cash account supports distinct ship cargo and private warehouses\.
@@ -31,6 +30,6 @@ These explanations are shared with the offline in-game encyclopedia. For exact d
 - [External trade and the public Royal Mint](mechanics/help_royal_economy.md) — Finite outside purchases import cash; bounded Silver\-backed issuance creates it\.
 - [Save, Continue and exact retry](mechanics/help_saves.md) — Local explicit saves preserve an economic run; retry starts its identity fresh\.
 - [Results and scoring](mechanics/help_scoring.md) — Read the explicit score breakdown alongside the actual economy\.
-- [Seeded worlds and exact retries](mechanics/help_seeded_worlds.md) — Choose geography\-only v1 or Living Cities v2 economic roles, then retry the exact run identity\.
+- [Seeded worlds and exact retries](mechanics/help_seeded_worlds.md) — Inspect the seeded economic map and retry the exact current run identity\.
 - [Shipping and voyages](mechanics/help_shipping.md) — Goods travel aboard a real ship between directly connected towns\.
 - [Buying and selling](mechanics/help_trading.md) — Exchange goods with a town using the company's finite cash account\.

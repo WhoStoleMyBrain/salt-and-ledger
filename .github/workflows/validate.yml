@@ -1,4 +1,4 @@
-name: Validate foundation
+name: Validate current game
 
 on:
   push:
@@ -41,42 +41,11 @@ jobs:
         run: dotnet build SaltAndLedger.sln --configuration Release --no-restore
       - name: Test simulation
         run: dotnet test SaltAndLedger.sln --configuration Release --no-build
-      - name: Run data-to-simulation demonstration
-        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json
-      - name: Run deterministic world demonstration
-        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --world
-      - name: Run finite market demonstration
-        # The market demo also asserts repeatability and its documented final state.
-        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --market
-      - name: Verify pricing experiments and report freshness
-        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --pricing --check
-      - name: Run manual shipping comparison
-        # Checks measured balances, empty final cargo, repeatability, and reversed port setup.
-        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --shipping
-      - name: Run configurable route automation comparison
-        # Checks marginal limits, bounded waiting, determinism, and manual-equivalent states.
-        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --automation
-      - name: Verify living archipelago experiments and report freshness
-        # Sixty-day strategies reconcile physical flows and cash; repeat, reversed setup, and culture must match.
-        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --archipelago --check
-      - name: Verify enterprise experiments and report freshness
-        # Ninety-day industry strategies plus deadline-bound challenge trials; exact cash/physical reconciliation.
-        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --enterprise --check
-      - name: Verify industrial logistics and manual equivalence
-        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --industrial-logistics --check
-      - name: Verify complete runs, charters and financial reconciliation
-        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --runs --check
-      - name: Verify seeded worlds and both ascensions
-        # Stable 25-seed sample plus Classic; deeper 125-seed sweeps remain opt-in.
-        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --seeded-runs --check
-      - name: Verify living-city accounts and long-horizon report
-        # Three v2 seeds, pricing A/B, both ascensions, 365-day strategies and finite diagnostic worlds.
-        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --living-cities --check
+      - name: Verify complete Grand Commission journeys
+        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --grand-commission --check
       - name: Verify expanding economy and exact continuation
         # The full v3 seed/policy/development matrix is bounded; deep sweeps remain opt-in.
         run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --expanding-economy --check
-      - name: Verify monetary reinvestment experiment
-        run: dotnet run --project samples/SaltAndLedger.Demo --configuration Release --no-build -- data/content.json --expanding-economy --reinvestment --check
       - name: Prepare Unity integration assets
         run: python tools/prepare_unity.py
       - name: Check Unity integration asset freshness
@@ -84,7 +53,7 @@ jobs:
 
   economic-circulation:
     runs-on: ubuntu-latest
-    # Separate from the 20-minute historical gate: fixed 80-world matrix, no deep sweep.
+    # Separate from the current game gate: fixed 80-world matrix, no deep sweep.
     timeout-minutes: 15
     env:
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"

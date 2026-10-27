@@ -8,7 +8,7 @@ title: "Ascension 1: Slow Foundations"
 
 New player\-owned factories need two complete economic days to become operational\.
 
-Select Ascension 0: Normal or Ascension 1: Slow Foundations before starting\. Difficulty belongs to this run; it is not an unlock, prestige reward, stacking curse or permanent bonus\. Ascension 0 preserves instant construction and the Classic baseline\.
+Select Ascension 0: Normal or Ascension 1: Slow Foundations before starting\. Difficulty belongs to this run; it is not an unlock, prestige reward, stacking curse or permanent bonus\. Ascension 0 preserves instant construction without a construction delay\.
 
 At Ascension 1, ordering a new player facility pays its full cost immediately and creates an under\-construction site without advancing the day\. Two successful AdvanceDay operations complete it\. The site skips automatic procurement, production and sales throughout both days, including completion day's automatic phases\.
 

@@ -18,8 +18,8 @@ Modern circulation Coverage pricing protects Furniture with a two\-good target f
 
 ## Related entries
 
+- [Ordered cargo itineraries](../mechanics/help_cargo_itineraries.md)
 - [Historical inventory cost](../mechanics/help_cost_basis.md)
-- [Industrial shipping automation](../mechanics/help_industrial_routes.md)
 - [Buying and selling](../mechanics/help_trading.md)
 
 [All player mechanics](../catalog-mechanics.md) · [All content](../index.md)

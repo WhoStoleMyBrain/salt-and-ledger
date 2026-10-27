@@ -10,7 +10,7 @@ Goods travel aboard a real ship between directly connected towns\.
 
 Departing changes the ship's voyage immediately without spending a day\. Advancing economic days progresses travel\. After arrival is committed, manual dockside actions are available at the destination\.
 
-Duration follows the route's distance and the ship's configured speed\. Classic uses authored distances; seeded geography derives all six direct distances from the generated integer positions\. Distances are abstract chart units, not coastline\-aware sailing paths\. Map drawing and playback speed never alter travel or economic calculations\. You cannot trade or transfer while sailing\.
+Duration follows the route's distance and the ship's configured speed\. Seeded geography derives all six direct distances from the generated integer positions\. Distances are abstract chart units, not coastline\-aware sailing paths\. Map drawing and playback speed never alter travel or economic calculations\. You cannot trade or transfer while sailing\.
 
 There are currently no simulated ship\-crew wages, fuel, voyage fees or transport losses\. Living Cities models production wages only\. Unmodeled transport expenditure is not a claim that shipping has no real economic cost\.
 
@@ -18,7 +18,6 @@ There are currently no simulated ship\-crew wages, fuel, voyage fees or transpor
 
 - [Cargo and storage capacity](../mechanics/help_capacity.md)
 - [Ordered cargo itineraries](../mechanics/help_cargo_itineraries.md)
-- [Industrial shipping automation](../mechanics/help_industrial_routes.md)
 - [Buying and selling](../mechanics/help_trading.md)
 
 [All player mechanics](../catalog-mechanics.md) · [All content](../index.md)

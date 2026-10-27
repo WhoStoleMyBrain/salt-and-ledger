@@ -8,13 +8,13 @@ title: "Map, command deck, pause and navigation"
 
 Inspect, pause, and begin another run without accidentally advancing the economy\.
 
-Start from the main menu, choose New Run or unlimited Sandbox, then review the challenge, charter, Classic, seeded v1, Living Cities v2 or Expanding Economy v3 preview, and Ascension 0 or 1\. Setup, seed editing and reference browsing do not advance economic time or reroll a started world\.
+Start from the main menu, choose New Run or unlimited Sandbox, then review the challenge, charter, Expanding Economy v3 map preview, and Ascension 0 or 1\. Setup, seed editing and reference browsing do not advance economic time or reroll a started world\.
 
 Select a town or ship on Map to open the compact bottom command deck\. Collapse or reopen it without changing the economy\. Map, Trade, Industry, Fleet, Economy and Objectives are working modes\. Trade and Industry reuse their existing controls; Fleet opens the selected owned ship's route planner; Economy leads to full city accounts and Ledger; Objectives opens the real Journal\.
 
 Switching modes and opening management views pauses playback\. Inspection, route overlays and Back never trade, move stock, advance a day or enable automation\. Harbor, Industry and planner return to their previous context with the relevant town and ship retained\. Use Play or Next day deliberately; the pause menu's explicit Resume restores playback only if it was running when pause opened\.
 
-Escape respects the active confirmation or Harbor/Industry overlay first\. It returns Fleet, Economy or a context chooser to Map, returns detailed screens to their parent, and opens pause from ordinary Map play\. Details / log keeps the full Overview, Market and Controls inspector, historical routes, activity and run identity\. Company is reachable through pause or Fleet's Company / shipwright action\.
+Escape respects the active confirmation or Harbor/Industry overlay first\. It returns Fleet, Economy or a context chooser to Map, returns detailed screens to their parent, and opens pause from ordinary Map play\. Details / log keeps the full Overview, Market and Controls inspector, activity and run identity\. Company is reachable through pause or Fleet's Company / shipwright action\.
 
 Restart, abandonment, return to menu, and exit protect unsaved active progress with confirmation\. Exit closes the standalone game\. Save explicitly before leaving; Continue or Load restores a valid local saved run, while Retry Same World creates its initial state again\.
 
@@ -26,7 +26,6 @@ New Run defaults to Expanding Economy v3 and the Grand Commission\. Advanced / L
 
 - [Ordered cargo itineraries](../mechanics/help_cargo_itineraries.md)
 - [Challenges and run outcomes](../mechanics/help_challenges.md)
-- [Industrial shipping automation](../mechanics/help_industrial_routes.md)
 - [Production and scheduling](../mechanics/help_production.md)
 - [Text size and readable controls](../mechanics/help_readability.md)
 - [Seeded worlds and exact retries](../mechanics/help_seeded_worlds.md)

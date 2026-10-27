@@ -16,7 +16,7 @@ class PlayerHelpTests(unittest.TestCase):
     def test_all_required_player_topics_exist_and_share_the_same_prose(self):
         expected = {"help_trading", "help_prices", "help_liquidity", "help_capacity",
                     "help_shipping", "help_ownership", "help_production", "help_factories",
-                    "help_procurement", "help_industrial_routes", "help_cost_basis",
+                    "help_procurement", "help_cost_basis",
                     "help_finances", "help_charters", "help_challenges", "help_scoring",
                     "help_navigation", "help_seeded_worlds", "help_ascension", "help_readability",
                     "help_city_accounts", "help_city_needs", "help_city_welfare",

@@ -20,7 +20,6 @@ Fleet mode lists owned ships beside the same map and a selected\-ship inspector\
 
 - [Ordered cargo itineraries](../mechanics/help_cargo_itineraries.md)
 - [Company Value and operating results](../mechanics/help_company_value.md)
-- [Industrial shipping automation](../mechanics/help_industrial_routes.md)
 - [Company, market, and private ownership](../mechanics/help_ownership.md)
 - [Shipping and voyages](../mechanics/help_shipping.md)
 

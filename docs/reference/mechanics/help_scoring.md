@@ -8,13 +8,11 @@ title: "Results and scoring"
 
 Read the explicit score breakdown alongside the actual economy\.
 
-Results identify the challenge, charter, world mode, seed and generator version, ascension, outcome, completed day, objective progress, cash, actual revenue, attributed cost and margin, capital spending, factories, produced goods, deliveries, and remaining holdings\.
+Results identify the complete run, outcome, day, four objective cards, company cash, reference value and attributed accounts\. Compare only matching seed, charter, difficulty, pricing, rules and exact drafted commission\.
 
-Score combines four capped components: up to 500 objective points in proportion to completed progress; 1,000 points for victory; 10 points per remaining deadline day on victory, capped at 600; and one solvency point per 10 cash, capped at 100\. Fractional points round down\. Enterprise Ambition uses the lower of its production and margin progress for objective points\. Total score cannot exceed 2,200; repeated transaction count earns no separate points\. City Recovery objective progress is the lower of paid baseline\-protected fulfillment and completion of its six\-opportunity observation window; victory also checks population, prosperity and cash\.
+Each card uses its least\-complete condition percentage, capped between0 and100\. Objective points equal floor\(500 times the sum of four card percentages divided by400\)\. Victory still requires all four goals and100 liquid coins\.
 
-Compare results only within the same challenge, starting charter, ascension and exact world identity\. Grand Commission identity also includes its draft version and exact selected objectives\. Different seeds or selections are not equivalent leaderboard placements, and packages have different endowments\. Retry Same World restores the original configuration; New World / Reroll changes the draft seed and previews it before a separate start\.
-
-Grand Commission objective points are floor\(500 times the sum of its four card percentages divided by 400\)\. A card uses its least\-complete condition, with each bar capped from zero to 100\. Victory still requires all four cards currently met and 100 company coins by day 180; partial points cannot award success\. Permanent accomplishments and currently met conditions are distinguished in the Objectives Journal\.
+Victory adds1000 points, remaining deadline days add10 each capped at600, and each10 liquid company coins adds one solvency point capped at100\. Fractions round down; total score is at most2200\. Transaction counts earn no extra points\.
 
 ## Related entries
 

@@ -1,6 +1,6 @@
 # Harbor and company town stock
 
-New Run starts with Expanding Economy v3 and the Grand Commission. Inspect the full seeded map before drafting; valid seed edits change the preview, while invalid text leaves the last valid map intact. Advanced / Legacy retains Classic, seeded-v1 and Living Cities-v2. Sandbox remains a separate explicit choice. Loading or retrying preserves the saved run's original rules.
+New Run starts with Expanding Economy v3 and the Grand Commission. Inspect the full seeded map before drafting; valid seed edits change the preview, while invalid text leaves the last valid map intact. Sandbox remains a separate explicit choice. Loading or retrying preserves the saved run's original rules.
 
 ## One harbor work surface
 
@@ -11,7 +11,7 @@ Open Harbor from the town's visible action or by selecting a ship and right-clic
 - Ship orders use whole cargo units. Local stock purchases/sales can use fractional quantities. Presets edit a proposal; they do not execute it. Confirming uses the current authoritative snapshot, so a stale proposal must be refreshed.
 - Missing inputs, wage funds, storage, market liquidity, price limits, automation and construction each require a different remedy. Buying inputs cannot solve payroll shortage; household wealth is not the same account as market purchasing funds.
 
-Industry remains the place to construct facilities and control their individual production/procurement/sales policies. In pooled runs, each local facility uses the same company stock. In legacy runs, the warehouse selector shows actual separate facility stores; loading an old save never merges them.
+Industry remains the place to construct facilities and control their individual production/procurement/sales policies. Each local facility uses the same company stock.
 
 New v3 runs also link the selected owned ship to [Fleet → Route planner](AUTOMATION.md#ordered-cargo-itineraries). Plan ordered market buys/sales and company-stock loads/unloads through two to four actual towns while retaining mixed cargo. Harbor still handles ordinary manual transactions; choose **Manual control** before submitting ship orders. Pausing the route retains its cursor, voyage and cargo. Planner **Inspect harbor** returns to this same transaction surface; remote information never grants transfer permission.
 
@@ -29,11 +29,9 @@ Procurement targets and sales reserves refer to shared stock. Policies still per
 
 Facilities retain separate IDs, construction states, controls, deadlines, batches, input/output counters, wages and policy transaction totals. Pooled facility snapshots carry only a stockpile reference and zero local holdings. Production events identify both the real material store and producing facility. Company Value counts shared goods once, completed/pending capital once, and never adds FIFO basis a second time. Wages remain an expense separate from material basis.
 
-## Compatibility and saves
+## Identity and saves
 
-`CompanyStorageRules` is independent of geography, economic generator/content and valuation versions. `Legacy = 1` retains separate warehouses; `Pooled = 2` is selected explicitly for new v3 host runs. Existing constructor defaults remain legacy for historical APIs and reports. Pooled identity comparison groups append `/storage-v2`; the seed, economic generation and objective draft do not change.
-
-Old pooled runs with itinerary version zero retain save schema 3. New v3 pooled host starts explicitly choose itinerary version 1 and schema 4, preserving complete route instructions and exact next action/budget alongside company stock. Original schema-1/2 identities omit the storage field and retain their previous format, fingerprints and behavior. There is no consolidation or route migration. The codec validates one owned pool per actual company/town, derived finite capacity, zero duplicate facility inventory, exact FIFO/physical agreement and any versioned itinerary before replacing a host session. Retry starts a fresh copy of the same storage, itinerary identity and objective draft.
+Current runs use storage2, itinerary1 and economic rules1 with schema5. The codec validates one owned pool per company/town, derived capacity, zero duplicate facility inventory, FIFO agreement and itinerary progress before replacing a session. Retry preserves the original identity. See [save policy](SAVES.md).
 
 ## Completion and diagnostic export
 
@@ -43,8 +41,6 @@ Development builds and the Editor expose **Export Run Report** on diagnostic sur
 
 Reports separate markets, households, companies, treasury and finite outside money; list physical stores/FIFO, ships, facilities, input/payroll/output status, prices/targets and objective conditions. Recent host events are explicitly **partial bounded history**, not a complete lifetime transaction ledger. Exporting a difficult economy does not repair its finances or stock. Keep private playtest saves out of published documentation.
 
-The [Task 2.2 verification record](TASK-2.2-VERIFICATION.md) contains the criterion audit, actual test results, Editor and Windows Mono winning journeys, save/export checks, screenshots and remaining graphics/runtime warnings.
-
 ## Modern sale handling fees
 
-Economic rules1 Harbor previews show the gross market payment, exact port service fee, net company receipts and local market/worker shares. The company pays2% on successful ordinary sales from either ships or local stock. Buying and private transfers are exempt. A fee is withheld from sale proceeds; no upfront seller cash is needed. Gross market affordability still applies. Fractional orders and split sales retain exact cumulative rounding. Older runs show their original gross/net-equivalent settlement. [Town and Ledger explanations](ECONOMIC_CIRCULATION_REVIEW.md#commercial-handling) keep these expenses separate from FIFO and wages.
+Economic rules1 Harbor previews show the gross market payment, exact port service fee, net company receipts and local market/worker shares. The company pays2% on successful ordinary sales from either ships or local stock. Buying and private transfers are exempt. A fee is withheld from sale proceeds; no upfront seller cash is needed. Gross market affordability still applies. Fractional orders and split sales retain exact cumulative rounding. [Town and Ledger explanations](ECONOMIC_CIRCULATION_REVIEW.md#commercial-handling) keep these expenses separate from FIFO and wages.
