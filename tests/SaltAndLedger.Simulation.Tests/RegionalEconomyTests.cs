@@ -14,7 +14,7 @@ public sealed class RegionalEconomyTests
     private const string South = "southhaven";
     private const string Ship = "test_ship";
 
-    private static ContentCatalog Content() => LegacyContent.Timber(ContentLoader.Load(ContentLoaderTests.CanonicalJson()));
+    private static ContentCatalog Content() => ContentLoader.Load(ContentLoaderTests.CanonicalJson());
 
     private static ScheduledFacilityConfiguration Camp(int interval = 3, int? limit = null,
         long? firstDue = null, bool enabled = true) =>
@@ -273,8 +273,8 @@ public sealed class RegionalEconomyTests
     [Fact]
     public void SixtyDaysReconcileSourcesTransformationsSinksAndEveryOwnerTransfer()
     {
-        var content = Content();
-        var world = ArchipelagoScenario.Create(content);
+        var content = Content().ForExpandingEconomy();
+        var world = RunScenario.Create(content, new RunIdentity(null, RunScenario.MerchantCharter));
         var initial = world.Snapshot();
         var expected = content.Goods.ToDictionary(g => g.Id, g => TotalGoods(initial, g.Id));
         var initialCash = TotalCash(initial);
@@ -292,8 +292,8 @@ public sealed class RegionalEconomyTests
                     continue;
                 }
                 var recipeDelta = content.Goods.ToDictionary(g => g.Id, _ => 0);
-                foreach (var input in recipe.Inputs) recipeDelta[input.GoodId] -= input.Quantity;
-                foreach (var output in recipe.Outputs) recipeDelta[output.GoodId] += output.Quantity;
+                foreach (var input in recipe.Inputs) recipeDelta[input.GoodId] -= EconomicUnits.FromWhole(input.Quantity);
+                foreach (var output in recipe.Outputs) recipeDelta[output.GoodId] += EconomicUnits.FromWhole(output.Quantity);
                 foreach (var good in content.Goods)
                 {
                     Assert.Equal(recipeDelta[good.Id],
@@ -305,15 +305,14 @@ public sealed class RegionalEconomyTests
             }
             foreach (var consumption in result.Consumption)
             {
-                Assert.True(consumption.ConsumedQuantity == 0 ||
-                    consumption.ConsumedQuantity == consumption.RequestedQuantity);
+                Assert.InRange(consumption.ConsumedQuantity, 0, consumption.RequestedQuantity);
                 expected[consumption.GoodId] -= consumption.ConsumedQuantity;
                 consumed += consumption.ConsumedQuantity;
             }
             foreach (var trade in result.Trades)
             {
                 Assert.Equal(0, trade.Trade.MarketInventoryChange.Delta + trade.Trade.TraderInventoryChange.Delta);
-                Assert.Equal(0, trade.Trade.MarketCashChange.Delta + trade.Trade.TraderCashChange.Delta);
+                Assert.Equal(-trade.Trade.HouseholdServiceFee, trade.Trade.MarketCashChange.Delta + trade.Trade.TraderCashChange.Delta);
                 shipped += trade.Trade.ExecutedQuantity;
             }
             Assert.Equal(initialCash, TotalCash(result.After));
@@ -350,7 +349,5 @@ public sealed class RegionalEconomyTests
         snapshot.Ports.Values.Sum(port => (long)port.Inventory[goodId]) +
         snapshot.Ships.Values.Sum(ship => (long)ship.Cargo[goodId]);
 
-    private static BigInteger TotalCash(RegionalWorldSnapshot snapshot) =>
-        snapshot.Ports.Values.Aggregate(BigInteger.Zero, (total, port) => total + port.MarketCash) +
-        snapshot.Ships.Values.Aggregate(BigInteger.Zero, (total, ship) => total + ship.Cash);
+    private static BigInteger TotalCash(RegionalWorldSnapshot snapshot) => snapshot.TotalCash;
 }

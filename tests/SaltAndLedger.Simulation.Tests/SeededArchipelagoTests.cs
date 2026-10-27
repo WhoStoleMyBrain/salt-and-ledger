@@ -66,11 +66,11 @@ public sealed class SeededArchipelagoTests
     public void ChangingSeedsChangesEconomicTravelRelationshipsAndCollectionsAreImmutable()
     {
         var times = Enumerable.Range(0, 100).Select(seed => SeededArchipelago.Generate(seed).Routes
-            .Single(route => route.OriginPortId == EnterpriseScenario.East && route.DestinationPortId == EnterpriseScenario.North)
+            .Single(route => route.OriginPortId == WorldIds.East && route.DestinationPortId == WorldIds.North)
             .DurationDays(100)).Distinct().ToArray();
         Assert.Equal(new[] { 3, 4, 5, 6, 7 }, times.OrderBy(value => value));
         var map = SeededArchipelago.Generate(0);
-        Assert.Throws<NotSupportedException>(() => ((IDictionary<string, PortPosition>)map.Positions).Remove(EnterpriseScenario.North));
+        Assert.Throws<NotSupportedException>(() => ((IDictionary<string, PortPosition>)map.Positions).Remove(WorldIds.North));
         Assert.Throws<NotSupportedException>(() => ((IList<SeaRoute>)map.Routes).Clear());
     }
 
@@ -125,12 +125,5 @@ public sealed class SeededArchipelagoTests
     public void UnknownGeneratorVersionsAreRejected(int version) =>
         Assert.Throws<ArgumentOutOfRangeException>(() => SeededArchipelago.Generate(0, version));
 
-    [Fact]
-    public void ClassicRetainsExactlyTheAuthoredCoordinatesAndIndependentRouteDistances()
-    {
-        var map = ArchipelagoGeography.Classic;
-        Assert.Equal("v0|eastport@850,250;northport@340,120;southhaven@570,550;westhaven@120,400|" +
-            "eastport/northport:400;eastport/southhaven:300;eastport/westhaven:600;" +
-            "northport/southhaven:300;northport/westhaven:200;southhaven/westhaven:400", map.Signature);
-    }
+
 }

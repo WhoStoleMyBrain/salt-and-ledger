@@ -22,11 +22,7 @@ namespace SaltAndLedger.Simulation
     /// <summary>Portable state codec. The host alone chooses slots, paths and atomic file replacement.</summary>
     public static class WorldSaveCodec
     {
-        public const int SchemaVersion = 1;
-        public const int CommissionSchemaVersion = 2;
-        public const int PooledStorageSchemaVersion = 3;
-        public const int ItinerarySchemaVersion = 4;
-        public const int CirculationSchemaVersion = 5;
+        public const int SchemaVersion = 5;
         public const int MaximumJsonCharacters = 8 * 1024 * 1024;
         internal const int MaximumFacilities = 512;
         internal const int MaximumOpenLots = 16384;
@@ -54,12 +50,10 @@ namespace SaltAndLedger.Simulation
                     throw new WorldSaveException("Only named RunScenario worlds support durable saves; custom diagnostic fixtures do not have a reproducible identity.");
                 if (world.Snapshot().Circulation != null && world.Snapshot().Circulation!.Configuration.Mode != CirculationMode.Combined)
                     throw new WorldSaveException("Diagnostic circulation treatments do not support durable named saves.");
+                RequireSupportedIdentity(identity);
                 var initial = RunScenario.Create(world.SaveContent, identity);
                 var data = world.CaptureSave();
-                data.SchemaVersion = identity.EconomicRulesVersion != 0 ? CirculationSchemaVersion :
-                    identity.ItineraryVersion != 0 ? ItinerarySchemaVersion :
-                    identity.CompanyStorageRules == CompanyStorageRules.Pooled ? PooledStorageSchemaVersion :
-                    identity.Commission == null ? SchemaVersion : CommissionSchemaVersion;
+                data.SchemaVersion = SchemaVersion;
                 data.ContentFingerprint = Fingerprint(ContentShape(world.SaveContent));
                 data.ConfigurationFingerprint = Fingerprint(initial.Snapshot());
                 data.StateFingerprint = Fingerprint(data);
@@ -84,29 +78,19 @@ namespace SaltAndLedger.Simulation
                 var root = Parse(json);
                 ValidateTree(root);
                 var data = root.ToObject<RegionalSaveData>(Serializer()) ?? throw new WorldSaveException("Save is empty.");
-                if (data.SchemaVersion != SchemaVersion && data.SchemaVersion != CommissionSchemaVersion &&
-                    data.SchemaVersion != PooledStorageSchemaVersion && data.SchemaVersion != ItinerarySchemaVersion &&
-                    data.SchemaVersion != CirculationSchemaVersion)
-                    throw new WorldSaveException("Unsupported save schema version.");
+                if (data.SchemaVersion != SchemaVersion)
+                    throw new WorldSaveException("Unsupported save format. Only current v3 schema 5 saves can be loaded.");
                 var checksum = data.StateFingerprint;
                 data.StateFingerprint = "";
                 if (checksum != Fingerprint(data)) throw new WorldSaveException("Save state checksum is invalid; the file may be damaged.");
                 data.StateFingerprint = checksum;
                 RegionalSaveRestore.ValidateCounts(data);
                 var id = data.Identity ?? throw new WorldSaveException("Save identity is missing.");
-                if ((data.SchemaVersion >= PooledStorageSchemaVersion) != (id.CompanyStorageRules == CompanyStorageRules.Pooled) ||
-                    !Enum.IsDefined(typeof(CompanyStorageRules), id.CompanyStorageRules))
-                    throw new WorldSaveException("Save schema and company storage rules disagree.");
-                if ((data.SchemaVersion >= ItinerarySchemaVersion) != (id.ItineraryVersion == 1) ||
-                    (id.ItineraryVersion != 0 && id.ItineraryVersion != 1))
-                    throw new WorldSaveException("Save schema and itinerary format disagree.");
-                if ((data.SchemaVersion == CirculationSchemaVersion) != (id.EconomicRulesVersion == 1) ||
-                    (id.EconomicRulesVersion != 0 && id.EconomicRulesVersion != 1))
-                    throw new WorldSaveException("Save schema and economic rules disagree.");
                 var commission = RegionalSaveRestore.RestoreCommissionPlan(data);
                 var identity = new RunIdentity(id.ChallengeId, id.CharterId, id.WorldMode, id.Seed,
                     id.Difficulty, id.GeneratorVersion, id.PricingMode, id.ContentVersion, id.ValuationVersion, commission,
                     id.CompanyStorageRules, id.ItineraryVersion, id.EconomicRulesVersion);
+                RequireSupportedIdentity(identity);
                 var world = RunScenario.Create(content, identity);
                 if (data.ContentFingerprint != Fingerprint(ContentShape(world.SaveContent)))
                     throw new WorldSaveException("Save content does not match the current canonical catalog.");
@@ -118,6 +102,13 @@ namespace SaltAndLedger.Simulation
             catch (WorldSaveException) { throw; }
             catch (Exception exception) when (IsValidationError(exception))
             { throw new WorldSaveException("Invalid save: " + exception.Message, exception); }
+        }
+
+        private static void RequireSupportedIdentity(RunIdentity identity)
+        {
+            if (identity.WorldMode != RunWorldMode.ExpandingEconomy || identity.EconomicRulesVersion != 1 ||
+                identity.CompanyStorageRules != CompanyStorageRules.Pooled || identity.ItineraryVersion != 1)
+                throw new WorldSaveException("Only current v3 circulation, shared storage and itinerary runs support saves.");
         }
 
         internal static string Fingerprint(object value)

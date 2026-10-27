@@ -32,13 +32,11 @@ public sealed class CirculationGenerationTests
         Assert.Equal(historical.ContentVersion, current.ContentVersion);
         Assert.Equal(historical.ValuationVersion, current.ValuationVersion);
         Assert.Throws<ArgumentOutOfRangeException>(() => Identity(2));
+        Assert.Equal(current.EconomicRulesVersion, new RunIdentity(null, RunScenario.MerchantCharter).EconomicRulesVersion);
         Assert.Throws<ArgumentOutOfRangeException>(() => new RunIdentity(null, RunScenario.MerchantCharter,
-            RunWorldMode.ExpandingEconomy, 42, economicRulesVersion: 1));
+            companyStorageRules: CompanyStorageRules.Legacy));
         Assert.Throws<ArgumentOutOfRangeException>(() => new RunIdentity(null, RunScenario.MerchantCharter,
-            RunWorldMode.ExpandingEconomy, 42, companyStorageRules: CompanyStorageRules.Pooled,
-            economicRulesVersion: 1));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new RunIdentity(null, RunScenario.MerchantCharter,
-            economicRulesVersion: 1));
+            itineraryVersion: 0));
         Assert.Null(RunScenario.Create(Content(), historical).Snapshot().Circulation);
         Assert.Equal(CirculationMode.Combined, RunScenario.Create(Content(), current).Snapshot().Circulation!.Configuration.Mode);
         Assert.Equal(Identity(0, commission: true).Commission!.Signature, Identity(1, commission: true).Commission!.Signature);

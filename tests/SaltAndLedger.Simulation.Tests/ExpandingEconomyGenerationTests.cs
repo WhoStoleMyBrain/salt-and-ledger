@@ -105,8 +105,8 @@ public sealed class ExpandingEconomyGenerationTests
         Assert.Equal(facilities, charter.Facilities.Count);
         Assert.Equal(charterId == RunScenario.IndustrialCharter ? generated.ProcessingPortId : generated.FoodSourcePortId,
             charter.StartingPortId);
-        var legacy = RunScenario.GetCharter(charterId);
-        Assert.Equal(legacy.Cargo.Select(pair => (pair.Key, pair.Value * 10000)), charter.Cargo.Select(pair => (pair.Key, pair.Value)));
+        var declared = RunScenario.GetCharter(charterId);
+        Assert.Equal(declared.Cargo, charter.Cargo);
         if (facilities != 0)
             Assert.Equal(20000, charter.Facilities[0].InitialInventory["flour"]);
     }
@@ -119,22 +119,16 @@ public sealed class ExpandingEconomyGenerationTests
         Assert.Equal(3, identity.ContentVersion);
         Assert.Equal(1, identity.ValuationVersion);
         Assert.Contains("expanding-v3-seed42-coverage-content3-value1", identity.ComparisonGroup);
-        Assert.NotEqual(identity, new RunIdentity(null, RunScenario.MerchantCharter, RunWorldMode.LivingCities, 42,
-            RunDifficulty.SlowFoundations, livingPricingMode: LivingPricingMode.Coverage));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RunIdentity(null, RunScenario.MerchantCharter, (RunWorldMode)2, 42));
         Assert.Throws<ArgumentOutOfRangeException>(() => new RunIdentity(null, RunScenario.MerchantCharter,
             RunWorldMode.ExpandingEconomy, 42, generatorVersion: 2));
         Assert.Throws<ArgumentOutOfRangeException>(() => new RunIdentity(null, RunScenario.MerchantCharter,
             RunWorldMode.ExpandingEconomy, 42, contentVersion: 1));
         Assert.Throws<ArgumentOutOfRangeException>(() => new RunIdentity(null, RunScenario.MerchantCharter,
             RunWorldMode.ExpandingEconomy, 42, valuationVersion: 2));
-        Assert.Throws<ArgumentException>(() => Identity(challenge: RunScenario.CoastalChallenge));
-        Assert.Throws<ArgumentException>(() => new RunIdentity(RunScenario.RoyalChallenge,
-            RunScenario.MerchantCharter, RunWorldMode.LivingCities, 42));
-        Assert.Equal(4, RunScenario.GetChallenges(RunWorldMode.ExpandingEconomy).Count);
-        Assert.Equal(GrandCommission.ChallengeId, RunScenario.GetChallenges(RunWorldMode.ExpandingEconomy)[0].Id);
-        Assert.Equal(ExpandingChallenges.Definitions, RunScenario.GetChallenges(RunWorldMode.ExpandingEconomy).Skip(1));
-        Assert.Equal(3, RunScenario.Challenges.Count);
-        Assert.Single(RunScenario.GetChallenges(RunWorldMode.LivingCities));
+        Assert.Throws<ArgumentException>(() => Identity(challenge: "coastal_supply_charter"));
+        Assert.Throws<ArgumentException>(() => Identity(challenge: "royal_commission"));
+        Assert.Equal(GrandCommission.ChallengeId, Assert.Single(RunScenario.Challenges).Id);
     }
 
     [Fact]
@@ -172,16 +166,16 @@ public sealed class ExpandingEconomyGenerationTests
         var generation = ExpandingEconomyGeneration.Generate(42);
         var world = RunScenario.Create(Content(), Identity());
         var initial = world.Snapshot();
-        Assert.Throws<InvalidOperationException>(() => world.ConstructFacility(EnterpriseScenario.PlayerOwnerId,
-            generation.FurniturePortId, EnterpriseScenario.SawmillBlueprint, "illegal_sawmill"));
+        Assert.Throws<InvalidOperationException>(() => world.ConstructFacility(WorldIds.PlayerOwnerId,
+            generation.FurniturePortId, WorldIds.SawmillBlueprint, "illegal_sawmill"));
         Assert.Same(initial, world.Snapshot());
-        world.ConstructFacility(EnterpriseScenario.PlayerOwnerId, generation.ProcessingPortId,
+        world.ConstructFacility(WorldIds.PlayerOwnerId, generation.ProcessingPortId,
             ExpandingEconomyGeneration.MillBlueprint, "mill_one");
-        world.ConstructFacility(EnterpriseScenario.PlayerOwnerId, generation.ProcessingPortId,
+        world.ConstructFacility(WorldIds.PlayerOwnerId, generation.ProcessingPortId,
             ExpandingEconomyGeneration.MillBlueprint, "mill_two");
         var snapshot = world.Snapshot();
         Assert.Equal(2, snapshot.PrivateFacilities.Count);
         Assert.NotSame(snapshot.PrivateFacilities["mill_one"].Inventory, snapshot.PrivateFacilities["mill_two"].Inventory);
-        Assert.Equal(12800000, snapshot.Companies[EnterpriseScenario.PlayerOwnerId].Cash);
+        Assert.Equal(12800000, snapshot.Companies[WorldIds.PlayerOwnerId].Cash);
     }
 }

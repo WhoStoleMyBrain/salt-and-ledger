@@ -44,7 +44,7 @@ public sealed class PooledCompanyStorageTests
             }, initialRevision: revision, companies: new[] { new CompanyConfiguration(Owner, cash), new CompanyConfiguration(Rival, 1000 * Unit) },
             industryBlueprints: plans ?? Plans(), initialFacilities: sites,
             difficulty: difficulty, runIdentity: new RunIdentity(null, RunScenario.MerchantCharter,
-                RunWorldMode.ExpandingEconomy, 42, difficulty, companyStorageRules: CompanyStorageRules.Pooled),
+                RunWorldMode.ExpandingEconomy, 42, difficulty, companyStorageRules: CompanyStorageRules.Pooled, economicRulesVersion: 0),
             economy: ExpandingEconomyConfiguration.CreateDefault(South, North));
     }
 

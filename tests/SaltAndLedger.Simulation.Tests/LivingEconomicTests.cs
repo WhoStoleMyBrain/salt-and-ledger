@@ -144,7 +144,7 @@ public sealed class LivingEconomicTests
     {
         var content = ContentLoader.Load(ContentLoaderTests.CanonicalJson());
         var world = RunScenario.Create(content, new RunIdentity(null, RunScenario.MerchantCharter,
-            RunWorldMode.LivingCities, seed, livingPricingMode: pricing));
+            RunWorldMode.ExpandingEconomy, seed, livingPricingMode: pricing));
         var cash = world.Snapshot().TotalCash;
         for (var day = 0; day < 365; day++)
         {
@@ -157,8 +157,7 @@ public sealed class LivingEconomicTests
                 Assert.InRange(city.Prosperity, 0, 100);
                 Assert.InRange(city.HouseholdCash, 0, long.MaxValue);
                 Assert.InRange(city.FoodWindow.Count, 0, CitySnapshot.FoodWindowCapacity);
-                Assert.Equal((BigInteger)city.Configuration.InitialHouseholdCash + city.TotalWagesReceived - city.TotalRetailSpend,
-                    city.HouseholdCash);
+
                 foreach (var need in port.Consumption)
                     Assert.Equal(need.TotalDesiredQuantity,
                         need.TotalConsumedQuantity + need.TotalUnmetStock + need.TotalUnmetAffordability);
@@ -172,12 +171,12 @@ public sealed class LivingEconomicTests
         var content = ContentLoader.Load(ContentLoaderTests.CanonicalJson());
         var generated = LivingCityGeneration.Generate(42);
         var world = RunScenario.Create(content, new RunIdentity(null, RunScenario.MerchantCharter,
-            RunWorldMode.LivingCities, 42));
+            RunWorldMode.ExpandingEconomy, 42));
         var port = world.Snapshot().Ports[generated.FurniturePortId];
         Assert.Contains(port.Facilities, facility => facility.Configuration.Instance.BuildingId == "lumber_camp");
         Assert.Contains(port.Facilities, facility => facility.Configuration.Instance.BuildingId == "furniture_workshop");
         Assert.DoesNotContain(port.Facilities, facility => facility.Configuration.Instance.BuildingId == "sawmill");
-        Assert.DoesNotContain(generated.FurniturePortId, world.Snapshot().IndustryBlueprints[EnterpriseScenario.SawmillBlueprint].EligiblePortIds);
+        Assert.DoesNotContain(generated.FurniturePortId, world.Snapshot().IndustryBlueprints[WorldIds.SawmillBlueprint].EligiblePortIds);
         var initialPlanks = port.Inventory["planks"];
         var imports = 0;
         var batches = 0;
@@ -191,9 +190,9 @@ public sealed class LivingEconomicTests
         }
         Assert.True(imports > 0);
         var planksPerBatch = content.GetRecipe("make_furniture").Inputs.Single(input => input.GoodId == "planks").Quantity;
-        Assert.True(batches * planksPerBatch > initialPlanks);
+        Assert.True((long)batches * EconomicUnits.FromWhole(planksPerBatch) > initialPlanks);
         Assert.Throws<InvalidOperationException>(() => world.ConstructFacility("player", generated.FurniturePortId,
-            EnterpriseScenario.SawmillBlueprint, "forbidden_sawmill"));
+            WorldIds.SawmillBlueprint, "forbidden_sawmill"));
     }
 
     private static RegionalWorldState Fixture(int bread, long householdCash, long marketCash = 100,

@@ -68,11 +68,11 @@ namespace SaltAndLedger.Simulation
         public const string ChallengeId = "grand_commission";
         public const long DeadlineDay = 180;
         public const long MinimumCash = 1000000;
-        public static RunChallenge Definition { get; } = new RunChallenge(Create(EnterpriseScenario.East),
+        public static RunChallenge Definition { get; } = new RunChallenge(Create(WorldIds.East),
             "Inspect the full seeded map, then choose four mandatory economic objectives in four rounds.",
             "Complete all four drafted goals together by day 180, with at least 100 liquid company coins.");
         public static ChallengeConfiguration Create(string targetPortId) => new ChallengeConfiguration(ChallengeId,
-            "The Grand Commission", EnterpriseScenario.PlayerOwnerId, targetPortId, "bread", 100, DeadlineDay,
+            "The Grand Commission", WorldIds.PlayerOwnerId, targetPortId, "bread", 100, DeadlineDay,
             MinimumCash, ChallengeKind.GrandCommission);
 
         public static CommissionProgress Progress(RegionalWorldSnapshot world)
@@ -80,7 +80,7 @@ namespace SaltAndLedger.Simulation
             if (world == null) throw new ArgumentNullException(nameof(world));
             var plan = world.RunIdentity?.Commission ?? throw new InvalidOperationException("This run has no drafted commission.");
             if (world.Economy == null || world.CommissionHistory == null) throw new InvalidOperationException("Commission requires its v3 economy and authoritative history.");
-            var owner = world.Challenge?.Configuration.OwnerId ?? EnterpriseScenario.PlayerOwnerId;
+            var owner = world.Challenge?.Configuration.OwnerId ?? WorldIds.PlayerOwnerId;
             var owned = world.PrivateFacilities.Values.Where(f => f.OwnerId == owner).OrderBy(f => f.Id, StringComparer.Ordinal).ToArray();
             // Every v3 Mill is legally in the sole processing town. Pick the most accomplished matching sites,
             // then an actual Bakery elsewhere. These are the same two sites for ownership and funded batches.

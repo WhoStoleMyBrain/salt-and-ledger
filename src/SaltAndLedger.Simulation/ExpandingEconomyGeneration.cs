@@ -41,10 +41,10 @@ namespace SaltAndLedger.Simulation
                 Blueprint(LumberBlueprint, "lumber_camp", "harvest_logs", 220, 2, 40, 36, 6,
                     FoodSourcePortId, FurniturePortId, RecoveryPortId),
                 Blueprint(MillBlueprint, "mill", "mill_flour", 260, 2, 40, 24, 6, ProcessingPortId),
-                Blueprint(EnterpriseScenario.SawmillBlueprint, "sawmill", "saw_planks", 280, 2, 40, 20, 6, ProcessingPortId),
-                Blueprint(EnterpriseScenario.BakeryBlueprint, "bakery", "bake_bread", 300, 2, 40, 30, 6,
+                Blueprint(WorldIds.SawmillBlueprint, "sawmill", "saw_planks", 280, 2, 40, 20, 6, ProcessingPortId),
+                Blueprint(WorldIds.BakeryBlueprint, "bakery", "bake_bread", 300, 2, 40, 30, 6,
                     FoodSourcePortId, ProcessingPortId, RecoveryPortId),
-                Blueprint(EnterpriseScenario.WorkshopBlueprint, "furniture_workshop", "make_furniture", 360, 3, 40, 15, 8,
+                Blueprint(WorldIds.WorkshopBlueprint, "furniture_workshop", "make_furniture", 360, 3, 40, 15, 8,
                     FurniturePortId, RecoveryPortId),
                 Blueprint(SilverMineBlueprint, "silver_mine", "mine_silver", 320, 4, 20, 8, 12, SilverPortId)
             }.OrderBy(blueprint => blueprint.Id, StringComparer.Ordinal).ToArray());

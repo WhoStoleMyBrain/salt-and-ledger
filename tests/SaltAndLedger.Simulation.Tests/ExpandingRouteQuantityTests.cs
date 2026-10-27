@@ -46,7 +46,6 @@ public sealed class ExpandingRouteQuantityTests
             allowEmptyReturn: true);
         Assert.Throws<ArgumentException>(() => RoutePolicyEvaluator.Evaluate(Maritime(30000, 100000), policy,
             quantityStep: EconomicUnits.QuantityScale));
-        Assert.NotNull(RoutePolicyEvaluator.Evaluate(Maritime(30000, 100000), policy)); // Historical step remains 1.
     }
 
     [Fact]
@@ -123,10 +122,12 @@ public sealed class ExpandingRouteQuantityTests
     {
         var content = ContentLoader.Load(ContentLoaderTests.CanonicalJson());
         var quotes = new[] { new MarketQuote("planks", 2, 3) };
-        return new MaritimeWorldState(content, new[] { "north", "south" }.Select(id =>
-            new PortConfiguration(id, quotes, marketCash, Array.Empty<BuildingInstance>(),
-                new Dictionary<string, int> { ["planks"] = stock })), "owner", cash,
-            new ShipConfiguration("ship", 30000, dock, new Dictionary<string, int> { ["planks"] = cargo }), 1).Snapshot();
+        return new MaritimeWorldSnapshot(0, new[] { "north", "south" }.Select(id =>
+            new PortSnapshot(id, new Inventory(content, new Dictionary<string, int> { ["planks"] = stock }).Snapshot(),
+                marketCash, quotes.ToDictionary(q => q.GoodId), Array.Empty<BuildingInstance>())), "owner", cash,
+            new ShipSnapshot("ship", 30000,
+                new Inventory(content, new Dictionary<string, int> { ["planks"] = cargo }).Snapshot(),
+                dock, null, null, 0), 1);
     }
 
     private static RegionalWorldSnapshot Regional(IndustrialRoutePolicy policy, int sourceStock = 27500,

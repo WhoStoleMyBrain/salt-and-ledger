@@ -35,7 +35,7 @@ namespace SaltAndLedger.Simulation
                 var rows = commercial.Where(c => c.OwnerId == company.Id).ToArray();
                 Require(rows.Aggregate(BigInteger.Zero, (sum, c) => sum + c.FeesPaid) == company.FeesPaid,
                     "Company service expenses differ from local recipients.");
-                var publicRevenue = company.Id == EnterpriseScenario.PlayerOwnerId ?
+                var publicRevenue = company.Id == WorldIds.PlayerOwnerId ?
                     data.Economy!.Contracts.Aggregate(BigInteger.Zero, (sum, c) => sum + c.Paid) +
                         data.Economy.TreasuryExpenditure : BigInteger.Zero;
                 Require(rows.Aggregate(BigInteger.Zero, (sum, c) => sum + c.GrossLocalSales) + publicRevenue == company.Revenue,

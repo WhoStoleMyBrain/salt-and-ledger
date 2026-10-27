@@ -11,7 +11,7 @@ namespace SaltAndLedger.Simulation.Tests;
 
 public sealed class CargoItinerarySaveTests
 {
-    private const string Ship = EnterpriseScenario.PlayerShipId;
+    private const string Ship = WorldIds.PlayerShipId;
     private static ContentCatalog Content() => ContentLoader.Load(ContentLoaderTests.CanonicalJson());
 
     private static RegionalWorldState World(bool commission = false, int itineraryVersion = 1)
@@ -48,37 +48,16 @@ public sealed class CargoItinerarySaveTests
         });
     }
 
-    [Fact]
-    public void HistoricalSchemaThreePooledBytesRemainUnchanged()
-    {
-        // Captured from e8668c4's copied Release DLL before the Task 2.3 rebuild.
-        var world = World(commission: true, itineraryVersion: 0);
-        world.SetAutomationEnabled(Ship, true);
-        for (var day = 0; day < 11; day++) world.AdvanceDay();
-        var saved = WorldSaveCodec.Save(world);
-        Assert.Equal("4824c092d87f88458bfd21f107422c0641cd0c25f37409beff9454c1ecbac63a", Hash(saved));
-        var data = JObject.Parse(saved);
-        Assert.Equal(3, (int)data["SchemaVersion"]!);
-        Assert.Null(data["Identity"]!["ItineraryVersion"]);
-        Assert.All(data["Ships"]!, ship =>
-        {
-            Assert.Null(ship["Itinerary"]);
-            Assert.Null(ship["ItineraryProgress"]);
-        });
-        var restored = WorldSaveCodec.Load(Content(), saved);
-        Assert.Equal(saved, WorldSaveCodec.Save(restored));
-        AdvanceBoth(world, restored);
-    }
 
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void VersionedIdentitySelectsSchemaFourBeforeAnyPolicyIsAssigned(bool commission)
+    public void VersionedIdentitySelectsCurrentSchemaBeforeAnyPolicyIsAssigned(bool commission)
     {
         var world = World(commission);
         var saved = WorldSaveCodec.Save(world);
         var data = JObject.Parse(saved);
-        Assert.Equal(4, (int)data["SchemaVersion"]!);
+        Assert.Equal(5, (int)data["SchemaVersion"]!);
         Assert.Equal(1, (int)data["Identity"]!["ItineraryVersion"]!);
         Assert.Contains("/itinerary-v1", world.Snapshot().RunIdentity!.ComparisonGroup);
         var restored = WorldSaveCodec.Load(Content(), saved);
@@ -390,9 +369,9 @@ public sealed class CargoItinerarySaveTests
     {
         foreach (var good in new[] { "flour", "logs" })
         {
-            Assert.Equal(TradeOutcome.Traded, world.ExecuteWarehouseTrade(EnterpriseScenario.PlayerOwnerId,
+            Assert.Equal(TradeOutcome.Traded, world.ExecuteWarehouseTrade(WorldIds.PlayerOwnerId,
                 RunScenario.StarterBakery, new TradeCommand(TradeDirection.Sell, good, 20000)).WarehouseTrades.Single().Trade.Outcome);
-            Assert.Equal(TradeOutcome.Traded, world.ExecuteWarehouseTrade(EnterpriseScenario.PlayerOwnerId,
+            Assert.Equal(TradeOutcome.Traded, world.ExecuteWarehouseTrade(WorldIds.PlayerOwnerId,
                 RunScenario.StarterBakery, new TradeCommand(TradeDirection.Buy, good, 20000)).WarehouseTrades.Single().Trade.Outcome);
         }
     }

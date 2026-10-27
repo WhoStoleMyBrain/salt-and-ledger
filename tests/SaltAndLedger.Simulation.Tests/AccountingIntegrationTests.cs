@@ -47,17 +47,18 @@ public sealed class AccountingIntegrationTests
         {
             var finance = state.Accounting.Companies[company.Id];
             Assert.Equal((BigInteger)company.Cash,
-                (BigInteger)finance.InitialCash + finance.SalesRevenue - finance.InventoryPurchases - finance.ConstructionExpenditure);
-            Assert.Equal(finance.InventoryPurchases, checked(finance.CostOfGoodsSold + finance.HeldInventoryCost));
+                (BigInteger)finance.InitialCash + finance.SalesRevenue - finance.InventoryPurchases - finance.ConstructionExpenditure - finance.WagesPaid - finance.FeesPaid + finance.MintReceipts - finance.PublicCommissionExpenditure);
+            Assert.Equal(finance.InventoryPurchases, checked(finance.CostOfGoodsSold + finance.HeldInventoryCost + finance.MintMaterialCost));
             var stores = state.Accounting.Stores.Values.Where(s => s.OwnerId == company.Id).ToArray();
             Assert.Equal(finance.HeldInventoryCost, stores.Sum(s => s.TotalCostBasis));
             foreach (var good in state.Ports.First().Value.Inventory.Keys)
             {
                 long Amount(IReadOnlyDictionary<string, long> values) => values.TryGetValue(good, out var quantity) ? quantity : 0;
                 var physical = state.Ships.Values.Where(s => s.OwnerId == company.Id).Sum(s => (long)s.Cargo[good]) +
-                    state.PrivateFacilities.Values.Where(f => f.OwnerId == company.Id).Sum(f => (long)f.Inventory[good]);
+                    state.PrivateFacilities.Values.Where(f => f.OwnerId == company.Id).Sum(f => (long)f.Inventory[good]) +
+                    state.CompanyStockpiles.Values.Where(f => f.OwnerId == company.Id).Sum(f => (long)f.Inventory[good]);
                 Assert.Equal(physical, Amount(finance.GrantedQuantities) + Amount(finance.PurchasedQuantities) +
-                    Amount(finance.ProducedQuantities) - Amount(finance.ConsumedQuantities) - Amount(finance.SoldQuantities));
+                    Amount(finance.ProducedQuantities) - Amount(finance.ConsumedQuantities) - Amount(finance.SoldQuantities) - Amount(finance.SurrenderedQuantities));
                 Assert.Equal(physical, stores.Sum(s => (long)s.GetQuantity(good)));
                 Assert.Equal(physical, Amount(finance.HeldInventoryQuantities));
             }
@@ -65,7 +66,7 @@ public sealed class AccountingIntegrationTests
         foreach (var ship in state.Ships.Values)
             foreach (var good in ship.Cargo)
                 Assert.Equal(good.Value, state.Accounting.Stores["ship:" + ship.Id].GetQuantity(good.Key));
-        foreach (var facility in state.PrivateFacilities.Values)
+        foreach (var facility in state.PrivateFacilities.Values.Where(f => f.SharedStockpileId == null))
             foreach (var good in facility.Inventory)
                 Assert.Equal(good.Value, state.Accounting.Stores["facility:" + facility.Id].GetQuantity(good.Key));
     }
@@ -228,24 +229,20 @@ public sealed class AccountingIntegrationTests
     [Fact]
     public void NinetyDaysOfEnterpriseAutomationReconcileAllCompaniesAndEveryHeldGood()
     {
-        var world = EnterpriseScenario.Create(Content());
-        world.ConstructFacility(EnterpriseScenario.PlayerOwnerId, EnterpriseScenario.West,
-            EnterpriseScenario.BakeryBlueprint, Factory);
-        world.ConfigureFacility(EnterpriseScenario.PlayerOwnerId, Factory, new IndustryPolicy(true, true, 100,
-            new[] { new InputStockRule("flour", 4, 30), new InputStockRule("logs", 4, 20) },
-            new[] { new OutputSaleRule("bread", 1, 20) }));
-        var startingCash = world.Snapshot().Companies.Values.Aggregate(BigInteger.Zero, (sum, c) => sum + c.Cash) +
-            world.Snapshot().Ports.Values.Aggregate(BigInteger.Zero, (sum, p) => sum + p.MarketCash);
+        var world = RunScenario.Create(Content(), new RunIdentity(null, RunScenario.MerchantCharter, seed: 99));
+        world.ConstructFacility(WorldIds.PlayerOwnerId, WorldIds.West,
+            WorldIds.BakeryBlueprint, Factory);
+        world.ConfigureFacility(WorldIds.PlayerOwnerId, Factory, ExpandingEconomyScenario.BakeryPolicy(true));
+        var startingCash = world.Snapshot().TotalCash;
         for (var day = 0; day < 90; day++)
         {
             var result = world.AdvanceDay();
             Reconcile(result.After);
-            var cash = result.After.Companies.Values.Aggregate(BigInteger.Zero, (sum, c) => sum + c.Cash) +
-                result.After.Ports.Values.Aggregate(BigInteger.Zero, (sum, p) => sum + p.MarketCash);
+            var cash = result.After.TotalCash;
             Assert.Equal(startingCash, cash);
             Assert.All(result.EconomicEvents, e => Assert.Equal((result.After.Day, result.After.Revision), (e.Day, e.Revision)));
         }
-        Assert.True(world.Snapshot().Accounting.Companies[EnterpriseScenario.PlayerOwnerId].ProducedQuantities["bread"] > 0);
-        Assert.True(world.Snapshot().Accounting.Companies[EnterpriseScenario.PlayerOwnerId].SalesRevenue > 0);
+        Assert.True(world.Snapshot().Accounting.Companies[WorldIds.PlayerOwnerId].ProducedQuantities["bread"] > 0);
+        Assert.True(world.Snapshot().Accounting.Companies[WorldIds.PlayerOwnerId].SalesRevenue > 0);
     }
 }

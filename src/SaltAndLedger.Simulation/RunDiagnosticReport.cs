@@ -49,9 +49,7 @@ namespace SaltAndLedger.Simulation
                 Objectives = new
                 {
                     Challenge = snapshot.Challenge,
-                    Commission = snapshot.RunIdentity?.Commission == null ? null : GrandCommission.Progress(snapshot),
-                    Expanding = snapshot.Challenge != null && ExpandingChallenges.IsExpanding(snapshot.Challenge.Configuration.Kind)
-                        ? ExpandingChallenges.Progress(snapshot) : null
+                    Commission = snapshot.RunIdentity?.Commission == null ? null : GrandCommission.Progress(snapshot)
                 },
                 Accounts = new
                 {

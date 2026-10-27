@@ -11,8 +11,8 @@ namespace SaltAndLedger.Simulation.Tests;
 
 public sealed class GrandCommissionSaveTests
 {
-    private const string Owner = EnterpriseScenario.PlayerOwnerId;
-    private const string Ship = EnterpriseScenario.PlayerShipId;
+    private const string Owner = WorldIds.PlayerOwnerId;
+    private const string Ship = WorldIds.PlayerShipId;
     private static ContentCatalog Content() => ContentLoader.Load(ContentLoaderTests.CanonicalJson());
     private static RegionalWorldState World(int seed = 42, RunDifficulty difficulty = RunDifficulty.Normal)
     {
@@ -24,28 +24,6 @@ public sealed class GrandCommissionSaveTests
             commission: draft.Resolve(ids)));
     }
 
-    [Theory]
-    [InlineData(RunWorldMode.Classic, "e11073e322c9940077b2db61fb27ffecdbef04990b42ecdce3991d52789c3eeb")]
-    [InlineData(RunWorldMode.Seeded, "47f08f09bfceb0268d9b38c7083b03f1dd3a015e54f3ae478ba4cf7ee1d5737f")]
-    [InlineData(RunWorldMode.LivingCities, "1e8f59af76c18801900d4507f60e7ce6236893a7e336cb095f52941e846e3abe")]
-    [InlineData(RunWorldMode.ExpandingEconomy, "416b937308a19d6a1c7028963315d862a67c2c51e22545d233190d8e04fb40e4")]
-    public void HistoricalSchemaOneSaveBytesAndContinuationRemainExact(RunWorldMode mode, string baselineHash)
-    {
-        // Captured from the pre-Task-2.1 Release assembly, with the unchanged canonical content.
-        var world = RunScenario.Create(Content(), new RunIdentity(null, RunScenario.MerchantCharter, mode,
-            mode == RunWorldMode.Classic ? null : -42));
-        world.SetAutomationEnabled(Ship, true);
-        for (var day = 0; day < 11; day++) world.AdvanceDay();
-        var saved = WorldSaveCodec.Save(world);
-        Assert.Equal(baselineHash, Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(saved))).ToLowerInvariant());
-        var root = JObject.Parse(saved);
-        Assert.Equal(1, (int)root["SchemaVersion"]!);
-        Assert.Null(root["CommissionHistory"]);
-        Assert.Null(root["Identity"]!["Commission"]);
-        var restored = WorldSaveCodec.Load(Content(), saved);
-        Assert.Equal(saved, WorldSaveCodec.Save(restored));
-        AdvanceBoth(world, restored);
-    }
 
     [Fact]
     public void GenuineVoyageTargetSaleAndBuybackResumeWithoutDuplicateCredit()
@@ -64,7 +42,7 @@ public sealed class GrandCommissionSaveTests
         var visitedEarlier = world.Snapshot().CommissionHistory!.Ships.Single(s => s.ShipId == Ship)
             .Visits.TryGetValue(target, out var originalVisitDay);
         var saved = WorldSaveCodec.Save(world);
-        Assert.Equal(2, (int)JObject.Parse(saved)["SchemaVersion"]!);
+        Assert.Equal(5, (int)JObject.Parse(saved)["SchemaVersion"]!);
         var restored = WorldSaveCodec.Load(Content(), saved);
         Assert.Equal(saved, WorldSaveCodec.Save(restored));
         Assert.Null(restored.Snapshot().Ships[Ship].DockedPortId);
@@ -88,7 +66,7 @@ public sealed class GrandCommissionSaveTests
         var world = World(-42, RunDifficulty.SlowFoundations);
         var config = world.Snapshot().Economy!.Configuration;
         var port = world.Snapshot().Ships[Ship].DockedPortId!;
-        world.ConstructFacility(Owner, port, EnterpriseScenario.BakeryBlueprint, "commission_save_bakery");
+        world.ConstructFacility(Owner, port, WorldIds.BakeryBlueprint, "commission_save_bakery");
         world.ExecuteWarehouseTrade(Owner, "commission_save_bakery", new TradeCommand(TradeDirection.Buy, "flour", 12501));
         world.ExecuteWarehouseTrade(Owner, "commission_save_bakery", new TradeCommand(TradeDirection.Sell, "flour", 2501));
         world.CommissionShip(Owner, config.ShipwrightPortId);

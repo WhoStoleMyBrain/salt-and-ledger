@@ -33,9 +33,7 @@ public sealed class RegionalWorldTests
             routes ?? new[] { new SeaRoute("north", "south", 250) }, ships ?? new[] { Ship() }, day, revision);
     private static TradeCommand Buy(int quantity = 1, string good = "logs") => new(TradeDirection.Buy, good, quantity);
     private static TradeCommand Sell(int quantity = 1, string good = "logs") => new(TradeDirection.Sell, good, quantity);
-    private static BigInteger Cash(RegionalWorldSnapshot snapshot) =>
-        snapshot.Ports.Values.Aggregate(BigInteger.Zero, (sum, p) => sum + p.MarketCash) +
-        snapshot.Ships.Values.Aggregate(BigInteger.Zero, (sum, s) => sum + s.Cash);
+    private static BigInteger Cash(RegionalWorldSnapshot snapshot) => snapshot.TotalCash;
     private static long Goods(RegionalWorldSnapshot snapshot, string good) =>
         snapshot.Ports.Values.Sum(p => (long)p.Inventory[good]) + snapshot.Ships.Values.Sum(s => (long)s.Cargo[good]);
     private static string Fingerprint(RegionalWorldSnapshot snapshot) => JsonConvert.SerializeObject(new
@@ -69,19 +67,19 @@ public sealed class RegionalWorldTests
     [Fact]
     public void ExactDynamicPreviewUpdatesImmediatelyAndInspectionIsPassive()
     {
-        var world = ArchipelagoScenario.Create(Content());
+        var world = RunScenario.Create(Content(), new RunIdentity(null, RunScenario.MerchantCharter));
         var initial = world.Snapshot();
-        var quote = initial.GetMarketQuote(ArchipelagoScenario.North, "logs");
-        var preview = initial.PreviewTrade(ArchipelagoScenario.PlayerShipId, ArchipelagoScenario.North, Buy(6));
-        var result = world.ExecuteTrade(ArchipelagoScenario.PlayerShipId, ArchipelagoScenario.North, Buy(6));
+        var quote = initial.GetMarketQuote(initial.Ships[WorldIds.PlayerShipId].DockedPortId!, "logs");
+        var preview = initial.PreviewTrade(WorldIds.PlayerShipId, initial.Ships[WorldIds.PlayerShipId].DockedPortId!, Buy(EconomicUnits.FromWhole(6)));
+        var result = world.ExecuteTrade(WorldIds.PlayerShipId, initial.Ships[WorldIds.PlayerShipId].DockedPortId!, Buy(EconomicUnits.FromWhole(6)));
         Assert.Equal(preview.ExecutedAmount, result.Trades.Single().Trade.ExecutedAmount);
         Assert.Equal(0L, result.After.Day);
-        Assert.True(result.After.GetMarketQuote(ArchipelagoScenario.North, "logs").Ask > quote.Ask);
-        Assert.Equal(quote.Ask, initial.GetMarketQuote(ArchipelagoScenario.North, "logs").Ask);
+        Assert.True(result.After.GetMarketQuote(initial.Ships[WorldIds.PlayerShipId].DockedPortId!, "logs").Ask > quote.Ask);
+        Assert.Equal(quote.Ask, initial.GetMarketQuote(initial.Ships[WorldIds.PlayerShipId].DockedPortId!, "logs").Ask);
         var current = world.Snapshot();
-        current.PreviewTrade(ArchipelagoScenario.PlayerShipId, ArchipelagoScenario.East, Sell(6));
-        current.GetMarketQuote(ArchipelagoScenario.East, "planks");
-        world.EvaluateAutomation(ArchipelagoScenario.PlayerShipId);
+        current.PreviewTrade(WorldIds.PlayerShipId, WorldIds.East, Sell(EconomicUnits.FromWhole(6)));
+        current.GetMarketQuote(WorldIds.East, "planks");
+        world.EvaluateAutomation(WorldIds.PlayerShipId);
         Assert.Same(current, world.Snapshot());
     }
 
@@ -374,8 +372,8 @@ public sealed class RegionalWorldTests
     {
         string Run(int chunk)
         {
-            var world = ArchipelagoScenario.Create(Content());
-            world.SetAutomationEnabled(ArchipelagoScenario.PlayerShipId, true);
+            var world = RunScenario.Create(Content(), new RunIdentity(null, RunScenario.MerchantCharter));
+            world.SetAutomationEnabled(WorldIds.PlayerShipId, true);
             for (var start = 0; start < 60; start += chunk)
                 for (var offset = 0; offset < chunk && start + offset < 60; offset++) world.AdvanceDay();
             return Fingerprint(world.Snapshot());
@@ -387,8 +385,8 @@ public sealed class RegionalWorldTests
     [Fact]
     public void ReorderedRegionalConfigurationProducesTheSameDailyStates()
     {
-        var forward = ArchipelagoScenario.Create(Content());
-        var reverse = ArchipelagoScenario.Create(Content(), true);
+        var forward = RunScenario.Create(Content(), new RunIdentity(null, RunScenario.MerchantCharter));
+        var reverse = RunScenario.Create(Content(), new RunIdentity(null, RunScenario.MerchantCharter), true);
         for (var day = 0; day < 60; day++)
             Assert.Equal(Fingerprint(forward.AdvanceDay().After), Fingerprint(reverse.AdvanceDay().After));
     }
@@ -396,7 +394,7 @@ public sealed class RegionalWorldTests
     [Fact]
     public void CashAndCargoStayFiniteAcrossRepeatedNpcDeliveries()
     {
-        var world = ArchipelagoScenario.Create(Content());
+        var world = RunScenario.Create(Content(), new RunIdentity(null, RunScenario.MerchantCharter));
         var cash = Cash(world.Snapshot());
         var deliveries = new Dictionary<string, int>();
         for (var day = 0; day < 60; day++)
@@ -411,8 +409,8 @@ public sealed class RegionalWorldTests
             foreach (var trade in result.Trades.Where(t => t.Trade.Direction == TradeDirection.Sell))
                 deliveries[trade.ShipId] = deliveries.GetValueOrDefault(trade.ShipId) + 1;
         }
-        Assert.True(deliveries[ArchipelagoScenario.TimberShipId] >= 2);
-        Assert.True(deliveries[ArchipelagoScenario.PlankShipId] >= 2);
+        Assert.True(deliveries[WorldIds.TimberShipId] >= 2);
+        Assert.True(deliveries[WorldIds.PlankShipId] >= 2);
     }
 
     [Fact]

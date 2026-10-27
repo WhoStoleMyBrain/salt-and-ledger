@@ -56,21 +56,4 @@ public sealed class EconomicCirculationExperimentTests
         Assert.NotEqual(old.Identity, current.Identity);
     }
 
-    [Fact]
-    public void HistoricalJsonProjectionOmitsOnlyAbsentCirculationFields()
-    {
-        var content = Content();
-        var identity = new RunIdentity(null, RunScenario.MerchantCharter, RunWorldMode.ExpandingEconomy, 42);
-        var state = RunScenario.Create(content, identity).Snapshot();
-        var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, TypeInfoResolver = HistoricalReportJson.Resolver() };
-        var text = JsonSerializer.Serialize(new { Identity = identity, Finance = state.Accounting.Companies[EnterpriseScenario.PlayerOwnerId],
-            Quote = state.PreviewTrade(EnterpriseScenario.PlayerShipId, state.Ships[EnterpriseScenario.PlayerShipId].DockedPortId!,
-                new TradeCommand(TradeDirection.Buy, "bread", EconomicUnits.QuantityScale)) }, options);
-        Assert.DoesNotContain("economicRulesVersion", text);
-        Assert.DoesNotContain("feesPaid", text);
-        Assert.DoesNotContain("operatingSurplusAfterExpenses", text);
-        Assert.DoesNotContain("serviceFee", text);
-        Assert.DoesNotContain("netProceeds", text);
-        Assert.Contains("operatingSurplusAfterWages", text); // Preserve the established historical field, including zero.
-    }
 }

@@ -73,16 +73,4 @@ namespace SaltAndLedger.Simulation
         }
     }
 
-    /// <summary>The policy explanation and the ordinary committed maritime step.</summary>
-    public sealed class AutomationStep
-    {
-        public AutomationDecision Decision { get; }
-        public MaritimeStepResult Result { get; }
-
-        internal AutomationStep(AutomationDecision decision, MaritimeStepResult result)
-        {
-            Decision = decision;
-            Result = result;
-        }
-    }
 }

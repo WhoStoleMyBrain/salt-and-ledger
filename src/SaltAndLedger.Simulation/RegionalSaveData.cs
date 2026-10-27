@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace SaltAndLedger.Simulation
 {
-    // Save schema 1 deliberately names every mutable field. Canonical configuration is rebuilt
+    // Save schema 5 deliberately names every mutable field. Canonical configuration is rebuilt
     // from identity and verified by fingerprint; it is never accepted as executable save data.
     [JsonObject(ItemRequired = Required.AllowNull)]
     internal sealed class RegionalSaveData
@@ -27,12 +27,8 @@ namespace SaltAndLedger.Simulation
         [JsonProperty(Required = Required.Default)]
         public RegionalSaveCommissionHistory? CommissionHistory { get; set; }
         public bool ShouldSerializeCommissionHistory() => CommissionHistory != null;
-        [JsonProperty(Required = Required.Default)]
         public RegionalSaveCompanyStockpile[]? CompanyStockpiles { get; set; }
-        public bool ShouldSerializeCompanyStockpiles() => CompanyStockpiles != null;
-        [JsonProperty(Required = Required.Default)]
         public RegionalSaveCirculation? Circulation { get; set; }
-        public bool ShouldSerializeCirculation() => Circulation != null;
     }
 
     [JsonObject(ItemRequired = Required.AllowNull)]
@@ -50,15 +46,9 @@ namespace SaltAndLedger.Simulation
         [JsonProperty(Required = Required.Default)]
         public RegionalSaveCommissionPlan? Commission { get; set; }
         public bool ShouldSerializeCommission() => Commission != null;
-        [JsonProperty(Required = Required.Default)]
-        public CompanyStorageRules CompanyStorageRules { get; set; } = CompanyStorageRules.Legacy;
-        public bool ShouldSerializeCompanyStorageRules() => CompanyStorageRules != CompanyStorageRules.Legacy;
-        [JsonProperty(Required = Required.Default)]
+        public CompanyStorageRules CompanyStorageRules { get; set; }
         public int ItineraryVersion { get; set; }
-        public bool ShouldSerializeItineraryVersion() => ItineraryVersion != 0;
-        [JsonProperty(Required = Required.Default)]
         public int EconomicRulesVersion { get; set; }
-        public bool ShouldSerializeEconomicRulesVersion() => EconomicRulesVersion != 0;
     }
 
     [JsonObject(ItemRequired = Required.AllowNull)]

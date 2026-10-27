@@ -25,33 +25,33 @@ namespace SaltAndLedger.Simulation
             var processor = generation.ProcessingPortId;
             var ships = new[]
             {
-                new RegionalShipConfiguration(new ShipConfiguration(ArchipelagoScenario.TimberShipId, Q(5), food),
+                new RegionalShipConfiguration(new ShipConfiguration(WorldIds.TimberShipId, Q(5), food),
                     "timber_company", "Timber Merchant", 0, 100, priority: 0,
                     policy: new TradeRoutePolicy(food, processor, Leg("logs", 5, 3, 18, 12, 90),
                         allowEmptyReturn: true), automationEnabled: true, minimumOriginStock: Q(10)),
-                new RegionalShipConfiguration(new ShipConfiguration(ArchipelagoScenario.PlankShipId, Q(3), processor),
+                new RegionalShipConfiguration(new ShipConfiguration(WorldIds.PlankShipId, Q(3), processor),
                     "plank_company", "Plank Merchant", 0, 100, priority: 1,
                     policy: new TradeRoutePolicy(processor, generation.FurniturePortId, Leg("planks", 3, 2, 26, 22, 78),
                         allowEmptyReturn: true), automationEnabled: true, minimumOriginStock: Q(4)),
-                new RegionalShipConfiguration(new ShipConfiguration(EnterpriseScenario.GrainShipId, Q(6), food),
+                new RegionalShipConfiguration(new ShipConfiguration(WorldIds.GrainShipId, Q(6), food),
                     "grain_company", "Grain & Flour Merchant", 0, 100, priority: 2,
                     policy: new TradeRoutePolicy(food, processor, Leg("grain", 6, 4, 14, 10, 84),
                         Leg("flour", 4, 1, 24, 12, 96), cashReserve: M(20), allowEmptyReturn: true), automationEnabled: true),
-                new RegionalShipConfiguration(new ShipConfiguration(EnterpriseScenario.PlayerShipId,
-                    charter.CargoCapacity, charter.StartingPortId, charter.Cargo), EnterpriseScenario.PlayerOwnerId,
+                new RegionalShipConfiguration(new ShipConfiguration(WorldIds.PlayerShipId,
+                    charter.CargoCapacity, charter.StartingPortId, charter.Cargo), WorldIds.PlayerOwnerId,
                     "Ledger", 0, RunScenario.StartingShipSpeed, priority: 10, isPlayer: true,
                     policy: MerchantPolicy(generation), automationEnabled: false)
             };
             var companies = new[] { new CompanyConfiguration("timber_company", M(300)),
                 new CompanyConfiguration("plank_company", M(400)), new CompanyConfiguration("grain_company", M(500)),
-                new CompanyConfiguration(EnterpriseScenario.PlayerOwnerId, charter.Cash) };
+                new CompanyConfiguration(WorldIds.PlayerOwnerId, charter.Cash) };
             return new RegionalWorldState(content.ForExpandingEconomy(),
                 reverseConfiguration ? generation.Ports.Reverse() : generation.Ports,
                 reverseConfiguration ? generation.Geography.Routes.Reverse() : generation.Geography.Routes,
                 reverseConfiguration ? ships.Reverse() : ships,
                 companies: reverseConfiguration ? companies.Reverse() : companies,
                 industryBlueprints: reverseConfiguration ? generation.Blueprints.Reverse() : generation.Blueprints,
-                challenge: identity.Commission == null ? ExpandingChallenges.Create(identity, generation.RecoveryPortId) :
+                challenge: identity.Commission == null ? null :
                     GrandCommission.Definition.Configuration,
                 initialFacilities: charter.Facilities, initialGrantProvenance: charter.Id,
                 difficulty: identity.Difficulty, runIdentity: identity,
@@ -62,13 +62,18 @@ namespace SaltAndLedger.Simulation
         public static StartingCharter GetCharter(ExpandingEconomyGeneration generation, string charterId)
         {
             if (generation == null) throw new ArgumentNullException(nameof(generation));
-            var historical = RunScenario.GetCharter(charterId);
+            if (charterId != RunScenario.MerchantCharter && charterId != RunScenario.IndustrialCharter &&
+                charterId != RunScenario.IndependentCharter) throw new ArgumentException("Unknown starting charter: " + charterId, nameof(charterId));
             var industrial = charterId == RunScenario.IndustrialCharter;
             var portId = industrial ? generation.ProcessingPortId : generation.FoodSourcePortId;
-            var facilities = historical.Facilities.Select(facility => new PrivateFacilityConfiguration(
-                facility.Id, facility.OwnerId, portId, facility.BlueprintId,
-                facility.InitialInventory.ToDictionary(item => item.Key, item => Q(item.Value), StringComparer.Ordinal),
-                ScalePolicy(facility.Policy), facility.Enabled, facility.Provenance)).ToArray();
+            var capacity = industrial ? 8 : charterId == RunScenario.MerchantCharter ? 10 : 12;
+            var name = industrial ? "Industrial Consortium" : charterId == RunScenario.MerchantCharter ? "Merchant Company" : "Independent Traders";
+            var cargo = charterId == RunScenario.IndependentCharter
+                ? new Dictionary<string, int> { ["grain"] = Q(4), ["logs"] = Q(2) } : new Dictionary<string, int>();
+            var facilities = industrial ? new[] { new PrivateFacilityConfiguration(RunScenario.StarterBakery,
+                WorldIds.PlayerOwnerId, portId, WorldIds.BakeryBlueprint,
+                new Dictionary<string, int> { ["flour"] = Q(2), ["logs"] = Q(2) }, provenance: charterId) }
+                : Array.Empty<PrivateFacilityConfiguration>();
             var cash = charterId == RunScenario.MerchantCharter ? 1800 : industrial ? 1200 : 1500;
             var description = industrial ? "An operational bakery and real inputs at the processing harbor, with capital to expand the chain."
                 : charterId == RunScenario.MerchantCharter ? "Liquid investment capital and an empty hold for commerce, production and fleet choices."
@@ -76,13 +81,13 @@ namespace SaltAndLedger.Simulation
             var tradeoff = industrial ? "Less liquid capital and a smaller hold; the bakery needs materials, wages and customers."
                 : charterId == RunScenario.MerchantCharter ? "No granted industry or materials; each investment competes with shipment cash."
                 : "Less cash than the merchant; the starter goods occupy half the hold.";
-            var endowment = cash + " coins; " + historical.CargoCapacity + "-unit ship at " + LivingCityGeneration.PortName(portId) +
+            var endowment = cash + " coins; " + capacity + "-unit ship at " + LivingCityGeneration.PortName(portId) +
                 (industrial ? "; granted operational bakery with 2 Flour and 2 Logs." :
                 charterId == RunScenario.IndependentCharter ? "; granted 4 Grain and 2 Logs." : "; no facility or cargo.") +
                 " Grants have zero paid basis and disclosed positive reference value.";
-            return new StartingCharter(historical.Id, historical.Name, description, tradeoff, endowment,
-                M(cash), Q(historical.CargoCapacity), portId,
-                historical.Cargo.ToDictionary(item => item.Key, item => Q(item.Value), StringComparer.Ordinal), facilities);
+            return new StartingCharter(charterId, name, description, tradeoff, endowment,
+                M(cash), Q(capacity), portId,
+                cargo, facilities);
         }
 
         public static TradeRoutePolicy MerchantPolicy(ExpandingEconomyGeneration generation, bool balanced = false) =>
@@ -104,10 +109,6 @@ namespace SaltAndLedger.Simulation
                     sourceFacilityId: facilityId, minimumSourceStock: Q(4), minimumSellPrice: 26),
                 cashReserve: M(80), allowEmptyReturn: true);
 
-        private static IndustryPolicy ScalePolicy(IndustryPolicy policy) => new IndustryPolicy(
-            policy.ProcurementEnabled, policy.SalesEnabled, M(policy.CashReserve),
-            policy.Inputs.Select(input => new InputStockRule(input.GoodId, Q(input.TargetQuantity), input.MaxBuyPrice)),
-            policy.Outputs.Select(output => new OutputSaleRule(output.GoodId, Q(output.ReserveQuantity), output.MinSellPrice)));
         private static RouteLeg Leg(string good, int max, int min, long buy, long sell, long cap) =>
             new RouteLeg(good, Q(max), Q(min), buy, sell, M(cap));
         private static int Q(int quantity) => EconomicUnits.FromWhole(quantity);

@@ -253,7 +253,7 @@ public sealed class ConstructionLifecycleTests
         var slow = RunScenario.Create(content, new RunIdentity(null, charterId, difficulty: RunDifficulty.SlowFoundations));
         var initial = slow.Snapshot();
         Assert.Equal(JsonConvert.SerializeObject(ordinary.Accounting), JsonConvert.SerializeObject(initial.Accounting));
-        Assert.Equal(ordinary.Companies[EnterpriseScenario.PlayerOwnerId].Cash, initial.Companies[EnterpriseScenario.PlayerOwnerId].Cash);
+        Assert.Equal(ordinary.Companies[WorldIds.PlayerOwnerId].Cash, initial.Companies[WorldIds.PlayerOwnerId].Cash);
         Assert.Equal(JsonConvert.SerializeObject(ordinary.PrivateFacilities), JsonConvert.SerializeObject(initial.PrivateFacilities));
         if (charterId == RunScenario.IndustrialCharter)
         {
@@ -262,10 +262,10 @@ public sealed class ConstructionLifecycleTests
                 starter.ConstructionCompletionDay, starter.FirstProductionDay, starter.ConstructionDaysRemaining));
             slow.AdvanceDay();
             Assert.Equal(ScheduledProductionOutcome.Produced, slow.AdvanceDay().PrivateProduction.Single().Outcome);
-            Assert.Equal(0, slow.Snapshot().Accounting.Companies[EnterpriseScenario.PlayerOwnerId].ConstructionExpenditure);
+            Assert.Equal(0, slow.Snapshot().Accounting.Companies[WorldIds.PlayerOwnerId].ConstructionExpenditure);
         }
-        var order = slow.ConstructFacility(EnterpriseScenario.PlayerOwnerId, EnterpriseScenario.North,
-            EnterpriseScenario.BakeryBlueprint, "new_player_bakery");
+        var order = slow.ConstructFacility(WorldIds.PlayerOwnerId, WorldIds.North,
+            WorldIds.BakeryBlueprint, "new_player_bakery");
         Assert.Equal(ConstructionOutcome.Started, order.Construction.Single().Outcome);
         Assert.Equal(2, order.After.PrivateFacilities["new_player_bakery"].ConstructionDaysRemaining);
     }
@@ -348,44 +348,15 @@ public sealed class ConstructionLifecycleTests
         Assert.Equal((6L, 1L, 8L), (resumed.After.Day, Factory(world).BatchesProduced, Factory(world).NextProductionDay));
     }
 
-    [Theory]
-    [InlineData(ChallengeStatus.Failed)]
-    [InlineData(ChallengeStatus.Abandoned)]
-    [InlineData(ChallengeStatus.Succeeded)]
-    public void TerminalChallengeFreezesPendingConstructionAndRejectsNewOrders(ChallengeStatus status)
-    {
-        var challenge = new ChallengeConfiguration("test_challenge", "Test", Owner, "south", "bread", 1,
-            status == ChallengeStatus.Failed ? 1 : 10, 0);
-        var world = World(challenge: challenge);
-        Order(world);
-        if (status == ChallengeStatus.Failed) world.AdvanceDay();
-        else if (status == ChallengeStatus.Abandoned) world.AbandonChallenge();
-        else
-        {
-            var saleChallenge = new ChallengeConfiguration("test_challenge", "Test", Owner, "north", "bread", 1, 10, 0);
-            // A grant supplies the target honestly; buying and reselling the target's bread cannot win.
-            var granted = new PrivateFacilityConfiguration("granted", Owner, "north", "second_bakery",
-                new Dictionary<string, int> { ["bread"] = 1 });
-            world = World(challenge: saleChallenge, initialFacilities: new[] { granted });
-            Order(world);
-            world.ExecuteWarehouseTrade(Owner, "granted", new TradeCommand(TradeDirection.Sell, "bread", 1));
-        }
-        var terminal = world.Snapshot();
-        Assert.Equal(status, terminal.Challenge!.Status);
-        Assert.False(Factory(world).IsOperational);
-        Assert.Throws<InvalidOperationException>(() => world.AdvanceDay());
-        Assert.Throws<InvalidOperationException>(() => Order(world, "south", "new_site"));
-        Assert.Same(terminal, world.Snapshot());
-    }
 
     [Fact]
     public void DifficultyValidationAndIdentityDisagreementFailExplicitly()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => World((RunDifficulty)2));
-        var identity = new RunIdentity(null, RunScenario.MerchantCharter, difficulty: RunDifficulty.SlowFoundations);
+        var identity = new RunIdentity(null, RunScenario.MerchantCharter, difficulty: RunDifficulty.SlowFoundations, companyStorageRules: CompanyStorageRules.Legacy, itineraryVersion: 0, economicRulesVersion: 0);
         Assert.Throws<ArgumentException>(() => World(RunDifficulty.Normal, identity: identity));
-        Assert.Throws<ArgumentException>(() => World(identity: new RunIdentity(RunScenario.CoastalChallenge,
-            RunScenario.MerchantCharter, difficulty: RunDifficulty.SlowFoundations)));
+        Assert.Throws<ArgumentException>(() => World(identity: new RunIdentity("retired_coastal_supply",
+            RunScenario.MerchantCharter, difficulty: RunDifficulty.SlowFoundations, companyStorageRules: CompanyStorageRules.Legacy, itineraryVersion: 0, economicRulesVersion: 0)));
         var world = World(identity: identity);
         Order(world);
         Assert.Same(identity, world.Snapshot().RunIdentity);

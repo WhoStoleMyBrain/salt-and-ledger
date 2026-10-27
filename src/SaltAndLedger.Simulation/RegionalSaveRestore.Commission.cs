@@ -10,13 +10,7 @@ namespace SaltAndLedger.Simulation
         internal static GrandCommissionPlan? RestoreCommissionPlan(RegionalSaveData data)
         {
             var saved = data.Identity.Commission;
-            if (data.SchemaVersion == WorldSaveCodec.SchemaVersion)
-            {
-                Require(saved == null && data.CommissionHistory == null,
-                    "Schema 1 cannot contain drafted commission state.");
-                return null;
-            }
-            if (data.SchemaVersion >= WorldSaveCodec.PooledStorageSchemaVersion && saved == null)
+            if (saved == null)
             {
                 Require(data.CommissionHistory == null, "Commission history requires a resolved commission plan.");
                 return null;

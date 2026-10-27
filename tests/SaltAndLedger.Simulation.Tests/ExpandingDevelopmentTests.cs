@@ -152,19 +152,4 @@ public sealed class ExpandingDevelopmentTests
         Assert.Same(snapshot, overflow.Snapshot());
     }
 
-    [Theory]
-    [InlineData(RunScenario.SustainableChallenge)]
-    [InlineData(RunScenario.NetworkChallenge)]
-    [InlineData(RunScenario.RoyalChallenge)]
-    public void EachV3ObjectiveHasAnHonestIdleFailureAndTerminalFreeze(string challenge)
-    {
-        var world = RunScenario.Create(Content(), new RunIdentity(challenge, RunScenario.MerchantCharter,
-            RunWorldMode.ExpandingEconomy, 42));
-        var deadline = world.Snapshot().Challenge!.Configuration.DeadlineDay;
-        while (world.Snapshot().Day < deadline && world.Snapshot().Challenge!.Status == ChallengeStatus.Active) world.AdvanceDay();
-        Assert.Equal(ChallengeStatus.Failed, world.Snapshot().Challenge!.Status);
-        var before = world.Snapshot();
-        Assert.Throws<InvalidOperationException>(() => world.CommissionMint(EnterpriseScenario.PlayerOwnerId));
-        Assert.Same(before, world.Snapshot());
-    }
 }

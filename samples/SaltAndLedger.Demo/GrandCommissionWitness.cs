@@ -20,6 +20,8 @@ internal static class GrandCommissionWitness
             var world = Victory(content, seed, Console.WriteLine);
             Console.WriteLine(JsonConvert.SerializeObject(Summary(world.Snapshot()), Formatting.Indented));
         }
+        var automated = Victory(content, 99, Console.WriteLine, itinerary: true);
+        Console.WriteLine("Itinerary commission: " + JsonConvert.SerializeObject(Summary(automated.Snapshot())));
         var idle = Create(content, 99);
         for (var day = 0; day < 180; day++) idle.AdvanceDay();
         Require(idle.Snapshot().Challenge!.Status == ChallengeStatus.Failed, "Idle control must fail.");
@@ -38,11 +40,11 @@ internal static class GrandCommissionWitness
     }
 
     /// <summary>Two short prescribed journeys. Every state change uses an ordinary world command.</summary>
-    internal static RegionalWorldState Victory(ContentCatalog content, int seed, Action<string>? observe = null)
+    internal static RegionalWorldState Victory(ContentCatalog content, int seed, Action<string>? observe = null, bool itinerary = false)
     {
         var world = Create(content, seed);
         var g = ExpandingEconomyGeneration.Generate(seed);
-        const string owner = EnterpriseScenario.PlayerOwnerId, ship = EnterpriseScenario.PlayerShipId;
+        const string owner = WorldIds.PlayerOwnerId, ship = WorldIds.PlayerShipId;
         var stopAfter = new Dictionary<string, long>(StringComparer.Ordinal);
         void Apply(string text, Func<RegionalWorldState, RegionalResult> operation)
         {
@@ -101,22 +103,45 @@ internal static class GrandCommissionWitness
             Trade(TradeDirection.Sell, "grain", 4);
             Trade(TradeDirection.Sell, "logs", 2);
             Build("witness_camp", g.RecoveryPortId, ExpandingEconomyGeneration.LumberBlueprint, 1);
-            Build("witness_sawmill", g.ProcessingPortId, EnterpriseScenario.SawmillBlueprint, 4);
+            Build("witness_sawmill", g.ProcessingPortId, WorldIds.SawmillBlueprint, 4);
             BuyInput("witness_sawmill", "logs", 8);
         }
         else
         {
             Build("witness_mill", g.ProcessingPortId, ExpandingEconomyGeneration.MillBlueprint, 1);
-            Build("witness_bakery", g.RecoveryPortId, EnterpriseScenario.BakeryBlueprint, 1);
+            Build("witness_bakery", g.RecoveryPortId, WorldIds.BakeryBlueprint, 1);
             BuyInput("witness_mill", "grain", 2);
             BuyInput("witness_bakery", "flour", 1);
             BuyInput("witness_bakery", "logs", 1);
         }
         Build("witness_mine", g.FurniturePortId, ExpandingEconomyGeneration.SilverMineBlueprint, 1);
         Apply("Commission public Mint", w => w.CommissionMint(owner));
-        Trade(TradeDirection.Buy, "bread", 4);
-        Sail(g.RecoveryPortId, save: true);
-        Trade(TradeDirection.Sell, "bread", 4);
+        if (itinerary)
+        {
+            var route = new CargoItineraryPolicy("witness_food", new[] {
+                new CargoItineraryStop(g.FoodSourcePortId, new[] {
+                    new CargoItineraryCommand(CargoItineraryCommandKind.BuyFromMarket, "bread", 40000, 40000) }),
+                new CargoItineraryStop(g.RecoveryPortId, new[] {
+                    new CargoItineraryCommand(CargoItineraryCommandKind.SellToMarket, "bread", 40000, 40000) }) });
+            Apply("Apply and enable food itinerary", w => w.ConfigureItinerary(ship, route, true));
+            Apply("Itinerary buys Bread and departs", w => w.RunAutomation(ship));
+            Require(world.Snapshot().Ships[ship].Cargo["bread"] == 40000 &&
+                world.Snapshot().Ships[ship].DestinationPortId == g.RecoveryPortId, "Itinerary must buy and sail physically.");
+            Step();
+            var saved = WorldSaveCodec.Save(world);
+            world = WorldSaveCodec.Load(content, saved);
+            Require(WorldSaveCodec.Save(world) == saved, "Enabled mid-voyage itinerary save changed.");
+            while (world.Snapshot().Ships[ship].DockedPortId == null) Step();
+            Apply("Itinerary sells its Bread at the real dock", w => w.RunAutomation(ship, 1));
+            Require(world.Snapshot().Ships[ship].CargoUnits == 0, "Itinerary must sell the actual delivery.");
+            Apply("Pause itinerary for the remaining commission", w => w.SetAutomationEnabled(ship, false));
+        }
+        else
+        {
+            Trade(TradeDirection.Buy, "bread", 4);
+            Sail(g.RecoveryPortId, save: true);
+            Trade(TradeDirection.Sell, "bread", 4);
+        }
         Sail(g.FurniturePortId);
         Apply("Load one physically produced Silver", w => w.TransferGoods(owner, ship, "witness_mine", TransferDirection.WarehouseToShip, "silver", 10000));
         Trade(TradeDirection.Buy, "furniture", 1);
@@ -139,10 +164,10 @@ internal static class GrandCommissionWitness
 
     internal static object Summary(RegionalWorldSnapshot world)
     {
-        var finance = world.Accounting.Companies[EnterpriseScenario.PlayerOwnerId];
+        var finance = world.Accounting.Companies[WorldIds.PlayerOwnerId];
         string Coins(long amount) => (amount / 10000m).ToString("0.####", CultureInfo.InvariantCulture);
         return new { Identity = world.RunIdentity!.ComparisonGroup, world.Day, world.Revision,
-            Status = world.Challenge!.Status.ToString(), Cash = Coins(world.Companies[EnterpriseScenario.PlayerOwnerId].Cash),
+            Status = world.Challenge!.Status.ToString(), Cash = Coins(world.Companies[WorldIds.PlayerOwnerId].Cash),
             PaidInputs = Coins(finance.InventoryPurchases), PaidWages = Coins(finance.WagesPaid),
             PrivateCapital = Coins(finance.ConstructionExpenditure), PublicCommission = Coins(finance.PublicCommissionExpenditure),
             Production = finance.ProducedQuantities, Goals = GrandCommission.Progress(world).Goals,

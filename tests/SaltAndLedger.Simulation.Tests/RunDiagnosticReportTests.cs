@@ -12,17 +12,13 @@ public sealed class RunDiagnosticReportTests
     private static ContentCatalog Content() => ContentLoader.Load(ContentLoaderTests.CanonicalJson());
 
     [Theory]
-    [InlineData(RunWorldMode.Classic, CompanyStorageRules.Legacy)]
-    [InlineData(RunWorldMode.Seeded, CompanyStorageRules.Legacy)]
-    [InlineData(RunWorldMode.LivingCities, CompanyStorageRules.Legacy)]
-    [InlineData(RunWorldMode.ExpandingEconomy, CompanyStorageRules.Legacy)]
     [InlineData(RunWorldMode.ExpandingEconomy, CompanyStorageRules.Pooled)]
     public void ReportIsParseableDeterministicAndDoesNotMutateAnyNamedMode(RunWorldMode mode, CompanyStorageRules rules)
     {
         var content = Content();
         var world = RunScenario.Create(content, new RunIdentity(null, RunScenario.IndustrialCharter,
-            mode, mode == RunWorldMode.Classic ? null : 42, companyStorageRules: rules));
-        world.SetAutomationEnabled(EnterpriseScenario.PlayerShipId, true);
+            mode, 42, companyStorageRules: rules));
+        world.SetAutomationEnabled(WorldIds.PlayerShipId, true);
         world.AdvanceDay();
         var before = world.Snapshot();
         var hash = RunDiagnosticReport.StateFingerprint(before);

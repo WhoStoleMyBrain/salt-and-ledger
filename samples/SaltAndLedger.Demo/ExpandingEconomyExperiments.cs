@@ -14,10 +14,10 @@ using SaltAndLedger.Simulation;
 internal static class ExpandingEconomyExperiments
 {
     internal const string Farm = "experiment_farm", Mill = "experiment_mill", Bakery = "experiment_bakery", Mine = "experiment_mine", Camp = "experiment_camp";
-    private const string Player = EnterpriseScenario.PlayerShipId, Owner = EnterpriseScenario.PlayerOwnerId;
+    private const string Player = WorldIds.PlayerShipId, Owner = WorldIds.PlayerOwnerId;
     private static readonly int[] Seeds = { -42, 42, 99 };
     private static readonly string[] Strategies = { "idle", "imports", "balanced", "industry", "overbuilt", "external", "external_control", "monetary", "monetary_control", "network2", "network3", "circulation", "fleet3" };
-    private static readonly JsonSerializerOptions Options = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, TypeInfoResolver = HistoricalReportJson.Resolver(), WriteIndented = true };
+    private static readonly JsonSerializerOptions Options = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
     private static int Q(int value) => EconomicUnits.FromWhole(value);
     private static long M(long value) => EconomicUnits.Coins(value);
     private static bool Active(RegionalWorldSnapshot state) => state.Challenge == null || state.Challenge.Status == ChallengeStatus.Active;
@@ -38,11 +38,9 @@ internal static class ExpandingEconomyExperiments
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
             File.WriteAllText(path, json, new UTF8Encoding(false));
         }
-        var rows = report.Runs.Concat(report.Challenges).ToArray();
-        Console.WriteLine(FormattableString.Invariant($"Expanding v3: {report.Seeds.Length} seeds, {report.Runs.Count} comparisons, {report.Challenges.Count} challenges; {rows.Sum(r => r.Days)} primary v3 world-days in {timer.Elapsed.TotalSeconds:F3}s."));
+        var rows = report.Runs.ToArray();
+        Console.WriteLine(FormattableString.Invariant($"Expanding v3: {report.Seeds.Length} seeds, {report.Runs.Count} comparisons; {rows.Sum(r => r.Days)} primary v3 world-days in {timer.Elapsed.TotalSeconds:F3}s."));
         Console.WriteLine(FormattableString.Invariant($"Every commit audits physical/account/FIFO flows; peak {rows.Max(r => r.MaximumEvents)} events and {rows.Max(r => r.MaximumOpenLots)} open lots. Timing excludes no work and is not a large-world certification."));
-        foreach (var row in report.Challenges)
-            Console.WriteLine(FormattableString.Invariant($"{row.Challenge} seed{row.Seed} A{row.Ascension} {row.Strategy}: {row.Outcome} D{row.Days}, cash {row.Final.Cash}, value {row.Final.Value}."));
         if (!reinvestment) Measure(content);
         Console.WriteLine((check ? "Fresh report: " : "Wrote report: ") + path);
         return 0;
@@ -51,7 +49,7 @@ internal static class ExpandingEconomyExperiments
     internal static Report BuildReinvestmentReport(ContentCatalog content, bool deep)
     {
         var report = new Report { Seeds = Seeds, Horizon = deep ? 1095 : 365,
-            Methodology = "Controlled follow-up to the completed original normal/deep matrices; one fixed reinvestment policy, three seeds, both pricing hypotheses and ascensions. Finite mining/issuance funds actual Farm/Mill/Bakery and three ships; post-authorization metal returns physically to Mine before ship2 carries Logs/Bread. All towns receive real Bread routes; a second Mill/Bakery pair is conditional on actual three-ship completion and retained1000coin capital. No rules, starting state, thresholds or accounts are repaired. Exact continuation/event checks at days3/17/61/181; every commit audits money/physical/FIFO flows. All v3 values are raw 1/10000 units; runtime printed only." };
+            Methodology = "Current circulation1/storage2/itinerary1 follow-up; one fixed reinvestment policy, three seeds, both pricing hypotheses and ascensions. Finite mining/issuance funds actual Farm/Mill/Bakery and three ships; post-authorization metal returns physically to Mine before ship2 carries Logs/Bread. All towns receive real Bread routes; a second Mill/Bakery pair is conditional on actual three-ship completion and retained1000coin capital. No rules, starting state, thresholds or accounts are repaired. Exact continuation/event checks at days3/17/61/181; every commit audits money/physical/FIFO flows. All v3 values are raw 1/10000 units; runtime printed only." };
         foreach (var seed in Seeds)
         foreach (var pricing in new[] { LivingPricingMode.StockOnly, LivingPricingMode.Coverage })
         foreach (var difficulty in new[] { RunDifficulty.Normal, RunDifficulty.SlowFoundations })
@@ -65,26 +63,18 @@ internal static class ExpandingEconomyExperiments
     internal static Report BuildReport(ContentCatalog content, bool deep)
     {
         var seeds = deep ? Seeds.Concat(new[] { int.MinValue, int.MaxValue, 0, 1, -1 })
-            .Concat(Enumerable.Range(1, 7).Select(i => unchecked((int)(0x9E3779B9u * (uint)i)))).Distinct().OrderBy(s => s).ToArray() : Seeds;
-        var report = new Report { Seeds = seeds, Horizon = deep ? 1095 : 365 };
+            .Concat(Enumerable.Range(1, 7).Select(i => unchecked((int)(0x9E3779B9u * (uint)i)))).Distinct().OrderBy(s => s).ToArray() : new[] { 42, 99 };
+        var report = new Report { Seeds = seeds, Horizon = deep ? 1095 : 180 };
         foreach (var seed in seeds)
-        foreach (var pricing in new[] { LivingPricingMode.StockOnly, LivingPricingMode.Coverage })
-        foreach (var difficulty in new[] { RunDifficulty.Normal, RunDifficulty.SlowFoundations })
+        foreach (var pricing in deep ? new[] { LivingPricingMode.StockOnly, LivingPricingMode.Coverage } : new[] { LivingPricingMode.StockOnly })
+        foreach (var difficulty in deep ? new[] { RunDifficulty.Normal, RunDifficulty.SlowFoundations } : new[] { RunDifficulty.Normal })
         foreach (var strategy in deep ? new[] { "idle", "balanced", "circulation", "network2", "fleet3", "monetary" } : Strategies)
             report.Runs.Add(RunCase(content, seed, pricing, difficulty, strategy, report.Horizon));
-        foreach (var seed in Seeds)
-        foreach (var difficulty in new[] { RunDifficulty.Normal, RunDifficulty.SlowFoundations })
-        foreach (var challenge in new[] { RunScenario.SustainableChallenge, RunScenario.NetworkChallenge, RunScenario.RoyalChallenge })
-        {
-            foreach (var strategy in challenge == RunScenario.RoyalChallenge ? new[] { "idle", "monetary" } : new[] { "idle", "industry", "network2", "circulation" })
-                report.Challenges.Add(RunCase(content, seed, LivingPricingMode.StockOnly, difficulty, strategy,
-                    180, challenge));
-        }
         foreach (var charter in new[] { RunScenario.IndustrialCharter, RunScenario.IndependentCharter })
             report.Runs.Add(RunCase(content, 42, LivingPricingMode.StockOnly, RunDifficulty.Normal,
                 "industry", report.Horizon, charter: charter));
-        foreach (var seed in Seeds)
-            foreach (var merchant in new[] { false, true }) report.V2Controls.Add(V2Control(content, seed, merchant, report.Horizon));
+        if (!deep) report.Runs.Add(RunCase(content, 42, LivingPricingMode.Coverage,
+            RunDifficulty.SlowFoundations, "network2", report.Horizon));
         var reference = report.Runs.Single(r => r.Seed == 42 && r.Pricing == "Coverage" && r.Ascension == 1 && r.Strategy == "network2");
         Require(Json(reference) == Json(RunCase(content, 42, LivingPricingMode.Coverage, RunDifficulty.SlowFoundations,
             "network2", report.Horizon, reverse: true)), "Reversed v3 configuration differs.");
@@ -220,7 +210,7 @@ internal static class ExpandingEconomyExperiments
                 Build(Farm, generation.FoodSourcePortId, ExpandingEconomyGeneration.FarmBlueprint,
                     new IndustryPolicy(false, true, M(100), outputs: new[] { new OutputSaleRule("grain", 0, 1) }));
                 Build(Mill, generation.ProcessingPortId, ExpandingEconomyGeneration.MillBlueprint, ExpandingEconomyScenario.MillPolicy());
-                Build(Bakery, generation.RecoveryPortId, EnterpriseScenario.BakeryBlueprint,
+                Build(Bakery, generation.RecoveryPortId, WorldIds.BakeryBlueprint,
                     new IndustryPolicy(true, true, M(100), new[] { new InputStockRule("logs", Q(3), 18) },
                         new[] { new OutputSaleRule("bread", 0, 1) }));
                 Build(Camp, generation.RecoveryPortId, ExpandingEconomyGeneration.LumberBlueprint,
@@ -240,7 +230,7 @@ internal static class ExpandingEconomyExperiments
                 if (strategy == "overbuilt")
                     for (var extra = 1; extra <= 3; extra++) Build("extra_mill_" + extra, generation.ProcessingPortId,
                         ExpandingEconomyGeneration.MillBlueprint, ExpandingEconomyScenario.MillPolicy());
-                if (BakeryId == Bakery) Build(Bakery, generation.ProcessingPortId, EnterpriseScenario.BakeryBlueprint, ExpandingEconomyScenario.BakeryPolicy());
+                if (BakeryId == Bakery) Build(Bakery, generation.ProcessingPortId, WorldIds.BakeryBlueprint, ExpandingEconomyScenario.BakeryPolicy());
                 else Apply(w => w.ConfigureFacility(Owner, BakeryId, ExpandingEconomyScenario.BakeryPolicy()));
                 if (Network) Commission();
             }
@@ -345,7 +335,7 @@ internal static class ExpandingEconomyExperiments
             }
             state = World.Snapshot();
             if (state.Day >= 12 && !state.PrivateFacilities.ContainsKey(Bakery) && state.Companies[Owner].Cash >= M(550))
-                Build(Bakery, generation.RecoveryPortId, EnterpriseScenario.BakeryBlueprint,
+                Build(Bakery, generation.RecoveryPortId, WorldIds.BakeryBlueprint,
                     new IndustryPolicy(true, true, M(100), new[] { new InputStockRule("logs", Q(3), 18) },
                         new[] { new OutputSaleRule("bread", 0, 1) }));
             state = World.Snapshot();
@@ -367,7 +357,7 @@ internal static class ExpandingEconomyExperiments
             {
                 Build("reinvestment_mill", generation.ProcessingPortId, ExpandingEconomyGeneration.MillBlueprint,
                     new IndustryPolicy(true, true, M(100), new[] { new InputStockRule("grain", Q(4), 24) }, new[] { new OutputSaleRule("flour", 0, 1) }));
-                Build("reinvestment_bakery", generation.ProcessingPortId, EnterpriseScenario.BakeryBlueprint,
+                Build("reinvestment_bakery", generation.ProcessingPortId, WorldIds.BakeryBlueprint,
                     new IndustryPolicy(true, true, M(100), new[] { new InputStockRule("flour", Q(3), 30), new InputStockRule("logs", Q(3), 24) }, new[] { new OutputSaleRule("bread", 0, 1) }));
             }
             Manage(Bakery, "bread", 34);
@@ -396,7 +386,7 @@ internal static class ExpandingEconomyExperiments
                 if (good == "flour" && currentShip.DockedPortId == generation.RecoveryPortId)
                 {
                     var facility = current.PrivateFacilities[Bakery];
-                    var quantity = Math.Min(currentShip.Cargo[good], facility.Blueprint.WarehouseCapacity - facility.Inventory.Values.Sum());
+                    var quantity = Math.Min(currentShip.Cargo[good], state.GetFacilityStorage(facility.Id).Capacity - state.GetFacilityStorage(facility.Id).Inventory.Values.Sum());
                     quantity -= quantity % EconomicUnits.QuantityScale;
                     if (quantity > 0) Apply(w => w.TransferGoods(Owner, Player, Bakery, TransferDirection.ShipToWarehouse, good, quantity));
                 }
@@ -437,7 +427,7 @@ internal static class ExpandingEconomyExperiments
         {
             var state = World.Snapshot();
             if (!state.PrivateFacilities.TryGetValue(facilityId, out var facility)) return;
-            var enabled = state.Companies[Owner].Cash >= M(120) && facility.Inventory[output] < Q(ceiling);
+            var enabled = state.Companies[Owner].Cash >= M(120) && state.GetFacilityStorage(facility.Id).Inventory[output] < Q(ceiling);
             if (facility.Enabled != enabled) Apply(w => w.SetFacilityEnabled(Owner, facilityId, enabled));
         }
 
@@ -466,7 +456,7 @@ internal static class ExpandingEconomyExperiments
             {
                 if (mining && World.Snapshot().PrivateFacilities.TryGetValue(Mine, out var mine))
                 {
-                    var quantity = Math.Min(Q(3) - ship.Cargo["silver"], Math.Min(mine.Inventory["silver"], ship.CargoCapacity - ship.CargoUnits));
+                    var quantity = Math.Min(Q(3) - ship.Cargo["silver"], Math.Min(World.Snapshot().GetFacilityStorage(mine.Id).Inventory["silver"], ship.CargoCapacity - ship.CargoUnits));
                     quantity -= quantity % EconomicUnits.QuantityScale;
                     if (quantity > 0) Apply(w => w.TransferGoods(Owner, shipId, Mine, TransferDirection.WarehouseToShip, "silver", quantity));
                 }
@@ -589,33 +579,19 @@ internal static class ExpandingEconomyExperiments
             Ships = state.Ships.Values.Select(s => new { s.Id, s.OwnerId, s.IsPlayer, s.DockedPortId, s.DestinationPortId,
                 s.RemainingTravelDays, s.Cargo, s.AutomationEnabled, Stage = s.IndustrialStage.ToString() }).ToArray(),
             Facilities = state.PrivateFacilities.Values.Select(f => new { f.Id, f.PortId, f.Blueprint.BuildingId,
-                f.IsOperational, f.NextProductionDay, f.Inventory, f.BatchesProduced, f.WagesPaid,
+                f.IsOperational, f.NextProductionDay, f.Inventory, f.SharedStockpileId, f.BatchesProduced, f.WagesPaid,
                 LastOutcome = f.LastOutcome.ToString(), Procurement = f.ProcurementWaitReason.ToString(), Sales = f.SalesWaitReason.ToString() }).ToArray(),
+            CompanyStockpiles = state.CompanyStockpiles.Values.Select(p => new { p.Id, p.OwnerId, p.PortId, p.Capacity, p.Inventory }).ToArray(),
             Towns = state.Ports.Values.Select(p => new { p.Id, p.MarketCash, HouseholdCash = p.City!.HouseholdCash,
                 p.City.InitialPopulation, p.City.Population, p.City.Prosperity, p.City.EssentialFulfillmentPercent,
                 p.City.RecoveryFulfillmentPercent, p.City.TotalWagesReceived, p.City.TotalRetailSpend, p.Inventory,
                 Needs = p.Consumption.Select(c => new { c.Configuration.Id, c.Configuration.GoodId, c.LastDesiredQuantity,
                     c.LastConsumedQuantity, c.LastPayment, c.TotalDesiredQuantity, c.TotalConsumedQuantity, c.TotalPayment,
-                    c.TotalUnmetStock, c.TotalUnmetAffordability, c.DemandRemainder, c.BaselineDemandRemainder }).ToArray() }).ToArray(),
-            Objective = state.Challenge == null ? null : ExpandingChallenges.Progress(state).Components };
-    }
-
-    private static object V2Control(ContentCatalog content, int seed, bool merchant, int horizon)
-    {
-        var world = RunScenario.Create(content, new RunIdentity(null, RunScenario.MerchantCharter, RunWorldMode.LivingCities, seed));
-        if (merchant) world.SetAutomationEnabled(Player, true);
-        for (var day = 0; day < horizon; day++) world.AdvanceDay();
-        var state = world.Snapshot();
-        return new { Seed = seed, Ruleset = 2, Strategy = merchant ? "historical_merchant" : "historical_idle", state.Day,
-            Cash = state.Companies[Owner].Cash, Towns = state.Ports.Values.Select(p => new { p.Id, p.City!.Population,
-                p.City.Prosperity, p.MarketCash, p.City.HouseholdCash, Bread = p.Inventory["bread"] }).ToArray() };
+                    c.TotalUnmetStock, c.TotalUnmetAffordability, c.DemandRemainder, c.BaselineDemandRemainder }).ToArray() }).ToArray() };
     }
 
     private static void Measure(ContentCatalog content)
     {
-        var baseline = RunScenario.Create(content, new RunIdentity(null, RunScenario.MerchantCharter, RunWorldMode.LivingCities, 42));
-        baseline.SetAutomationEnabled(Player, true);
-        MeasureWorld(baseline, "V2 baseline, 1 owned ship +3 NPCs");
         foreach (var fleet in new[] { 1, 2, 3 })
         {
             var trial = new Trial(content, RunScenario.Create(content, new RunIdentity(null, RunScenario.MerchantCharter,
@@ -646,16 +622,17 @@ internal static class ExpandingEconomyExperiments
 
     internal sealed class Report
     {
-        public int FormatVersion => 1;
+        public int FormatVersion => 2;
         public int RulesetVersion => 3;
+        public int EconomicRulesVersion => 1;
+        public int StorageVersion => 2;
+        public int ItineraryVersion => 1;
         public int QuantityScale => 10000;
         public int MoneyScale => 10000;
-        public string Methodology { get; set; } = "Fixed ordinary-command policies; both pricing hypotheses and ascensions. Deep matrix extends 15 seeds through 1095 days with idle/balanced/circulation/network2/fleet3/monetary policies. Circulation uses local paid employers and stock/cash-gated batch controls; fleet3 buys both additional ships before expansion, exposing their opportunity cost. No state repair, subsidies or forced success. Every world commit audits all-account/regional issuance, physical flows and FIFO. Save checks compare exact states and seven further days of committed events. V2 controls retain historical whole units; all v3 integers are raw 1/10000 units. Runtime/memory observations are printed, never serialized.";
+        public string Methodology { get; set; } = "Current v3 circulation1/storage2/itinerary1 sandbox runs. Normal verification covers seeds42/99, thirteen prescribed policies through180days, two additional charter cases and one Coverage/Ascension1 network case. Deep sweeps remain opt-in. Existing research policies use ordinary market/industrial route commands, with physical pooled-stock reads; they are controls, not recommended player itineraries. No state repair, subsidies, rebalance or forced success. Every commit audits both money boundaries, physical goods and FIFO. Save checks compare exact states and seven further days of events. All quantities/accounts are raw1/10000 units; runtime is printed, not serialized.";
         public int[] Seeds { get; set; } = Array.Empty<int>();
         public int Horizon { get; set; }
         public List<Row> Runs { get; } = new();
-        public List<Row> Challenges { get; } = new();
-        public List<object> V2Controls { get; } = new();
     }
     internal sealed class Row
     {
@@ -718,7 +695,7 @@ internal static class ExpandingEconomyExperiments
         public int PendingShips { get; set; }
         public object[] Ships { get; set; } = Array.Empty<object>();
         public object[] Facilities { get; set; } = Array.Empty<object>();
+        public object[] CompanyStockpiles { get; set; } = Array.Empty<object>();
         public object[] Towns { get; set; } = Array.Empty<object>();
-        public IReadOnlyDictionary<string, int>? Objective { get; set; }
     }
 }

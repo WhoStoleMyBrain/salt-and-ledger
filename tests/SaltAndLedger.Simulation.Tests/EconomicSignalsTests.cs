@@ -81,15 +81,12 @@ public sealed class EconomicSignalsTests
     }
 
     [Theory]
-    [InlineData(RunWorldMode.Classic, false)]
-    [InlineData(RunWorldMode.Seeded, false)]
-    [InlineData(RunWorldMode.LivingCities, true)]
     [InlineData(RunWorldMode.ExpandingEconomy, true)]
-    public void NamedHistoricalModesRetainTheirOwnUnitsAndExactSaveBytes(RunWorldMode mode, bool living)
+    public void CurrentSignalsLeaveTheWorldAndSaveUnchanged(RunWorldMode mode, bool living)
     {
         var content = Content();
         var identity = new RunIdentity(null, RunScenario.IndustrialCharter, mode,
-            mode == RunWorldMode.Classic ? null : 99);
+            99);
         var world = RunScenario.Create(content, identity);
         var saved = WorldSaveCodec.Save(world);
         var snapshot = world.Snapshot();
@@ -114,8 +111,8 @@ public sealed class EconomicSignalsTests
         foreach (var facility in snapshot.PrivateFacilities.Values)
         {
             var signal = EconomicSignals.PrivateProduction(snapshot, content, facility.Id);
-            Assert.False(signal.UsesSharedStock);
-            Assert.Equal("facility:" + facility.Id, signal.StoreId);
+            Assert.True(signal.UsesSharedStock);
+            Assert.Equal(facility.SharedStockpileId, signal.StoreId);
         }
         Assert.Equal(saved, WorldSaveCodec.Save(world));
         Assert.Same(snapshot, world.Snapshot());
@@ -320,7 +317,7 @@ public sealed class EconomicSignalsTests
             companies: new[] { new CompanyConfiguration("owner", companyCash) }, industryBlueprints: new[] { plan },
             initialFacilities: sites, difficulty: difficulty,
             runIdentity: new RunIdentity(null, RunScenario.MerchantCharter, RunWorldMode.ExpandingEconomy, 99,
-                difficulty, companyStorageRules: CompanyStorageRules.Pooled),
+                difficulty, companyStorageRules: CompanyStorageRules.Pooled, economicRulesVersion: 0),
             economy: ExpandingEconomyConfiguration.CreateDefault("town", "other"));
     }
 }

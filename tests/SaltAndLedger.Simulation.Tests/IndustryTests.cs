@@ -550,15 +550,15 @@ public sealed class IndustryTests
         var forwardContent = Content();
         var reversedContent = ContentLoader.Load(ContentLoaderTests.Change(root =>
             root["goods"] = new Newtonsoft.Json.Linq.JArray(root["goods"]!.Reverse())));
-        var forward = EnterpriseScenario.Create(forwardContent);
-        var reversed = EnterpriseScenario.Create(reversedContent);
+        var forward = RunScenario.Create(forwardContent, new RunIdentity(null, RunScenario.MerchantCharter, seed: 99));
+        var reversed = RunScenario.Create(reversedContent, new RunIdentity(null, RunScenario.MerchantCharter, seed: 99));
         foreach (var world in new[] { forward, reversed })
         {
-            world.ConstructFacility(EnterpriseScenario.PlayerOwnerId, EnterpriseScenario.West,
-                EnterpriseScenario.BakeryBlueprint, Facility);
-            world.ConfigureFacility(EnterpriseScenario.PlayerOwnerId, Facility, EnterpriseScenario.BakeryPolicy(true));
+            world.ConstructFacility(WorldIds.PlayerOwnerId, WorldIds.West,
+                WorldIds.BakeryBlueprint, Facility);
+            world.ConfigureFacility(WorldIds.PlayerOwnerId, Facility, ExpandingEconomyScenario.BakeryPolicy(true));
         }
-        var expectedIds = forwardContent.Goods.Select(g => g.Id).OrderBy(id => id, StringComparer.Ordinal).ToArray();
+        var expectedIds = forwardContent.ForExpandingEconomy().Goods.Select(g => g.Id).OrderBy(id => id, StringComparer.Ordinal).ToArray();
         for (var day = 0; day <= 12; day++)
         {
             var first = forward.Snapshot();
@@ -571,7 +571,7 @@ public sealed class IndustryTests
                 Assert.Equal(expectedIds, facility.ConsumedQuantities.Keys);
             }
             Assert.Equal(JsonConvert.SerializeObject(first.PrivateFacilities), JsonConvert.SerializeObject(second.PrivateFacilities));
-            Assert.Equal(first.Companies[EnterpriseScenario.PlayerOwnerId].Cash, second.Companies[EnterpriseScenario.PlayerOwnerId].Cash);
+            Assert.Equal(first.Companies[WorldIds.PlayerOwnerId].Cash, second.Companies[WorldIds.PlayerOwnerId].Cash);
             foreach (var good in expectedIds) Assert.Equal(TotalGoods(first, good), TotalGoods(second, good));
             Assert.Equal(TotalCash(first), TotalCash(second));
             if (day < 12) { forward.AdvanceDay(); reversed.AdvanceDay(); }

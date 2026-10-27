@@ -6,9 +6,22 @@ namespace SaltAndLedger.Simulation.Tests;
 
 public sealed class GrandCommissionWitnessTests
 {
+    [Fact]
+    public void CurrentCommissionWinsThroughTradingProductionItineraryAndExactVoyageSave()
+    {
+        var content = ContentLoader.Load(ContentLoaderTests.CanonicalJson());
+        var final = GrandCommissionWitness.Victory(content, 99, itinerary: true).Snapshot();
+        Assert.Equal(ChallengeStatus.Succeeded, final.Challenge!.Status);
+        Assert.Equal(4, GrandCommission.Progress(final).CurrentlyMetCount);
+        Assert.Equal(6226936, final.Companies[WorldIds.PlayerOwnerId].Cash);
+        Assert.Equal(18, final.Day);
+        Assert.NotNull(final.Ships[WorldIds.PlayerShipId].Itinerary);
+        Assert.False(final.Ships[WorldIds.PlayerShipId].AutomationEnabled);
+    }
+
     [Theory]
-    [InlineData(99, 18, 6486668, 240000, 2164)]
-    [InlineData(42, 13, 2956668, 420000, 2129)]
+    [InlineData(99, 18, 6226936, 240000, 2162)]
+    [InlineData(42, 13, 2858935, 420000, 2128)]
     public void ActualDifferentiatedCommandJourneysWinWithPaidInputsAndExactSaveContinuation(
         int seed, int day, long cash, long wages, int score)
     {
@@ -16,8 +29,8 @@ public sealed class GrandCommissionWitnessTests
         var world = GrandCommissionWitness.Victory(content, seed);
         var final = world.Snapshot();
         Assert.Equal(day, final.Day);
-        Assert.Equal(cash, final.Companies[EnterpriseScenario.PlayerOwnerId].Cash);
-        Assert.Equal(wages, final.Accounting.Companies[EnterpriseScenario.PlayerOwnerId].WagesPaid);
+        Assert.Equal(cash, final.Companies[WorldIds.PlayerOwnerId].Cash);
+        Assert.Equal(wages, final.Accounting.Companies[WorldIds.PlayerOwnerId].WagesPaid);
         Assert.Equal(score, new RunResults(final).TotalScore);
         Assert.Equal(4, GrandCommission.Progress(final).CurrentlyMetCount);
         Assert.Throws<InvalidOperationException>(() => world.AdvanceDay());

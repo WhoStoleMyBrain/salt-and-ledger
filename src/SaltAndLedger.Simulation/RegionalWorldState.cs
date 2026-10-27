@@ -114,8 +114,6 @@ namespace SaltAndLedger.Simulation
                     throw new ArgumentException("Unknown challenge owner or destination.");
                 content.GetGood(challenge.GoodId);
                 if (challenge.DeadlineDay <= initialDay) throw new ArgumentException("Challenge deadline must follow the starting day.");
-                if (challenge.Kind == ChallengeKind.CityRecovery && locations.Single(p => p.Id == challenge.PortId).City == null)
-                    throw new ArgumentException("Recovery objectives require a living target city.");
             }
             var accounting = new WorkingAccounting();
             foreach (var account in accounts.Values) accounting.RegisterCompany(account.Id, account.Cash);
@@ -173,9 +171,7 @@ namespace SaltAndLedger.Simulation
                     accounting.Grant(storeId, stock.Key, stock.Value, configured.Provenance);
             }
             var initialChallenge = challenge == null ? null : ChallengeRules.Create(challenge);
-            if (challenge?.Kind == ChallengeKind.CityRecovery)
-                initialChallenge = ChallengeRules.Evaluate(initialChallenge!, initialDay, accounts[challenge.OwnerId].Cash,
-                    accounting.Snapshot().Companies[challenge.OwnerId], locations.Single(p => p.Id == challenge.PortId).City);
+
             state = new RegionalWorldSnapshot(initialDay, initialRevision, locations, vessels, connections,
                 accounts.Values, blueprints, privateFacilities,
                 initialChallenge, accounting.Snapshot(), difficulty, runIdentity,
@@ -667,7 +663,6 @@ namespace SaltAndLedger.Simulation
                 port.Cash = attempt.MarketCashChange.After;
                 company.Cash = attempt.TraderCashChange.After;
                 Trades.Add(new RegionalTrade(shipId, ship.Configuration.OwnerId, portId, attempt));
-                if (Challenge != null) Challenge = ChallengeRules.ApplyTrade(Challenge, company.Id, portId, attempt);
                 if (attempt.Outcome == TradeOutcome.Traded)
                 {
                     AccountTrade("ship:" + shipId, portId, attempt);
@@ -823,7 +818,6 @@ namespace SaltAndLedger.Simulation
                     else facility.SalesRevenue = checked(facility.SalesRevenue + attempt.ExecutedAmount);
                     Changed = true;
                 }
-                if (Challenge != null) Challenge = ChallengeRules.ApplyTrade(Challenge, facility.OwnerId, facility.PortId, attempt);
                 return attempt;
             }
 
@@ -1137,7 +1131,6 @@ namespace SaltAndLedger.Simulation
                         checked(previous.TotalUnmetAffordability + result.UnmetAffordability),
                         demand.Remainder, baseline.Remainder, baseline.Quantity);
                     Consumption.Add(result);
-                    if (Challenge != null) Challenge = ChallengeRules.ApplyConsumption(Challenge, rule.GoodId, result.ConsumedQuantity);
                 }
             }
 
@@ -1182,7 +1175,6 @@ namespace SaltAndLedger.Simulation
                         port.Consumption[index] = new ConsumptionSnapshot(config, checked(nextDay + config.IntervalDays),
                             unmet, checked(demand.TotalUnmetQuantity + unmet));
                         Consumption.Add(new RegionalConsumption(entry.Key, config, consumed));
-                        if (Challenge != null) Challenge = ChallengeRules.ApplyConsumption(Challenge, config.GoodId, consumed);
                     }
                 }
             }

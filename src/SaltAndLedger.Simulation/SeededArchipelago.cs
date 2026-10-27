@@ -35,24 +35,7 @@ namespace SaltAndLedger.Simulation
                 "|" + string.Join(";", Routes.Select(route => route.Key + ":" + route.Distance.ToString(CultureInfo.InvariantCulture)));
         }
 
-        /// <summary>The exact authored coordinates and independently authored distances from Task 1.7.</summary>
-        public static ArchipelagoGeography Classic { get; } = new ArchipelagoGeography(0,
-            new[]
-            {
-                new PortPosition(EnterpriseScenario.North, 340, 120),
-                new PortPosition(EnterpriseScenario.South, 570, 550),
-                new PortPosition(EnterpriseScenario.East, 850, 250),
-                new PortPosition(EnterpriseScenario.West, 120, 400)
-            },
-            new[]
-            {
-                new SeaRoute(EnterpriseScenario.North, EnterpriseScenario.West, 200),
-                new SeaRoute(EnterpriseScenario.North, EnterpriseScenario.South, 300),
-                new SeaRoute(EnterpriseScenario.North, EnterpriseScenario.East, 400),
-                new SeaRoute(EnterpriseScenario.South, EnterpriseScenario.East, 300),
-                new SeaRoute(EnterpriseScenario.South, EnterpriseScenario.West, 400),
-                new SeaRoute(EnterpriseScenario.East, EnterpriseScenario.West, 600)
-            });
+
     }
 
     /// <summary>
@@ -95,7 +78,7 @@ namespace SaltAndLedger.Simulation
                 slots[target] = previous;
             }
             // Fixed ordinal IDs, never collection enumeration order or names, select each economic role.
-            var ids = new[] { EnterpriseScenario.East, EnterpriseScenario.North, EnterpriseScenario.South, EnterpriseScenario.West };
+            var ids = new[] { WorldIds.East, WorldIds.North, WorldIds.South, WorldIds.West };
             var positions = new PortPosition[ids.Length];
             for (var index = 0; index < ids.Length; index++)
                 positions[index] = new PortPosition(ids[index], slots[index].X + random.Next(81) - 40,

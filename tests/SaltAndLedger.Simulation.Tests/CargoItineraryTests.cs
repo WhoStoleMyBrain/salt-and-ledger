@@ -66,7 +66,7 @@ public sealed class CargoItineraryTests
             initialFacilities: warehouse == null ? null : new[] { new PrivateFacilityConfiguration(Site, Owner, North,
                 "plan", warehouse, enabled: false) },
             runIdentity: new RunIdentity(null, RunScenario.MerchantCharter, RunWorldMode.ExpandingEconomy, 99,
-                companyStorageRules: CompanyStorageRules.Pooled, itineraryVersion: itineraryVersion),
+                companyStorageRules: CompanyStorageRules.Pooled, itineraryVersion: itineraryVersion, economicRulesVersion: 0),
             economy: ExpandingEconomyConfiguration.CreateDefault(South, North));
     }
 
@@ -472,12 +472,12 @@ public sealed class CargoItineraryTests
             companyStorageRules: CompanyStorageRules.Pooled, itineraryVersion: 1);
         var world = RunScenario.Create(content, identity, reverse);
         var generation = ExpandingEconomyGeneration.Generate(99);
-        var owner = EnterpriseScenario.PlayerOwnerId;
-        var shipId = EnterpriseScenario.PlayerShipId;
+        var owner = WorldIds.PlayerOwnerId;
+        var shipId = WorldIds.PlayerShipId;
         const string bakeryId = "itinerary_bakery";
         var records = new List<RegionalResult>();
         void Record(RegionalResult result) { Audit(result); records.Add(result); }
-        Record(world.ConstructFacility(owner, generation.RecoveryPortId, EnterpriseScenario.BakeryBlueprint, bakeryId));
+        Record(world.ConstructFacility(owner, generation.RecoveryPortId, WorldIds.BakeryBlueprint, bakeryId));
         Record(world.Depart(shipId, generation.RecoveryPortId));
         while (world.Snapshot().Ships[shipId].DockedPortId == null) Record(world.AdvanceDay());
         var enabledDay = world.Snapshot().Day;
@@ -550,7 +550,7 @@ public sealed class CargoItineraryTests
         {
             Assert.Equal(finance.InventoryPurchases, finance.CostOfGoodsSold + finance.HeldInventoryCost + finance.MintMaterialCost);
             Assert.Equal(finance.InitialCash - finance.InventoryPurchases + finance.SalesRevenue - finance.ConstructionExpenditure -
-                finance.WagesPaid - finance.PublicCommissionExpenditure + finance.MintReceipts, after.Companies[finance.OwnerId].Cash);
+                finance.WagesPaid - finance.FeesPaid - finance.PublicCommissionExpenditure + finance.MintReceipts, after.Companies[finance.OwnerId].Cash);
             foreach (var good in after.Ports.First().Value.Inventory.Keys)
             {
                 long Amount(IReadOnlyDictionary<string, long> values) => values.TryGetValue(good, out var value) ? value : 0;

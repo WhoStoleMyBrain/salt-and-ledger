@@ -14,31 +14,6 @@ public sealed class CirculationSaveTests
 {
     private static ContentCatalog Content() => ContentLoader.Load(ContentLoaderTests.CanonicalJson());
 
-    [Theory]
-    [InlineData(1, "4e239fc403c3eba4234008b0a9ac5f8db915645453ae68d62bfddc7729e76686")]
-    [InlineData(2, "dfd7505f32993e64881cba8cd74462d6ecf822c4a967d560181d18402fc016dd")]
-    [InlineData(3, "4824c092d87f88458bfd21f107422c0641cd0c25f37409beff9454c1ecbac63a")]
-    [InlineData(4, "afe50f9ebe646ad31579c980f8ea92a7508ed6098f56f942e0b0a59b4e9d3e81")]
-    public void HistoricalSchemasRemainByteIdenticalToPreservedTask23Assembly(int schema, string expected)
-    {
-        // Captured before this task's first rebuild from de3a800's preserved Release assembly.
-        var draft = GrandCommissionDraft.Generate(42);
-        var identity = new RunIdentity(schema == 1 ? null : GrandCommission.ChallengeId,
-            RunScenario.IndustrialCharter, RunWorldMode.ExpandingEconomy, 42, RunDifficulty.SlowFoundations,
-            livingPricingMode: LivingPricingMode.Coverage,
-            commission: schema == 1 ? null : draft.Resolve(draft.Rounds.Select(r => r.Offers[0].TemplateId)),
-            companyStorageRules: schema >= 3 ? CompanyStorageRules.Pooled : CompanyStorageRules.Legacy,
-            itineraryVersion: schema == 4 ? 1 : 0);
-        var world = RunScenario.Create(Content(), identity);
-        world.SetAutomationEnabled(EnterpriseScenario.PlayerShipId, true);
-        for (var day = 0; day < 11; day++) world.AdvanceDay();
-        var saved = WorldSaveCodec.Save(world);
-        Assert.Equal(expected, Hash(saved));
-        Assert.DoesNotContain("EconomicRulesVersion", saved);
-        Assert.DoesNotContain("Circulation", saved);
-        Assert.Equal(schema, (int)JObject.Parse(saved)["SchemaVersion"]!);
-        Assert.Equal(saved, WorldSaveCodec.Save(WorldSaveCodec.Load(Content(), saved)));
-    }
 
     [Theory]
     [InlineData(false)]
@@ -76,7 +51,7 @@ public sealed class CirculationSaveTests
         var reversed = RunScenario.Create(Content(), identity, reverseConfiguration: true);
         // Subunit warehouse proceeds exercise carried service rounding rather than whole-coin coincidence.
         foreach (var target in new[] { world, reversed })
-            target.ExecuteWarehouseTrade(EnterpriseScenario.PlayerOwnerId, RunScenario.StarterBakery,
+            target.ExecuteWarehouseTrade(WorldIds.PlayerOwnerId, RunScenario.StarterBakery,
                 new TradeCommand(TradeDirection.Sell, "flour", 3333));
         var culture = CultureInfo.CurrentCulture;
         try

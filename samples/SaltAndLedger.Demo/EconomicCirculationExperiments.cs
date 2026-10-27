@@ -15,7 +15,7 @@ internal static class EconomicCirculationExperiments
 {
     internal static readonly int[] Seeds = { -42, 42, 99, -734282136 };
     private static readonly long[] CheckpointDays = { 30, 90, 140, 180, 365 };
-    private const string Owner = EnterpriseScenario.PlayerOwnerId, Ship = EnterpriseScenario.PlayerShipId;
+    private const string Owner = WorldIds.PlayerOwnerId, Ship = WorldIds.PlayerShipId;
     private const string Farm = "circulation_farm", Mill = "circulation_mill", Bakery = "circulation_bakery", Camp = "circulation_camp";
     private static readonly JsonSerializerOptions Options = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
     private static int Q(int value) => EconomicUnits.FromWhole(value);
@@ -134,7 +134,7 @@ internal static class EconomicCirculationExperiments
             Build(Farm, generation.FoodSourcePortId, ExpandingEconomyGeneration.FarmBlueprint,
                 new IndustryPolicy(false, true, M(100), outputs: new[] { new OutputSaleRule("grain", 0, 1) }));
             Build(Mill, generation.ProcessingPortId, ExpandingEconomyGeneration.MillBlueprint, ExpandingEconomyScenario.MillPolicy());
-            Build(Bakery, generation.RecoveryPortId, EnterpriseScenario.BakeryBlueprint,
+            Build(Bakery, generation.RecoveryPortId, WorldIds.BakeryBlueprint,
                 new IndustryPolicy(true, true, M(100), new[] { new InputStockRule("logs", Q(3), 18) },
                     new[] { new OutputSaleRule("bread", 0, 1) }));
             Build(Camp, generation.RecoveryPortId, ExpandingEconomyGeneration.LumberBlueprint,
@@ -199,7 +199,7 @@ internal static class EconomicCirculationExperiments
             foreach (var trade in result.WarehouseTrades)
                 ObserveTrade(trade.OwnerId, trade.PortId, trade.Trade);
             foreach (var transfer in result.CashTransfers)
-                Increment(Row.AccountTransfers, transfer.Kind + "/" + transfer.PortId + "/" + transfer.SourceAccountId + "Ã¢â€ â€™" + transfer.DestinationAccountId, transfer.Amount);
+                Increment(Row.AccountTransfers, transfer.Kind + "/" + transfer.PortId + "/" + transfer.SourceAccountId + "→" + transfer.DestinationAccountId, transfer.Amount);
             foreach (var need in result.Consumption)
             {
                 Increment(Row.Flows, "consumed/" + need.GoodId, need.ConsumedQuantity);

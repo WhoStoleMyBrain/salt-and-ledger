@@ -11,8 +11,8 @@ namespace SaltAndLedger.Simulation.Tests;
 
 public sealed class Task22SaveTests
 {
-    private const string Owner = EnterpriseScenario.PlayerOwnerId;
-    private const string Ship = EnterpriseScenario.PlayerShipId;
+    private const string Owner = WorldIds.PlayerOwnerId;
+    private const string Ship = WorldIds.PlayerShipId;
     private static ContentCatalog Content() => ContentLoader.Load(ContentLoaderTests.CanonicalJson());
     private static RegionalWorldState World(bool commission = true, string charter = RunScenario.IndustrialCharter,
         CompanyStorageRules storage = CompanyStorageRules.Pooled)
@@ -25,27 +25,6 @@ public sealed class Task22SaveTests
             companyStorageRules: storage));
     }
 
-    [Fact]
-    public void HistoricalSchemaTwoBytesAndFacilitySemanticsRemainUnchanged()
-    {
-        // Captured before Task 2.2 from the eafb452 Release assembly, using actual automated days.
-        var world = World(storage: CompanyStorageRules.Legacy);
-        world.SetAutomationEnabled(Ship, true);
-        for (var day = 0; day < 11; day++) world.AdvanceDay();
-        var saved = WorldSaveCodec.Save(world);
-        Assert.Equal("dfd7505f32993e64881cba8cd74462d6ecf822c4a967d560181d18402fc016dd", Hash(saved));
-        var json = JObject.Parse(saved);
-        Assert.Equal(2, (int)json["SchemaVersion"]!);
-        Assert.Null(json["Identity"]!["CompanyStorageRules"]);
-        Assert.Null(json["CompanyStockpiles"]);
-        Assert.All(json["Facilities"]!, f => Assert.Null(f["SharedStockpileId"]));
-        var restored = WorldSaveCodec.Load(Content(), saved);
-        Assert.False(restored.Snapshot().UsesPooledCompanyStorage);
-        Assert.Empty(restored.Snapshot().CompanyStockpiles);
-        Assert.Contains("facility:" + RunScenario.StarterBakery, restored.Snapshot().Accounting.Stores.Keys);
-        Assert.Equal(saved, WorldSaveCodec.Save(restored));
-        AdvanceBoth(world, restored);
-    }
 
     [Theory]
     [InlineData(false, RunScenario.MerchantCharter)]
@@ -53,12 +32,12 @@ public sealed class Task22SaveTests
     [InlineData(true, RunScenario.MerchantCharter)]
     [InlineData(true, RunScenario.IndustrialCharter)]
     [InlineData(true, RunScenario.IndependentCharter)]
-    public void PooledIdentitySelectsSchemaThreeAndRecreatesExactInitialWorld(bool commission, string charter)
+    public void PooledIdentitySelectsCurrentSchemaAndRecreatesExactInitialWorld(bool commission, string charter)
     {
         var world = World(commission, charter);
         var saved = WorldSaveCodec.Save(world);
         var json = JObject.Parse(saved);
-        Assert.Equal(3, (int)json["SchemaVersion"]!);
+        Assert.Equal(5, (int)json["SchemaVersion"]!);
         Assert.Equal((int)CompanyStorageRules.Pooled, (int)json["Identity"]!["CompanyStorageRules"]!);
         Assert.NotNull(json["CompanyStockpiles"]);
         Assert.Equal(commission, json["CommissionHistory"] != null);
@@ -166,7 +145,7 @@ public sealed class Task22SaveTests
         Trade(TradeDirection.Sell, "grain", 4);
         Trade(TradeDirection.Sell, "logs", 2);
         world.ConstructFacility(Owner, generation.RecoveryPortId, ExpandingEconomyGeneration.LumberBlueprint, "saved_camp");
-        world.ConstructFacility(Owner, generation.ProcessingPortId, EnterpriseScenario.SawmillBlueprint, "saved_sawmill");
+        world.ConstructFacility(Owner, generation.ProcessingPortId, WorldIds.SawmillBlueprint, "saved_sawmill");
         world.ExecuteWarehouseTrade(Owner, "saved_sawmill", new TradeCommand(TradeDirection.Buy, "logs", 80000));
         world.ConstructFacility(Owner, generation.FurniturePortId, ExpandingEconomyGeneration.SilverMineBlueprint, "saved_mine");
         world.CommissionMint(Owner);

@@ -37,22 +37,7 @@ namespace SaltAndLedger.Simulation
                     RequireCommission(!qualified || (challenge.Status != ChallengeStatus.Active && challenge.Status != ChallengeStatus.Failed),
                         "Saved commission lifecycle conflicts with its already qualified state.");
                 }
-                if (restored.Challenge != null && ExpandingChallenges.IsExpanding(restored.Challenge.Configuration.Kind))
-                {
-                    // Pure validation of the saved observations/assets; never execute ChallengeRules.Evaluate
-                    // or alter the saved lifecycle, counters, day, or revision during restoration.
-                    var actual = ExpandingChallenges.Progress(restored);
-                    if (restored.Challenge.ProducedQuantity != actual.Percent ||
-                        (restored.Challenge.Status == ChallengeStatus.Succeeded && !actual.Qualified))
-                        throw new WorldSaveException("Saved v3 objective progress disagrees with authoritative welfare, industry and monetary state.");
-                    // Every economic commit immediately evaluates active objectives. Qualification
-                    // includes the cash floor, and success takes precedence even on the deadline.
-                    // Therefore neither an active run nor a failed run can already be qualified.
-                    // Abandonment is an explicit lifecycle choice; retain it without evaluating it.
-                    if (actual.Qualified && (restored.Challenge.Status == ChallengeStatus.Active ||
-                        restored.Challenge.Status == ChallengeStatus.Failed))
-                        throw new WorldSaveException("Saved v3 objective lifecycle conflicts with its already qualified state.");
-                }
+
             }
             // This fresh world is returned only after every check passes. No daily operation or challenge
             // evaluation is invoked by restore, including when the saved challenge is already terminal.
@@ -302,19 +287,11 @@ namespace SaltAndLedger.Simulation
             Require(f.CompletionDay == checked(f.CreatedDay + delay) &&
                 (f.ConstructionStatus == FacilityConstructionStatus.Operational) == (f.CompletionDay <= day), "Invalid construction lifecycle.");
             var inventory = Inventory(content, f.Inventory);
-            if (initial.UsesPooledCompanyStorage)
-            {
-                Require(f.SharedStockpileId == "company:" + f.OwnerId + ":" + f.PortId,
-                    "Facility does not reference its owning company's local stockpile.");
-                Require(inventory.Values.All(v => v == 0), "A pooled facility cannot duplicate physical company stock.");
-                Require(f.Batches <= Math.Max(0, day - f.CompletionDay) / blueprint.IntervalDays,
-                    "Pooled facility production precedes its funded batch schedule.");
-            }
-            else
-            {
-                Require(f.SharedStockpileId == null, "Legacy facilities cannot reference pooled stock.");
-                Require(inventory.Values.Sum(v => (long)v) <= blueprint.WarehouseCapacity, "Warehouse exceeds capacity.");
-            }
+            Require(f.SharedStockpileId == "company:" + f.OwnerId + ":" + f.PortId,
+                "Facility does not reference its owning company's local stockpile.");
+            Require(inventory.Values.All(v => v == 0), "A pooled facility cannot duplicate physical company stock.");
+            Require(f.Batches <= Math.Max(0, day - f.CompletionDay) / blueprint.IntervalDays,
+                "Pooled facility production precedes its funded batch schedule.");
             Totals(content, f.Produced); Totals(content, f.Consumed);
             foreach (var good in content.Goods)
             {
@@ -334,9 +311,7 @@ namespace SaltAndLedger.Simulation
         private static CompanyStockpileSnapshot[] RestoreCompanyStockpiles(ContentCatalog content,
             RegionalWorldSnapshot initial, RegionalSaveData data, PrivateFacilitySnapshot[] facilities)
         {
-            Require(initial.UsesPooledCompanyStorage == (data.CompanyStockpiles != null),
-                "Company stockpile presence does not match storage rules.");
-            if (!initial.UsesPooledCompanyStorage) return Array.Empty<CompanyStockpileSnapshot>();
+            Require(data.CompanyStockpiles != null, "Company stockpiles are missing.");
             var capacities = facilities.GroupBy(f => "company:" + f.OwnerId + ":" + f.PortId, StringComparer.Ordinal)
                 .ToDictionary(g => g.Key, g => new { Owner = g.First().OwnerId, Port = g.First().PortId,
                     Capacity = g.Aggregate(0, (sum, f) => checked(sum + f.Blueprint.WarehouseCapacity)) }, StringComparer.Ordinal);
@@ -455,21 +430,13 @@ namespace SaltAndLedger.Simulation
             Require(c.Status == ChallengeStatus.Active ? c.CompletedDay == null && data.Day < config.DeadlineDay :
                 c.CompletedDay == data.Day && c.CompletedDay <= config.DeadlineDay, "Invalid challenge lifecycle.");
             if (c.Status == ChallengeStatus.Failed) Require(data.Day == config.DeadlineDay, "Failure must occur on the configured deadline.");
-            var recovery = config.Kind == ChallengeKind.CityRecovery ?
-                new CityRecoveryProgress(config, ports.Single(p => p.Id == config.PortId).City!) : null;
             if (c.Status == ChallengeStatus.Succeeded)
             {
                 var funded = data.Companies.Single(company => company.Id == config.OwnerId).Cash >= config.MinimumCash;
-                var qualified = config.Kind == ChallengeKind.CityRecovery ? recovery!.Qualified :
-                    ExpandingChallenges.IsExpanding(config.Kind) || initial.RunIdentity?.Commission != null ? c.Produced == 100 :
-                    config.Kind == ChallengeKind.RegionalRelief ? c.RegionalConsumed >= config.RequiredQuantity :
-                    config.Kind == ChallengeKind.EnterpriseAmbition ? c.Produced >= config.RequiredQuantity && c.Margin >= config.RequiredMargin :
-                    c.NetDelivered >= config.RequiredQuantity;
-                Require(funded && qualified, "Saved success does not meet its recorded objective and solvency requirements.");
+                Require(funded && c.Produced == 100, "Saved success does not meet its recorded objective and solvency requirements.");
             }
-            if (ExpandingChallenges.IsExpanding(config.Kind) || initial.RunIdentity?.Commission != null)
-                Require(c.Produced <= 100, "Invalid v3 objective percentage.");
-            return new ChallengeSnapshot(config, c.NetDelivered, c.Status, c.CompletedDay, c.RegionalConsumed, c.Produced, c.Margin, recovery);
+            Require(c.Produced <= 100, "Invalid commission percentage.");
+            return new ChallengeSnapshot(config, c.NetDelivered, c.Status, c.CompletedDay, c.RegionalConsumed, c.Produced, c.Margin);
         }
 
         private static IReadOnlyDictionary<string, int> Inventory(ContentCatalog content, Dictionary<string, int> stock)

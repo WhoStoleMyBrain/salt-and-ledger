@@ -7,8 +7,8 @@ namespace SaltAndLedger.Simulation.Tests;
 
 public sealed class GrandCommissionAdditionalTemplatesTests
 {
-    private const string Owner = EnterpriseScenario.PlayerOwnerId;
-    private const string Ship = EnterpriseScenario.PlayerShipId;
+    private const string Owner = WorldIds.PlayerOwnerId;
+    private const string Ship = WorldIds.PlayerShipId;
     private static ContentCatalog Content() => ContentLoader.Load(ContentLoaderTests.CanonicalJson());
     private static RegionalWorldState World(int seed, string? navigation = null, string? industry = null, string? civic = null)
     {
@@ -82,7 +82,7 @@ public sealed class GrandCommissionAdditionalTemplatesTests
         var generation = ExpandingEconomyGeneration.Generate(-42);
         foreach (var id in new[] { "breadworks_one", "breadworks_two" })
         {
-            world.ConstructFacility(Owner, generation.FoodSourcePortId, EnterpriseScenario.BakeryBlueprint, id);
+            world.ConstructFacility(Owner, generation.FoodSourcePortId, WorldIds.BakeryBlueprint, id);
             BuyInput(world, id, "flour", 1);
             BuyInput(world, id, "logs", 1);
         }
@@ -92,7 +92,7 @@ public sealed class GrandCommissionAdditionalTemplatesTests
         Assert.True(local.Conditions.Single(c => c.Id == "production").IsPermanent);
         Assert.Equal(1, local.Conditions.Single(c => c.Id == "bakeries").Current);
         Assert.False(local.IsMet);
-        world.ConstructFacility(Owner, generation.RecoveryPortId, EnterpriseScenario.BakeryBlueprint, "breadworks_coast");
+        world.ConstructFacility(Owner, generation.RecoveryPortId, WorldIds.BakeryBlueprint, "breadworks_coast");
         BuyInput(world, "breadworks_coast", "flour", 1);
         BuyInput(world, "breadworks_coast", "logs", 1);
         Days(world, 2);
@@ -106,11 +106,11 @@ public sealed class GrandCommissionAdditionalTemplatesTests
     {
         var world = World(42, industry: "artisan_guild");
         var generation = ExpandingEconomyGeneration.Generate(42);
-        world.ConstructFacility(Owner, generation.ProcessingPortId, EnterpriseScenario.SawmillBlueprint, "guild_sawmill");
-        world.ConstructFacility(Owner, generation.FurniturePortId, EnterpriseScenario.WorkshopBlueprint, "guild_workshop");
+        world.ConstructFacility(Owner, generation.ProcessingPortId, WorldIds.SawmillBlueprint, "guild_sawmill");
+        world.ConstructFacility(Owner, generation.FurniturePortId, WorldIds.WorkshopBlueprint, "guild_workshop");
         BuyInput(world, "guild_sawmill", "logs", 8);
         Days(world, 8);
-        Assert.Equal(40000, world.Snapshot().PrivateFacilities["guild_sawmill"].Inventory["planks"]);
+        Assert.Equal(40000, world.Snapshot().GetFacilityStorage("guild_sawmill").Inventory["planks"]);
         Assert.Equal(0, Goal(world, "artisan_guild").Conditions.Single(c => c.Id == "production").Current);
         Assert.False(Goal(world, "artisan_guild").IsMet);
         Sail(world, generation.ProcessingPortId);

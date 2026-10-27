@@ -7,8 +7,8 @@ namespace SaltAndLedger.Simulation.Tests;
 
 public sealed class GrandCommissionAtomicTests
 {
-    private const string Owner = EnterpriseScenario.PlayerOwnerId;
-    private const string Ship = EnterpriseScenario.PlayerShipId;
+    private const string Owner = WorldIds.PlayerOwnerId;
+    private const string Ship = WorldIds.PlayerShipId;
     private static ContentCatalog Content() => ContentLoader.Load(ContentLoaderTests.CanonicalJson());
     private static RegionalWorldState World()
     {
@@ -26,7 +26,7 @@ public sealed class GrandCommissionAtomicTests
             initial.Ships.Values.Select(s => s.Configuration), initialRevision: revision,
             companies: initial.Companies.Values.Select(c => new CompanyConfiguration(c.Id, c.Cash)),
             industryBlueprints: initial.IndustryBlueprints.Values, challenge: initial.Challenge!.Configuration,
-            runIdentity: initial.RunIdentity, economy: initial.Economy!.Configuration);
+            runIdentity: initial.RunIdentity, economy: initial.Economy!.Configuration, circulation: initial.Circulation!.Configuration);
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public sealed class GrandCommissionAtomicTests
         var world = World();
         var generation = ExpandingEconomyGeneration.Generate(42);
         world.ConstructFacility(Owner, generation.RecoveryPortId, ExpandingEconomyGeneration.LumberBlueprint, "deadline_camp");
-        world.ConstructFacility(Owner, generation.ProcessingPortId, EnterpriseScenario.SawmillBlueprint, "deadline_sawmill");
+        world.ConstructFacility(Owner, generation.ProcessingPortId, WorldIds.SawmillBlueprint, "deadline_sawmill");
         world.ExecuteWarehouseTrade(Owner, "deadline_sawmill", new TradeCommand(TradeDirection.Buy, "logs", 80000));
         world.ConstructFacility(Owner, generation.FurniturePortId, ExpandingEconomyGeneration.SilverMineBlueprint, "deadline_mine");
         world.CommissionMint(Owner);

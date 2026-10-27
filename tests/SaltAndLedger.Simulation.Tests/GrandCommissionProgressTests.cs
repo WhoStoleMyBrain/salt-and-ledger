@@ -7,8 +7,8 @@ namespace SaltAndLedger.Simulation.Tests;
 
 public sealed class GrandCommissionProgressTests
 {
-    private const string Owner = EnterpriseScenario.PlayerOwnerId;
-    private const string Ship = EnterpriseScenario.PlayerShipId;
+    private const string Owner = WorldIds.PlayerOwnerId;
+    private const string Ship = WorldIds.PlayerShipId;
     private static ContentCatalog Content() => ContentLoader.Load(ContentLoaderTests.CanonicalJson());
     private static RegionalWorldState World(int seed = -42, string charter = RunScenario.MerchantCharter,
         string? navigation = null, string? industry = null, string? commerce = null, string? civic = null,
@@ -42,7 +42,7 @@ public sealed class GrandCommissionProgressTests
         Assert.True(world.Snapshot().PrivateFacilities["new_mill"].BatchesProduced > 0);
         Assert.False(Goal(world, "new_industry").IsMet);
         Assert.Equal(0, Goal(world, "new_industry").Conditions.Single(c => c.Id == "bakery").Current);
-        world.ConstructFacility(Owner, g.FoodSourcePortId, EnterpriseScenario.BakeryBlueprint, "other_bakery");
+        world.ConstructFacility(Owner, g.FoodSourcePortId, WorldIds.BakeryBlueprint, "other_bakery");
         Assert.Equal(0, Goal(world, "new_industry").Conditions.Single(c => c.Id == "bakery_batch").Current);
         world.ExecuteWarehouseTrade(Owner, "other_bakery", Buy("flour", 2));
         world.ExecuteWarehouseTrade(Owner, "other_bakery", Buy("logs", 2));
@@ -62,7 +62,7 @@ public sealed class GrandCommissionProgressTests
         var world = World(industry: "new_industry", difficulty: RunDifficulty.SlowFoundations);
         var g = ExpandingEconomyGeneration.Generate(-42);
         world.ConstructFacility(Owner, g.ProcessingPortId, ExpandingEconomyGeneration.MillBlueprint, "mill");
-        world.ConstructFacility(Owner, g.FoodSourcePortId, EnterpriseScenario.BakeryBlueprint, "bakery");
+        world.ConstructFacility(Owner, g.FoodSourcePortId, WorldIds.BakeryBlueprint, "bakery");
         Assert.All(Goal(world, "new_industry").Conditions, c => Assert.False(c.IsMet));
         Days(world, 2);
         var completed = Goal(world, "new_industry");
@@ -102,7 +102,7 @@ public sealed class GrandCommissionProgressTests
     public void WarehouseFractionalTradesUseSameSignedTargetHistoryAndNpcDaysDoNotAwardCredit()
     {
         var world = World(commerce: "flour_for_bakers"); var g = ExpandingEconomyGeneration.Generate(-42);
-        world.ConstructFacility(Owner, g.FoodSourcePortId, EnterpriseScenario.BakeryBlueprint, "store");
+        world.ConstructFacility(Owner, g.FoodSourcePortId, WorldIds.BakeryBlueprint, "store");
         world.SetFacilityEnabled(Owner, "store", false);
         world.ExecuteWarehouseTrade(Owner, "store", new TradeCommand(TradeDirection.Buy, "flour", 12345));
         Assert.Equal(-12345, Goal(world, "flour_for_bakers").Conditions.Single().Current);

@@ -195,7 +195,7 @@ public sealed class ExpandingHostileDevelopmentTests
     {
         var world = World(second: true);
         var config = world.Snapshot().Economy!.Configuration;
-        world.ConstructFacility(Owner, config.MintPortId, EnterpriseScenario.SawmillBlueprint, "shipping_store");
+        world.ConstructFacility(Owner, config.MintPortId, WorldIds.SawmillBlueprint, "shipping_store");
         world.SetFacilityEnabled(Owner, "shipping_store", false);
         world.ExecuteWarehouseTrade(Owner, "shipping_store", new TradeCommand(TradeDirection.Buy, "planks", 40000));
         IndustrialRoutePolicy Policy(int maximum, int minimum) => new(config.MintPortId, config.SilverPortId,

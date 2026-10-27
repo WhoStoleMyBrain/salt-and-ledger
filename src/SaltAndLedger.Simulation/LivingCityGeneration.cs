@@ -57,11 +57,11 @@ namespace SaltAndLedger.Simulation
             Ports = Array.AsReadOnly(ports.OrderBy(port => port.Id, StringComparer.Ordinal).ToArray());
             Blueprints = Array.AsReadOnly(new[]
             {
-                new IndustryBlueprint(EnterpriseScenario.SawmillBlueprint, "sawmill", "saw_planks", 280, 2, 40,
+                new IndustryBlueprint(WorldIds.SawmillBlueprint, "sawmill", "saw_planks", 280, 2, 40,
                     new[] { ProcessingPortId }, 20, wagePerBatch: 6),
-                new IndustryBlueprint(EnterpriseScenario.BakeryBlueprint, "bakery", "bake_bread", 300, 2, 40,
+                new IndustryBlueprint(WorldIds.BakeryBlueprint, "bakery", "bake_bread", 300, 2, 40,
                     new[] { FoodSourcePortId, ProcessingPortId, RecoveryPortId }, 30, wagePerBatch: 6),
-                new IndustryBlueprint(EnterpriseScenario.WorkshopBlueprint, "furniture_workshop", "make_furniture", 360, 3, 40,
+                new IndustryBlueprint(WorldIds.WorkshopBlueprint, "furniture_workshop", "make_furniture", 360, 3, 40,
                     new[] { FurniturePortId, RecoveryPortId }, 15, wagePerBatch: 8)
             }.OrderBy(blueprint => blueprint.Id, StringComparer.Ordinal).ToArray());
             Signature = CreateSignature();
@@ -74,7 +74,7 @@ namespace SaltAndLedger.Simulation
             if (version != CurrentVersion) throw new ArgumentOutOfRangeException(nameof(version), "Unsupported economic generator version.");
             if (!Enum.IsDefined(typeof(LivingPricingMode), pricingMode)) throw new ArgumentOutOfRangeException(nameof(pricingMode));
             var sequence = new EconomicSequence(seed);
-            var roles = new[] { EnterpriseScenario.East, EnterpriseScenario.North, EnterpriseScenario.South, EnterpriseScenario.West };
+            var roles = new[] { WorldIds.East, WorldIds.North, WorldIds.South, WorldIds.West };
             for (var index = roles.Length - 1; index > 0; index--)
             {
                 var selected = sequence.Next(index + 1);
@@ -143,10 +143,10 @@ namespace SaltAndLedger.Simulation
         {
             switch (id)
             {
-                case EnterpriseScenario.North: return "Northport";
-                case EnterpriseScenario.South: return "Southhaven";
-                case EnterpriseScenario.East: return "Eastport";
-                case EnterpriseScenario.West: return "Westhaven";
+                case WorldIds.North: return "Northport";
+                case WorldIds.South: return "Southhaven";
+                case WorldIds.East: return "Eastport";
+                case WorldIds.West: return "Westhaven";
                 default: throw new ArgumentException("Unknown living-city port.", nameof(id));
             }
         }
