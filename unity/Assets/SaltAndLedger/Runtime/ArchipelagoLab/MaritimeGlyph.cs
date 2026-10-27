@@ -3,7 +3,7 @@ using UnityEngine.UIElements;
 
 namespace SaltAndLedger.UnityHost
 {
-    /// <summary>Original project artwork. These symbols identify things; they contain no game state.</summary>
+    /// <summary>Illustrated goods and procedural utility symbols; these contain no game state.</summary>
     public sealed class MaritimeGlyph : VisualElement
     {
         private string key;
@@ -25,7 +25,11 @@ namespace SaltAndLedger.UnityHost
             AddToClassList("sl-glyph");
             pickingMode = PickingMode.Ignore;
             Key = key;
-            generateVisualContent += context => Draw(context.painter2D, Key, contentRect);
+            generateVisualContent += context =>
+            {
+                if (!MaritimeArtwork.DrawGlyph(context, Key, contentRect))
+                    Draw(context.painter2D, Key, contentRect);
+            };
         }
 
         public static string LabelFor(string key)

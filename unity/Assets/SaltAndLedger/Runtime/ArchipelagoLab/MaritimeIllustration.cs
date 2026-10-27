@@ -3,7 +3,7 @@ using UnityEngine.UIElements;
 
 namespace SaltAndLedger.UnityHost
 {
-    /// <summary>A bounded original woodcut-style vignette, not a depiction of a town's actual buildings.</summary>
+    /// <summary>A bounded maritime illustration, not a census of a town's actual buildings.</summary>
     public sealed class MaritimeIllustration : VisualElement
     {
         private string kind;
@@ -29,6 +29,7 @@ namespace SaltAndLedger.UnityHost
         private void Draw(MeshGenerationContext context)
         {
             if (contentRect.width < 1 || contentRect.height < 1) return;
+            if (MaritimeArtwork.Draw(context, "Illustrations/" + Kind, contentRect)) return;
             var c = new IllustrationCanvas(context.painter2D, contentRect);
             var navy = new Color32(13, 38, 49, 255);
             var sea = new Color32(47, 108, 115, 255);

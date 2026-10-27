@@ -538,6 +538,13 @@ namespace SaltAndLedger.UnityHost
             {
                 var point = PortPoint(port.Id);
                 var scale = IslandDecorationScale(port.Id);
+                var artwork = ShortRole(port) == "Forest" ? "forest-harbor" : "harbor";
+                if (MaritimeArtwork.Draw(context, "Illustrations/" + artwork,
+                    new Rect(point.x - 135 * scale, point.y - 96 * scale, 270 * scale, 159 * scale)))
+                {
+                    islandIndex++;
+                    continue;
+                }
                 var selected = selectedShipId == null && port.Id == selectedPortId;
                 painter.fillColor = new Color(0.28f, 0.57f, 0.55f, 0.28f);
                 painter.strokeColor = new Color(0.51f, 0.73f, 0.65f, 0.3f);
