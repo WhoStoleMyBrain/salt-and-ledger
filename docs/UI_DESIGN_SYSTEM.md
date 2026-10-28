@@ -28,6 +28,8 @@ Use the same physical nouns throughout: **Town market**, **Company warehouse**, 
 
 The operational inspector remains available through **Details / log**, with activity, identity, pricing, Ledger, Company and help destinations. Player automation uses the Fleet itinerary planner; retired two-port player editors are removed. See [Harbor](HARBOR.md), [automation](AUTOMATION.md) and the [player guide](PLAYER_GUIDE.md).
 
+Task 2.7's Route Planner keeps the full repeating route visible as compact selectable stop cards. A single selected-stop grid pairs existing commodity art with Unload/Sell/Load/Buy quantity fields. Advanced limits and exact command order are a disclosure, not the primary entry method. New stops use disposal-first ordering; reopened, preset and custom-ordered stops retain exact instructions, including duplicates. A duplicate cell links the user to its ordered instructions rather than pretending it is one combined order. Future warehouse warnings are separate from structural validation and do not prohibit Apply. Current cursor, cargo/free capacity and last committed outcome are distinct from passive draft summaries.
+
 ## Ownership, input and return contracts
 
 `ArchipelagoLabSession` remains the sole host-facing selection and command owner. Its selected port, inspected ship and owned command ship retain their existing meanings. `PresentationContext` stores only the active command mode, whether a deliberate selection exists and deck collapse. Existing screen/overlay parent state handles returns. No economic quantity, route cursor or save field lives in this presentation context.

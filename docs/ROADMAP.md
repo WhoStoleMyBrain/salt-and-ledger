@@ -8,13 +8,14 @@
 - Finite contracts, Silver-backed public Mint, up to three physical ships and ordered cargo itineraries.
 - Exact FIFO and separate cash/value/material-margin/wage/service accounting; schema5 local saves.
 - Map-first illustrated UI Toolkit host, Harbor/Industry/Fleet/Economy/Objectives and generated offline help.
+- Stop-based multi-commodity route planning, preserved advanced command order and future-warehouse Skip/Wait logistics.
 
 The repository consolidation retires historical playable modes, fixed challenges and separate prototype scenes. Reused deterministic generation and NPC algorithms remain. See [cleanup verification](REPOSITORY-CLEANUP.md).
 
 ## Next measured work
 
 1. Human playtests of the full commission journey and clear remedies for food, payroll and transport blockages.
-2. Improve route and Industry discoverability where observed use warrants it; retain snapshot-bound previews and passive inspection.
+2. Human playtests of the stop-based route editor and Industry discoverability; retain snapshot-bound previews and passive inspection.
 3. Investigate long-horizon productive and circulation counterexamples using bounded matched policies before any economic change.
 4. Maintain current save integrity, performance and readable layouts at supported resolutions/scales.
 

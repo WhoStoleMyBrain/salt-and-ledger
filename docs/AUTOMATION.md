@@ -4,7 +4,7 @@ Player routes use ordered cargo itineraries. NPC merchants retain their proven t
 
 ## Ordered cargo itineraries
 
-Task 2.3 adds immutable `CargoItineraryPolicy` version 1 for player ships in new v3 pooled-stock runs. It has **2–4 unique port stops**, **1–8 ordered commands per stop**, and **at most 24 commands total**. The last stop connects back to the first through a real sea route. Every port, connection, commodity and owned company-stock endpoint is validated before application. Existing NPC merchants keep their original two-port policies and finite budgets.
+Immutable `CargoItineraryPolicy` version 1 applies to player ships in v3 pooled-stock runs. It has **2–4 unique port stops**, **1–8 ordered commands per stop**, and **at most 24 commands total**. The last stop connects back to the first through a real sea route. Every port, connection, commodity and ship ownership is validated before application. Company storage need not exist yet: a future Load/Unload is a valid plan, with a missing-warehouse warning. Existing NPC merchants keep their original two-port policies and finite budgets.
 
 | Instruction | Physical and financial effect | Applicable limits |
 | --- | --- | --- |
@@ -27,23 +27,29 @@ Departure requires every stop instruction to have executed or intentionally skip
 
 Opening the planner pauses playback. Drafting, selecting ships and inspecting fields spend no time or money and do not require an empty hold. **Apply draft** preserves cargo and leaves automation paused. Replacing a policy requires manual control, an actual dock included in the new plan, no partially executed old stop, and no itinerary operations already performed on the current day. A stop is replaceable before its first action or after all its commands; after work today, advance a day before replacing it. Reapplying identical policy content preserves progress. Only one market, industrial or cargo-itinerary policy can be active on a ship.
 
-**Manual control · route actions paused** disables future route actions without changing the itinerary, voyage or cargo. Ordinary manual permissions then apply. To resume, the ship must be at the exact next stop or on its matching incoming voyage; manual travel elsewhere does not reset the cursor. A partially completed waiting stop must satisfy its remaining orders before replacement. Inspect the specific stock, funds, reserve or price blocker instead of assuming that pausing alone advances or cancels it.
+**Manual control / pause route** disables future route actions without changing the itinerary, voyage or cargo. Ordinary manual permissions then apply. To resume, the ship must be at the exact next stop or on its matching incoming voyage; manual travel elsewhere does not reset the cursor. A partially completed waiting stop must satisfy its remaining orders before replacement. Inspect the specific stock, funds, reserve or price blocker instead of assuming that pausing alone advances or cancels it.
 
 ### Plan and inspect in Unity
 
-From **Company → Fleet**, choose the ship's **Route planner**; Harbor and Industry also link to that ship's planner. The live header shows actual dock/voyage, next stop/action, cargo capacity and the authoritative current reason. **Cargo and committed route state** expands the held commodities and used daily budget.
+From **Company → Fleet**, choose the ship's **Route planner**; Harbor and Industry also link to that ship's planner. The live header shows actual dock/voyage, next stop/action, cargo capacity and the authoritative current reason. **Cargo, last outcome & daily budget** expands the held commodities and used daily budget.
 
-Each stop is a compact card. Choose its town, add/remove/reorder stops, and expand an action to choose its instruction, good, maximum, minimum, skip/wait and relevant financial/storage limits. Only that action's applicable fields are shown. Maximum/minimum fields accept whole units; coin and warehouse reserves accept up to four decimal places. Invalid fields remain a draft and prevent application. **Reload applied route** discards draft edits in favor of the actual policy. **Inspect harbor** and **Open current harbor** return to the existing Harbor trading surface; **Back** restores the previous screen or overlay.
+Select a stop card to open its commodity grid. Enter maximum whole quantities in **Unload / Sell / Load / Buy** columns for as many goods as needed; blank or zero removes that instruction. For example, enter Flour 2 and Logs 2 under Unload, then Bread 4 under Load: three goods at one stop, without adding individual action cards. Each selected cell still counts toward the eight-command stop and 24-command route limits.
+
+New stops use **Unload → Sell → Load → Buy**, then stable commodity-ID order, freeing cargo space before acquiring goods. Applied routes and presets retain their exact order. **Advanced limits & execution order** exposes the ordered instructions, minimum shipments, Skip/Wait, marginal price limits, cash/warehouse reserves and spending caps. Moving an instruction fixes that stop's custom order; later new grid instructions append. Repeated instructions for the same good/action remain separate: their grid cell says **ordered**, and the advanced list edits each one without silently merging it.
+
+Maximum/minimum fields accept whole units; coin and warehouse reserves accept up to four decimal places. Invalid fields remain a draft and prevent application. **Reload applied route** discards draft edits in favor of the actual policy. **Inspect harbor** and **Open current harbor** return to the existing Harbor trading surface; **Back** restores the previous screen or overlay.
+
+Missing company storage is an ordinary **Skip/Wait** blocker when the instruction reaches execution. A Skip advances without moving goods; a Wait retains the instruction. Build eligible industry through Industry to create real local company storage; the already assigned route can then use it without being recreated. The planner never creates storage, buildings or cargo. Other current blockers, such as absent cargo or a full hold, may take precedence. Pending paid facilities already provide storage under the existing construction rules; production still waits for completion.
 
 **Draft Grain–Flour–Bread loop** resolves the current world's economic roles and creates this unapplied example:
 
 | Stop | Ordered instructions |
 | --- | --- |
-| A — vulnerable coast with an owned Bakery | Unload up to 2 Flour; unload up to 2 Logs; load up to 4 Bread |
+| A — vulnerable coast, planned Bakery | Unload up to 2 Flour; unload up to 2 Logs; load up to 4 Bread |
 | B — agricultural food source | Sell up to 4 Bread; buy up to 4 Grain; buy up to 2 Logs |
 | C — processing town | Sell up to 4 Grain; buy up to 2 Flour; sail back to A |
 
-All example orders have minimum one and Skip on shortage. Purchases keep 100 company coins and cap each order at 200 coins. You must actually build the eligible Bakery and fund inputs and wages; the preset creates nothing. Starting empty at A is valid: its first absent-input/output orders skip, and later arrivals deliver real inputs. The ordinary ship phase precedes factory production, so newly supplied inputs can fund a batch later that day, while newly produced Bread becomes available for a subsequent visit or explicit dockside action.
+All example orders have minimum one and Skip on shortage. Purchases keep 100 company coins and cap each order at 200 coins. You may apply before construction, but must actually build the eligible Bakery and fund inputs and wages to produce Bread; the preset creates nothing. Starting empty at A is valid: its first absent-input/output orders skip, and later arrivals deliver real inputs. The ordinary ship phase precedes factory production, so newly supplied inputs can fund a batch later that day, while newly produced Bread becomes available for a subsequent visit or explicit dockside action.
 
 ### Exact continuation
 
