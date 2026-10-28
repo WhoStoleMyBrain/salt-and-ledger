@@ -54,7 +54,15 @@ namespace SaltAndLedger.Simulation
         {
             Count(data.Ports, 4, 4); Count(data.Ships, 1, 64); Count(data.Companies, 1, 64);
             Count(data.Facilities, 0, WorldSaveCodec.MaximumFacilities);
-            if (data.CompanyStockpiles != null) Count(data.CompanyStockpiles, 0, WorldSaveCodec.MaximumFacilities);
+            if (data.CompanyStockpiles != null)
+            {
+                Count(data.CompanyStockpiles, 0, WorldSaveCodec.MaximumFacilities);
+                foreach (var stockpile in data.CompanyStockpiles)
+                {
+                    if (stockpile.Policy == null) throw new WorldSaveException("Warehouse policy is missing.");
+                    Count(stockpile.Policy.Rules, 0, 64);
+                }
+            }
             Count(data.Stores, 1, WorldSaveCodec.MaximumFacilities + 64);
             if (data.Circulation != null)
             {
@@ -167,6 +175,8 @@ namespace SaltAndLedger.Simulation
                 var original = initial.Facilities.Single(p => p.Configuration.Instance.Id == f.Id).Configuration;
                 Require(f.NextDueDay >= original.FirstDueDay && f.NextDueDay <= checked(day + original.IntervalDays), "Invalid production deadline.");
                 Defined(f.LastOutcome);
+                Require(f.LastOutcome != ScheduledProductionOutcome.RateLimited,
+                    "Public production cannot have a private operating-rate outcome.");
                 return new ScheduledFacilitySnapshot(original, f.Enabled, f.NextDueDay, f.LastOutcome);
             }).ToArray();
             var consumption = data.Consumption.Select(c => RestoreConsumption(
@@ -270,13 +280,11 @@ namespace SaltAndLedger.Simulation
             Require(initial.Companies.ContainsKey(f.OwnerId), "Unknown facility owner.");
             var blueprint = initial.IndustryBlueprints[f.BlueprintId];
             Require(blueprint.EligiblePortIds.Contains(f.PortId), "Facility is at an ineligible port.");
-            if (f.Policy == null) throw new WorldSaveException("Industry policy is missing.");
             var recipe = content.GetRecipe(blueprint.RecipeId);
-            Require(f.Policy.Inputs.All(r => recipe.Inputs.Any(i => i.GoodId == r.GoodId) && r.TargetQuantity <= blueprint.WarehouseCapacity) &&
-                f.Policy.Outputs.All(r => recipe.Outputs.Any(i => i.GoodId == r.GoodId) && r.ReserveQuantity <= blueprint.WarehouseCapacity),
-                "Industry policy is incompatible with its recipe or storage.");
-            Defined(f.ConstructionStatus); Defined(f.LastOutcome); Defined(f.ProcurementWait); Defined(f.SalesWait);
-            Nonnegative(f.CreatedDay, f.CompletionDay, f.NextProductionDay, f.Batches, f.Procurement, f.Revenue, f.Wages);
+            Defined(f.ConstructionStatus); Defined(f.LastOutcome); Defined(f.Priority);
+            Nonnegative(f.CreatedDay, f.CompletionDay, f.NextProductionDay, f.Batches, f.Wages);
+            Require(f.OperatingRate >= 0 && f.OperatingRate <= 100 && f.ProductionCredit >= 0 && f.ProductionCredit < 200,
+                "Factory operating rate or production credit is outside its bounded range.");
             Require(f.CreatedDay <= day && f.CompletionDay >= f.CreatedDay &&
                 f.NextProductionDay >= checked(f.CompletionDay + blueprint.IntervalDays) &&
                 f.NextProductionDay <= checked(Math.Max(day, f.CompletionDay) + blueprint.IntervalDays), "Invalid facility schedule.");
@@ -286,6 +294,9 @@ namespace SaltAndLedger.Simulation
                 initial.Ships.Values.Any(s => s.IsPlayer && s.OwnerId == f.OwnerId) ? 2 : 0;
             Require(f.CompletionDay == checked(f.CreatedDay + delay) &&
                 (f.ConstructionStatus == FacilityConstructionStatus.Operational) == (f.CompletionDay <= day), "Invalid construction lifecycle.");
+            Require((f.ProductionCredit == 0 || day >= checked(f.CompletionDay + blueprint.IntervalDays)) &&
+                (f.ProductionCredit < 100 || f.NextProductionDay <= day),
+                "Factory production credit precedes its scheduled opportunity.");
             var inventory = Inventory(content, f.Inventory);
             Require(f.SharedStockpileId == "company:" + f.OwnerId + ":" + f.PortId,
                 "Facility does not reference its owning company's local stockpile.");
@@ -302,10 +313,11 @@ namespace SaltAndLedger.Simulation
             }
             Require((BigInteger)f.Wages == (BigInteger)f.Batches * blueprint.WagePerBatch, "Facility wages do not match paid batches.");
             Require(!string.IsNullOrWhiteSpace(f.Provenance), "Facility provenance is missing.");
-            return new PrivateFacilitySnapshot(f.Id, f.OwnerId, f.PortId, blueprint, f.Policy, f.Enabled,
-                f.CreatedDay, f.NextProductionDay, f.LastOutcome, inventory, f.Batches, f.Procurement, f.Revenue,
-                f.Produced, f.Consumed, f.ProcurementWait, f.SalesWait, f.StarterGrant, f.Provenance,
-                f.ConstructionStatus, f.CompletionDay, day, f.Wages, f.SharedStockpileId);
+            return new PrivateFacilitySnapshot(f.Id, f.OwnerId, f.PortId, blueprint, new IndustryPolicy(), f.Enabled,
+                f.CreatedDay, f.NextProductionDay, f.LastOutcome, inventory, f.Batches, 0, 0,
+                f.Produced, f.Consumed, IndustryWaitReason.Disabled, IndustryWaitReason.Disabled, f.StarterGrant, f.Provenance,
+                f.ConstructionStatus, f.CompletionDay, day, f.Wages, f.SharedStockpileId,
+                f.OperatingRate, f.Priority, f.ProductionCredit);
         }
 
         private static CompanyStockpileSnapshot[] RestoreCompanyStockpiles(ContentCatalog content,
@@ -323,13 +335,21 @@ namespace SaltAndLedger.Simulation
                     "Company stockpile ownership or installed capacity is inconsistent.");
                 var inventory = Inventory(content, s.Inventory);
                 Require(inventory.Values.Sum(v => (long)v) <= s.Capacity, "Company stockpile exceeds installed capacity.");
-                return new CompanyStockpileSnapshot(s.Id, s.OwnerId, s.PortId, s.Capacity, inventory);
+                Nonnegative(s.Procurement, s.Revenue);
+                Defined(s.ProcurementWait); Defined(s.SalesWait);
+                var policy = RestoreWarehousePolicy(content, s.Policy, s.Capacity);
+                return new CompanyStockpileSnapshot(s.Id, s.OwnerId, s.PortId, s.Capacity, inventory,
+                    policy, s.Procurement, s.Revenue, s.ProcurementWait, s.SalesWait);
             }).ToArray();
             // Facility labor and output remain individually attributed even when physical materials
             // share one store. No saved facility can invent production already absent from company totals.
             foreach (var company in data.Companies)
             {
                 var owned = facilities.Where(f => f.OwnerId == company.Id).ToArray();
+                var ownedStockpiles = stockpiles.Where(s => s.OwnerId == company.Id).ToArray();
+                Require(ownedStockpiles.Aggregate(BigInteger.Zero, (sum, s) => sum + s.ProcurementCost) <= company.Purchases &&
+                    ownedStockpiles.Aggregate(BigInteger.Zero, (sum, s) => sum + s.SalesRevenue) <= company.Revenue,
+                    "Warehouse trading counters exceed company accounting.");
                 Require(owned.Aggregate(BigInteger.Zero, (sum, f) => sum + f.WagesPaid) == company.Wages,
                     "Pooled facility payroll does not reconcile with company accounting.");
                 foreach (var good in content.Goods)
@@ -338,6 +358,26 @@ namespace SaltAndLedger.Simulation
                         "Pooled facility production does not reconcile with company accounting.");
             }
             return stockpiles;
+        }
+
+        private static WarehousePolicy RestoreWarehousePolicy(ContentCatalog content, RegionalSaveWarehousePolicy saved, int capacity)
+        {
+            if (saved == null) throw new WorldSaveException("Warehouse policy is missing.");
+            Count(saved.Rules, 0, content.Goods.Count);
+            Unique(saved.Rules.Select(r => r.GoodId), "warehouse commodity rules");
+            Nonnegative(saved.CashReserve);
+            var rules = saved.Rules.Select(r =>
+            {
+                content.GetGood(r.GoodId);
+                Nonnegative(r.BuyTarget, r.MaximumBuyPrice, r.SellReserve, r.MinimumSellPrice);
+                Require(r.BuyTarget <= capacity && r.SellReserve <= capacity,
+                    "Warehouse policy exceeds installed storage capacity.");
+                Require(!r.BuyEnabled || !r.SellEnabled || r.BuyTarget <= r.SellReserve,
+                    "Warehouse buying and selling thresholds overlap.");
+                return new WarehouseCommodityRule(r.GoodId, r.BuyEnabled, r.BuyTarget, r.MaximumBuyPrice,
+                    r.SellEnabled, r.SellReserve, r.MinimumSellPrice);
+            }).ToArray();
+            return new WarehousePolicy(saved.CashReserve, rules);
         }
 
         private static InventoryCostSnapshot[] RestoreStores(ContentCatalog content, RegionalSaveData data,

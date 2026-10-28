@@ -95,12 +95,14 @@ namespace SaltAndLedger.Simulation
                 Leg("bread", 10, 4, 34, 26, 300), balanced ? Leg("logs", 8, 2, 18, 1, 144) : null,
                 cashReserve: M(100), allowEmptyReturn: true);
 
-        public static IndustryPolicy BakeryPolicy(bool sellOutput = false) => new IndustryPolicy(true, sellOutput, M(80),
-            new[] { new InputStockRule("flour", Q(4), 28), new InputStockRule("logs", Q(4), 24) },
-            new[] { new OutputSaleRule("bread", 0, 20) });
+        public static WarehousePolicy BakeryWarehousePolicy(bool sellOutput = false) => new WarehousePolicy(M(80),
+            new[] { new WarehouseCommodityRule("flour", true, Q(4), 28, false, 0, 0),
+                new WarehouseCommodityRule("logs", true, Q(4), 24, false, 0, 0),
+                new WarehouseCommodityRule("bread", false, 0, 0, sellOutput, 0, 20) });
 
-        public static IndustryPolicy MillPolicy(bool sellOutput = true) => new IndustryPolicy(true, sellOutput, M(80),
-            new[] { new InputStockRule("grain", Q(8), 24) }, new[] { new OutputSaleRule("flour", 0, 6) });
+        public static WarehousePolicy MillWarehousePolicy(bool sellOutput = true) => new WarehousePolicy(M(80),
+            new[] { new WarehouseCommodityRule("grain", true, Q(8), 24, false, 0, 0),
+                new WarehouseCommodityRule("flour", false, 0, 0, sellOutput, 0, 6) });
 
         public static IndustrialRoutePolicy IndustrialPolicy(ExpandingEconomyGeneration generation,
             string facilityId = RunScenario.StarterBakery, string? sourcePortId = null) =>

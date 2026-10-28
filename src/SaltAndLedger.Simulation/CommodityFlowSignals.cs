@@ -38,7 +38,7 @@ namespace SaltAndLedger.Simulation
             PortId = portId; GoodId = goodId; OwnerId = ownerId; HasStore = hasStore; CurrentStock = stock;
             Production = Array.AsReadOnly(production.OrderBy(p => p.Opportunity.FacilityId, StringComparer.Ordinal).ToArray());
             Consumption = Array.AsReadOnly(consumption.OrderBy(c => c.RuleId, StringComparer.Ordinal).ToArray());
-            InstalledProductionQuantity = Production.Sum(p => p.OutputQuantity);
+            InstalledProductionQuantity = Production.Sum(p => p.InstalledOutputQuantity);
             EnabledProductionQuantity = Production.Where(p => p.IsActive).Sum(p => p.OutputQuantity);
             InputUsageQuantity = Production.Where(p => p.IsActive).Sum(p => p.InputQuantity);
             ConsumptionNeedQuantity = Consumption.Sum(c => c.NeedQuantity);
@@ -51,20 +51,25 @@ namespace SaltAndLedger.Simulation
         public ProductionOpportunitySignal Opportunity { get; }
         public int IntervalDays { get; }
         public long Opportunities { get; }
+        public long InstalledOpportunities { get; }
+        public long InstalledOutputQuantity { get; }
         public int OutputPerBatch { get; }
         public int InputPerBatch { get; }
         public long OutputQuantity { get; }
         public long InputQuantity { get; }
-        public bool IsActive => Opportunity.Enabled && !Opportunity.UnderConstruction;
+        public bool IsActive => Opportunity.Enabled && !Opportunity.UnderConstruction && Opportunity.OperatingRate > 0;
 
         internal CommodityProductionFlow(ProductionOpportunitySignal opportunity, string goodId,
             int intervalDays, long lastDay)
         {
             Opportunity = opportunity; IntervalDays = intervalDays;
-            Opportunities = EconomicSignals.ScheduledOpportunities(opportunity.NextEligibleDay, lastDay, intervalDays);
+            InstalledOpportunities = EconomicSignals.ScheduledOpportunities(opportunity.NextEligibleDay, lastDay, intervalDays);
+            Opportunities = FactoryProduction.Opportunities(opportunity.NextEligibleDay, lastDay, intervalDays,
+                opportunity.OperatingRate, opportunity.ProductionCredit);
             OutputPerBatch = opportunity.Outputs.Where(o => o.GoodId == goodId).Sum(o => o.Quantity);
             InputPerBatch = opportunity.Inputs.Where(i => i.GoodId == goodId).Sum(i => i.Quantity);
             OutputQuantity = checked(Opportunities * OutputPerBatch);
+            InstalledOutputQuantity = checked(InstalledOpportunities * OutputPerBatch);
             InputQuantity = checked(Opportunities * InputPerBatch);
         }
     }

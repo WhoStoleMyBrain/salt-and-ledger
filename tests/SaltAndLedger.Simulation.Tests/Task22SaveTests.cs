@@ -37,7 +37,7 @@ public sealed class Task22SaveTests
         var world = World(commission, charter);
         var saved = WorldSaveCodec.Save(world);
         var json = JObject.Parse(saved);
-        Assert.Equal(5, (int)json["SchemaVersion"]!);
+        Assert.Equal(6, (int)json["SchemaVersion"]!);
         Assert.Equal((int)CompanyStorageRules.Pooled, (int)json["Identity"]!["CompanyStorageRules"]!);
         Assert.NotNull(json["CompanyStockpiles"]);
         Assert.Equal(commission, json["CommissionHistory"] != null);

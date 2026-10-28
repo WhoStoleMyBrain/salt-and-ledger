@@ -48,7 +48,8 @@ public sealed class WorldSaveCodecTests
     {
         var world = RunScenario.Create(Content(), Identity(RunWorldMode.ExpandingEconomy, difficulty: difficulty));
         world.ConstructFacility(Owner, ExpandingEconomyGeneration.Generate(-42).ProcessingPortId, WorldIds.BakeryBlueprint, "saved_bakery");
-        world.ConfigureFacility(Owner, "saved_bakery", ExpandingEconomyScenario.BakeryPolicy());
+        world.ConfigureWarehouse(Owner, world.Snapshot().PrivateFacilities["saved_bakery"].PortId,
+            ExpandingEconomyScenario.BakeryWarehousePolicy(), world.Snapshot());
         world.ExecuteWarehouseTrade(Owner, "saved_bakery", new TradeCommand(TradeDirection.Buy, "flour", EconomicUnits.FromWhole(3)));
         world.Depart(Ship, ExpandingEconomyGeneration.Generate(-42).ProcessingPortId);
         var resumed = WorldSaveCodec.Load(Content(), WorldSaveCodec.Save(world));
@@ -64,7 +65,8 @@ public sealed class WorldSaveCodecTests
     public void IndustrialRouteStagesCostSlicesAndBlockedPoliciesSurviveReload()
     {
         var world = RunScenario.Create(Content(), Identity(RunWorldMode.ExpandingEconomy, RunScenario.IndustrialCharter));
-        world.ConfigureFacility(Owner, RunScenario.StarterBakery, ExpandingEconomyScenario.BakeryPolicy());
+        world.ConfigureWarehouse(Owner, world.Snapshot().PrivateFacilities[RunScenario.StarterBakery].PortId,
+            ExpandingEconomyScenario.BakeryWarehousePolicy(), world.Snapshot());
         world.ConfigureIndustrialAutomation(Ship, ExpandingEconomyScenario.IndustrialPolicy(ExpandingEconomyGeneration.Generate(-42, economicRulesVersion: 1)), true);
         for (var index = 0; index < 15; index++)
         {
@@ -179,10 +181,125 @@ public sealed class WorldSaveCodecTests
         Assert.Equal(WorldSaveCodec.Save(world), WorldSaveCodec.Save(resumed));
     }
 
+    [Fact]
+    public void FactoryRatesPrioritiesAndTownTradingResumeTheSameWholeBatchesAndFifo()
+    {
+        var world = RunScenario.Create(Content(), Identity(RunWorldMode.ExpandingEconomy, RunScenario.IndustrialCharter));
+        var port = world.Snapshot().PrivateFacilities[RunScenario.StarterBakery].PortId;
+        world.ConstructFacility(Owner, port, WorldIds.BakeryBlueprint, "second_bakery");
+        world.ConfigureProduction(Owner, RunScenario.StarterBakery, true, 75, ProductionPriority.High, world.Snapshot());
+        world.ConfigureProduction(Owner, "second_bakery", true, 50, ProductionPriority.Low, world.Snapshot());
+        world.ConfigureWarehouse(Owner, port, new WarehousePolicy(EconomicUnits.Coins(80), new[]
+        {
+            new WarehouseCommodityRule("flour", true, 50000, 0, false, 0, 0),
+            new WarehouseCommodityRule("logs", true, 40000, 24, true, 40000, 30),
+            new WarehouseCommodityRule("bread", false, 0, 0, true, 10000, 20),
+            new WarehouseCommodityRule("silver", true, 10000, 1, false, 0, 0)
+        }), world.Snapshot());
+        world.AdvanceDay();
+        world.AdvanceDay();
+        Assert.Equal(75, world.Snapshot().PrivateFacilities[RunScenario.StarterBakery].ProductionCredit);
+        Assert.Equal(50, world.Snapshot().PrivateFacilities["second_bakery"].ProductionCredit);
+        var saved = WorldSaveCodec.Save(world);
+        var json = JObject.Parse(saved);
+        Assert.Equal(6, (int)json["SchemaVersion"]!);
+        Assert.All(json["Facilities"]!, facility => Assert.Null(facility["Policy"]));
+        Assert.Equal(4, json["CompanyStockpiles"]![0]!["Policy"]!["Rules"]!.Count());
+        var resumed = WorldSaveCodec.Load(Content(), saved);
+        Assert.Equal(saved, WorldSaveCodec.Save(resumed));
+        for (var day = 0; day < 32; day++)
+        {
+            Assert.Equal(Events(world.AdvanceDay()), Events(resumed.AdvanceDay()));
+            Assert.Equal(WorldSaveCodec.Save(world), WorldSaveCodec.Save(resumed));
+            if (day == 8) resumed = WorldSaveCodec.Load(Content(), WorldSaveCodec.Save(resumed));
+        }
+        Assert.All(resumed.Snapshot().PrivateFacilities.Values, factory =>
+        {
+            Assert.True(factory.BatchesProduced > 0);
+            Assert.Equal(factory.BatchesProduced * factory.Blueprint.WagePerBatch, factory.WagesPaid);
+        });
+        var warehouse = Assert.Single(resumed.Snapshot().CompanyStockpiles.Values);
+        Assert.True(warehouse.ProcurementCost > 0);
+        Assert.True(warehouse.SalesRevenue > 0);
+    }
 
+    [Fact]
+    public void AdmittedBlockedBatchSurvivesPausedSaveWithoutAccumulatingCredit()
+    {
+        var world = RunScenario.Create(Content(), Identity(RunWorldMode.ExpandingEconomy, RunScenario.IndustrialCharter));
+        var port = world.Snapshot().PrivateFacilities[RunScenario.StarterBakery].PortId;
+        world.ExecuteWarehouseTrade(Owner, RunScenario.StarterBakery, new TradeCommand(TradeDirection.Sell, "flour", 20000));
+        world.ConfigureProduction(Owner, RunScenario.StarterBakery, true, 75, ProductionPriority.High, world.Snapshot());
+        for (var day = 0; day < 7; day++) world.AdvanceDay();
+        var blocked = world.Snapshot().PrivateFacilities[RunScenario.StarterBakery];
+        Assert.Equal(150, blocked.ProductionCredit);
+        Assert.Equal(4, blocked.NextProductionDay);
+        Assert.Equal(0, blocked.BatchesProduced);
+        world.ConfigureProduction(Owner, blocked.Id, true, 0, ProductionPriority.Normal, world.Snapshot());
+        var resumed = WorldSaveCodec.Load(Content(), WorldSaveCodec.Save(world));
+        for (var day = 0; day < 5; day++) AdvanceBoth(world, resumed);
+        Assert.Equal(150, resumed.Snapshot().PrivateFacilities[blocked.Id].ProductionCredit);
+        Assert.Equal(WorldSaveCodec.Save(world), WorldSaveCodec.Save(resumed));
+        foreach (var current in new[] { world, resumed })
+        {
+            current.ConfigureWarehouse(Owner, port, new WarehousePolicy(rules: new[]
+            { new WarehouseCommodityRule("flour", true, 20000, 0, false, 0, 0) }), current.Snapshot());
+            current.ConfigureProduction(Owner, blocked.Id, true, 50, ProductionPriority.Normal, current.Snapshot());
+        }
+        AdvanceBoth(world, resumed);
+        var produced = resumed.Snapshot().PrivateFacilities[blocked.Id];
+        Assert.Equal(1, produced.BatchesProduced);
+        Assert.Equal(50, produced.ProductionCredit);
+        Assert.Equal(produced.Blueprint.WagePerBatch, produced.WagesPaid);
+        Assert.Equal(WorldSaveCodec.Save(world), WorldSaveCodec.Save(resumed));
+    }
 
-
-
+    [Fact]
+    public void InvalidAutomationSaveFieldsAreRejectedEvenWithARecomputedChecksum()
+    {
+        var world = RunScenario.Create(Content(), Identity(RunWorldMode.ExpandingEconomy, RunScenario.IndustrialCharter));
+        var port = world.Snapshot().PrivateFacilities[RunScenario.StarterBakery].PortId;
+        world.ConfigureWarehouse(Owner, port, new WarehousePolicy(rules: new[]
+        { new WarehouseCommodityRule("flour", true, 20000, 28, true, 30000, 30) }), world.Snapshot());
+        var saved = WorldSaveCodec.Save(world);
+        var snapshot = world.Snapshot();
+        var changes = new Action<JObject>[]
+        {
+            j => j["Facilities"]![0]!["OperatingRate"] = -1,
+            j => j["Facilities"]![0]!["OperatingRate"] = 101,
+            j => j["Facilities"]![0]!["Priority"] = 99,
+            j => j["Facilities"]![0]!["ProductionCredit"] = -1,
+            j => j["Facilities"]![0]!["ProductionCredit"] = 200,
+            j => j["Facilities"]![0]!["ProductionCredit"] = 100,
+            j => ((JObject)j["Facilities"]![0]!).Property("OperatingRate")!.Remove(),
+            j => j["CompanyStockpiles"]![0]!["Policy"]!["Rules"]![0]!["GoodId"] = "invented",
+            j => j["CompanyStockpiles"]![0]!["Policy"]!["Rules"]![0]!["BuyTarget"] = int.MaxValue,
+            j => j["CompanyStockpiles"]![0]!["Policy"]!["Rules"]![0]!["SellReserve"] = 10000,
+            j => j["CompanyStockpiles"]![0]!["Policy"]!["Rules"]![0]!["MaximumBuyPrice"] = -1,
+            j => j["CompanyStockpiles"]![0]!["Policy"]!["CashReserve"] = -1,
+            j => ((JArray)j["CompanyStockpiles"]![0]!["Policy"]!["Rules"]!).Add(
+                j["CompanyStockpiles"]![0]!["Policy"]!["Rules"]![0]!.DeepClone()),
+            j => j["CompanyStockpiles"]![0]!["Policy"] = null,
+            j => j["CompanyStockpiles"]![0]!["Procurement"] = 1,
+            j => j["CompanyStockpiles"]![0]!["SalesWait"] = 99,
+            j => j["Ports"]!.First(p => p["Facilities"]!.Any())["Facilities"]![0]!["LastOutcome"] =
+                (int)ScheduledProductionOutcome.RateLimited
+        };
+        foreach (var change in changes)
+        {
+            var json = JObject.Parse(saved);
+            change(json);
+            Rechecksum(json);
+            Assert.Throws<WorldSaveException>(() => WorldSaveCodec.Load(Content(), json.ToString(Formatting.None)));
+            Assert.Same(snapshot, world.Snapshot());
+        }
+        var obsolete = JObject.Parse(saved);
+        obsolete["SchemaVersion"] = 5;
+        obsolete["Facilities"]![0]!["Policy"] = new JObject();
+        var failure = Assert.Throws<WorldSaveException>(() => WorldSaveCodec.Load(Content(), obsolete.ToString(Formatting.None)));
+        Assert.Contains("schema 6", failure.Message);
+        Assert.Same(snapshot, world.Snapshot());
+    }
     private static void AdvanceBoth(RegionalWorldState first, RegionalWorldState second) =>
         Assert.Equal(Events(first.AdvanceDay()), Events(second.AdvanceDay()));
 
@@ -193,7 +310,7 @@ public sealed class WorldSaveCodecTests
         var before = world.Snapshot();
         var saved = WorldSaveCodec.Save(world);
         foreach (var damaged in new[] { "", saved[..^1], saved + " {}", saved.Replace("\"Day\":0", "\"Day\":1"),
-            saved.Replace("\"SchemaVersion\":5", "\"SchemaVersion\":99"),
+            saved.Replace("\"SchemaVersion\":6", "\"SchemaVersion\":99"),
             saved.Replace("\"Day\":0", "\"Day\":0,\"Day\":0"),
             saved.Replace("\"Day\":0", "\"Day\":0.0"),
             saved.Insert(1, "\"$type\":\"System.IO.FileInfo\","), saved.Insert(1, "\"unexpected\":0,") })
@@ -256,7 +373,7 @@ public sealed class WorldSaveCodecTests
     private static string Events(RegionalResult result) => JsonConvert.SerializeObject(new
     {
         result.EconomicEvents, result.CashTransfers, result.CityChanges, result.Trades,
-        result.Production, result.Consumption, result.Movements, result.PrivateProduction,
+        result.Production, result.Consumption, result.Movements, result.WarehouseTrades, result.PrivateProduction,
         result.Construction, result.Transfers, result.Development
     });
 }

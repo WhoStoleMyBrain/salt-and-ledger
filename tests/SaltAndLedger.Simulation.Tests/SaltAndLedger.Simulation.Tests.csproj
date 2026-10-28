@@ -15,6 +15,7 @@
     </PackageReference>
     <ProjectReference Include="../../src/SaltAndLedger.Simulation/SaltAndLedger.Simulation.csproj" />
     <Compile Include="../../samples/SaltAndLedger.Demo/ExpandingEconomyExperiments.cs" Link="Experiments/ExpandingEconomyExperiments.cs" />
+    <Compile Include="../../samples/SaltAndLedger.Demo/ExperimentWarehousePolicies.cs" Link="Experiments/ExperimentWarehousePolicies.cs" />
     <Compile Include="../../samples/SaltAndLedger.Demo/GrandCommissionWitness.cs" Link="Experiments/GrandCommissionWitness.cs" />
     <Compile Include="../../samples/SaltAndLedger.Demo/EconomicCirculationExperiments.cs" Link="Experiments/EconomicCirculationExperiments.cs" />
     <None Include="../../data/content.json" Link="content.json" CopyToOutputDirectory="PreserveNewest" />

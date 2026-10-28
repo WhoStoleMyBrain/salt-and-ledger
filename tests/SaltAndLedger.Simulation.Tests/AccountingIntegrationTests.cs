@@ -232,7 +232,7 @@ public sealed class AccountingIntegrationTests
         var world = RunScenario.Create(Content(), new RunIdentity(null, RunScenario.MerchantCharter, seed: 99));
         world.ConstructFacility(WorldIds.PlayerOwnerId, WorldIds.West,
             WorldIds.BakeryBlueprint, Factory);
-        world.ConfigureFacility(WorldIds.PlayerOwnerId, Factory, ExpandingEconomyScenario.BakeryPolicy(true));
+        world.ConfigureWarehouse(WorldIds.PlayerOwnerId, WorldIds.West, ExpandingEconomyScenario.BakeryWarehousePolicy(true), world.Snapshot());
         var startingCash = world.Snapshot().TotalCash;
         for (var day = 0; day < 90; day++)
         {

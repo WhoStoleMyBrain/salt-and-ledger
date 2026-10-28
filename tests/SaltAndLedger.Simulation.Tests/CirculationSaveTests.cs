@@ -24,7 +24,7 @@ public sealed class CirculationSaveTests
         var world = RunScenario.Create(Content(), identity);
         var initial = WorldSaveCodec.Save(world);
         var tree = JObject.Parse(initial);
-        Assert.Equal(5, (int)tree["SchemaVersion"]!);
+        Assert.Equal(6, (int)tree["SchemaVersion"]!);
         Assert.Equal(1, (int)tree["Identity"]!["EconomicRulesVersion"]!);
         Assert.NotNull(tree["Circulation"]);
         Assert.Equal(initial, WorldSaveCodec.Save(WorldSaveCodec.Load(Content(), initial)));

@@ -86,25 +86,31 @@ public sealed class ExpandingExperimentTests
     }
 
     [Theory]
-    [InlineData(42, 47, 1027219)]
-    [InlineData(99, 49, 1025280)]
-    public void FixedReinvestmentPreservesMeasuredFoodShortfallDespiteRealProductiveInvestment(int seed, int flour, long cash)
+    [InlineData(42, 125, 260, 11104645, 26, 850000, 174617)]
+    [InlineData(99, 158, 326, 8117116, 34, 1142860, 352644)]
+    public void TownWarehouseReinvestmentImprovesPaidFoodButRetainsAffordabilityShortfall(
+        int seed, int flour, int bread, long cash, int population, long paidFood, long unaffordableFood)
     {
         var row = ExpandingEconomyExperiments.RunCase(ContentLoader.Load(ContentLoaderTests.CanonicalJson()), seed,
             LivingPricingMode.StockOnly, RunDifficulty.Normal, "reinvestment", 365);
         var generation = ExpandingEconomyGeneration.Generate(seed);
         var target = generation.ProcessingPortId;
         var town = JsonSerializer.SerializeToElement(row.Final.Towns).EnumerateArray().Single(t => t.GetProperty("Id").GetString() == target);
-        // These prescribed policies are controls, not proof of sustainable recovery.
-        // Under current pooled/circulation rules both processing towns lack paid food at year end.
-        Assert.Equal(0, town.GetProperty("RecoveryFulfillmentPercent").GetInt32());
-        Assert.True(town.GetProperty("Population").GetInt32() < town.GetProperty("InitialPopulation").GetInt32());
+        // Shared warehouse rules retain inputs before selling surplus and remain active while
+        // factories are disabled. The measured gain is partial recovery, not unlimited food/funds.
+        Assert.Equal(57, town.GetProperty("RecoveryFulfillmentPercent").GetInt32());
+        Assert.Equal(population, town.GetProperty("Population").GetInt32());
+        Assert.True(population > town.GetProperty("InitialPopulation").GetInt32());
         Assert.True(town.GetProperty("HouseholdCash").GetInt64() > 0);
+        var food = town.GetProperty("Needs").EnumerateArray().Single(n => n.GetProperty("Id").GetString() == target + "_food");
+        Assert.Equal(paidFood, food.GetProperty("TotalConsumedQuantity").GetInt64());
+        Assert.Equal(unaffordableFood, food.GetProperty("TotalUnmetAffordability").GetInt64());
+        Assert.True(food.GetProperty("LastConsumedQuantity").GetInt32() < food.GetProperty("LastDesiredQuantity").GetInt32());
         Assert.Equal(3, row.Final.PlayerShips);
         Assert.Equal(EconomicUnits.Coins(1920), row.Final.Minted);
         Assert.Equal(EconomicUnits.FromWhole(24), row.Final.SilverReserve);
         Assert.Equal(EconomicUnits.FromWhole(flour), row.Final.PrivateProduced!["flour"]);
-        Assert.Equal(EconomicUnits.FromWhole(104), row.Final.PrivateProduced["bread"]);
+        Assert.Equal(EconomicUnits.FromWhole(bread), row.Final.PrivateProduced["bread"]);
         Assert.Equal(cash, row.Final.Cash);
         Assert.True(row.Final.ValueChange > 0);
         Assert.Equal(4, row.SaveChecks.Count);

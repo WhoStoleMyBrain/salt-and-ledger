@@ -74,18 +74,20 @@ namespace SaltAndLedger.Simulation
                 }).ToArray(),
                 Facilities = state.PrivateFacilities.Values.Select(f => new RegionalSaveFacility
                 {
-                    Id = f.Id, OwnerId = f.OwnerId, PortId = f.PortId, BlueprintId = f.Blueprint.Id, Policy = f.Policy,
-                    Enabled = f.Enabled, CreatedDay = f.CreatedDay, CompletionDay = f.ConstructionCompletionDay,
+                    Id = f.Id, OwnerId = f.OwnerId, PortId = f.PortId, BlueprintId = f.Blueprint.Id,
+                    Enabled = f.Enabled, OperatingRate = f.OperatingRate, Priority = f.Priority,
+                    ProductionCredit = f.ProductionCredit, CreatedDay = f.CreatedDay, CompletionDay = f.ConstructionCompletionDay,
                     ConstructionStatus = f.ConstructionStatus, NextProductionDay = f.NextProductionDay,
                     LastOutcome = f.LastOutcome, Inventory = Copy(f.Inventory), Batches = f.BatchesProduced,
-                    Procurement = f.ProcurementCost, Revenue = f.SalesRevenue, Wages = f.WagesPaid,
+                    Wages = f.WagesPaid,
                     Produced = Copy(f.ProducedQuantities), Consumed = Copy(f.ConsumedQuantities),
-                    ProcurementWait = f.ProcurementWaitReason, SalesWait = f.SalesWaitReason,
                     StarterGrant = f.IsStarterGrant, Provenance = f.Provenance, SharedStockpileId = f.SharedStockpileId
                 }).ToArray(),
                 CompanyStockpiles = !state.UsesPooledCompanyStorage ? null : state.CompanyStockpiles.Values.Select(s =>
                     new RegionalSaveCompanyStockpile { Id = s.Id, OwnerId = s.OwnerId, PortId = s.PortId,
-                        Capacity = s.Capacity, Inventory = Copy(s.Inventory) }).ToArray(),
+                        Capacity = s.Capacity, Inventory = Copy(s.Inventory), Policy = CaptureWarehousePolicy(s.Policy),
+                        Procurement = s.ProcurementCost, Revenue = s.SalesRevenue,
+                        ProcurementWait = s.ProcurementWaitReason, SalesWait = s.SalesWaitReason }).ToArray(),
                 Stores = state.Accounting.Stores.Values.Select(s => new RegionalSaveStore
                 {
                     Id = s.StoreId, OwnerId = s.OwnerId, Goods = s.Goods.Values.Select(g => new RegionalSaveGoodLots
@@ -120,6 +122,18 @@ namespace SaltAndLedger.Simulation
 
         private static Dictionary<string, T> Copy<T>(IReadOnlyDictionary<string, T> values) =>
             values.OrderBy(v => v.Key, StringComparer.Ordinal).ToDictionary(v => v.Key, v => v.Value, StringComparer.Ordinal);
+
+        private static RegionalSaveWarehousePolicy CaptureWarehousePolicy(WarehousePolicy policy) =>
+            new RegionalSaveWarehousePolicy
+            {
+                CashReserve = policy.CashReserve,
+                Rules = policy.Rules.Select(r => new RegionalSaveWarehouseRule
+                {
+                    GoodId = r.GoodId, BuyEnabled = r.BuyEnabled, BuyTarget = r.BuyTarget,
+                    MaximumBuyPrice = r.MaximumBuyPrice, SellEnabled = r.SellEnabled,
+                    SellReserve = r.SellReserve, MinimumSellPrice = r.MinimumSellPrice
+                }).ToArray()
+            };
 
         private static RegionalSaveItinerary CaptureItinerary(CargoItineraryPolicy policy) => new RegionalSaveItinerary
         {

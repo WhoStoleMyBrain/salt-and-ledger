@@ -147,6 +147,9 @@ namespace SaltAndLedger.Simulation
         public IndustryBlueprint Blueprint { get; }
         public IndustryPolicy Policy { get; }
         public bool Enabled { get; }
+        public int OperatingRate { get; }
+        public ProductionPriority Priority { get; }
+        public int ProductionCredit { get; }
         public long CreatedDay { get; }
         public long OrderedDay => CreatedDay;
         public FacilityConstructionStatus ConstructionStatus { get; }
@@ -183,8 +186,11 @@ namespace SaltAndLedger.Simulation
             bool isStarterGrant = false, string provenance = "constructed",
             FacilityConstructionStatus constructionStatus = FacilityConstructionStatus.Operational,
             long? constructionCompletionDay = null, long? snapshotDay = null, long wagesPaid = 0,
-            string? sharedStockpileId = null)
+            string? sharedStockpileId = null, int operatingRate = 100,
+            ProductionPriority priority = ProductionPriority.Normal, int productionCredit = 0)
         {
+            FactoryProduction.Validate(operatingRate, priority, productionCredit);
+            OperatingRate = operatingRate; Priority = priority; ProductionCredit = productionCredit;
             Id = id; OwnerId = ownerId; PortId = portId; Blueprint = blueprint; Policy = policy;
             Enabled = enabled; CreatedDay = createdDay; NextProductionDay = nextProductionDay; LastOutcome = lastOutcome;
             var quantities = new SortedDictionary<string, int>(StringComparer.Ordinal);

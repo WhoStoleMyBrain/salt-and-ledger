@@ -84,6 +84,10 @@ namespace SaltAndLedger.Simulation
         public bool UsesSharedStock { get; }
         public bool Enabled { get; }
         public bool UnderConstruction { get; }
+        public int OperatingRate { get; }
+        public ProductionPriority Priority { get; }
+        public int ProductionCredit { get; }
+        public long? NextRateAdmittedDay { get; }
         public long ScheduledDueDay { get; }
         public long NextEligibleDay { get; }
         public ScheduledProductionOutcome CurrentReadiness { get; }
@@ -104,12 +108,16 @@ namespace SaltAndLedger.Simulation
             IReadOnlyDictionary<string, int> stock, bool shared, bool enabled, bool underConstruction,
             long dueDay, long employerCash, long wage, int? capacity, int? outputLimit,
             ScheduledProductionOutcome readiness, ScheduledProductionOutcome nextDay,
-            ScheduledProductionOutcome last)
+            ScheduledProductionOutcome last, int intervalDays = 1, int operatingRate = 100,
+            ProductionPriority priority = ProductionPriority.Normal, int productionCredit = 0)
         {
             PortId = portId; FacilityId = facilityId; BuildingId = buildingId; RecipeId = recipe.Id;
             OwnerId = ownerId; StoreId = storeId; UsesSharedStock = shared;
             Enabled = enabled; UnderConstruction = underConstruction;
             ScheduledDueDay = dueDay; NextEligibleDay = Math.Max(checked(snapshot.Day + 1), dueDay);
+            OperatingRate = operatingRate; Priority = priority; ProductionCredit = productionCredit;
+            NextRateAdmittedDay = FactoryProduction.NextAdmittedDay(NextEligibleDay, intervalDays,
+                enabled && !underConstruction, operatingRate, productionCredit);
             EmployerCash = employerCash; WagePerBatch = wage;
             StoredUnits = stock.Values.Sum(q => (long)q);
             StorageCapacity = capacity; OutputStockLimit = outputLimit;
@@ -180,11 +188,12 @@ namespace SaltAndLedger.Simulation
             var readiness = PrivateProductionRules.Preview(recipe, plan, id => storage.Inventory[id],
                 snapshot.QuantityScale, storage.StoredUnits, cash, facility.Enabled, facility.ConstructionStatus,
                 facility.NextProductionDay, Math.Max(nextDay, facility.NextProductionDay),
-                storage.Capacity, snapshot.UsesPooledCompanyStorage, outputLimit);
+                storage.Capacity, snapshot.UsesPooledCompanyStorage, outputLimit, facility.OperatingRate, facility.ProductionCredit);
             return new ProductionOpportunitySignal(snapshot, facility.PortId, facilityId, plan.BuildingId,
                 recipe, facility.OwnerId, storage.Id, storage.Inventory, snapshot.UsesPooledCompanyStorage,
                 facility.Enabled, !facility.IsOperational, facility.NextProductionDay, cash, plan.WagePerBatch,
-                storage.Capacity, outputLimit, readiness, snapshot.PreviewFacilityProduction(facilityId, content), facility.LastOutcome);
+                storage.Capacity, outputLimit, readiness, snapshot.PreviewFacilityProduction(facilityId, content), facility.LastOutcome,
+                plan.IntervalDays, facility.OperatingRate, facility.Priority, facility.ProductionCredit);
         }
     }
 

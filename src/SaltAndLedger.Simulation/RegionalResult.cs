@@ -7,11 +7,12 @@ namespace SaltAndLedger.Simulation
     public sealed class RegionalWarehouseTrade
     {
         public string FacilityId { get; }
+        public string StoreId { get; }
         public string OwnerId { get; }
         public string PortId { get; }
         public TradeAttempt Trade { get; }
-        internal RegionalWarehouseTrade(string facilityId, string ownerId, string portId, TradeAttempt trade)
-        { FacilityId = facilityId; OwnerId = ownerId; PortId = portId; Trade = trade; }
+        internal RegionalWarehouseTrade(string facilityId, string ownerId, string portId, TradeAttempt trade, string? storeId = null)
+        { FacilityId = facilityId; StoreId = storeId ?? "facility:" + facilityId; OwnerId = ownerId; PortId = portId; Trade = trade; }
     }
 
     public sealed class RegionalPrivateProduction

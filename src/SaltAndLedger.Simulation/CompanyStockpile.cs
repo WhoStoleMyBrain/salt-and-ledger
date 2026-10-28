@@ -15,9 +15,17 @@ namespace SaltAndLedger.Simulation
         public int Capacity { get; }
         public int StoredUnits { get; }
         public IReadOnlyDictionary<string, int> Inventory { get; }
+        public WarehousePolicy Policy { get; }
+        public long ProcurementCost { get; }
+        public long SalesRevenue { get; }
+        public IndustryWaitReason ProcurementWaitReason { get; }
+        public IndustryWaitReason SalesWaitReason { get; }
 
         internal CompanyStockpileSnapshot(string id, string ownerId, string portId, int capacity,
-            IReadOnlyDictionary<string, int> inventory)
+            IReadOnlyDictionary<string, int> inventory, WarehousePolicy? policy = null,
+            long procurementCost = 0, long salesRevenue = 0,
+            IndustryWaitReason procurementWaitReason = IndustryWaitReason.Disabled,
+            IndustryWaitReason salesWaitReason = IndustryWaitReason.Disabled)
         {
             Id = id; OwnerId = ownerId; PortId = portId; Capacity = capacity;
             var quantities = new SortedDictionary<string, int>(StringComparer.Ordinal);
@@ -29,6 +37,13 @@ namespace SaltAndLedger.Simulation
             Inventory = new ReadOnlyDictionary<string, int>(quantities);
             StoredUnits = quantities.Values.Aggregate(0, (sum, value) => checked(sum + value));
             if (capacity < StoredUnits) throw new ArgumentException("Company stock exceeds its constructed capacity.");
+            Policy = policy ?? new WarehousePolicy();
+            Policy.Validate(Inventory, Capacity);
+            if (procurementCost < 0 || salesRevenue < 0) throw new ArgumentOutOfRangeException(nameof(procurementCost));
+            if (!Enum.IsDefined(typeof(IndustryWaitReason), procurementWaitReason) ||
+                !Enum.IsDefined(typeof(IndustryWaitReason), salesWaitReason)) throw new ArgumentOutOfRangeException(nameof(procurementWaitReason));
+            ProcurementCost = procurementCost; SalesRevenue = salesRevenue;
+            ProcurementWaitReason = procurementWaitReason; SalesWaitReason = salesWaitReason;
         }
 
         public static string StoreId(string ownerId, string portId)

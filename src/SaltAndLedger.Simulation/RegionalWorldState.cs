@@ -139,6 +139,9 @@ namespace SaltAndLedger.Simulation
                 if (economy == null && privateFacilities.Any(f => f.OwnerId == configured.OwnerId && f.PortId == configured.PortId &&
                     f.Blueprint.Id == configured.BlueprintId)) throw new ArgumentException("Duplicate starter industry at a port.");
                 ValidateIndustryPolicy(content.GetRecipe(blueprint.RecipeId), blueprint, configured.Policy);
+                if (pooledStorage && (configured.Policy.ProcurementEnabled || configured.Policy.SalesEnabled ||
+                    configured.Policy.CashReserve != 0 || configured.Policy.Inputs.Count != 0 || configured.Policy.Outputs.Count != 0))
+                    throw new ArgumentException("Pooled starter facilities cannot own warehouse trading policies.");
                 var inventory = new Inventory(content, configured.InitialInventory,
                     economy == null ? 1 : EconomicUnits.QuantityScale).Snapshot();
                 if (inventory.Values.Sum(v => (long)v) > blueprint.WarehouseCapacity)
@@ -165,7 +168,8 @@ namespace SaltAndLedger.Simulation
                 privateFacilities.Add(new PrivateFacilitySnapshot(configured.Id, configured.OwnerId, configured.PortId,
                     blueprint, configured.Policy, configured.Enabled, initialDay, checked(initialDay + blueprint.IntervalDays),
                     ScheduledProductionOutcome.NotDue, pooledStorage ? new Inventory(content).Snapshot() : inventory, 0, 0, 0, totals, totals,
-                    IndustryWaitReason.None, IndustryWaitReason.None, true, configured.Provenance,
+                    pooledStorage ? IndustryWaitReason.Disabled : IndustryWaitReason.None,
+                    pooledStorage ? IndustryWaitReason.Disabled : IndustryWaitReason.None, true, configured.Provenance,
                     sharedStockpileId: pooledStorage ? storeId : null));
                 foreach (var stock in inventory.Where(p => p.Value > 0).OrderBy(p => p.Key, StringComparer.Ordinal))
                     accounting.Grant(storeId, stock.Key, stock.Value, configured.Provenance);
@@ -230,11 +234,42 @@ namespace SaltAndLedger.Simulation
             Mutate(work =>
             {
                 if (policy == null) throw new ArgumentNullException(nameof(policy));
+                if (state.UsesPooledCompanyStorage)
+                    throw new InvalidOperationException("Company stock uses one warehouse policy per town. Configure the warehouse instead.");
                 var facility = work.OwnedFacility(ownerId, facilityId);
                 var recipe = content.GetRecipe(facility.Blueprint.RecipeId);
                 ValidateIndustryPolicy(recipe, facility.Blueprint, policy);
                 if (ReferenceEquals(facility.Policy, policy)) return;
                 facility.Policy = policy;
+                work.Changed = true;
+            });
+
+        public RegionalResult ConfigureProduction(string ownerId, string facilityId, bool enabled,
+            int operatingRate, ProductionPriority priority, RegionalWorldSnapshot? expectedSnapshot = null) =>
+            Mutate(work =>
+            {
+                EnsureCurrent(expectedSnapshot);
+                FactoryProduction.Validate(operatingRate, priority);
+                var facility = work.OwnedFacility(ownerId, facilityId);
+                if (facility.Enabled == enabled && facility.OperatingRate == operatingRate && facility.Priority == priority) return;
+                facility.Enabled = enabled; facility.OperatingRate = operatingRate; facility.Priority = priority;
+                if (facility.ConstructionStatus == FacilityConstructionStatus.Operational)
+                {
+                    if (!enabled) facility.LastOutcome = ScheduledProductionOutcome.Disabled;
+                    else if (operatingRate == 0) facility.LastOutcome = ScheduledProductionOutcome.RateLimited;
+                }
+                work.Changed = true;
+            });
+
+        public RegionalResult ConfigureWarehouse(string ownerId, string portId, WarehousePolicy policy,
+            RegionalWorldSnapshot? expectedSnapshot = null) => Mutate(work =>
+            {
+                EnsureCurrent(expectedSnapshot);
+                if (policy == null) throw new ArgumentNullException(nameof(policy));
+                var store = work.CompanyStockpiles[CompanyStockpileSnapshot.StoreId(ownerId, portId)];
+                policy.Validate(store.Inventory.Snapshot(), store.Capacity);
+                if (store.Policy.Equivalent(policy)) return;
+                store.Policy = policy;
                 work.Changed = true;
             });
 
@@ -517,14 +552,25 @@ namespace SaltAndLedger.Simulation
             internal int Capacity { get; set; }
             internal Inventory Inventory { get; }
             internal int StoredUnits { get; set; }
+            internal WarehousePolicy Policy { get; set; }
+            internal long ProcurementCost { get; set; }
+            internal long SalesRevenue { get; set; }
+            internal IndustryWaitReason ProcurementWaitReason { get; set; }
+            internal IndustryWaitReason SalesWaitReason { get; set; }
             internal WorkingStockpile(ContentCatalog content, string id, string ownerId, string portId,
-                int capacity, IReadOnlyDictionary<string, int> inventory, int quantityScale)
+                int capacity, IReadOnlyDictionary<string, int> inventory, int quantityScale,
+                WarehousePolicy? policy = null, long procurementCost = 0, long salesRevenue = 0,
+                IndustryWaitReason procurementWaitReason = IndustryWaitReason.Disabled,
+                IndustryWaitReason salesWaitReason = IndustryWaitReason.Disabled)
             {
                 Id = id; OwnerId = ownerId; PortId = portId; Capacity = capacity;
                 Inventory = new Inventory(content, inventory, quantityScale);
                 StoredUnits = checked((int)inventory.Values.Sum(v => (long)v));
+                Policy = policy ?? new WarehousePolicy(); ProcurementCost = procurementCost; SalesRevenue = salesRevenue;
+                ProcurementWaitReason = procurementWaitReason; SalesWaitReason = salesWaitReason;
             }
-            internal CompanyStockpileSnapshot Snapshot() => new CompanyStockpileSnapshot(Id, OwnerId, PortId, Capacity, Inventory.Snapshot());
+            internal CompanyStockpileSnapshot Snapshot() => new CompanyStockpileSnapshot(Id, OwnerId, PortId, Capacity,
+                Inventory.Snapshot(), Policy, ProcurementCost, SalesRevenue, ProcurementWaitReason, SalesWaitReason);
         }
 
         private sealed class WorkingFacility
@@ -535,6 +581,9 @@ namespace SaltAndLedger.Simulation
             internal IndustryBlueprint Blueprint { get; }
             internal IndustryPolicy Policy { get; set; }
             internal bool Enabled { get; set; }
+            internal int OperatingRate { get; set; }
+            internal ProductionPriority Priority { get; set; }
+            internal int ProductionCredit { get; set; }
             internal long CreatedDay { get; }
             internal FacilityConstructionStatus ConstructionStatus { get; set; }
             internal long ConstructionCompletionDay { get; }
@@ -566,6 +615,7 @@ namespace SaltAndLedger.Simulation
             {
                 Id = before.Id; OwnerId = before.OwnerId; PortId = before.PortId; Blueprint = before.Blueprint;
                 Policy = before.Policy; Enabled = before.Enabled; CreatedDay = before.CreatedDay;
+                OperatingRate = before.OperatingRate; Priority = before.Priority; ProductionCredit = before.ProductionCredit;
                 IsStarterGrant = before.IsStarterGrant; Provenance = before.Provenance;
                 ConstructionStatus = before.ConstructionStatus; ConstructionCompletionDay = before.ConstructionCompletionDay;
                 NextProductionDay = before.NextProductionDay; LastOutcome = before.LastOutcome;
@@ -580,7 +630,8 @@ namespace SaltAndLedger.Simulation
             internal PrivateFacilitySnapshot Snapshot(long day) => new PrivateFacilitySnapshot(Id, OwnerId, PortId, Blueprint,
                 Policy, Enabled, CreatedDay, NextProductionDay, LastOutcome, privateInventory.Snapshot(), BatchesProduced,
                 ProcurementCost, SalesRevenue, Produced, Consumed, ProcurementWaitReason, SalesWaitReason,
-                IsStarterGrant, Provenance, ConstructionStatus, ConstructionCompletionDay, day, WagesPaid, sharedStore?.Id);
+                IsStarterGrant, Provenance, ConstructionStatus, ConstructionCompletionDay, day, WagesPaid, sharedStore?.Id,
+                OperatingRate, Priority, ProductionCredit);
         }
 
         private sealed partial class WorkingWorld
@@ -619,7 +670,8 @@ namespace SaltAndLedger.Simulation
                 foreach (var company in before.Companies.Values) Companies.Add(company.Id, new WorkingCompany(company));
                 foreach (var store in before.CompanyStockpiles.Values)
                     CompanyStockpiles.Add(store.Id, new WorkingStockpile(content, store.Id, store.OwnerId, store.PortId,
-                        store.Capacity, store.Inventory, before.QuantityScale));
+                        store.Capacity, store.Inventory, before.QuantityScale, store.Policy, store.ProcurementCost,
+                        store.SalesRevenue, store.ProcurementWaitReason, store.SalesWaitReason));
                 foreach (var facility in before.PrivateFacilities.Values)
                     PrivateFacilities.Add(facility.Id, new WorkingFacility(content, facility, before.QuantityScale,
                         before.UsesPooledCompanyStorage ? CompanyStockpiles[CompanyStockpileSnapshot.StoreId(facility.OwnerId, facility.PortId)] : null));
@@ -714,8 +766,8 @@ namespace SaltAndLedger.Simulation
                 var facility = new PrivateFacilitySnapshot(facilityId, ownerId, portId, blueprint, new IndustryPolicy(),
                     true, Day, due, pending ? ScheduledProductionOutcome.UnderConstruction : ScheduledProductionOutcome.NotDue,
                     new Inventory(content, quantityScale: before.QuantityScale).Snapshot(), 0, 0, 0, totals, totals,
-                    pending ? IndustryWaitReason.UnderConstruction : IndustryWaitReason.Disabled,
-                    pending ? IndustryWaitReason.UnderConstruction : IndustryWaitReason.Disabled,
+                    pending && !before.UsesPooledCompanyStorage ? IndustryWaitReason.UnderConstruction : IndustryWaitReason.Disabled,
+                    pending && !before.UsesPooledCompanyStorage ? IndustryWaitReason.UnderConstruction : IndustryWaitReason.Disabled,
                     constructionStatus: pending ? FacilityConstructionStatus.UnderConstruction : FacilityConstructionStatus.Operational,
                     constructionCompletionDay: completionDay, snapshotDay: Day);
                 WorkingStockpile? sharedStore = null;
@@ -797,6 +849,8 @@ namespace SaltAndLedger.Simulation
 
             internal TradeAttempt WarehouseTrade(WorkingFacility facility, TradeCommand command)
             {
+                if (before.UsesPooledCompanyStorage)
+                    return WarehouseTrade(CompanyStockpiles[facility.StoreId], command, facility.Id);
                 if (command == null) throw new ArgumentNullException(nameof(command));
                 var port = Ports[facility.PortId];
                 var company = Companies[facility.OwnerId];
@@ -821,11 +875,70 @@ namespace SaltAndLedger.Simulation
                 return attempt;
             }
 
+            private TradeAttempt WarehouseTrade(WorkingStockpile store, TradeCommand command, string facilityId = "")
+            {
+                if (command == null) throw new ArgumentNullException(nameof(command));
+                var port = Ports[store.PortId];
+                var company = Companies[store.OwnerId];
+                var attempt = PreviewLocalTrade(company.Id, port, TradeCalculator.Preview(port.Quotes[command.GoodId], command,
+                    port.Inventory.GetQuantity(command.GoodId), store.Inventory.GetQuantity(command.GoodId),
+                    port.Cash, company.Cash, store.Capacity - store.StoredUnits));
+                TradeCalculator.Apply(attempt, port.Inventory, store.Inventory);
+                store.StoredUnits = checked(store.StoredUnits + attempt.TraderInventoryChange.Delta);
+                port.Cash = attempt.MarketCashChange.After;
+                company.Cash = attempt.TraderCashChange.After;
+                WarehouseTrades.Add(new RegionalWarehouseTrade(facilityId, store.OwnerId, store.PortId, attempt, store.Id));
+                if (attempt.Outcome == TradeOutcome.Traded)
+                {
+                    AccountTrade(store.Id, store.PortId, attempt);
+                    ApplyServiceFee(company.Id, store.Id, port, attempt);
+                    if (company.Id == Challenge?.Configuration.OwnerId) Commission?.Trade(store.PortId, attempt);
+                    if (command.Direction == TradeDirection.Buy)
+                        store.ProcurementCost = checked(store.ProcurementCost + attempt.ExecutedAmount);
+                    else store.SalesRevenue = checked(store.SalesRevenue + attempt.ExecutedAmount);
+                    Changed = true;
+                }
+                return attempt;
+            }
+
+            private void TradeWarehouses(TradeDirection direction)
+            {
+                var buy = direction == TradeDirection.Buy;
+                foreach (var store in CompanyStockpiles.Values.OrderBy(s => s.PortId, StringComparer.Ordinal)
+                    .ThenBy(s => s.OwnerId, StringComparer.Ordinal))
+                {
+                    var reason = IndustryWaitReason.Disabled;
+                    foreach (var rule in store.Policy.Rules.Where(r => buy ? r.BuyEnabled : r.SellEnabled))
+                    {
+                        var port = Ports[store.PortId];
+                        var company = Companies[store.OwnerId];
+                        var quote = port.Quotes[rule.GoodId];
+                        var selection = WarehouseTradeRules.Preview(store.Policy, rule, rule.GoodId, direction,
+                            quote, port.Inventory.GetQuantity(rule.GoodId), store.Inventory.GetQuantity(rule.GoodId),
+                            port.Cash, company.Cash, store.Capacity - store.StoredUnits,
+                            command => PreviewLocalTrade(company.Id, port, TradeCalculator.Preview(quote, command,
+                                port.Inventory.GetQuantity(rule.GoodId), store.Inventory.GetQuantity(rule.GoodId),
+                                port.Cash, company.Cash, store.Capacity - store.StoredUnits)));
+                        if (selection.Quantity > 0)
+                            WarehouseTrade(store, new TradeCommand(direction, rule.GoodId, selection.Quantity));
+                        // Preserve the first ordinal real blocker; otherwise report successful work or the retained threshold.
+                        if (reason == IndustryWaitReason.Disabled || reason == IndustryWaitReason.TargetSatisfied ||
+                            reason == IndustryWaitReason.ReserveRetained || reason == IndustryWaitReason.None)
+                        {
+                            if (selection.Reason != IndustryWaitReason.TargetSatisfied && selection.Reason != IndustryWaitReason.ReserveRetained ||
+                                reason == IndustryWaitReason.Disabled) reason = selection.Reason;
+                        }
+                    }
+                    if (buy) store.ProcurementWaitReason = reason; else store.SalesWaitReason = reason;
+                }
+            }
+
             private IEnumerable<WorkingFacility> OrderedFacilities() =>
                 PrivateFacilities.Values.OrderBy(f => f.PortId, StringComparer.Ordinal).ThenBy(f => f.Id, StringComparer.Ordinal);
 
             internal void Procure()
             {
+                if (before.UsesPooledCompanyStorage) { TradeWarehouses(TradeDirection.Buy); return; }
                 foreach (var facility in OrderedFacilities())
                 {
                     if (facility.ConstructionStatus == FacilityConstructionStatus.UnderConstruction)
@@ -869,6 +982,7 @@ namespace SaltAndLedger.Simulation
 
             internal void SellPrivate()
             {
+                if (before.UsesPooledCompanyStorage) { TradeWarehouses(TradeDirection.Sell); return; }
                 foreach (var facility in OrderedFacilities())
                 {
                     if (facility.ConstructionStatus == FacilityConstructionStatus.UnderConstruction)
@@ -907,7 +1021,8 @@ namespace SaltAndLedger.Simulation
 
             internal void ProducePrivate(long nextDay)
             {
-                foreach (var facility in OrderedFacilities())
+                foreach (var facility in PrivateFacilities.Values.OrderBy(f => f.PortId, StringComparer.Ordinal)
+                    .ThenByDescending(f => f.Priority).ThenBy(f => f.Id, StringComparer.Ordinal))
                 {
                     if (facility.ConstructionStatus == FacilityConstructionStatus.UnderConstruction) continue;
                     if (nextDay < facility.NextProductionDay) continue;
@@ -921,7 +1036,13 @@ namespace SaltAndLedger.Simulation
                         before.UsesPooledCompanyStorage ? RegionalWorldSnapshot.AggregateOutputLimit(PrivateFacilities.Values
                             .Where(f => f.OwnerId == facility.OwnerId && f.PortId == facility.PortId &&
                                 f.Blueprint.RecipeId == facility.Blueprint.RecipeId && f.ConstructionStatus == FacilityConstructionStatus.Operational)
-                            .Select(f => f.Blueprint.OutputStockLimit)) : null);
+                            .Select(f => f.Blueprint.OutputStockLimit)) : null, facility.OperatingRate, facility.ProductionCredit);
+                    if (facility.Enabled && facility.OperatingRate > 0)
+                    {
+                        facility.ProductionCredit = FactoryProduction.Admit(facility.OperatingRate, facility.ProductionCredit);
+                        if (outcome == ScheduledProductionOutcome.RateLimited)
+                            facility.NextProductionDay = checked(nextDay + facility.Blueprint.IntervalDays);
+                    }
                     if (outcome == ScheduledProductionOutcome.Produced)
                     {
                         outcome = Simulation.Production.TryRunBatch(facility.Inventory,
@@ -938,6 +1059,7 @@ namespace SaltAndLedger.Simulation
                             foreach (var output in recipe.Outputs)
                                 facility.Produced[output.GoodId] = checked(facility.Produced[output.GoodId] + checked(output.Quantity * scale));
                             facility.StoredUnits = checked((int)facility.Inventory.Snapshot().Values.Sum(v => (long)v));
+                            facility.ProductionCredit -= 100;
                             facility.NextProductionDay = checked(nextDay + facility.Blueprint.IntervalDays);
                         }
                     }

@@ -8,11 +8,13 @@ namespace SaltAndLedger.Simulation
         internal static ScheduledProductionOutcome Preview(RecipeDefinition recipe, IndustryBlueprint blueprint,
             Func<string, int> quantity, int quantityScale, int storedUnits, long employerCash, bool enabled,
             FacilityConstructionStatus status, long dueDay, long attemptDay, int? capacity = null,
-            bool pooled = false, int? pooledOutputLimit = null)
+            bool pooled = false, int? pooledOutputLimit = null, int operatingRate = 100, int productionCredit = 0)
         {
             if (status == FacilityConstructionStatus.UnderConstruction) return ScheduledProductionOutcome.UnderConstruction;
             if (attemptDay < dueDay) return ScheduledProductionOutcome.NotDue;
             if (!enabled) return ScheduledProductionOutcome.Disabled;
+            if (operatingRate == 0 || FactoryProduction.Admit(operatingRate, productionCredit) < 100)
+                return ScheduledProductionOutcome.RateLimited;
             if (recipe.Inputs.Any(i => quantity(i.GoodId) < checked(i.Quantity * quantityScale))) return ScheduledProductionOutcome.InputShortage;
             var outputLimit = pooled ? pooledOutputLimit : blueprint.OutputStockLimit;
             if (outputLimit.HasValue && recipe.Outputs.Any(output => (long)quantity(output.GoodId) -
@@ -35,7 +37,8 @@ namespace SaltAndLedger.Simulation
             return PrivateProductionRules.Preview(content.GetRecipe(facility.Blueprint.RecipeId), facility.Blueprint,
                 id => storage.Inventory[id], QuantityScale, storage.StoredUnits, Companies[facility.OwnerId].Cash,
                 facility.Enabled, facility.ConstructionStatus, facility.NextProductionDay, checked(Day + 1),
-                storage.Capacity, UsesPooledCompanyStorage, FacilityOutputStockLimit(facilityId));
+                storage.Capacity, UsesPooledCompanyStorage, FacilityOutputStockLimit(facilityId),
+                facility.OperatingRate, facility.ProductionCredit);
         }
     }
 }

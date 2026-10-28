@@ -132,19 +132,26 @@ internal static class EconomicCirculationExperiments
         {
             if (!managed) return;
             Build(Farm, generation.FoodSourcePortId, ExpandingEconomyGeneration.FarmBlueprint,
-                new IndustryPolicy(false, true, M(100), outputs: new[] { new OutputSaleRule("grain", 0, 1) }));
-            Build(Mill, generation.ProcessingPortId, ExpandingEconomyGeneration.MillBlueprint, ExpandingEconomyScenario.MillPolicy());
+                ExperimentWarehousePolicies.Sell("grain", M(100)));
+            Build(Mill, generation.ProcessingPortId, ExpandingEconomyGeneration.MillBlueprint, ExpandingEconomyScenario.MillWarehousePolicy());
             Build(Bakery, generation.RecoveryPortId, WorldIds.BakeryBlueprint,
-                new IndustryPolicy(true, true, M(100), new[] { new InputStockRule("logs", Q(3), 18) },
-                    new[] { new OutputSaleRule("bread", 0, 1) }));
+                ExperimentWarehousePolicies.RecoveryBakery(M(100)));
             Build(Camp, generation.RecoveryPortId, ExpandingEconomyGeneration.LumberBlueprint,
-                new IndustryPolicy(false, true, M(100), outputs: new[] { new OutputSaleRule("logs", 0, 1) }));
+                ExperimentWarehousePolicies.Sell("logs", M(100)));
         }
 
-        private void Build(string id, string port, string blueprint, IndustryPolicy policy)
+        private void ConfigureWarehouse(string port, WarehousePolicy policy)
+        {
+            var snapshot = World.Snapshot();
+            var store = snapshot.CompanyStockpiles[CompanyStockpileSnapshot.StoreId(Owner, port)];
+            var combined = ExperimentWarehousePolicies.Combine(store.Policy, policy);
+            Apply(w => w.ConfigureWarehouse(Owner, port, combined, snapshot));
+        }
+
+        private void Build(string id, string port, string blueprint, WarehousePolicy policy)
         {
             Apply(w => w.ConstructFacility(Owner, port, blueprint, id));
-            if (World.Snapshot().PrivateFacilities.ContainsKey(id)) Apply(w => w.ConfigureFacility(Owner, id, policy));
+            if (World.Snapshot().PrivateFacilities.ContainsKey(id)) ConfigureWarehouse(port, policy);
         }
 
         internal void Act()
@@ -346,13 +353,16 @@ internal static class EconomicCirculationExperiments
                     t.TotalLevy, t.TotalRelief, t.LastLevy, t.LastRelief, t.PayrollReserve, t.DuePayroll, t.FoodReserve,
                     LastReason = t.LastReason.ToString() }).ToArray() },
             Companies = state.Companies.Values.Select(c => new { c.Id, c.Cash, Finance = state.Accounting.Companies[c.Id] }).ToArray(),
-            Stockpiles = state.CompanyStockpiles.Values.Select(s => new { StoreId = CompanyStockpileSnapshot.StoreId(s.OwnerId, s.PortId), s.OwnerId, s.PortId, s.Capacity, s.Inventory }).ToArray(),
+            Stockpiles = state.CompanyStockpiles.Values.Select(s => new { StoreId = CompanyStockpileSnapshot.StoreId(s.OwnerId, s.PortId),
+                s.OwnerId, s.PortId, s.Capacity, s.Inventory, s.Policy, s.ProcurementCost, s.SalesRevenue,
+                Procurement = s.ProcurementWaitReason.ToString(), Sales = s.SalesWaitReason.ToString() }).ToArray(),
             Ships = state.Ships.Values.Select(s => new { s.Id, s.OwnerId, s.IsPlayer, s.DockedPortId, s.DestinationPortId,
                 s.RemainingTravelDays, s.Cargo, s.AutomationEnabled, Stage = s.IndustrialStage.ToString() }).ToArray(),
             Facilities = state.PrivateFacilities.Values.Select(f => new { f.Id, f.PortId, f.Blueprint.BuildingId,
+                f.OperatingRate, Priority = f.Priority.ToString(), f.ProductionCredit,
                 f.IsOperational, f.Enabled, f.NextProductionDay, f.BatchesProduced, f.WagesPaid,
                 f.Blueprint.OutputStockLimit, f.Capacity, f.SharedStockpileId,
-                LastOutcome = f.LastOutcome.ToString(), Procurement = f.ProcurementWaitReason.ToString(), Sales = f.SalesWaitReason.ToString() }).ToArray(),
+                LastOutcome = f.LastOutcome.ToString() }).ToArray(),
             Towns = state.Ports.Values.Select(p => new { p.Id, p.Role, p.MarketCash, p.City!.HouseholdCash,
                 MarketFeesReceived = state.Circulation?.MarketFeesReceived(p.Id) ?? 0,
                 HouseholdFeesReceived = state.Circulation?.HouseholdFeesReceived(p.Id) ?? 0,
@@ -389,13 +399,13 @@ internal static class EconomicCirculationExperiments
 
     internal sealed class Report
     {
-        public int FormatVersion => 1;
+        public int FormatVersion => 3;
         public int QuantityScale => EconomicUnits.QuantityScale;
         public long MoneyScale => EconomicUnits.MoneyScale;
-        public string Methodology => "Four seeds, two pricing modes, idle/managed, four fiscal arms: 64 revision 1 worlds + 16 untouched revision 0 pooled/itinerary controls. Merchant charter, Ascension 0, Sandbox, 365 days. All new arms share revision 1 finite initial imports and Coverage floor. Each fiscal arm is compared with revision 1 None, holding buffers and the target floor fixed. None versus historical controls measures the buffer/floor package; Combined versus historical controls measures the full revision effect. The submitted seed shares geography and roles with the read-only fixture, not its Industrial/A1 charter or unknown command history. Fixed managed policy copies the previously documented circulation Farm/Mill/Bakery/Lumber investments, stock/cash controls and physical Flour/Logs shipping. No Mint, external contracts, fabricated inventory/cash, per-seed rescue or outcome-driven tuning. All numeric goods/coins are raw 1/10,000; prices are coins per whole good. Quotes are hypothetical current-state player proposals, not permission to trade remotely. Checkpoints retain actual state only; no terminal fixture is advanced. Runtime is printed only. Positive company reference value and food consumed are not proof of universal or perpetual sustainability.";
+        public string Methodology => "Four seeds, two pricing modes, idle/managed, four fiscal arms: 64 revision 1 worlds + 16 revision 0 pooled/itinerary controls, all using current factory/warehouse automation. Merchant charter, Ascension 0, Sandbox, 365 days. All new arms share revision 1 finite initial imports and Coverage floor. Each fiscal arm is compared with revision 1 None, holding buffers and the target floor fixed. None versus historical controls measures the buffer/floor package; Combined versus historical controls measures the full revision effect. The submitted seed shares geography and roles with the read-only fixture, not its Industrial/A1 charter or unknown command history. Fixed managed policy retains the documented Farm/Mill/Bakery/Lumber investments, marginal limits, cash controls and physical Flour/Logs shipping. Task2.8 consolidates local rules into one town warehouse: a sold input retains at least its buy target, and factory disablement leaves warehouse trading active. All factories retain100% Normal production; no prices or recipes are retuned. No Mint, external contracts, fabricated inventory/cash, per-seed rescue or outcome-driven tuning. All numeric goods/coins are raw 1/10,000; prices are coins per whole good. Quotes are hypothetical current-state player proposals, not permission to trade remotely. Checkpoints retain actual state only; no terminal fixture is advanced. Runtime is printed only. Positive company reference value and food consumed are not proof of universal or perpetual sustainability.";
         public int[] Seeds => EconomicCirculationExperiments.Seeds;
         public int Horizon => 365;
-        public string ManagedPolicy => "At day 0 pay for food-source Farm, processor Mill, recovery Bakery and recovery Lumber Camp. Farm sells Grain; Mill buys Grain (maximum 24 coins) and sells Flour (minimum 6 coins) using existing Mill policy. Recovery Bakery buys Logs (target 3, maximum 18 coins), sells Bread (minimum 1 coin); Camp sells Logs (minimum 1 coin); industry cash reserves 100 coins except unchanged Mill 80. Enable each facility only with company cash >= 120 coins and public output stock below Grain 24 / Flour 12 / Bread 24 / Logs 12 respectively. Sail the initially empty Merchant ship to processor; apply one real Flour/Logs industrial route. Buy up to 4 Flour (minimum 1, maximum 22 coins), physically unload to recovery warehouse; buy up to 8 Logs (minimum 1, maximum 12 coins) there and sell at processor (minimum 1 coin). Route reserve 100 coins, empty returns allowed. No other ships, goods, direct stock assignments or cash interventions. The same unretuned policy can stall; checkpoints report that outcome.";
+        public string ManagedPolicy => "At day 0 pay for food-source Farm, processor Mill, recovery Bakery and recovery Lumber Camp. Farm sells Grain; Processor warehouse buys Grain (target8, maximum24 coins) and sells Flour (reserve0, minimum6 coins). Recovery warehouse buys Logs (target3, maximum18 coins), sells Bread (reserve0, minimum1 coin) and sells only Logs above reserve3 (minimum1 coin), preventing a buy/sell cycle. Food-source warehouse sells Grain (reserve0, minimum1 coin). Town cash reserves are100 coins except processor80; disabling a factory leaves these local trading rules active. Enable each facility only with company cash >= 120 coins and public output stock below Grain 24 / Flour 12 / Bread 24 / Logs 12 respectively. Sail the initially empty Merchant ship to processor; apply one real Flour/Logs industrial route. Buy up to 4 Flour (minimum 1, maximum 22 coins), physically unload to recovery warehouse; buy up to 8 Logs (minimum 1, maximum 12 coins) there and sell at processor (minimum 1 coin). Route reserve 100 coins, empty returns allowed. No other ships, goods, direct stock assignments or cash interventions. These prescribed policies can still stall; checkpoints report that outcome.";
         public long PrimaryWorldDays => Runs.Sum(r => r.Final.Day) + HistoricalControls.Sum(r => r.Final.Day);
         public List<Row> Runs { get; } = new();
         public List<Row> HistoricalControls { get; } = new();

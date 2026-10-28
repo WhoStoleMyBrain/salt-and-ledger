@@ -236,30 +236,31 @@ public sealed class PooledCompanyStorageTests
     }
 
     [Fact]
-    public void PendingPolicyCannotUseSharedStockAndAddsNoOutputCeilingUntilOperational()
+    public void WarehouseTradesDuringConstructionButPendingFactoryAddsNoOutputCeilingOrProduction()
     {
         var world = World(new[] { Site("a_mill", stock: Stock(("flour", Unit)), enabled: false) },
             difficulty: RunDifficulty.SlowFoundations);
         world.ConstructFacility(Owner, South, "mill_plan", "b_pending_mill");
-        world.ConfigureFacility(Owner, "b_pending_mill", new IndustryPolicy(true, true,
-            inputs: new[] { new InputStockRule("grain", 2 * Unit, 3) },
-            outputs: new[] { new OutputSaleRule("flour", 0, 2) }));
+        world.ConfigureWarehouse(Owner, South, new WarehousePolicy(rules: new[] {
+            new WarehouseCommodityRule("grain", true, 2 * Unit, 3, false, 0, 0),
+            new WarehouseCommodityRule("flour", false, 0, 0, true, 0, 2) }), world.Snapshot());
         Assert.Equal(16 * Unit, Store(world, "a_mill").Capacity);
         Assert.Equal(4 * Unit, world.Snapshot().FacilityOutputStockLimit("a_mill"));
         var before = world.Snapshot();
         for (var day = 1; day <= 2; day++)
         {
             var result = world.AdvanceDay();
-            Assert.Empty(result.WarehouseTrades);
-            Assert.Equal(Unit, Store(world, "a_mill").Inventory["flour"]);
+            Assert.Equal(day == 1 ? 2 : 0, result.WarehouseTrades.Count);
+            Assert.Equal(0, Store(world, "a_mill").Inventory["flour"]);
+            Assert.Equal(2 * Unit, Store(world, "a_mill").Inventory["grain"]);
             Assert.Equal(0, result.After.PrivateFacilities["b_pending_mill"].BatchesProduced);
-            Assert.Equal(before.Companies[Owner].Cash, result.After.Companies[Owner].Cash);
+            Assert.Equal(before.Companies[Owner].Cash - 4 * Unit, result.After.Companies[Owner].Cash);
         }
         Assert.Equal(8 * Unit, world.Snapshot().FacilityOutputStockLimit("a_mill"));
         var operational = world.AdvanceDay();
         Assert.Equal(1, operational.After.PrivateFacilities["b_pending_mill"].BatchesProduced);
         Assert.Equal(Unit, operational.After.PrivateFacilities["b_pending_mill"].WagesPaid);
-        Assert.Equal(2, operational.WarehouseTrades.Count);
+        Assert.Single(operational.WarehouseTrades);
         Assert.Equal(0, Store(world, "a_mill").StoredUnits);
     }
 
@@ -277,13 +278,13 @@ public sealed class PooledCompanyStorageTests
     }
 
     [Fact]
-    public void SharedPoliciesProcureAndSellAgainstFreshPooledStockWithoutDuplicatingOrders()
+    public void OneWarehousePolicyBuysAndSellsOnceForTwoCompetingFactories()
     {
         var world = World(new[] { Site("a_mill"), Site("b_mill") });
-        var policy = new IndustryPolicy(true, true, inputs: new[] { new InputStockRule("grain", 2 * Unit, 3) },
-            outputs: new[] { new OutputSaleRule("flour", 0, 2) });
-        world.ConfigureFacility(Owner, "a_mill", policy);
-        world.ConfigureFacility(Owner, "b_mill", policy);
+        var policy = new WarehousePolicy(rules: new[] {
+            new WarehouseCommodityRule("grain", true, 2 * Unit, 3, false, 0, 0),
+            new WarehouseCommodityRule("flour", false, 0, 0, true, 0, 2) });
+        world.ConfigureWarehouse(Owner, South, policy, world.Snapshot());
         var before = world.Snapshot();
         var result = world.AdvanceDay();
         var finance = result.After.Accounting.Companies[Owner];
@@ -293,7 +294,9 @@ public sealed class PooledCompanyStorageTests
         Assert.Equal(0, Store(world, "a_mill").StoredUnits);
         Assert.Equal(1, result.EconomicEvents.Count(e => e.Kind == EconomicEventKind.Purchase));
         Assert.Equal(1, result.EconomicEvents.Count(e => e.Kind == EconomicEventKind.Sale));
-        Assert.Equal(IndustryWaitReason.TargetSatisfied, result.After.PrivateFacilities["b_mill"].ProcurementWaitReason);
+        Assert.Equal(6 * Unit, Store(world, "a_mill").ProcurementCost);
+        Assert.Equal(2 * Unit, Store(world, "a_mill").SalesRevenue);
+        Assert.All(result.After.PrivateFacilities.Values, f => Assert.Equal(0, f.ProcurementCost + f.SalesRevenue));
         Assert.Equal(ScheduledProductionOutcome.InputShortage, result.After.PrivateFacilities["b_mill"].LastOutcome);
         Assert.Equal(before.TotalCash, result.After.TotalCash);
     }

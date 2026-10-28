@@ -58,7 +58,7 @@ public sealed class CargoItinerarySaveTests
         var world = World(commission);
         var saved = WorldSaveCodec.Save(world);
         var data = JObject.Parse(saved);
-        Assert.Equal(5, (int)data["SchemaVersion"]!);
+        Assert.Equal(6, (int)data["SchemaVersion"]!);
         Assert.Equal(1, (int)data["Identity"]!["ItineraryVersion"]!);
         Assert.Contains("/itinerary-v1", world.Snapshot().RunIdentity!.ComparisonGroup);
         var restored = WorldSaveCodec.Load(Content(), saved);

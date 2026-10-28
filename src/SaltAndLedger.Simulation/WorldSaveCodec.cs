@@ -22,7 +22,7 @@ namespace SaltAndLedger.Simulation
     /// <summary>Portable state codec. The host alone chooses slots, paths and atomic file replacement.</summary>
     public static class WorldSaveCodec
     {
-        public const int SchemaVersion = 5;
+        public const int SchemaVersion = 6;
         public const int MaximumJsonCharacters = 8 * 1024 * 1024;
         internal const int MaximumFacilities = 512;
         internal const int MaximumOpenLots = 16384;
@@ -77,9 +77,10 @@ namespace SaltAndLedger.Simulation
             {
                 var root = Parse(json);
                 ValidateTree(root);
+                if (root["SchemaVersion"]?.Type != JTokenType.Integer ||
+                    (long)root["SchemaVersion"]! != SchemaVersion)
+                    throw new WorldSaveException("Unsupported save format. Only current v3 schema 6 saves can be loaded.");
                 var data = root.ToObject<RegionalSaveData>(Serializer()) ?? throw new WorldSaveException("Save is empty.");
-                if (data.SchemaVersion != SchemaVersion)
-                    throw new WorldSaveException("Unsupported save format. Only current v3 schema 5 saves can be loaded.");
                 var checksum = data.StateFingerprint;
                 data.StateFingerprint = "";
                 if (checksum != Fingerprint(data)) throw new WorldSaveException("Save state checksum is invalid; the file may be damaged.");

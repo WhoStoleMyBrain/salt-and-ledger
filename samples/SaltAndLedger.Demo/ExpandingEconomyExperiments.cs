@@ -49,7 +49,7 @@ internal static class ExpandingEconomyExperiments
     internal static Report BuildReinvestmentReport(ContentCatalog content, bool deep)
     {
         var report = new Report { Seeds = Seeds, Horizon = deep ? 1095 : 365,
-            Methodology = "Current circulation1/storage2/itinerary1 follow-up; one fixed reinvestment policy, three seeds, both pricing hypotheses and ascensions. Finite mining/issuance funds actual Farm/Mill/Bakery and three ships; post-authorization metal returns physically to Mine before ship2 carries Logs/Bread. All towns receive real Bread routes; a second Mill/Bakery pair is conditional on actual three-ship completion and retained1000coin capital. No rules, starting state, thresholds or accounts are repaired. Exact continuation/event checks at days3/17/61/181; every commit audits money/physical/FIFO flows. All v3 values are raw 1/10000 units; runtime printed only." };
+            Methodology = "Current circulation1/storage2/itinerary1 follow-up; one fixed reinvestment policy, three seeds, both pricing hypotheses and ascensions. Finite mining/issuance funds actual Farm/Mill/Bakery and three ships; post-authorization metal returns physically to Mine before ship2 carries Logs/Bread. All towns receive real Bread routes; a second Mill/Bakery pair is conditional on actual three-ship completion and retained1000coin capital. Task2.8 consolidates existing local trading rules into one warehouse policy per town: retain at least the buy target when the same good is also sold, and retain town trading when a factory is disabled. All factories retain100% Normal production. No prices, recipes, starting state or accounts are retuned or repaired. Exact schema6 continuation/event checks at days3/17/61/181; every commit audits money/physical/FIFO flows. All v3 values are raw1/10000 units; runtime printed only." };
         foreach (var seed in Seeds)
         foreach (var pricing in new[] { LivingPricingMode.StockOnly, LivingPricingMode.Coverage })
         foreach (var difficulty in new[] { RunDifficulty.Normal, RunDifficulty.SlowFoundations })
@@ -208,35 +208,34 @@ internal static class ExpandingEconomyExperiments
             if (strategy == "circulation")
             {
                 Build(Farm, generation.FoodSourcePortId, ExpandingEconomyGeneration.FarmBlueprint,
-                    new IndustryPolicy(false, true, M(100), outputs: new[] { new OutputSaleRule("grain", 0, 1) }));
-                Build(Mill, generation.ProcessingPortId, ExpandingEconomyGeneration.MillBlueprint, ExpandingEconomyScenario.MillPolicy());
+                    ExperimentWarehousePolicies.Sell("grain", M(100)));
+                Build(Mill, generation.ProcessingPortId, ExpandingEconomyGeneration.MillBlueprint, ExpandingEconomyScenario.MillWarehousePolicy());
                 Build(Bakery, generation.RecoveryPortId, WorldIds.BakeryBlueprint,
-                    new IndustryPolicy(true, true, M(100), new[] { new InputStockRule("logs", Q(3), 18) },
-                        new[] { new OutputSaleRule("bread", 0, 1) }));
+                    ExperimentWarehousePolicies.RecoveryBakery(M(100)));
                 Build(Camp, generation.RecoveryPortId, ExpandingEconomyGeneration.LumberBlueprint,
-                    new IndustryPolicy(false, true, M(100), outputs: new[] { new OutputSaleRule("logs", 0, 1) }));
+                    ExperimentWarehousePolicies.Sell("logs", M(100)));
             }
             else if (strategy == "fleet3")
             {
                 Commission(); Commission();
-                Build(Mill, generation.ProcessingPortId, ExpandingEconomyGeneration.MillBlueprint, ExpandingEconomyScenario.MillPolicy());
+                Build(Mill, generation.ProcessingPortId, ExpandingEconomyGeneration.MillBlueprint, ExpandingEconomyScenario.MillWarehousePolicy());
                 Apply(w => w.ConfigureAutomation(Player, ExpandingEconomyScenario.MerchantPolicy(generation, true), true));
             }
             else if (Industry)
             {
                 if (strategy != "overbuilt") Build(Farm, generation.FoodSourcePortId, ExpandingEconomyGeneration.FarmBlueprint,
-                    new IndustryPolicy(false, !Network, M(80), outputs: new[] { new OutputSaleRule("grain", 0, 1) }));
-                Build(Mill, generation.ProcessingPortId, ExpandingEconomyGeneration.MillBlueprint, ExpandingEconomyScenario.MillPolicy());
+                    ExperimentWarehousePolicies.Sell("grain", M(80), !Network));
+                Build(Mill, generation.ProcessingPortId, ExpandingEconomyGeneration.MillBlueprint, ExpandingEconomyScenario.MillWarehousePolicy());
                 if (strategy == "overbuilt")
                     for (var extra = 1; extra <= 3; extra++) Build("extra_mill_" + extra, generation.ProcessingPortId,
-                        ExpandingEconomyGeneration.MillBlueprint, ExpandingEconomyScenario.MillPolicy());
-                if (BakeryId == Bakery) Build(Bakery, generation.ProcessingPortId, WorldIds.BakeryBlueprint, ExpandingEconomyScenario.BakeryPolicy());
-                else Apply(w => w.ConfigureFacility(Owner, BakeryId, ExpandingEconomyScenario.BakeryPolicy()));
+                        ExpandingEconomyGeneration.MillBlueprint, ExpandingEconomyScenario.MillWarehousePolicy());
+                if (BakeryId == Bakery) Build(Bakery, generation.ProcessingPortId, WorldIds.BakeryBlueprint, ExpandingEconomyScenario.BakeryWarehousePolicy());
+                else ConfigureWarehouse(generation.ProcessingPortId, ExpandingEconomyScenario.BakeryWarehousePolicy());
                 if (Network) Commission();
             }
             else if (Monetary)
             {
-                Build(Mine, generation.SilverPortId, ExpandingEconomyGeneration.SilverMineBlueprint, new IndustryPolicy());
+                Build(Mine, generation.SilverPortId, ExpandingEconomyGeneration.SilverMineBlueprint, new WarehousePolicy());
                 if (strategy != "monetary_control") Apply(w => w.CommissionMint(Owner));
                 Commission();
                 Apply(w => w.ConfigureAutomation(Player, ExpandingEconomyScenario.MerchantPolicy(generation, true), true));
@@ -245,10 +244,18 @@ internal static class ExpandingEconomyExperiments
                 Apply(w => w.ConfigureAutomation(Player, ExpandingEconomyScenario.MerchantPolicy(generation, strategy == "balanced"), true));
         }
 
-        private void Build(string id, string port, string blueprint, IndustryPolicy policy)
+        private void ConfigureWarehouse(string port, WarehousePolicy policy)
+        {
+            var snapshot = World.Snapshot();
+            var store = snapshot.CompanyStockpiles[CompanyStockpileSnapshot.StoreId(Owner, port)];
+            var combined = ExperimentWarehousePolicies.Combine(store.Policy, policy);
+            Apply(w => w.ConfigureWarehouse(Owner, port, combined, snapshot));
+        }
+
+        private void Build(string id, string port, string blueprint, WarehousePolicy policy)
         {
             Apply(w => w.ConstructFacility(Owner, port, blueprint, id));
-            if (World.Snapshot().PrivateFacilities.ContainsKey(id)) Apply(w => w.ConfigureFacility(Owner, id, policy));
+            if (World.Snapshot().PrivateFacilities.ContainsKey(id)) ConfigureWarehouse(port, policy);
         }
         private void Commission()
         {
@@ -336,18 +343,17 @@ internal static class ExpandingEconomyExperiments
             state = World.Snapshot();
             if (state.Day >= 12 && !state.PrivateFacilities.ContainsKey(Bakery) && state.Companies[Owner].Cash >= M(550))
                 Build(Bakery, generation.RecoveryPortId, WorldIds.BakeryBlueprint,
-                    new IndustryPolicy(true, true, M(100), new[] { new InputStockRule("logs", Q(3), 18) },
-                        new[] { new OutputSaleRule("bread", 0, 1) }));
+                    ExperimentWarehousePolicies.RecoveryBakery(M(100)));
             state = World.Snapshot();
             if (state.PrivateFacilities.ContainsKey(Bakery) && !state.PrivateFacilities.ContainsKey(Camp) && state.Companies[Owner].Cash >= M(470))
                 Build(Camp, generation.RecoveryPortId, ExpandingEconomyGeneration.LumberBlueprint,
-                    new IndustryPolicy(false, true, M(100), outputs: new[] { new OutputSaleRule("logs", 0, 1) }));
+                    ExperimentWarehousePolicies.Sell("logs", M(100)));
             state = World.Snapshot();
             if (state.Day >= 24 && !state.PrivateFacilities.ContainsKey(Farm) && state.Companies[Owner].Cash >= M(1250))
             {
                 Build(Farm, generation.FoodSourcePortId, ExpandingEconomyGeneration.FarmBlueprint,
-                    new IndustryPolicy(false, true, M(100), outputs: new[] { new OutputSaleRule("grain", Q(12), 1) }));
-                Build(Mill, generation.ProcessingPortId, ExpandingEconomyGeneration.MillBlueprint, new IndustryPolicy());
+                    new WarehousePolicy(M(100), new[] { new WarehouseCommodityRule("grain", false, 0, 0, true, Q(12), 1) }));
+                Build(Mill, generation.ProcessingPortId, ExpandingEconomyGeneration.MillBlueprint, new WarehousePolicy());
                 Commission();
             }
             state = World.Snapshot();
@@ -356,9 +362,12 @@ internal static class ExpandingEconomyExperiments
             if (state.Ships.Values.Count(s => s.IsPlayer) == 3 && !state.PrivateFacilities.ContainsKey("reinvestment_mill") && state.Companies[Owner].Cash >= M(1000))
             {
                 Build("reinvestment_mill", generation.ProcessingPortId, ExpandingEconomyGeneration.MillBlueprint,
-                    new IndustryPolicy(true, true, M(100), new[] { new InputStockRule("grain", Q(4), 24) }, new[] { new OutputSaleRule("flour", 0, 1) }));
+                    new WarehousePolicy(M(100), new[] { new WarehouseCommodityRule("grain", true, Q(4), 24, false, 0, 0),
+                        new WarehouseCommodityRule("flour", false, 0, 0, true, 0, 1) }));
                 Build("reinvestment_bakery", generation.ProcessingPortId, WorldIds.BakeryBlueprint,
-                    new IndustryPolicy(true, true, M(100), new[] { new InputStockRule("flour", Q(3), 30), new InputStockRule("logs", Q(3), 24) }, new[] { new OutputSaleRule("bread", 0, 1) }));
+                    new WarehousePolicy(M(100), new[] { new WarehouseCommodityRule("flour", true, Q(3), 30, false, 0, 0),
+                        new WarehouseCommodityRule("logs", true, Q(3), 24, false, 0, 0),
+                        new WarehouseCommodityRule("bread", false, 0, 0, true, 0, 1) }));
             }
             Manage(Bakery, "bread", 34);
             Manage("reinvestment_bakery", "bread", 34);
@@ -579,9 +588,12 @@ internal static class ExpandingEconomyExperiments
             Ships = state.Ships.Values.Select(s => new { s.Id, s.OwnerId, s.IsPlayer, s.DockedPortId, s.DestinationPortId,
                 s.RemainingTravelDays, s.Cargo, s.AutomationEnabled, Stage = s.IndustrialStage.ToString() }).ToArray(),
             Facilities = state.PrivateFacilities.Values.Select(f => new { f.Id, f.PortId, f.Blueprint.BuildingId,
+                f.Enabled, f.OperatingRate, Priority = f.Priority.ToString(), f.ProductionCredit,
                 f.IsOperational, f.NextProductionDay, f.Inventory, f.SharedStockpileId, f.BatchesProduced, f.WagesPaid,
-                LastOutcome = f.LastOutcome.ToString(), Procurement = f.ProcurementWaitReason.ToString(), Sales = f.SalesWaitReason.ToString() }).ToArray(),
-            CompanyStockpiles = state.CompanyStockpiles.Values.Select(p => new { p.Id, p.OwnerId, p.PortId, p.Capacity, p.Inventory }).ToArray(),
+                LastOutcome = f.LastOutcome.ToString() }).ToArray(),
+            CompanyStockpiles = state.CompanyStockpiles.Values.Select(p => new { p.Id, p.OwnerId, p.PortId,
+                p.Capacity, p.Inventory, p.Policy, p.ProcurementCost, p.SalesRevenue,
+                Procurement = p.ProcurementWaitReason.ToString(), Sales = p.SalesWaitReason.ToString() }).ToArray(),
             Towns = state.Ports.Values.Select(p => new { p.Id, p.MarketCash, HouseholdCash = p.City!.HouseholdCash,
                 p.City.InitialPopulation, p.City.Population, p.City.Prosperity, p.City.EssentialFulfillmentPercent,
                 p.City.RecoveryFulfillmentPercent, p.City.TotalWagesReceived, p.City.TotalRetailSpend, p.Inventory,
@@ -622,14 +634,14 @@ internal static class ExpandingEconomyExperiments
 
     internal sealed class Report
     {
-        public int FormatVersion => 2;
+        public int FormatVersion => 3;
         public int RulesetVersion => 3;
         public int EconomicRulesVersion => 1;
         public int StorageVersion => 2;
         public int ItineraryVersion => 1;
         public int QuantityScale => 10000;
         public int MoneyScale => 10000;
-        public string Methodology { get; set; } = "Current v3 circulation1/storage2/itinerary1 sandbox runs. Normal verification covers seeds42/99, thirteen prescribed policies through180days, two additional charter cases and one Coverage/Ascension1 network case. Deep sweeps remain opt-in. Existing research policies use ordinary market/industrial route commands, with physical pooled-stock reads; they are controls, not recommended player itineraries. No state repair, subsidies, rebalance or forced success. Every commit audits both money boundaries, physical goods and FIFO. Save checks compare exact states and seven further days of events. All quantities/accounts are raw1/10000 units; runtime is printed, not serialized.";
+        public string Methodology { get; set; } = "Current v3 circulation1/storage2/itinerary1 sandbox runs. Normal verification covers seeds42/99, thirteen prescribed policies through180days, two additional charter cases and one Coverage/Ascension1 network case. Deep sweeps remain opt-in. Existing research policies use ordinary market/industrial route commands, with physical pooled-stock reads; they are controls, not recommended player itineraries. Task2.8 consolidates local rules into one town warehouse policy: a sold input retains at least its buy target; disabling a factory does not disable warehouse trading. Factories retain100% Normal production. No price/recipe retuning, state repair, subsidies or forced success. Every commit audits both money boundaries, physical goods and FIFO. Schema6 save checks compare exact states and seven further days of events. All quantities/accounts are raw1/10000 units; runtime is printed, not serialized.";
         public int[] Seeds { get; set; } = Array.Empty<int>();
         public int Horizon { get; set; }
         public List<Row> Runs { get; } = new();

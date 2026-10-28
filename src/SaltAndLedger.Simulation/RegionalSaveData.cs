@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace SaltAndLedger.Simulation
 {
-    // Save schema 5 deliberately names every mutable field. Canonical configuration is rebuilt
+    // Save schema 6 deliberately names every mutable field. Canonical configuration is rebuilt
     // from identity and verified by fingerprint; it is never accepted as executable save data.
     [JsonObject(ItemRequired = Required.AllowNull)]
     internal sealed class RegionalSaveData
@@ -275,8 +275,10 @@ namespace SaltAndLedger.Simulation
         public string OwnerId { get; set; } = "";
         public string PortId { get; set; } = "";
         public string BlueprintId { get; set; } = "";
-        public IndustryPolicy Policy { get; set; } = null!;
         public bool Enabled { get; set; }
+        public int OperatingRate { get; set; }
+        public ProductionPriority Priority { get; set; }
+        public int ProductionCredit { get; set; }
         public long CreatedDay { get; set; }
         public long CompletionDay { get; set; }
         public FacilityConstructionStatus ConstructionStatus { get; set; }
@@ -284,13 +286,9 @@ namespace SaltAndLedger.Simulation
         public ScheduledProductionOutcome LastOutcome { get; set; }
         public Dictionary<string, int> Inventory { get; set; } = null!;
         public long Batches { get; set; }
-        public long Procurement { get; set; }
-        public long Revenue { get; set; }
         public long Wages { get; set; }
         public Dictionary<string, long> Produced { get; set; } = null!;
         public Dictionary<string, long> Consumed { get; set; } = null!;
-        public IndustryWaitReason ProcurementWait { get; set; }
-        public IndustryWaitReason SalesWait { get; set; }
         public bool StarterGrant { get; set; }
         public string Provenance { get; set; } = "";
         [JsonProperty(Required = Required.Default)]
@@ -306,6 +304,30 @@ namespace SaltAndLedger.Simulation
         public string PortId { get; set; } = "";
         public int Capacity { get; set; }
         public Dictionary<string, int> Inventory { get; set; } = null!;
+        public RegionalSaveWarehousePolicy Policy { get; set; } = null!;
+        public long Procurement { get; set; }
+        public long Revenue { get; set; }
+        public IndustryWaitReason ProcurementWait { get; set; }
+        public IndustryWaitReason SalesWait { get; set; }
+    }
+
+    [JsonObject(ItemRequired = Required.AllowNull)]
+    internal sealed class RegionalSaveWarehousePolicy
+    {
+        public long CashReserve { get; set; }
+        public RegionalSaveWarehouseRule[] Rules { get; set; } = null!;
+    }
+
+    [JsonObject(ItemRequired = Required.AllowNull)]
+    internal sealed class RegionalSaveWarehouseRule
+    {
+        public string GoodId { get; set; } = "";
+        public bool BuyEnabled { get; set; }
+        public int BuyTarget { get; set; }
+        public long MaximumBuyPrice { get; set; }
+        public bool SellEnabled { get; set; }
+        public int SellReserve { get; set; }
+        public long MinimumSellPrice { get; set; }
     }
 
     [JsonObject(ItemRequired = Required.AllowNull)]

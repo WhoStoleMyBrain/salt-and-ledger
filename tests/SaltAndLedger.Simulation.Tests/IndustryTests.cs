@@ -556,7 +556,7 @@ public sealed class IndustryTests
         {
             world.ConstructFacility(WorldIds.PlayerOwnerId, WorldIds.West,
                 WorldIds.BakeryBlueprint, Facility);
-            world.ConfigureFacility(WorldIds.PlayerOwnerId, Facility, ExpandingEconomyScenario.BakeryPolicy(true));
+            world.ConfigureWarehouse(WorldIds.PlayerOwnerId, WorldIds.West, ExpandingEconomyScenario.BakeryWarehousePolicy(true), world.Snapshot());
         }
         var expectedIds = forwardContent.ForExpandingEconomy().Goods.Select(g => g.Id).OrderBy(id => id, StringComparer.Ordinal).ToArray();
         for (var day = 0; day <= 12; day++)
@@ -577,6 +577,6 @@ public sealed class IndustryTests
             if (day < 12) { forward.AdvanceDay(); reversed.AdvanceDay(); }
         }
         Assert.True(forward.Snapshot().PrivateFacilities[Facility].BatchesProduced > 0);
-        Assert.True(forward.Snapshot().PrivateFacilities[Facility].SalesRevenue > 0);
+        Assert.True(forward.Snapshot().GetFacilityStorage(Facility).SalesRevenue > 0);
     }
 }

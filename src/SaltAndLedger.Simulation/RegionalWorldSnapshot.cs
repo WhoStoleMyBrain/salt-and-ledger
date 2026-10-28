@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 
 namespace SaltAndLedger.Simulation
 {
-    public enum ScheduledProductionOutcome { NotDue, Disabled, Produced, InputShortage, OutputLimit, WarehouseCapacity, UnderConstruction, PayrollShortage }
+    public enum ScheduledProductionOutcome { NotDue, Disabled, Produced, InputShortage, OutputLimit, WarehouseCapacity, UnderConstruction, PayrollShortage, RateLimited }
 
     public sealed class ScheduledFacilitySnapshot
     {

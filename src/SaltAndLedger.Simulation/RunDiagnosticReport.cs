@@ -113,7 +113,7 @@ namespace SaltAndLedger.Simulation
                     {
                         f.Id, f.OwnerId, f.PortId, f.Blueprint, StorageId = store.Id,
                         f.ConstructionStatus, f.ConstructionCompletionDay, f.FirstProductionDay,
-                        f.Enabled, f.NextProductionDay, f.LastOutcome,
+                        f.Enabled, f.OperatingRate, f.Priority, f.ProductionCredit, f.NextProductionDay, f.LastOutcome,
                         PreviewOutcome = snapshot.PreviewFacilityProduction(f.Id, content),
                         EffectiveOutputStockLimit = snapshot.FacilityOutputStockLimit(f.Id),
                         f.BatchesProduced, f.WagesPaid, EmployerCash = snapshot.Companies[f.OwnerId].Cash,
@@ -121,8 +121,7 @@ namespace SaltAndLedger.Simulation
                         Inputs = RecipeInputs(content, f.Blueprint.RecipeId, store.Inventory, snapshot.QuantityScale),
                         Outputs = RecipeOutputs(content, f.Blueprint.RecipeId, store.Inventory, snapshot.QuantityScale),
                         StorageFree = store.Capacity - store.StoredUnits,
-                        f.ConsumedQuantities, f.ProducedQuantities, f.ProcurementCost, f.SalesRevenue,
-                        f.Policy, f.ProcurementWaitReason, f.SalesWaitReason,
+                        f.ConsumedQuantities, f.ProducedQuantities,
                         StatusNote = "LastOutcome is the committed production outcome. Input quantities and payroll availability describe this snapshot, not a reservation or a promise about the next daily phase."
                     };
                 }).ToArray(),

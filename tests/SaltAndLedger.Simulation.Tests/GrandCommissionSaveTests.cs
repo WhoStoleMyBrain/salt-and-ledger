@@ -42,7 +42,7 @@ public sealed class GrandCommissionSaveTests
         var visitedEarlier = world.Snapshot().CommissionHistory!.Ships.Single(s => s.ShipId == Ship)
             .Visits.TryGetValue(target, out var originalVisitDay);
         var saved = WorldSaveCodec.Save(world);
-        Assert.Equal(5, (int)JObject.Parse(saved)["SchemaVersion"]!);
+        Assert.Equal(6, (int)JObject.Parse(saved)["SchemaVersion"]!);
         var restored = WorldSaveCodec.Load(Content(), saved);
         Assert.Equal(saved, WorldSaveCodec.Save(restored));
         Assert.Null(restored.Snapshot().Ships[Ship].DockedPortId);
