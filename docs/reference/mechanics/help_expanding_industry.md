@@ -10,7 +10,7 @@ Invest in real capacity and inspect the next finite bottleneck\.
 
 Every v3 world permits all six original production building types somewhere\. Eligibility follows economic roles, not displayed city names\. The food source can host Farms; the processing town can host Mills and Sawmills\. The forest\-furniture town can host a Silver Mine but cannot build a Sawmill, preserving a real Plank import dependency\.
 
-Each owned facility has a separate schedule, enabled state, policy and production/payroll counters\. Each company shares one owned stockpile per town\. Multiple Mills may coexist\. Public and private extraction create only their declared batch outputs, and every successful living batch pays its full configured wage from the real employer\.
+Each owned facility has a separate schedule, enabled state, operating rate, priority, scheduling credit and production/payroll counters\. Each company shares one owned stockpile and one local trading policy per town\. Multiple Mills may coexist\. Public and private extraction create only declared complete batch outputs; successful batches pay their full wage from the real employer\.
 
 An extra Mill expands potential Flour output\. Actual results still require Grain, wages and warehouse space, then a Bakery with Flour and Logs, and actual distribution to households able to pay\. Overbuilding can consume cash without improving food access\. Distinguish a recorded last\-attempt failure from current conditions before changing policy\.
 

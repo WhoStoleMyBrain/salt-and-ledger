@@ -10,9 +10,9 @@ Local explicit saves preserve an economic run; retry starts its identity fresh\.
 
 Save explicitly to one of three local slots\. Continue or Load restores a current Expanding Economy v3 Grand Commission or Sandbox run without advancing time\. Saves are local; there is no cloud recovery\.
 
-Only current schema5, circulation1, storage2 and itinerary1 are supported\. Historical prototype saves are intentionally unsupported during pre\-release development\. No migration or command replay is performed\.
+Only current schema6, circulation1, storage2 and itinerary1 are supported\. Schema5 and older saves are intentionally unsupported after the factory/warehouse automation overhaul\. No migration or command replay is performed; failed loads preserve the active run\.
 
-Saves retain exact identity and drafted goals, accounts, fractional stock and demand residuals, FIFO lots, every voyage and route cursor/budget, pending construction, household history, fees, contracts, Mint and public treasury\. Terminal outcomes remain frozen\.
+Saves retain exact identity and drafted goals, accounts, fractional stock and demand residuals, FIFO lots, every voyage and route cursor/budget, pending construction, household history, fees, contracts, Mint and public treasury\. Terminal outcomes remain frozen\. Factory rate/priority and admitted scheduling phase, plus town warehouse Buy/Sell rules and counters, resume exactly\.
 
 Complete validation precedes session replacement\. Unsupported versions, damage or inconsistent state show an error and preserve the active world, selection and playback\. Retry starts the original identity fresh\. Text size remains an independent preference\.
 

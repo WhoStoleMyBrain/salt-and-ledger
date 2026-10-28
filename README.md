@@ -44,4 +44,4 @@ These run real commands and validate current objectives, exact continuation, phy
 
 [Player guide](docs/PLAYER_GUIDE.md) · [Grand Commission](docs/GRAND_COMMISSION.md) · [Architecture](docs/ARCHITECTURE.md) · [Mechanics](docs/MECHANICS.md) · [Save policy](docs/SAVES.md) · [Roadmap](docs/ROADMAP.md) · [Cleanup verification](docs/REPOSITORY-CLEANUP.md).
 
-Local saves support current schema5 only. Unsupported or damaged files fail without replacing the active session. This pre-release project does not promise migration of historical saves. GitHub Pages publication remains manual and is not part of ordinary validation.
+Local saves support current schema6 only. Unsupported or damaged files fail without replacing the active session. This pre-release project does not promise migration of historical saves. GitHub Pages publication remains manual and is not part of ordinary validation.

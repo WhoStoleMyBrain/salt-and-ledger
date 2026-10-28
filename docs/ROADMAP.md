@@ -6,9 +6,10 @@
 - Grand Commission map preview, four-round objective draft, Journal, terminal outcomes and exact retry; optional Sandbox.
 - Seven goods, complementary town roles, paid household demand, wages, population/prosperity, expandable private chains and shared local stock.
 - Finite contracts, Silver-backed public Mint, up to three physical ships and ordered cargo itineraries.
-- Exact FIFO and separate cash/value/material-margin/wage/service accounting; schema5 local saves.
+- Exact FIFO and separate cash/value/material-margin/wage/service accounting; schema6 local saves.
 - Map-first illustrated UI Toolkit host, Harbor/Industry/Fleet/Economy/Objectives and generated offline help.
 - Stop-based multi-commodity route planning, preserved advanced command order and future-warehouse Skip/Wait logistics.
+- Compact factory enabled/rate/priority controls, deterministic whole-batch throttling and one town warehouse Buy/Sell policy for every commodity.
 
 The repository consolidation retires historical playable modes, fixed challenges and separate prototype scenes. Reused deterministic generation and NPC algorithms remain. See [cleanup verification](REPOSITORY-CLEANUP.md).
 

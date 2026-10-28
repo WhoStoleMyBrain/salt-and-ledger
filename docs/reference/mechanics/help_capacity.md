@@ -14,7 +14,7 @@ Buying and transfers respect available stock and receiving capacity\. Production
 
 Maximum trade quantities reflect current stock, exact payment, liquidity, and capacity\. They remain previews and cannot authorize a remote transaction\.
 
-New v3 runs pool company storage per town\. Capacity sums all granted and paid local facility warehouse capacities, including pending sites\. Operational facilities with the same recipe add their output ceilings together\. Pending sites provide storage but cannot produce early\. Legacy saves keep their separate warehouses\.
+New v3 runs pool company storage per town\. Capacity sums all granted and paid local facility warehouse capacities, including pending sites\. Operational facilities with the same recipe add their output ceilings together\. Pending sites provide storage but cannot produce early\.
 
 ## Related entries
 

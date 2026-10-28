@@ -6,7 +6,7 @@ Task 2.4 adds **economic rules revision 1** to newly started modern v3 runs. Thi
 
 The [sanitized source diagnostic](experiments/circulation-day140-diagnostic.json) records the supplied Grand Commission at day **140**, revision **535**, seed **−734282136**, Industrial charter, Ascension 1, Coverage. Its status is **Succeeded**. At the time of that study, the then-current codec loaded it, matched the report's full snapshot fingerprint and reproduced the original save bytes without running a simulation command. Original save/report hashes remained unchanged. The raw local save stays private and is not committed.
 
-This was a schema2 historical run with separate factory storage. The current schema5-only codec intentionally rejects that old raw save; the sanitized observations below remain useful economic rationale. Its cumulative accounts and six retained food observations do not constitute a complete time series. Quotes below are read-only proposals; terminal mutation remains prohibited.
+This was a schema2 historical run with separate factory storage. The current schema6-only codec intentionally rejects that old raw save; the sanitized observations below remain useful economic rationale. Its cumulative accounts and six retained food observations do not constitute a complete time series. Quotes below are read-only proposals; terminal mutation remains prohibited.
 
 | Town / role | Market coins | Household coins | Public Bread | Population / prosperity |
 | --- | ---: | ---: | ---: | ---: |
@@ -62,7 +62,7 @@ Revision-1 Coverage uses a luxury price-target floor of half the authored target
 
 Each new town starts with at least four initial essential opportunities of Bread (16 days at the unchanged four-day cadence), preserving larger existing stocks. Additional finite imported basics are two Flour at the food source, two Logs and two Grain at processing, two Planks at forest furniture, and one Flour plus one Plank at the vulnerable coast. No RNG draws, cash, recipes, recurring deliveries or paid company basis are added. Roles remain complementary and trade-dependent.
 
-`EconomicRulesVersion=1` requires v3 storage2/itinerary1 and appends `/economy-v1` to run comparison identity. Generator/content remain 3, valuation remains 1. Retry and Load preserve the supported identity. Schema **5** stores exact fees and fiscal schedules; schemas 1–4 are intentionally unsupported. Diagnostic treatment overrides are explicitly labelled and cannot be saved as a normal named Combined run.
+`EconomicRulesVersion=1` requires v3 storage2/itinerary1 and appends `/economy-v1` to run comparison identity. Generator/content remain3, valuation remains1. Retry and Load preserve the supported identity. Schema **6** stores exact fees, fiscal schedules and factory/warehouse automation; schemas1–5 are intentionally unsupported. Diagnostic treatment overrides are explicitly labelled and cannot be saved as a normal named Combined run.
 
 ## Matched experiments and acceptance
 
@@ -72,7 +72,9 @@ Acceptance requires exact financial/physical/FIFO reconciliation, deterministic 
 
 All 80 worlds use Merchant charter, Ascension0, Sandbox. The submitted seed reproduces geography and roles, **not** the unknown player command history of the Industrial/A1 terminal Commission. The managed policy buys four real Farm/Mill/Bakery/Lumber facilities, applies the existing stock/cash controls and physically ships Flour from processing to recovery with Logs on the return. Its thresholds are identical across matched arms. It uses no Mint or external contracts. Primary work is **29,200 world-days**, plus bounded deterministic replays and save continuations.
 
-### Observed day-365 changes
+### Pre-Task2.8 baseline observations
+
+The numerical observations in this section are the pre-Task2.8 baseline, retained in Git at `3d8732ca86353c41fd5bb73678ac818e95c00920`. They explain the original circulation assessment; they are not the results of the current warehouse-policy report. The [Task2.8 comparison below](#task28-warehouse-policy-comparison) describes the updated controls and observed changes.
 
 Each row below compares against its matching revision1 None control, so finite imports and the price-target correction are held constant. Bread changes sum across16 worlds; a cash ranking is not a complete welfare ranking.
 
@@ -96,6 +98,26 @@ Combining mechanisms is not always the strongest food intervention: on the submi
 
 Every committed operation audits all-account/regional cash, goods including pooled storage, FIFO basis/quantities, company cash including fee expense and municipal/service transfer totals. All worlds retain their initial global/regional totals because this policy uses no issuance or external inflow. Representative Turkish-culture and reversed-configuration runs reproduce exact state/events. All Combined runs save at days30 and140 and compare round-trip bytes plus seven further ordinary days. Diagnostic None/FeesOnly/MunicipalOnly configurations are deliberately not normal durable named saves.
 
+## Task2.8 warehouse-policy comparison
+
+Current report format3 keeps the same80-world matrix, seeds, horizons, fiscal arms and physical ship routes. It moves local trading into one policy per company/town. A good configured for both buying and selling retains at least its buy target; warehouse trading continues when a factory is disabled. Factories retain100% rate and Normal priority. No price, recipe, household, fiscal or initial-account rule is retuned. Pool policies, trading counters and blockers are recorded separately from factory rate, priority, admission credit and output.
+
+Against the pre-Task2.8 baseline, all32 revision1 idle runs and all8 revision0 idle controls retain identical economic checkpoints. All32 managed revision1 runs and8 managed revision0 controls change. Among the32 managed revision1 runs, paid Bread increases in18, decreases in8 and ties in6; final population increases in19, decreases in4 and ties in9. Player surplus after wages and fees improves in24 cases and worsens in8. Reference Company Value improves in18 and worsens in14. These are combined effects of consolidated thresholds, single warehouse execution and independent trading; the comparison does not isolate one of those changes as the sole cause.
+
+Selected **Combined** managed runs at day365, before → after Task2.8:
+
+| Seed / pricing | Paid Bread | Player cash | Player surplus after wages and fees |
+| --- | ---: | ---: | ---: |
+| 42 / StockOnly |154 →154|860.4967 →966.9634|196.6634 →283.7967|
+| 99 / Coverage |148 →142|105.2034 →80.0015|−571.6855 →−521.5765|
+| −42 / StockOnly |205 →210.1877|92.6204 →80.0001|−523.992 →−540.8851|
+
+Seed42 StockOnly improves company finances without changing cumulative food: stock shortfall remains219.0824 Bread and affordability shortfall47.0176. Seed99 Coverage has less paid Bread and a larger stock shortfall,320.7 →328.6, despite a smaller operating loss. Seed−42 StockOnly buys more food but loses more company surplus; food affordability shortfall rises53.0135 →54.7623. Its NPC cash rises4157.1813 →4316.1377 coins while municipal cash falls2747.4811 →2509.0302 and household cash rises3692.7172 →3784.832. Local trading redistribution does not establish a universal welfare gain.
+
+Operational blockers remain visible. Most Combined managed cases record203–298 player cash-reserve waits over the year; seed42 StockOnly instead records232 destination-liquidity waits. NPC shipments repeatedly retain cargo because destination markets lack funds or current marginal bids fall below configured limits. Lower interface overhead does not remove finite supply, liquidity, wages or physical transport requirements.
+
+All initial, checkpoint and final snapshots independently reconcile unique company/market/household/treasury/external balances to initial all-account cash plus issuance, and each company's purchases to FIFO held basis plus released/surrendered basis. These circulation policies still use no Mint or external inflow. Per-operation audits and representative replay/save checks remain part of report generation. Schema6 and richer diagnostic fields change fingerprints independently of economic outcomes. [Task2.8 verification](TASK-2.8-VERIFICATION.md) records executed checks, the real factory scarcity example and Unity evidence.
+
 ## Verification boundary
 
-The matched report and sanitized historical diagnosis above preserve the rationale and measured economic outcomes. Old milestone test counts, save-compatibility claims and screenshot matrices have been retired. See [current cleanup verification](REPOSITORY-CLEANUP.md) for executed checks against the supported game, current Editor/player evidence and limitations. The old raw day140 save is no longer supported by the schema5-only codec and was not mutated or converted during cleanup.
+The matched report and sanitized historical diagnosis preserve the rationale and measured economic outcomes; the pre-Task2.8 numerical baseline is labelled separately from the current report. See [Task2.8 verification](TASK-2.8-VERIFICATION.md) for current checks, Editor/player evidence and limitations. The old raw day140 save is unsupported by the schema6-only codec and was not mutated or converted.

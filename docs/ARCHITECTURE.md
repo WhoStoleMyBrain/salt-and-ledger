@@ -12,9 +12,9 @@ Canonical stable IDs live in `data/content.json`; structural validation uses `da
 
 `RegionalWorldState` owns ports, companies, physical stores, ships, policies, construction, households, public development, accounting, objective history, day and revision. Snapshots are immutable. Instant commands change revision but never the day; no-op/rejected commands retain snapshot identity. Snapshot-bound previews reject stale execution. Working copies stage all changes, including FIFO, route cursor/budget and earlier daily attempts, before a single commit. Exceptional failure rolls everything back.
 
-Company cash is counted once; ship cash is a compatibility projection used by the shared merchant evaluator. Each company/town pool is its sole private material/FIFO owner. Facilities reference that pool but keep individual schedules, lifecycle, policies, batches and wages. Cargo, public markets, other companies and other towns never alias the pool.
+Company cash is counted once; ship cash is a compatibility projection used by the shared merchant evaluator. Each company/town pool is its sole private material/FIFO owner. Facilities reference that pool but keep individual schedules, lifecycle, enabled/rate/priority controls, production credit, batches and wages. The pool owns its one local Buy/Sell policy and trading counters. Cargo, public markets, other companies and other towns never alias the pool.
 
-Daily order is stable actor priority/ID; private procurement; due fiscal review; public production by port/priority/ID; private production; private sales; consumption by port/kind/rule; welfare/population and next-day quotes; voyages; construction completion; objective evaluation. All-account cash equals initial cash plus explicit Mint issuance. Regional cash additionally includes net inflow from the finite outside authority.
+Daily order is stable actor priority/ID; town warehouse buying; due fiscal review; public production by port/priority/ID; private production by port/priority/ordinal ID; town warehouse selling; consumption by port/kind/rule; welfare/population and next-day quotes; voyages; construction completion; objective evaluation. All-account cash equals initial cash plus explicit Mint issuance. Regional cash additionally includes net inflow from the finite outside authority.
 
 ## Reused algorithms and bounded state
 
@@ -28,7 +28,7 @@ Small custom test worlds retain unscaled quantities, fixed prices and separate-s
 
 Identity includes seed, generator/content3, valuation1, pricing, charter, Ascension, commission draft/signature, storage2, itinerary1 and economic rules1. Retry recreates that identity; loading restores exact state. The typed Grand Commission evaluator derives current conditions and bounded cumulative visits/net-sale history from committed state. All four goals plus solvency are required; terminal runs freeze.
 
-`WorldSaveCodec` accepts only schema5 and current rules. Strict bounded JSON, checksums, configuration/content fingerprints, ownership, lots, quantities, accounts, routes and history are validated before returning a reconstructed owner. The host installs it only after success. A few zero-valued fixed-challenge fields remain in the schema5 shape to preserve current fingerprints; they do not enable retired challenges. See [save policy](SAVES.md).
+`WorldSaveCodec` accepts only schema6 and current rules. Strict bounded JSON, checksums, configuration/content fingerprints, ownership, lots, quantities, accounts, routes and history are validated before returning a reconstructed owner. The host installs it only after success. A few zero-valued fixed-challenge fields remain in the explicit save shape; they do not enable retired challenges. See [save policy](SAVES.md).
 
 ## Unity and documentation
 

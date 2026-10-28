@@ -42,7 +42,7 @@ Task 2.7's Route Planner keeps the full repeating route visible as compact selec
 - UI Toolkit buttons own pointer and keyboard picking. Decorative glyphs and child text ignore picking. Modal opening records return focus, disables the underlying map/deck/navigation, and focuses Close. Closing restores focus without an economic operation.
 - Stable fleet/market rows update bound values. Economy cards refresh on committed snapshot or selected-town change, rather than rebuilding every frame. Internal detail scrolling is separate from the full-screen layout.
 
-The supported host uses current v3 households and pooled company warehouses. Only current schema5 saves load; obsolete formats fail without replacing the active session. Terminal worlds remain frozen while their Map, Journal and results can be inspected.
+The supported host uses current v3 households and pooled company warehouses. Only current schema6 saves load; obsolete formats fail without replacing the active session. Terminal worlds remain frozen while their Map, Journal and results can be inspected.
 
 ## Exact facts and display precision
 
@@ -138,6 +138,8 @@ Default fit-all is the only camera mode. The exposed centers/scale/inverse are t
 The unselected chart does not display six permanent distance captions. Selecting a town shows its connected routes; selecting a ship shows its actual configured route or voyage. A modern manually controlled ship with no assigned itinerary does not expose a compatibility policy as a fictitious route. **Routes** explicitly reveals the connections. Durations still come from authoritative `SeaRoute.DurationDays` for the selected ship's speed. Ordered itinerary overlays follow the actual stop sequence.
 
 ## Implementation and verification boundaries
+
+Industry uses one existing parchment modal with sibling **Factories / Warehouse** tabs. Factory controls are enabled state, operating rate and priority; recipe art, available inputs, full wage and blocker stay alongside them. Warehouse Buy/Sell tabs use the shared seven commodity symbols, stock and signed12-day flows, compact editable thresholds and marginal prices. Both panes preserve draft values until Apply or explicit reload. Harbor opens the same warehouse view; manual stock and physical transfer controls remain available. Automatic proposals and production signals come from simulation snapshots, never UI pricing or schedule arithmetic.
 
 The main source boundaries are `ArchipelagoCommandDeck.cs` (shell/context/navigation), `ArchipelagoWorkspaces.cs` (Fleet/Economy), `ArchipelagoCommodityIntelligence.cs` (Harbor flow/comparison binding), `ArchipelagoMaritimeKit.cs` (shared visual components), `EconomicSignals.cs` / `CommodityFlowSignals.cs` (pure current facts and conditional schedules), and `ArchipelagoMap.cs` / `MapViewport.cs` (chart projection). Existing Harbor/Industry/Route Planner partials remain the operation destinations.
 

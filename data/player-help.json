@@ -80,7 +80,7 @@
         "Capacity counts all commodities together. A hold containing several kinds of goods has less room for the next shipment even if the selected commodity's quantity is small.",
         "Buying and transfers respect available stock and receiving capacity. Production checks the complete resulting private inventory before consuming inputs. A blocked batch does not partly consume materials.",
         "Maximum trade quantities reflect current stock, exact payment, liquidity, and capacity. They remain previews and cannot authorize a remote transaction.",
-        "New v3 runs pool company storage per town. Capacity sums all granted and paid local facility warehouse capacities, including pending sites. Operational facilities with the same recipe add their output ceilings together. Pending sites provide storage but cannot produce early. Legacy saves keep their separate warehouses."
+        "New v3 runs pool company storage per town. Capacity sums all granted and paid local facility warehouse capacities, including pending sites. Operational facilities with the same recipe add their output ceilings together. Pending sites provide storage but cannot produce early."
       ],
       "relatedIds": [
         "help_shipping",
@@ -126,7 +126,7 @@
       "paragraphs": [
         "A recipe lists its actual input and output quantities. Transformation requires every input. Extraction has no tradeable inputs and creates its configured output. Canonical recipe pages describe quantities; the active scenario supplies intervals and limits.",
         "A private factory consumes and produces only within its actual owned store: a shared company town stockpile in pooled runs, or its separate warehouse in older runs. Public market goods never silently supply a private batch. A successful batch schedules the next opportunity one interval later. Missing inputs, disabled production or full output storage keep the batch due without accumulating catch-up batches.",
-        "Daily ship actions occur before procurement and production. Operational private procurement is followed by public production, private production, private sales, scheduled consumption, voyage progress and due construction completion. Fresh output cannot be loaded by an earlier ship action in that same daily operation. Pending factories skip their automatic phases even on completion day.",
+        "Daily ship actions precede town warehouse buying, municipal review, public production, private production, warehouse selling, scheduled consumption, welfare and quotes, voyage progress and due construction completion. Fresh output cannot be loaded by an earlier ship action in that same daily operation. Pending factories skip production even on completion day; their real paid warehouse storage can trade during construction.",
         "In Living Cities, a successful public batch pays the configured wage from market cash to local households; a private batch pays from its company. Insufficient payroll blocks the whole batch and keeps it due. Blocked, disabled, input-starved and pending batches pay nothing. After retail, city observations and population reviews occur before voyages and construction completion.",
         "Economy keeps each facility's recipe, readiness and next eligible day visible. Expand Inputs, payroll & last outcome for current stock, employer funds, wage, capacity, output ceiling and previous attempt. Ready from current state is conditional: earlier operations or another facility can use shared inputs first. Open Industry to manage an owned facility; inspecting the signal never runs a batch."
       ],
@@ -140,14 +140,14 @@
     {
       "id": "help_factories",
       "name": "Owning a factory",
-      "description": "Invest cash in a fixed recipe and a finite private stockpile.",
+      "description": "Set production enabled, operating rate and priority; trade through the town warehouse.",
       "paragraphs": [
         "The active scenario lists blueprints, eligible towns, construction payments, intervals and storage limits. Construction pays the local market once and creates empty owned storage. Ascension 0 is immediately operational; Ascension 1 new player sites complete after two economic days. The first batch is eligible one full production interval after completion, with inputs and capacity still required.",
-        "The industry summary shows status, next opportunity, missing inputs and local quotes, real expenditure and physical shipping waits. A recommended setup prepares a visible policy draft; only Apply commits it. Keep local output sales disabled, or retain an appropriate reserve, when a ship should transport finished goods. Detailed rules remain available.",
+        "Industry has Factories and Warehouse tabs. A factory has three primary settings: Enabled, Operating rate from0 to100%, and Low/Normal/High priority. Apply commits these together. Its recipe, real shared inputs, full wage, production opportunity and blocker explain readiness. Advanced accounting and shipping information remain available.",
         "A charter may grant an initial facility or goods. Those starter assets are grants, not purchases or construction payments during the run. Starter facilities are already operational at both ascensions and retain their initial schedule. Capital spending remains separate from material cost and sale margin.",
         "Living Cities has town-specific construction eligibility. An industry may be absent and also impossible to build locally. Cash alone cannot override this restriction; use the eligible-town list and import missing inputs through real trades or shipping.",
         "V3 makes Farms, Lumber Camps, Mills, Sawmills, Bakeries, Furniture Workshops and Silver Mines constructible somewhere, with eligibility visible before purchase. Multiple separate sites of the same eligible kind are allowed. A second Mill still needs Grain, paid labor, storage and customers; no construction creates free inputs. The public Royal Mint is commissioned separately and is never a private blueprint.",
-        "In new v3 runs a local Mill deposits Flour into the same owned town stock used by a Bakery. Facilities execute in stable port/ID order; an earlier eligible batch can consume scarce inputs before another. Only successful batches pay wages. Procurement targets and output reserves use current shared stock, so disable or reserve output sales when another local recipe needs it."
+        "Same-town factories share one owned store. High priority runs before Normal and Low; equal priorities use stable facility IDs. Only a successful complete batch consumes materials and pays its full wage. Rate50 admits every second scheduled opportunity, rate25 every fourth; skipped opportunities do not become catch-up batches. An admitted shortage retries without earning another admission. Disabled or rate0 preserves scheduling phase and consumes nothing."
       ],
       "relatedIds": [
         "help_production",
@@ -159,12 +159,13 @@
     },
     {
       "id": "help_procurement",
-      "name": "Private procurement and local sales",
-      "description": "Maintain chosen inputs and sell chosen surplus through ordinary local trades.",
+      "name": "Warehouse buying and selling",
+      "description": "One local Buy/Sell policy for each company town warehouse, independent of its factories.",
       "paragraphs": [
-        "For each recipe input, choose a target stock and maximum marginal buying price. A cash reserve protects company liquidity. Procurement buys only what the local town can supply and the company can afford within the policy.",
-        "For outputs, choose a retained quantity and minimum marginal selling price. Surplus sales use the town's actual cash and the same exact pricing as manual trades. Each configured good gets at most one transaction in its daily policy phase.",
-        "Targets compete for shared cash and warehouse space. A price, liquidity, stock, or capacity wait is a real constraint. Policies never discover a substitute source or create resources to meet a target. Under-construction sites do not automatically procure or sell until the day after completion; explicitly managing their local stock remains possible."
+        "Open Warehouse from Industry or Warehouse automation from Harbor. Buy and Sell tabs list every commodity, including logistics goods unrelated to local recipes. Enable a Buy rule, desired maximum stock and maximum marginal price; enable a Sell rule, minimum retained stock and minimum marginal price. Zero price means unrestricted. A common company cash reserve limits automatic buying, not production wages.",
+        "Buying runs before private production; selling runs afterward. Each good receives at most one ordinary paid transaction in each phase. Exact marginal pricing, finite market cash and stock, actual warehouse capacity, FIFO material basis and sale fees are the same as manual trades. A proposal explains the current limiting constraint and is not a guarantee about the next day.",
+        "When both directions are enabled, the Buy target must be no greater than the Sell reserve. Buying therefore cannot immediately create sellable surplus. Production or delivered cargo may create a real surplus. Retain inputs or shipping stock explicitly; rules never reserve it from production or create missing resources.",
+        "Town warehouse trading is independent of factory enabled states and rates. Real paid pending facilities already provide storage which can buy or sell; the factories themselves cannot produce until operational and due. Without a real local facility there is no company warehouse. New warehouses begin with every automatic rule off."
       ],
       "relatedIds": [
         "help_prices",
@@ -304,8 +305,8 @@
       "description": "New player-owned factories need two complete economic days to become operational.",
       "paragraphs": [
         "Select Ascension 0: Normal or Ascension 1: Slow Foundations before starting. Difficulty belongs to this run; it is not an unlock, prestige reward, stacking curse or permanent bonus. Ascension 0 preserves instant construction without a construction delay.",
-        "At Ascension 1, ordering a new player facility pays its full cost immediately and creates an under-construction site without advancing the day. Two successful AdvanceDay operations complete it. The site skips automatic procurement, production and sales throughout both days, including completion day's automatic phases.",
-        "A two-day bakery ordered on day 0 completes after day 2's voyage phase and first becomes eligible to produce on day 4. Its own stock, enabled state and capacity must still permit the batch. Completion grants no free inputs, does not charge again, and is recorded as a zero-cash event.",
+        "At Ascension 1, ordering a new player facility pays its full cost immediately and creates an under-construction site without advancing the day. Two successful AdvanceDay operations complete it. The factory skips production throughout both days, including completion day. Its real paid warehouse capacity remains usable by ordinary manual and automatic trading during construction.",
+        "A two-day bakery ordered on day 0 completes after day 2's voyage phase and has its first scheduled production opportunity on day 4. Its shared company stock, enabled state, operating-rate admission and capacity must still permit the batch. Completion grants no free inputs, does not charge again, and is recorded as a zero-cash event.",
         "Manual local warehouse buying/selling, storage and physically docked owned transfers remain legal during construction under the normal cash, stock and capacity rules. They cannot produce early. Already-built starter facilities, including the Industrial Consortium bakery, retain their original schedule and grant provenance; later purchases still wait. This narrow industrial penalty need not affect every strategy equally."
       ],
       "relatedIds": [
@@ -410,7 +411,7 @@
       "description": "Invest in real capacity and inspect the next finite bottleneck.",
       "paragraphs": [
         "Every v3 world permits all six original production building types somewhere. Eligibility follows economic roles, not displayed city names. The food source can host Farms; the processing town can host Mills and Sawmills. The forest-furniture town can host a Silver Mine but cannot build a Sawmill, preserving a real Plank import dependency.",
-        "Each owned facility has a separate schedule, enabled state, policy and production/payroll counters. Each company shares one owned stockpile per town. Multiple Mills may coexist. Public and private extraction create only their declared batch outputs, and every successful living batch pays its full configured wage from the real employer.",
+        "Each owned facility has a separate schedule, enabled state, operating rate, priority, scheduling credit and production/payroll counters. Each company shares one owned stockpile and one local trading policy per town. Multiple Mills may coexist. Public and private extraction create only declared complete batch outputs; successful batches pay their full wage from the real employer.",
         "An extra Mill expands potential Flour output. Actual results still require Grain, wages and warehouse space, then a Bakery with Flour and Logs, and actual distribution to households able to pay. Overbuilding can consume cash without improving food access. Distinguish a recorded last-attempt failure from current conditions before changing policy."
       ],
       "relatedIds": [
@@ -484,8 +485,8 @@
       "description": "Local explicit saves preserve an economic run; retry starts its identity fresh.",
       "paragraphs": [
         "Save explicitly to one of three local slots. Continue or Load restores a current Expanding Economy v3 Grand Commission or Sandbox run without advancing time. Saves are local; there is no cloud recovery.",
-        "Only current schema5, circulation1, storage2 and itinerary1 are supported. Historical prototype saves are intentionally unsupported during pre-release development. No migration or command replay is performed.",
-        "Saves retain exact identity and drafted goals, accounts, fractional stock and demand residuals, FIFO lots, every voyage and route cursor/budget, pending construction, household history, fees, contracts, Mint and public treasury. Terminal outcomes remain frozen.",
+        "Only current schema6, circulation1, storage2 and itinerary1 are supported. Schema5 and older saves are intentionally unsupported after the factory/warehouse automation overhaul. No migration or command replay is performed; failed loads preserve the active run.",
+        "Saves retain exact identity and drafted goals, accounts, fractional stock and demand residuals, FIFO lots, every voyage and route cursor/budget, pending construction, household history, fees, contracts, Mint and public treasury. Terminal outcomes remain frozen. Factory rate/priority and admitted scheduling phase, plus town warehouse Buy/Sell rules and counters, resume exactly.",
         "Complete validation precedes session replacement. Unsupported versions, damage or inconsistent state show an error and preserve the active world, selection and playback. Retry starts the original identity fresh. Text size remains an independent preference."
       ],
       "relatedIds": [
@@ -533,7 +534,7 @@
         "Apply draft assigns the route and leaves actions paused. Replacing a route requires Manual control, an actual dock included in the new plan, no partially completed old stop and no itinerary operations already performed today. Advance a day after completed work before replacing it. Viewing never requires empty cargo; applying preserves it. Equivalent reapplication keeps progress. Manual travel elsewhere does not reset the next stop; return there before resuming.",
         "Draft Grain–Flour–Bread loop resolves the actual role towns: A unloads two Flour and two Logs and loads up to four Bread; B sells up to four Bread and buys four Grain plus two Logs; C sells four Grain and buys two Flour before returning. All orders use minimum one and Skip. Purchases retain 100 company coins and cap each order at 200. You may apply before building, but must construct the eligible Bakery and fund wages yourself for production; the example creates no stock, facilities or money.",
         "The live planner shows actual dock or voyage, next stop and action, cargo and an authoritative blocker. Expand Cargo, last outcome & daily budget for daily budget and last outcome; inspect an action for current source stock, market funds and quote. Pass count advances when leaving the last listed stop, so an initial middle-stop pass is not a completed circuit. Inspect harbor returns to ordinary trading. Back returns to the prior screen or overlay.",
-        "Schema5 retains itinerary format1 plans, exact stop/action/cycle, last outcome and daily budget across mid-stop and mid-voyage saves. Load continues the exact next work; Retry starts fresh with the same identity."
+        "Schema6 retains itinerary format1 plans, exact stop/action/cycle, last outcome and daily budget across mid-stop and mid-voyage saves. Load continues the exact next work; Retry starts fresh with the same identity."
       ],
       "relatedIds": [
         "help_shipping",

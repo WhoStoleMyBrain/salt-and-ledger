@@ -10,9 +10,9 @@ New player\-owned factories need two complete economic days to become operationa
 
 Select Ascension 0: Normal or Ascension 1: Slow Foundations before starting\. Difficulty belongs to this run; it is not an unlock, prestige reward, stacking curse or permanent bonus\. Ascension 0 preserves instant construction without a construction delay\.
 
-At Ascension 1, ordering a new player facility pays its full cost immediately and creates an under\-construction site without advancing the day\. Two successful AdvanceDay operations complete it\. The site skips automatic procurement, production and sales throughout both days, including completion day's automatic phases\.
+At Ascension 1, ordering a new player facility pays its full cost immediately and creates an under\-construction site without advancing the day\. Two successful AdvanceDay operations complete it\. The factory skips production throughout both days, including completion day\. Its real paid warehouse capacity remains usable by ordinary manual and automatic trading during construction\.
 
-A two\-day bakery ordered on day 0 completes after day 2's voyage phase and first becomes eligible to produce on day 4\. Its own stock, enabled state and capacity must still permit the batch\. Completion grants no free inputs, does not charge again, and is recorded as a zero\-cash event\.
+A two\-day bakery ordered on day 0 completes after day 2's voyage phase and has its first scheduled production opportunity on day 4\. Its shared company stock, enabled state, operating\-rate admission and capacity must still permit the batch\. Completion grants no free inputs, does not charge again, and is recorded as a zero\-cash event\.
 
 Manual local warehouse buying/selling, storage and physically docked owned transfers remain legal during construction under the normal cash, stock and capacity rules\. They cannot produce early\. Already\-built starter facilities, including the Industrial Consortium bakery, retain their original schedule and grant provenance; later purchases still wait\. This narrow industrial penalty need not affect every strategy equally\.
 
@@ -20,7 +20,7 @@ Manual local warehouse buying/selling, storage and physically docked owned trans
 
 - [Starting company charters](../mechanics/help_charters.md)
 - [Owning a factory](../mechanics/help_factories.md)
-- [Private procurement and local sales](../mechanics/help_procurement.md)
+- [Warehouse buying and selling](../mechanics/help_procurement.md)
 - [Production and scheduling](../mechanics/help_production.md)
 - [Seeded worlds and exact retries](../mechanics/help_seeded_worlds.md)
 

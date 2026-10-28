@@ -6,11 +6,11 @@ title: "Owning a factory"
 
 # Owning a factory
 
-Invest cash in a fixed recipe and a finite private stockpile\.
+Set production enabled, operating rate and priority; trade through the town warehouse\.
 
 The active scenario lists blueprints, eligible towns, construction payments, intervals and storage limits\. Construction pays the local market once and creates empty owned storage\. Ascension 0 is immediately operational; Ascension 1 new player sites complete after two economic days\. The first batch is eligible one full production interval after completion, with inputs and capacity still required\.
 
-The industry summary shows status, next opportunity, missing inputs and local quotes, real expenditure and physical shipping waits\. A recommended setup prepares a visible policy draft; only Apply commits it\. Keep local output sales disabled, or retain an appropriate reserve, when a ship should transport finished goods\. Detailed rules remain available\.
+Industry has Factories and Warehouse tabs\. A factory has three primary settings: Enabled, Operating rate from0 to100%, and Low/Normal/High priority\. Apply commits these together\. Its recipe, real shared inputs, full wage, production opportunity and blocker explain readiness\. Advanced accounting and shipping information remain available\.
 
 A charter may grant an initial facility or goods\. Those starter assets are grants, not purchases or construction payments during the run\. Starter facilities are already operational at both ascensions and retain their initial schedule\. Capital spending remains separate from material cost and sale margin\.
 
@@ -18,14 +18,14 @@ Living Cities has town\-specific construction eligibility\. An industry may be a
 
 V3 makes Farms, Lumber Camps, Mills, Sawmills, Bakeries, Furniture Workshops and Silver Mines constructible somewhere, with eligibility visible before purchase\. Multiple separate sites of the same eligible kind are allowed\. A second Mill still needs Grain, paid labor, storage and customers; no construction creates free inputs\. The public Royal Mint is commissioned separately and is never a private blueprint\.
 
-In new v3 runs a local Mill deposits Flour into the same owned town stock used by a Bakery\. Facilities execute in stable port/ID order; an earlier eligible batch can consume scarce inputs before another\. Only successful batches pay wages\. Procurement targets and output reserves use current shared stock, so disable or reserve output sales when another local recipe needs it\.
+Same\-town factories share one owned store\. High priority runs before Normal and Low; equal priorities use stable facility IDs\. Only a successful complete batch consumes materials and pays its full wage\. Rate50 admits every second scheduled opportunity, rate25 every fourth; skipped opportunities do not become catch\-up batches\. An admitted shortage retries without earning another admission\. Disabled or rate0 preserves scheduling phase and consumes nothing\.
 
 ## Related entries
 
 - [Ascension 1: Slow Foundations](../mechanics/help_ascension.md)
 - [Starting company charters](../mechanics/help_charters.md)
 - [Financial reports and the ledger](../mechanics/help_finances.md)
-- [Private procurement and local sales](../mechanics/help_procurement.md)
+- [Warehouse buying and selling](../mechanics/help_procurement.md)
 - [Production and scheduling](../mechanics/help_production.md)
 
 [All player mechanics](../catalog-mechanics.md) · [All content](../index.md)

@@ -2,6 +2,16 @@
 
 Player routes use ordered cargo itineraries. NPC merchants retain their proven two-port market policies. Controlled economic experiments also retain industrial two-port policies; these are research controls, not alternate player editors.
 
+## Factory, warehouse and ship responsibilities
+
+**Factories produce, warehouses trade locally, ships transport.** Industry's Factories tab applies Enabled, Operating rate and Priority together. Full-rate Normal is the default. Lower rates admit fewer complete scheduled batches, preserving exact material quantities and full wages. High priority takes shared inputs before Normal and Low; ties use stable factory IDs. A blocked admitted batch retries without accumulating missed batches. See [exact production scheduling](MECHANICS.md#production-construction-and-storage).
+
+Industry's Warehouse tab and Harbor's Warehouse automation button open the same company/town Buy/Sell rules. All seven goods can be configured, including goods only needed for logistics. Each Buy row has enabled, desired stock and maximum marginal price; each Sell row has enabled, retained stock and minimum marginal price. Zero price means unrestricted. Buy target must not exceed Sell reserve when both are enabled. The common cash reserve protects purchases, not payroll.
+
+Buying runs before private production and selling afterward, once per enabled good in stable order. Proposals use current stock, exact marginal prices, finite market/company funds and actual capacity. They are not future reservations. Warehouse rules remain active when factories are disabled and may stock real paid construction sites. They never create a warehouse, goods or money. Ship loading and unloading stay separate physical operations at the actual dock.
+
+The warehouse shows conditional private output/input needs over12 days, current stock and rule blockers. Rate-adjusted totals count admitted whole batches; installed full-rate capacity remains in breakdowns. Missing factory inputs link to these rules so a player can distinguish an absent rule from price, supply or affordability limits. Local factory trading forms are retired.
+
 ## Ordered cargo itineraries
 
 Immutable `CargoItineraryPolicy` version 1 applies to player ships in v3 pooled-stock runs. It has **2–4 unique port stops**, **1–8 ordered commands per stop**, and **at most 24 commands total**. The last stop connects back to the first through a real sea route. Every port, connection, commodity and ship ownership is validated before application. Company storage need not exist yet: a future Load/Unload is a valid plan, with a missing-warehouse warning. Existing NPC merchants keep their original two-port policies and finite budgets.
@@ -53,7 +63,7 @@ All example orders have minimum one and Skip on shortage. Purchases keep 100 com
 
 ### Exact continuation
 
-Schema5 saves preserve complete typed plans, exact stop/action/cycle, last reason and daily budget. Loading never resets completed work. Retry recreates the original initial world. Historical player route editors and old save schemas are retired.
+Schema6 saves preserve complete typed plans, exact stop/action/cycle, last reason and daily budget. Loading never resets completed work. Retry recreates the original initial world. Historical player route editors and old save schemas are retired.
 
 ### Bounded ordinary-world witness
 

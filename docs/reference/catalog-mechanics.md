@@ -16,7 +16,7 @@ These explanations are shared with the offline in-game encyclopedia. For exact d
 - [Historical inventory cost](mechanics/help_cost_basis.md) — Held goods carry actual acquisition or input\-material expenditure through their journey\.
 - [Fractional goods and exact coins](mechanics/help_exact_units.md) — V3 households buy proportional quantities while ships carry whole cargo units\.
 - [Expanding production chains](mechanics/help_expanding_industry.md) — Invest in real capacity and inspect the next finite bottleneck\.
-- [Owning a factory](mechanics/help_factories.md) — Invest cash in a fixed recipe and a finite private stockpile\.
+- [Owning a factory](mechanics/help_factories.md) — Set production enabled, operating rate and priority; trade through the town warehouse\.
 - [Financial reports and the ledger](mechanics/help_finances.md) — Separate cash, revenue, attributed costs, realized margin, and capital\.
 - [Commission and direct a fleet](mechanics/help_fleet_expansion.md) — Up to three owned ships share cash but keep separate cargo and routes\.
 - [The Grand Commission and Objectives Journal](mechanics/help_grand_commission.md) — Read the seeded map, draft four mandatory goals, and track real economic accomplishments\.
@@ -25,7 +25,7 @@ These explanations are shared with the offline in-game encyclopedia. For exact d
 - [Map, command deck, pause and navigation](mechanics/help_navigation.md) — Inspect, pause, and begin another run without accidentally advancing the economy\.
 - [Company, market, and private ownership](mechanics/help_ownership.md) — One company cash account supports distinct ship cargo and private warehouses\.
 - [Marginal prices and execution averages](mechanics/help_prices.md) — The displayed next price and the cost of a whole order answer different questions\.
-- [Private procurement and local sales](mechanics/help_procurement.md) — Maintain chosen inputs and sell chosen surplus through ordinary local trades\.
+- [Warehouse buying and selling](mechanics/help_procurement.md) — One local Buy/Sell policy for each company town warehouse, independent of its factories\.
 - [Production and scheduling](mechanics/help_production.md) — Complete canonical recipes run at explicitly scheduled economic days\.
 - [Text size and readable controls](mechanics/help_readability.md) — Choose one presentation scale for every ArchipelagoLab screen\.
 - [External trade and the public Royal Mint](mechanics/help_royal_economy.md) — Finite outside purchases import cash; bounded Silver\-backed issuance creates it\.

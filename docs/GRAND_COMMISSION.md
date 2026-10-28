@@ -85,7 +85,7 @@ The selected plan stores stable IDs and typed rule, target, unit, semantic, port
 
 ## Saves and compatibility
 
-Current schema5 retains the exact draft, bounded history, all economic state and itinerary progress. Unsupported historical saves fail safely. See [save policy](SAVES.md).
+Current schema6 retains the exact draft, bounded history, all economic state and itinerary progress. Unsupported historical saves fail safely. See [save policy](SAVES.md).
 
 ## Verification
 
@@ -97,7 +97,7 @@ See [current verification](REPOSITORY-CLEANUP.md) for executed tests and Unity e
 dotnet run --project samples/SaltAndLedger.Demo -- data/content.json --grand-commission --check
 ```
 
-The compact `GrandCommissionWitness` executes ordinary construction, paid warehouse/ship purchases, funded production, physical transfers/voyages, sales, contracts and Mint operations. It does not edit world state, add grants or change economic parameters. It uses current circulation1/storage2/itinerary1 and exact mid-voyage/terminal schema5 restoration. A third journey replaces the first Bread leg with an enabled itinerary, saves during its voyage and wins with the same economic outcome.
+The compact `GrandCommissionWitness` executes ordinary construction, paid warehouse/ship purchases, funded production, physical transfers/voyages, sales, contracts and Mint operations. It does not edit world state, add grants or change economic parameters. It uses current circulation1/storage2/itinerary1 and exact mid-voyage/terminal schema6 restoration. A third journey replaces the first Bread leg with an enabled itinerary, saves during its voyage and wins with the same economic outcome.
 
 | Seed / charter | Mandatory selection | Result | Final company coins | Inventory purchase coins | Private wage coins | Private capital / public commission coins | Score |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
