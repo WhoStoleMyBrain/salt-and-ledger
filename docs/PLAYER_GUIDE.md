@@ -14,13 +14,29 @@ In Grand Commission, select one of three offered cards in each of four category 
 
 The compact HUD shows day, company cash, reference value and objective progress. Map, Trade, Industry, Fleet, Economy and Objectives switch workspaces. Select a town or ship for the collapsible bottom command deck. Escape respects modal/confirmation priority; map inspection and navigation do not advance time. Pause, encyclopedia, results and Journal stop playback. Text size is under Settings and changes layout without changing the run.
 
-Use [Harbor](HARBOR.md) to compare public stock, the selected ship and actual local company stock. **Buy/Sell** pays the market; **Load/Unload** transfers owned goods without money at the ship's real dock. A remote warehouse can trade locally but cannot teleport cargo. Exact previews show gross amount, sale fee and net receipts. A ship under automation needs Manual control before manual orders.
+Use [Harbor](HARBOR.md) to inspect **Town market** or **Company warehouse**. Each good shows stock, its local role, current market bid/ask, and signed **production / use / net over the next 12 days**. These are scheduled possibilities, not guaranteed future stock: a blocked factory still needs inputs, wages and space. Open the selected good's **breakdown** for installed versus enabled production, current blockers, household needs and the last actual consumption.
+
+Open **compare towns** for that good's current market stock, bids, asks, buying power and travel time from the selected docked ship. Select a row to inspect that harbor without losing the good selection. Price differences identify candidates for a voyage; exact bulk pricing, sale fees, finite buyer cash and changes while sailing decide the result.
+
+Choose **Ship cargo** or **Company warehouse** as the paid trade destination independently of the inspection scope:
+
+| Action | Physical flow | Payment |
+| --- | --- | --- |
+| Buy cargo | Market → Ship | Company pays market |
+| Sell cargo | Ship → Market | Market pays company; sale fee withheld |
+| Buy warehouse stock | Market → Warehouse | Company pays market |
+| Sell warehouse stock | Warehouse → Market | Market pays company; sale fee withheld |
+| Load / Unload | Warehouse ↔ Ship | None |
+
+Ship actions require the real local dock and Manual control. Warehouse trades can be managed remotely; they never move goods between towns. Read the exact order preview, including gross sale amount, fee and net receipts, before committing. Expand calculation details when needed.
 
 Industry constructs real facilities and manages inputs, output limits, payroll and policies. Same-town facilities share company stock; public stock stays separate. Construction costs are capital, wages are expenses, and held material basis is not realized profit. Read current input/payroll/storage blockers before enabling procurement or sales.
 
-Fleet selects each owned ship independently. The [route planner](AUTOMATION.md) drafts2–4 ordered towns with Buy/Sell/Load/Unload instructions. Applying a draft and enabling it are separate actions. Pausing retains cargo, voyage and the next unfinished instruction. The player can commission up to three ships using actual local Planks, company cash and labor.
+Fleet selects each owned ship independently. The [route planner](AUTOMATION.md) drafts2–4 ordered towns with Buy/Sell/Load/Unload instructions. Applying a draft and enabling it are separate actions. Pausing retains cargo, voyage and the next unfinished instruction; **Committed activity** reveals the saved cursor, daily work budget and last reason. The player can commission up to three ships using actual local Planks, company cash and labor.
 
-Economy shows current local accounts, public stock, production readiness and next Bread need. These are facts and exact current previews, not forecasts. Households can be wealthy while Bread is absent; a market can lack payroll while its households have money. The public Royal Mint requires commissioning and physically transported Silver; finite external contracts are not unlimited buyers.
+Economy puts next Bread need, stock/funds shortfalls and production readiness first. Expand **Food affordability & demand** or a facility's **Inputs, payroll & last outcome** for the underlying figures; **Accounts & pricing** opens the full city accounts. Households can be wealthy while Bread is absent; a market can lack payroll while its households have money. The public Royal Mint requires commissioning and physically transported Silver; finite external contracts are not unlimited buyers.
+
+For a quick inspection: **Map → town → Harbor → select a good → breakdown / compare towns → Industry → Fleet or Economy → Map**. Keep eligible construction in Industry. A warehouse scope describes only your local industries; the market scope describes public industry and household/municipal needs. Neither counts trades or ship transfers as passive output. Journal rows keep exact current/target values and **Current / Cumulative** markers; **Details & blockers** explains the conditions and identifies the actual facilities. Inspection and disclosure controls never spend a day.
 
 ## Finish or continue
 

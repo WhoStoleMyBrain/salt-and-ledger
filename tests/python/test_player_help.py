@@ -14,7 +14,7 @@ class PlayerHelpTests(unittest.TestCase):
         self.help = load_player_help(self.content)
 
     def test_all_required_player_topics_exist_and_share_the_same_prose(self):
-        expected = {"help_trading", "help_prices", "help_liquidity", "help_capacity",
+        expected = {"help_trading", "help_market_signals", "help_prices", "help_liquidity", "help_capacity",
                     "help_shipping", "help_ownership", "help_production", "help_factories",
                     "help_procurement", "help_cost_basis",
                     "help_finances", "help_charters", "help_challenges", "help_scoring",

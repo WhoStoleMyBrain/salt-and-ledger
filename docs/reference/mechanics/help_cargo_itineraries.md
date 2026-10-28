@@ -8,7 +8,7 @@ title: "Ordered cargo itineraries"
 
 Plan mixed cargo and ordered market or company\-stock work through two to four towns\.
 
-New v3 pooled runs offer Fleet &gt; Inspect / edit route, also reachable from a selected owned ship's deck or Harbor\. Choose an owned ship, then draft two to four unique town stops with one to eight ordered actions each, at most 24 total\. Add, remove or reorder cards and expand an action to edit its fields\. Drafting and inspecting pause playback without changing stocks, cash or time\.
+Fleet &gt; Route planner is also reachable from a selected owned ship's deck or Harbor\. Choose an owned ship, then draft two to four unique town stops with one to eight ordered actions each, at most 24 total\. Add, remove or reorder cards and expand an action to edit its fields\. Drafting and inspecting pause playback without changing stocks, cash or time\.
 
 Buy and Sell exchange the named good with the public market for its exact bulk price\. Load and Unload transfer owned stock between the actual docked ship and its company town stock without payment\. No owned facility means no town warehouse\. Different goods can remain aboard together within the combined hold capacity; unmentioned goods are never discarded\.
 

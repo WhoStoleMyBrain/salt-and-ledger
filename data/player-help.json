@@ -6,17 +6,37 @@
       "name": "Buying and selling",
       "description": "Exchange goods with a town using the company's finite cash account.",
       "paragraphs": [
-        "Buy moves goods from the public market into your ship or private warehouse and pays the town. Sell reverses those movements. A ship must actually be docked at that town; a remote quote is information, not permission to trade.",
+        "Buy follows Market → Ship or Market → Warehouse and pays the town. Sell follows Ship → Market or Warehouse → Market; the market pays your company less the sale fee. Ship orders require the actual local dock. Company warehouse trades can be managed remotely, but goods remain at that town.",
         "Choose a good and quantity, then read the exact order total before confirming. Manual trades execute the complete requested quantity or leave goods and cash unchanged. Quantity shortcuts only edit the proposal. Transactions do not advance the economic day.",
         "Select a town or owned ship, then use Harbor on its command deck or the Trade mode. Without a selection, Trade offers a town chooser. Opening Harbor pauses playback; closing it returns to the previous context and stays paused. Disable that ship's automation before issuing manual trades or sailing orders.",
-        "Harbor shows public market stock, the selected ship hold and local company stock together. Choose paid Buy/Sell for either accessible destination, or no-cash Load/Unload at the actual dock. Exact previews, quantity presets and specific blockers explain what can execute; a remote ship cannot move cargo here.",
+        "Harbor separates Inspect (Town market or Company warehouse) from Trade with (Ship cargo or Company warehouse). Inspection scope never changes the order destination. Load follows Warehouse → Ship; Unload follows Ship → Warehouse. Both need the real dock and move no cash. Exact previews and blockers explain which paid or no-cash action can execute.",
         "New modern v3 circulation runs charge 2% port handling on completed company sales, including NPC sales. Harbor shows the gross market payment, exact fee, net receipts and local market/worker shares. Buying, private transfers and public contracts have no handling fee. Rejected orders and previews charge nothing."
       ],
       "relatedIds": [
         "help_prices",
         "help_liquidity",
         "help_capacity",
-        "help_ownership"
+        "help_ownership",
+        "help_market_signals"
+      ]
+    },
+    {
+      "id": "help_market_signals",
+      "name": "Commodity roles and twelve-day signals",
+      "description": "Read local production, input needs and possible trade destinations without forecasting stock.",
+      "paragraphs": [
+        "Harbor marks each good Produces, Uses, Makes + uses or Trade only. Inspect Town market for public facilities and household/municipal needs; inspect Company warehouse for your local industrial recipes and owned stock. Current market bid/ask stays public in both views. Inspection is independent of the Ship cargo or Company warehouse trade destination.",
+        "Signed production, use and net share one window: the next 12 economic days, tomorrow through day +12 inclusive. Output and input totals assume each scheduled enabled operational batch succeeds. Overdue work gets one next-day opportunity followed by its usual interval, with no catch-up output. Disabled and pending sites remain visible as installed capability in the breakdown but do not contribute to enabled totals.",
+        "Blocked marks current input, payroll, storage or output limits; the row still shows conditional enabled potential. Even Ready from current state does not reserve materials or wages. Another local facility can consume shared inputs first. Net is potential enabled output minus recipe inputs and consumption needs, not a promised future inventory. No trade, procurement, automatic sale, ship transfer, voyage, contract or Mint flow is counted as passive production.",
+        "Household needs hold current population and luxury eligibility fixed, using the saved exact fractional demand carry. Need is not actual consumption. Select the good and open breakdown for per-facility schedules and blockers, next stock/affordability gaps and Last actual consumption, payment and unmet quantities. Before the first observation, the panel says so. Stock < need compares today's stock with gross window needs; production or imports can still cover the gap.",
+        "Open compare towns for the selected good's real public stock, current marginal bids/asks, finite market buying power and travel time from the selected ship's dock. Choosing a row inspects that town and retains the good. A price spread is a lead to investigate, not guaranteed profit or remote permission to move cargo. Exact bulk pricing, fees, finite cash and physical voyages still govern every order. Eligible construction remains in Industry."
+      ],
+      "relatedIds": [
+        "help_trading",
+        "help_prices",
+        "help_production",
+        "help_city_needs",
+        "help_factories"
       ]
     },
     {
@@ -27,7 +47,8 @@
         "Ask is what you pay to buy; bid is what the market pays when you sell. In the regional scenario each unit changes public stock, so later units in a large order may have different prices.",
         "The exact total adds the actual prices across the complete order. Average execution price is that total divided by quantity for display. Neither average nor the first marginal price replaces the exact total used for payment.",
         "An automation price limit applies to the worst marginal unit in its selected order. A profitable-looking current quote does not guarantee the same price after a voyage, production, consumption, or another merchant's trade.",
-        "Modern circulation Coverage pricing protects Furniture with a two-good target floor even when luxury purchases are suspended. Actual stock and each town's reference price still determine bid and ask; the target creates neither demand nor goods. Older runs retain their original prices."
+        "Modern circulation Coverage pricing protects Furniture with a two-good target floor even when luxury purchases are suspended. Actual stock and each town's reference price still determine bid and ask; the target creates neither demand nor goods.",
+        "Harbor's selected-good compare towns panel lists real current marginal bids/asks, public stock, buying power and travel days from the selected ship's dock. Select a town to inspect it without losing the good selection. Price differences do not guarantee a profitable shipment: exact bulk prices, sale fees, finite liquidity and changes during travel still apply."
       ],
       "relatedIds": [
         "help_trading",
@@ -107,12 +128,13 @@
         "A private factory consumes and produces only within its actual owned store: a shared company town stockpile in pooled runs, or its separate warehouse in older runs. Public market goods never silently supply a private batch. A successful batch schedules the next opportunity one interval later. Missing inputs, disabled production or full output storage keep the batch due without accumulating catch-up batches.",
         "Daily ship actions occur before procurement and production. Operational private procurement is followed by public production, private production, private sales, scheduled consumption, voyage progress and due construction completion. Fresh output cannot be loaded by an earlier ship action in that same daily operation. Pending factories skip their automatic phases even on completion day.",
         "In Living Cities, a successful public batch pays the configured wage from market cash to local households; a private batch pays from its company. Insufficient payroll blocks the whole batch and keeps it due. Blocked, disabled, input-starved and pending batches pay nothing. After retail, city observations and population reviews occur before voyages and construction completion.",
-        "Economy shows each existing facility's current inputs, one canonical batch output, employer funds, payroll, capacity, output ceiling and next eligible day. Ready from current state is conditional: earlier operations or another facility sharing the stockpile can consume the inputs first. Last committed outcome describes the previous attempt, not current readiness. Open Industry to manage an owned facility; inspecting the signal never runs a batch."
+        "Economy keeps each facility's recipe, readiness and next eligible day visible. Expand Inputs, payroll & last outcome for current stock, employer funds, wage, capacity, output ceiling and previous attempt. Ready from current state is conditional: earlier operations or another facility can use shared inputs first. Open Industry to manage an owned facility; inspecting the signal never runs a batch."
       ],
       "relatedIds": [
         "help_procurement",
         "help_factories",
-        "help_cargo_itineraries"
+        "help_cargo_itineraries",
+        "help_market_signals"
       ]
     },
     {
@@ -320,7 +342,7 @@
         "A successful public production batch moves its wage from market to households. Private production moves its wage from the owning company to households. For example, a wage of 10 moves market 40 to 30 and household 20 to 30; no money is created.",
         "If households then buy Bread for an exact order total of 18, household cash becomes 12 and market cash 48. Only the purchased Bread is consumed. Actual quantities use marginal price totals, stock and affordability; a first-unit quote multiplied by quantity is not the bill.",
         "Market insolvency can block your sale even when households still have money. Retail may later fund the market only if food exists, households can afford it and a need is due. Buying locally, exports and private employment can move real funds; none guarantees a recovery day.",
-        "Select the town and open Economy for current food, production and separate market/household funds. Full city accounts / pricing opens City Economy for actual wage and retail payments, observed food outcomes and fiscal detail. Back retains the selected town and prior workspace. A missing item and an unaffordable stocked item are different constraints.",
+        "Select the town and open Economy for current food shortfalls, production and separate market/household funds. Food affordability & demand reveals exact next-need calculations. Accounts & pricing opens actual wage/retail payments, observed food and fiscal detail. Back retains the town and prior workspace. Missing stock and unaffordable available stock are different constraints.",
         "Modern circulation towns review accounts every four days before public production. Only ready public work can trigger a payroll levy, and households keep twice their next essential food budget. Otherwise food relief requires actual food on the shelf and protects upcoming public payroll. Each direction is limited to the shortfall, 12 coins and 10% of the payer's unreserved cash. The town screen shows recorded reserves, reason, totals and next review. No money or food is created."
       ],
       "relatedIds": [
@@ -430,7 +452,7 @@
         "V3 permits the starting ship and two additional ships. The processing harbor shipwright charges 500 coins and consumes four real market Planks. Of that payment, 460 goes to the market and 40 to local households for labor. Construction takes four economic days; completion creates an empty ten-unit ship at that harbor.",
         "Pending orders count toward the three-ship limit and retain paid capital in Company Value. Missing company cash or actual market Planks prevents the order without partial payment or a phantom ship. Private-factory Ascension timing is separate from this shipbuilding schedule.",
         "Select the intended owned ship before trading, sailing, transfer or route editing. All ships share one company account, but each has its own cargo, position, policy and enabled state. New itineraries retain an exact stop/action/pass and daily budget; older industrial routes retain their original stage. Ships act in stable priority and ID order through one atomic day; one ship cannot load another ship's cargo.",
-        "Fleet mode lists owned ships beside the same map and a selected-ship inspector. It shows actual cargo, dock or ETA, configured route and the evaluator's next instruction or wait reason. Inspect / edit route opens the existing planner for that ship; Company / shipwright opens purchases and public services. Draft ordered Buy, Sell, Load and Unload instructions through two to four towns; different goods can share the finite hold. Older saved worlds keep two-port route controls. Inspection never changes route enablement, cargo, funds or time."
+        "Fleet mode lists owned ships beside the map and selected-ship inspector. Cargo, dock or ETA, route and next instruction or wait reason remain visible; Committed activity reveals the cursor, daily work budget and last reason. Route planner opens that ship's ordered Buy/Sell/Load/Unload editor; Company / shipwright opens purchases and public services. Inspection never changes route enablement, cargo, funds or time."
       ],
       "relatedIds": [
         "help_shipping",
@@ -486,8 +508,8 @@
         "Destination commerce counts your company's actual sales minus purchases of the named good at the named town, for ship and private warehouse market trades. Buying four Flour and reselling those four locally earns zero; a later buyback can reverse imported delivery credit. NPC trades, quotes and unsold cargo do not count. Navigation records actual owned-ship docks and arrivals; a new second ship must sail beyond its shipyard to earn its second visit.",
         "The navigation choices require four visited towns, three named role towns, a second ship visiting two towns, or three towns plus a positive remote net sale. Industry choices require distinct-town funded Mill/Bakery batches, a Lumber Camp/Sawmill with four private Planks, a Sawmill/Workshop with two private Furniture, or two-town Bakeries with four private Bread. Commerce requires four net Bread, Planks or Flour at the resolved destination, or 100 coins in finite external contract receipts.",
         "Civic choices require a company-commissioned public Mint and one physical Silver issuance; recovery-town food coverage of 80 percent across six recent opportunities plus prosperity 50; Company Value growth of 100 coins with 100 cash; or two funded public-works Planks plus six recent food opportunities at 60 percent. Food uses actual paid consumption against the greater current and initial-population need. Deliveries alone are not meals, and welfare may fall again.",
-        "Open Objectives from play, pause or results for current/target quantities, completion bars and specific blockers. The map HUD keeps a compact currently-met count and days left. Journal inspection pauses playback. Permanent requirements are marked as completed; reversible requirements say currently met. Zero-clamped bars never erase a negative net balance.",
-        "Mission draft version 1 and its exact four resolved cards are part of run identity. The same seed keeps the same offers regardless of charter, pricing, Ascension or earlier choices, without changing the economic world. Save/Continue restores the current plan and progress exactly; Retry Same World starts that same commission fresh. Explicit reroll returns to a new preview. Older authored challenges, modes and valid saves remain available."
+        "Open Objectives from play, pause or results for compact current/target values, completion bars and Current/Cumulative markers. Cumulative evidence stays earned; current conditions can fall again. Each card's Details & blockers retains the full explanation, actual facility identifiers and reasons. Cash floor and deadline stay visible. Journal inspection pauses playback, and zero-clamped bars never erase a negative net balance.",
+        "Mission draft version 1 and its exact four resolved cards are part of run identity. The same seed keeps the same offers regardless of charter, pricing, Ascension or earlier choices, without changing the economic world. Save/Continue restores the current plan and progress exactly; Retry Same World starts that same commission fresh. Explicit reroll returns to a new preview."
       ],
       "relatedIds": [
         "help_challenges",
@@ -503,7 +525,7 @@
       "name": "Ordered cargo itineraries",
       "description": "Plan mixed cargo and ordered market or company-stock work through two to four towns.",
       "paragraphs": [
-        "New v3 pooled runs offer Fleet > Inspect / edit route, also reachable from a selected owned ship's deck or Harbor. Choose an owned ship, then draft two to four unique town stops with one to eight ordered actions each, at most 24 total. Add, remove or reorder cards and expand an action to edit its fields. Drafting and inspecting pause playback without changing stocks, cash or time.",
+        "Fleet > Route planner is also reachable from a selected owned ship's deck or Harbor. Choose an owned ship, then draft two to four unique town stops with one to eight ordered actions each, at most 24 total. Add, remove or reorder cards and expand an action to edit its fields. Drafting and inspecting pause playback without changing stocks, cash or time.",
         "Buy and Sell exchange the named good with the public market for its exact bulk price. Load and Unload transfer owned stock between the actual docked ship and its company town stock without payment. No owned facility means no town warehouse. Different goods can remain aboard together within the combined hold capacity; unmentioned goods are never discarded.",
         "Every action executes once per visit, choosing the largest whole quantity between its minimum and maximum that current stock, capacity and real funds permit. Maximum is an order cap, not a hold target. A partial qualifying order advances once. Below minimum, Skip continues with no transaction; Wait keeps that exact action and stops. Earlier completed buys or transfers never repeat because another instruction waits.",
         "Buy limits include maximum marginal ask, company cash reserve and a per-order spending cap; Sell uses a minimum marginal bid. Price zero means unrestricted and a blank spending cap means unrestricted within actual funds. Loading can preserve a fractional town-stock reserve. Maximum and minimum cargo quantities are whole units; coin and warehouse reserves support four decimal places. Remote quotes describe current conditions, not reserved future prices or permission to move goods.",

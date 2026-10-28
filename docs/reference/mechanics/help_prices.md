@@ -14,7 +14,9 @@ The exact total adds the actual prices across the complete order\. Average execu
 
 An automation price limit applies to the worst marginal unit in its selected order\. A profitable\-looking current quote does not guarantee the same price after a voyage, production, consumption, or another merchant's trade\.
 
-Modern circulation Coverage pricing protects Furniture with a two\-good target floor even when luxury purchases are suspended\. Actual stock and each town's reference price still determine bid and ask; the target creates neither demand nor goods\. Older runs retain their original prices\.
+Modern circulation Coverage pricing protects Furniture with a two\-good target floor even when luxury purchases are suspended\. Actual stock and each town's reference price still determine bid and ask; the target creates neither demand nor goods\.
+
+Harbor's selected\-good compare towns panel lists real current marginal bids/asks, public stock, buying power and travel days from the selected ship's dock\. Select a town to inspect it without losing the good selection\. Price differences do not guarantee a profitable shipment: exact bulk prices, sale fees, finite liquidity and changes during travel still apply\.
 
 ## Related entries
 

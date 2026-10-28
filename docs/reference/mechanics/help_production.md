@@ -16,12 +16,13 @@ Daily ship actions occur before procurement and production\. Operational private
 
 In Living Cities, a successful public batch pays the configured wage from market cash to local households; a private batch pays from its company\. Insufficient payroll blocks the whole batch and keeps it due\. Blocked, disabled, input\-starved and pending batches pay nothing\. After retail, city observations and population reviews occur before voyages and construction completion\.
 
-Economy shows each existing facility's current inputs, one canonical batch output, employer funds, payroll, capacity, output ceiling and next eligible day\. Ready from current state is conditional: earlier operations or another facility sharing the stockpile can consume the inputs first\. Last committed outcome describes the previous attempt, not current readiness\. Open Industry to manage an owned facility; inspecting the signal never runs a batch\.
+Economy keeps each facility's recipe, readiness and next eligible day visible\. Expand Inputs, payroll &amp; last outcome for current stock, employer funds, wage, capacity, output ceiling and previous attempt\. Ready from current state is conditional: earlier operations or another facility can use shared inputs first\. Open Industry to manage an owned facility; inspecting the signal never runs a batch\.
 
 ## Related entries
 
 - [Ordered cargo itineraries](../mechanics/help_cargo_itineraries.md)
 - [Owning a factory](../mechanics/help_factories.md)
+- [Commodity roles and twelve\-day signals](../mechanics/help_market_signals.md)
 - [Private procurement and local sales](../mechanics/help_procurement.md)
 
 [All player mechanics](../catalog-mechanics.md) · [All content](../index.md)

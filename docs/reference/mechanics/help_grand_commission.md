@@ -20,9 +20,9 @@ The navigation choices require four visited towns, three named role towns, a sec
 
 Civic choices require a company\-commissioned public Mint and one physical Silver issuance; recovery\-town food coverage of 80 percent across six recent opportunities plus prosperity 50; Company Value growth of 100 coins with 100 cash; or two funded public\-works Planks plus six recent food opportunities at 60 percent\. Food uses actual paid consumption against the greater current and initial\-population need\. Deliveries alone are not meals, and welfare may fall again\.
 
-Open Objectives from play, pause or results for current/target quantities, completion bars and specific blockers\. The map HUD keeps a compact currently\-met count and days left\. Journal inspection pauses playback\. Permanent requirements are marked as completed; reversible requirements say currently met\. Zero\-clamped bars never erase a negative net balance\.
+Open Objectives from play, pause or results for compact current/target values, completion bars and Current/Cumulative markers\. Cumulative evidence stays earned; current conditions can fall again\. Each card's Details &amp; blockers retains the full explanation, actual facility identifiers and reasons\. Cash floor and deadline stay visible\. Journal inspection pauses playback, and zero\-clamped bars never erase a negative net balance\.
 
-Mission draft version 1 and its exact four resolved cards are part of run identity\. The same seed keeps the same offers regardless of charter, pricing, Ascension or earlier choices, without changing the economic world\. Save/Continue restores the current plan and progress exactly; Retry Same World starts that same commission fresh\. Explicit reroll returns to a new preview\. Older authored challenges, modes and valid saves remain available\.
+Mission draft version 1 and its exact four resolved cards are part of run identity\. The same seed keeps the same offers regardless of charter, pricing, Ascension or earlier choices, without changing the economic world\. Save/Continue restores the current plan and progress exactly; Retry Same World starts that same commission fresh\. Explicit reroll returns to a new preview\.
 
 ## Related entries
 

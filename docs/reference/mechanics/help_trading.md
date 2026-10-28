@@ -8,13 +8,13 @@ title: "Buying and selling"
 
 Exchange goods with a town using the company's finite cash account\.
 
-Buy moves goods from the public market into your ship or private warehouse and pays the town\. Sell reverses those movements\. A ship must actually be docked at that town; a remote quote is information, not permission to trade\.
+Buy follows Market → Ship or Market → Warehouse and pays the town\. Sell follows Ship → Market or Warehouse → Market; the market pays your company less the sale fee\. Ship orders require the actual local dock\. Company warehouse trades can be managed remotely, but goods remain at that town\.
 
 Choose a good and quantity, then read the exact order total before confirming\. Manual trades execute the complete requested quantity or leave goods and cash unchanged\. Quantity shortcuts only edit the proposal\. Transactions do not advance the economic day\.
 
 Select a town or owned ship, then use Harbor on its command deck or the Trade mode\. Without a selection, Trade offers a town chooser\. Opening Harbor pauses playback; closing it returns to the previous context and stays paused\. Disable that ship's automation before issuing manual trades or sailing orders\.
 
-Harbor shows public market stock, the selected ship hold and local company stock together\. Choose paid Buy/Sell for either accessible destination, or no\-cash Load/Unload at the actual dock\. Exact previews, quantity presets and specific blockers explain what can execute; a remote ship cannot move cargo here\.
+Harbor separates Inspect \(Town market or Company warehouse\) from Trade with \(Ship cargo or Company warehouse\)\. Inspection scope never changes the order destination\. Load follows Warehouse → Ship; Unload follows Ship → Warehouse\. Both need the real dock and move no cash\. Exact previews and blockers explain which paid or no\-cash action can execute\.
 
 New modern v3 circulation runs charge 2% port handling on completed company sales, including NPC sales\. Harbor shows the gross market payment, exact fee, net receipts and local market/worker shares\. Buying, private transfers and public contracts have no handling fee\. Rejected orders and previews charge nothing\.
 
@@ -22,6 +22,7 @@ New modern v3 circulation runs charge 2% port handling on completed company sale
 
 - [Cargo and storage capacity](../mechanics/help_capacity.md)
 - [Market liquidity](../mechanics/help_liquidity.md)
+- [Commodity roles and twelve\-day signals](../mechanics/help_market_signals.md)
 - [Company, market, and private ownership](../mechanics/help_ownership.md)
 - [Marginal prices and execution averages](../mechanics/help_prices.md)
 

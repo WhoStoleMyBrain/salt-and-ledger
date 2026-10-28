@@ -14,7 +14,7 @@ Pending orders count toward the three\-ship limit and retain paid capital in Com
 
 Select the intended owned ship before trading, sailing, transfer or route editing\. All ships share one company account, but each has its own cargo, position, policy and enabled state\. New itineraries retain an exact stop/action/pass and daily budget; older industrial routes retain their original stage\. Ships act in stable priority and ID order through one atomic day; one ship cannot load another ship's cargo\.
 
-Fleet mode lists owned ships beside the same map and a selected\-ship inspector\. It shows actual cargo, dock or ETA, configured route and the evaluator's next instruction or wait reason\. Inspect / edit route opens the existing planner for that ship; Company / shipwright opens purchases and public services\. Draft ordered Buy, Sell, Load and Unload instructions through two to four towns; different goods can share the finite hold\. Older saved worlds keep two\-port route controls\. Inspection never changes route enablement, cargo, funds or time\.
+Fleet mode lists owned ships beside the map and selected\-ship inspector\. Cargo, dock or ETA, route and next instruction or wait reason remain visible; Committed activity reveals the cursor, daily work budget and last reason\. Route planner opens that ship's ordered Buy/Sell/Load/Unload editor; Company / shipwright opens purchases and public services\. Inspection never changes route enablement, cargo, funds or time\.
 
 ## Related entries
 
