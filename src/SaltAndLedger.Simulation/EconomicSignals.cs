@@ -124,7 +124,7 @@ namespace SaltAndLedger.Simulation
     }
 
     /// <summary>Pure, bounded read models. They never step, reserve, mutate or construct a world.</summary>
-    public static class EconomicSignals
+    public static partial class EconomicSignals
     {
         public static EssentialNeedSignal NextEssentialNeed(RegionalWorldSnapshot snapshot, string portId)
         {
