@@ -335,11 +335,17 @@ namespace SaltAndLedger.UnityHost
             return result;
         }
 
-        public void ConfigureFacility(string facilityId, IndustryPolicy policy, bool enabled)
+        public void ConfigureProduction(string facilityId, bool enabled, int operatingRate, ProductionPriority priority,
+            RegionalWorldSnapshot expectedSnapshot = null)
         {
-            Observe(world.ConfigureFacility(Player.OwnerId, facilityId, policy));
-            Observe(world.SetFacilityEnabled(Player.OwnerId, facilityId, enabled));
-            LastStatus = "Industry policy applied. Local purchases and sales run on whole days; inputs and outputs remain private.";
+            Observe(world.ConfigureProduction(Player.OwnerId, facilityId, enabled, operatingRate, priority, expectedSnapshot));
+            LastStatus = "Production settings applied. Warehouse trading is configured separately; no day advanced.";
+        }
+
+        public void ConfigureWarehouse(string portId, WarehousePolicy policy, RegionalWorldSnapshot expectedSnapshot = null)
+        {
+            Observe(world.ConfigureWarehouse(Player.OwnerId, portId, policy, expectedSnapshot));
+            LastStatus = "Warehouse rules applied. Automatic buying and selling use future daily phases; no goods purchased now.";
         }
 
         public RegionalResult Transfer(string facilityId, TransferDirection direction, string goodId, int quantity,
@@ -506,6 +512,7 @@ namespace SaltAndLedger.UnityHost
             {
                 case ScheduledProductionOutcome.NotDue: return "scheduled; not due yet";
                 case ScheduledProductionOutcome.Disabled: return "production disabled";
+                case ScheduledProductionOutcome.RateLimited: return "scheduled opportunity skipped by operating rate";
                 case ScheduledProductionOutcome.Produced: return "last batch completed";
                 case ScheduledProductionOutcome.InputShortage: return "waiting for inputs";
                 case ScheduledProductionOutcome.OutputLimit: return "waiting for output stock space";

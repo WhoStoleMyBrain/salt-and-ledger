@@ -134,6 +134,7 @@
                             <ui:Label name="harborProductionLabel" class="help" />
                         </ui:Foldout>
                         <ui:Button name="harborIndustryButton" text="Build / manage local industries" />
+                        <ui:Button name="harborWarehouseButton" text="Warehouse automation" />
                         <ui:Button name="harborRoutePlannerButton" text="Selected ship / Route planner" class="hidden" />
                     </ui:VisualElement>
                     <ui:VisualElement class="trade-order">
@@ -198,6 +199,12 @@
                     </ui:VisualElement>
                     <ui:Button name="closeIndustryButton" text="Close  ×" />
                 </ui:VisualElement>
+                <ui:VisualElement class="row industry-tabs">
+                    <ui:Button name="industryFactoriesTab" text="Factories" />
+                    <ui:Button name="industryWarehouseTab" text="Warehouse" />
+                    <ui:Button name="industryHarborButton" text="Harbor · trade &amp; cargo" />
+                </ui:VisualElement>
+                <ui:VisualElement name="industryFactoriesPane" class="industry-pane">
                 <ui:VisualElement class="construction-bar">
                     <ui:DropdownField name="blueprintDropdown" label="Invest in" />
                     <ui:Label name="constructionLabel" class="construction-summary" />
@@ -210,35 +217,37 @@
                     </ui:ScrollView>
                 </ui:Foldout>
                 <ui:DropdownField name="facilityDropdown" label="Your facility" />
-                <ui:Button name="industryHarborButton" text="Harbor · trade &amp; cargo" />
                 <ui:Label name="noFacilityLabel" text="Choose an eligible facility above to open a company warehouse." class="summary" />
                 <ui:VisualElement name="facilityBody" class="industry-body hidden">
                     <ui:ScrollView name="industryPolicyScroll" mode="Vertical" class="industry-policy">
-                        <ui:Label name="facilityStateLabel" class="industry-state industry-summary" />
-                        <ui:Label name="facilityScheduleLabel" class="help" />
-                        <ui:Label name="industryAppliedPolicyLabel" class="help" />
-                        <ui:Button name="recommendIndustryPresetButton" text="Prepare recommended input draft" />
+                        <ui:VisualElement class="factory-primary-controls">
+                            <ui:Toggle name="facilityEnabled" label="Enabled" />
+                            <ui:TextField name="facilityOperatingRate" label="Rate %" value="100" tooltip="Complete scheduled batches only. Lower rates skip opportunities, without partial materials or wages. 0% pauses production." />
+                            <ui:DropdownField name="facilityPriority" label="Priority" tooltip="High runs before Normal, then Low. Equal priority uses stable facility ID order; all draw from the shared warehouse." />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="row industry-rate-presets">
+                            <ui:Button name="facilityRate25" text="25%" />
+                            <ui:Button name="facilityRate50" text="50%" />
+                            <ui:Button name="facilityRate75" text="75%" />
+                            <ui:Button name="facilityRate100" text="100%" />
+                            <ui:Button name="applyIndustryPolicy" text="Apply" class="primary" tooltip="Apply Enabled, Operating rate and Priority together. No production or day advance occurs now." />
+                        </ui:VisualElement>
                         <ui:Label name="industryPolicyDraftLabel" class="industry-state" />
-                        <ui:Foldout name="industryDraftFoldout" text="Review proposed purchases and sales" value="false">
-                            <ui:Label name="industryPolicyPreviewLabel" class="help policy-preview" />
-                        </ui:Foldout>
-                        <ui:Button name="applyIndustryPolicy" text="Apply operating policy" class="primary" />
-                        <ui:Foldout name="industryAdvancedFoldout" text="Inputs, shipping, limits and accounting" value="false">
+                        <ui:Label name="facilityStateLabel" class="industry-state industry-summary" />
+                        <ui:Label name="facilityInputsSummary" class="help" />
+                        <ui:Label name="facilityScheduleLabel" class="help" />
+                        <ui:Button name="factoryWarehouseButton" text="Warehouse buying / selling" />
+                        <ui:Foldout name="industryAdvancedFoldout" text="Inputs, shipping and accounting" value="false">
+                        <ui:Label name="industryAppliedPolicyLabel" class="help" />
+                        <ui:Label name="industryPolicyPreviewLabel" class="help policy-preview" />
+                        <ui:Label name="facilityFlowLabel" class="help" tooltip="Rate-adjusted scheduled potential over the next 12 days. Full batches require real inputs, payroll and storage; this is not guaranteed future stock." />
+                        <ui:Label name="facilityScheduleDetail" class="help" />
                         <ui:Foldout name="industryShippingFoldout" text="Physical shipping connection" value="false">
                             <ui:Label name="industryShippingLabel" class="help" />
                             <ui:Button name="industryShippingButton" text="Route planner" />
                         </ui:Foldout>
                         <ui:Foldout name="industryInputsFoldout" text="Input availability and exact quotes" value="false">
                             <ui:Label name="facilityInputStatusLabel" class="help" />
-                        </ui:Foldout>
-                        <ui:Foldout name="industryDetailsFoldout" text="Edit detailed operating limits" value="false">
-                            <ui:Toggle name="facilityEnabled" label="Operate facility" />
-                            <ui:Toggle name="procurementEnabled" label="Buy local inputs automatically" />
-                            <ui:VisualElement name="inputPolicyRows" />
-                            <ui:TextField name="industryCashReserve" label="Retain cash" value="100" />
-                            <ui:Toggle name="salesEnabled" label="Sell surplus output automatically" />
-                            <ui:VisualElement name="outputPolicyRows" />
-                            <ui:Label text="These are draft rules. Review the preview above, then Apply. Each configured good has at most one automatic local transaction per daily phase." class="help" />
                         </ui:Foldout>
                         <ui:Foldout name="industryFinancesFoldout" text="Recipe and actual finances" value="false">
                             <ui:Label name="facilityRecipeLabel" class="summary" />
@@ -281,6 +290,24 @@
                             <ui:VisualElement name="storageRows" />
                         </ui:Foldout>
                     </ui:ScrollView>
+                </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="industryWarehousePane" class="industry-pane hidden">
+                    <ui:Label name="warehouseAutomationSummary" class="summary" />
+                    <ui:Label name="warehouseAutomationAccounting" class="help" />
+                    <ui:VisualElement class="row warehouse-toolbar">
+                        <ui:Button name="warehouseBuyTab" text="Buy · Market → Warehouse" />
+                        <ui:Button name="warehouseSellTab" text="Sell · Warehouse → Market" />
+                        <ui:TextField name="warehouseCashReserve" label="Keep company cash" value="0" />
+                        <ui:Button name="reloadWarehousePolicy" text="Reload applied rules" tooltip="Discard edits in both Buy and Sell tabs and reload the town's applied warehouse policy." />
+                    </ui:VisualElement>
+                    <ui:Label text="Next 12d · rate-adjusted production / inputs · conditional on successful batches" class="help" tooltip="Shared private stock only. Trades and shipping are excluded. Installed capability and current blockers appear in each row's details." />
+                    <ui:ScrollView name="warehouseAutomationScroll" mode="Vertical" class="warehouse-automation-scroll">
+                        <ui:VisualElement name="warehouseBuyRows" />
+                        <ui:VisualElement name="warehouseSellRows" class="hidden" />
+                    </ui:ScrollView>
+                    <ui:Label name="warehousePolicyDraftLabel" class="industry-state" />
+                    <ui:Button name="applyWarehousePolicy" text="Apply warehouse rules" class="primary" />
                 </ui:VisualElement>
                 <ui:Label name="industryStatusLabel" class="modal-status" />
             </ui:VisualElement>

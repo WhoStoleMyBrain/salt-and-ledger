@@ -113,7 +113,7 @@ namespace SaltAndLedger.UnityHost
                 var text = Session.Content.GetBuilding(signal.BuildingId).Name + " · " + state +
                     "\n" + SignedQuantity(production.OutputPerBatch) + " output / " + SignedQuantity(-production.InputPerBatch) +
                     " input per batch · every " + production.IntervalDays + "d · next eligible D" + signal.NextEligibleDay +
-                    "\n" + production.Opportunities + " possible batches · " + SignedQuantity(production.OutputQuantity) +
+                    "\n" + signal.OperatingRate + "% · " + signal.Priority + " priority · " + production.Opportunities + " rate-admitted batches · " + SignedQuantity(production.OutputQuantity) +
                     " / " + SignedQuantity(-production.InputQuantity) + " in window · wages " + Money(signal.WagePerBatch) +
                     " · payer cash " + Money(signal.EmployerCash);
                 foreach (var input in signal.Inputs)

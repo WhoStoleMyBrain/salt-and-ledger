@@ -23,6 +23,7 @@ namespace SaltAndLedger.UnityHost
             Click("harborMaxUnload", () => MaximumHarborTransfer(TransferDirection.ShipToWarehouse));
             Click("harborMaxLoad", () => MaximumHarborTransfer(TransferDirection.WarehouseToShip));
             Click("harborIndustryButton", () => OpenIndustryFromHarbor());
+            Click("harborWarehouseButton", () => OpenIndustryFromHarbor(true));
             Click("harborDisableRoute", () => Run(() => Session.SetAutomationEnabled(false)));
             Click("harborRoutePlannerButton", () => OpenRoutePlanner(tradeShipId));
             Click("industryHarborButton", () => { var port = Session.SelectedPortId; CloseModals(); OpenTrade(port); SetIndex("harborTradeTarget", 1); RefreshHarbor(); });
@@ -40,9 +41,12 @@ namespace SaltAndLedger.UnityHost
             if (!harborFacilityIds.Contains(harborFacilityId)) harborFacilityId = harborFacilityIds.FirstOrDefault();
         }
 
-        private void OpenIndustryFromHarbor()
+        private void OpenIndustryFromHarbor(bool warehouse = false)
         {
-            selectedFacilityId = harborFacilityId; loadedPolicyFacilityId = null;
+            if (selectedFacilityId != harborFacilityId) loadedPolicyFacilityId = null;
+            selectedFacilityId = harborFacilityId;
+            SelectIndustryPane(warehouse);
+            if (!warehouse) Element<ScrollView>("industryPolicyScroll").scrollOffset = UnityEngine.Vector2.zero;
             ShowModal("industryBackdrop", "closeIndustryButton"); RefreshIndustry();
         }
 

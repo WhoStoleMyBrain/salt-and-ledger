@@ -162,6 +162,7 @@ namespace SaltAndLedger.UnityHost
                 {
                     if (!production.IsPrivate) { OpenTrade(port.Id); return; }
                     selectedFacilityId = id; loadedPolicyFacilityId = null;
+                    SelectIndustryPane(false);
                     Session.Pause(); ShowModal("industryBackdrop", "closeIndustryButton"); RefreshIndustry();
                 });
             }

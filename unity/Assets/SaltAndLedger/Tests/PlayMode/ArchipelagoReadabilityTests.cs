@@ -152,17 +152,27 @@ namespace SaltAndLedger.UnityHost.Tests
                 Assert.That(root.panel.Pick(town.worldBound.center), Is.Not.SameAs(town), "Trade backdrop blocks the town marker.");
                 Cancel();
                 Click("openIndustryButton");
+                yield return null; yield return null;
+                if (scale == ArchipelagoUiScale.Default || scale == ArchipelagoUiScale.Large)
+                    foreach (var name in new[] { "facilityEnabled", "facilityOperatingRate", "facilityPriority", "applyIndustryPolicy", "facilityInputsSummary", "facilityScheduleLabel" })
+                        AssertVisible(name, "Factory settings, current inputs and full batch wage should fit before scrolling.");
                 yield return Reachable("closeIndustryButton");
                 yield return Reachable("constructButton");
                 yield return Reachable("facilityDropdown");
-                yield return Reachable("recommendIndustryPresetButton");
+                yield return Reachable("facilityEnabled");
+                yield return Reachable("facilityOperatingRate");
+                yield return Reachable("facilityPriority");
                 yield return Reachable("applyIndustryPolicy");
                 var industryBefore = controller.Session.Snapshot;
                 root.Q<Foldout>("industryAdvancedFoldout").value = true;
-                root.Q<Foldout>("industryDetailsFoldout").value = true;
-                yield return Reachable("procurementEnabled");
-                yield return Reachable("industryCashReserve");
-                root.Q<Foldout>("industryDetailsFoldout").value = false;
+                Click("industryWarehouseTab");
+                yield return Reachable("warehouseCashReserve");
+                yield return Reachable("warehouseBuyEnabled_grain");
+                yield return Reachable("warehouseBuyTarget_silver");
+                Click("warehouseSellTab");
+                yield return Reachable("warehouseSellTarget_silver");
+                yield return Reachable("applyWarehousePolicy");
+                Click("industryFactoriesTab");
                 root.Q<Foldout>("industryShippingFoldout").value = true;
                 yield return Reachable("industryShippingButton");
                 root.Q<Foldout>("industryShippingFoldout").value = false;

@@ -62,6 +62,7 @@ namespace SaltAndLedger.UnityHost.Tests
         [TestCase(2)]
         [TestCase(3)]
         [TestCase(4)]
+        [TestCase(5)]
         public void UnsupportedSchemaPreservesTheActiveSession(int schema)
         {
             var session = Session();

@@ -147,6 +147,8 @@
 .sl-theme .storage-header { background-color: var(--sl-paper-300); }
 .sl-theme .industry-modal .transfer-note { color: var(--sl-green-700); }
 .sl-theme .industry-modal .policy-rule-name { color: var(--sl-gold-ink); }
+.sl-theme .industry-modal .warehouse-rule { background-color: var(--sl-paper-100); border-color: var(--sl-border-300); }
+.sl-theme .industry-tabs .unity-button.selected-tab, .sl-theme .warehouse-toolbar .unity-button.selected-tab { background-color: var(--sl-green-700); border-color: var(--sl-gold-500); border-bottom-width: 3px; color: var(--sl-paper-100); }
 .sl-paper .commission-selected, .sl-theme .run-card.commission-selected { background-color: var(--sl-paper-selection); border-color: var(--sl-green-700); }
 .sl-paper .commission-progress-card, .sl-paper .run-card { background-color: var(--sl-paper-100); }
 .sl-paper .policy-card, .sl-paper .preview, .sl-paper .city-funds { background-color: var(--sl-paper-100); color: var(--sl-ink-900); }

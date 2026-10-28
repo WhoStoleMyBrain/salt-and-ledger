@@ -14,17 +14,22 @@ namespace SaltAndLedger.UnityHost
         private string selectedFacilityId;
         private string loadedPolicyFacilityId;
         private RegionalWorldSnapshot warehouseSnapshot;
+        private RegionalWorldSnapshot productionDraftSnapshot;
 
         private void BindIndustry()
         {
             Click("openIndustryButton", () => Run(() =>
             {
                 Session.Pause();
-                selectedFacilityId = null;
-                loadedPolicyFacilityId = null;
+                SelectIndustryPane(false);
+                Element<ScrollView>("industryPolicyScroll").scrollOffset = UnityEngine.Vector2.zero;
                 ShowModal("industryBackdrop", "closeIndustryButton");
             }));
             Click("closeIndustryButton", CloseModals);
+            Click("industryFactoriesTab", () => SelectIndustryPane(false));
+            Click("industryWarehouseTab", () => SelectIndustryPane(true));
+            Click("factoryWarehouseButton", () => SelectIndustryPane(true));
+            SetChoices("facilityPriority", new List<string> { "Low", "Normal", "High" });
             SetChoices("storageGoodDropdown", goodIds.Select(id => Session.Content.GetGood(id).Name).ToList());
             Element<DropdownField>("blueprintDropdown").RegisterValueChangedCallback(_ => RefreshConstruction());
             Element<DropdownField>("facilityDropdown").RegisterValueChangedCallback(_ =>
@@ -32,6 +37,7 @@ namespace SaltAndLedger.UnityHost
                 var index = Element<DropdownField>("facilityDropdown").index;
                 selectedFacilityId = index >= 0 && index < facilityIds.Count ? facilityIds[index] : null;
                 loadedPolicyFacilityId = null;
+                Element<ScrollView>("industryPolicyScroll").scrollOffset = UnityEngine.Vector2.zero;
                 RefreshIndustry();
             });
             Element<DropdownField>("storageGoodDropdown").RegisterValueChangedCallback(_ => RefreshStorage());
@@ -45,24 +51,43 @@ namespace SaltAndLedger.UnityHost
                 Session.Construct(id);
                 selectedFacilityId = Session.Snapshot.PrivateFacilities.Keys.FirstOrDefault(key => !before.Contains(key)) ?? selectedFacilityId;
                 loadedPolicyFacilityId = null;
+                Element<ScrollView>("industryPolicyScroll").scrollOffset = UnityEngine.Vector2.zero;
             }));
             Click("applyIndustryPolicy", ApplyIndustryPolicy);
-            Click("recommendIndustryPresetButton", () =>
-            {
-                if (selectedFacilityId == null) return;
-                PrepareIndustryDraft(Session.Snapshot.PrivateFacilities[selectedFacilityId], RecommendedIndustryPolicy(
-                    Session.Snapshot.PrivateFacilities[selectedFacilityId].Blueprint.Id), true,
-                    "Recommended draft only · Apply to authorize future input buying. Output stays in the warehouse.");
-                Element<Foldout>("industryDraftFoldout").value = true;
-            });
             Click("industryShippingButton", () => OpenRoutePlanner(Session.Player.Id));
-            foreach (var name in new[] { "facilityEnabled", "procurementEnabled", "salesEnabled" })
-                Element<Toggle>(name).RegisterValueChangedCallback(_ => IndustryDraftChanged());
-            Element<TextField>("industryCashReserve").RegisterValueChangedCallback(_ => IndustryDraftChanged());
+            Element<Toggle>("facilityEnabled").RegisterValueChangedCallback(_ => IndustryDraftChanged());
+            Element<TextField>("facilityOperatingRate").RegisterValueChangedCallback(_ => IndustryDraftChanged());
+            Element<DropdownField>("facilityPriority").RegisterValueChangedCallback(_ => IndustryDraftChanged());
+            foreach (var rate in new[] { 25, 50, 75, 100 })
+            {
+                var value = rate;
+                Click("facilityRate" + rate, () => Element<TextField>("facilityOperatingRate").value = Number(value));
+            }
+            BindWarehouseAutomation();
             Click("shipToWarehouse", () => TransferStorage(TransferDirection.ShipToWarehouse));
             Click("warehouseToShip", () => TransferStorage(TransferDirection.WarehouseToShip));
             Click("warehouseBuy", () => TradeStorage(TradeDirection.Buy));
             Click("warehouseSell", () => TradeStorage(TradeDirection.Sell));
+        }
+
+        private void SelectIndustryPane(bool warehouse)
+        {
+            Element<VisualElement>("industryFactoriesPane").EnableInClassList("hidden", warehouse);
+            Element<VisualElement>("industryWarehousePane").EnableInClassList("hidden", !warehouse);
+            Element<Button>("industryFactoriesTab").EnableInClassList("selected-tab", !warehouse);
+            Element<Button>("industryWarehouseTab").EnableInClassList("selected-tab", warehouse);
+            if (IndustryIsOpen) RefreshIndustry();
+        }
+
+        private void ClearIndustryDrafts()
+        {
+            selectedFacilityId = null;
+            loadedPolicyFacilityId = null;
+            loadedWarehousePortId = null;
+            illustratedRecipe = null;
+            Element<ScrollView>("industryPolicyScroll").scrollOffset = UnityEngine.Vector2.zero;
+            SelectWarehouseDirection(false);
+            SelectIndustryPane(false);
         }
 
         private void RefreshIndustry()
@@ -94,7 +119,8 @@ namespace SaltAndLedger.UnityHost
             field.SetEnabled(owned.Length > 0);
             Element<VisualElement>("facilityBody").EnableInClassList("hidden", owned.Length == 0);
             Element<Label>("noFacilityLabel").EnableInClassList("hidden", owned.Length > 0);
-            if (selectedFacilityId == null) return;
+            RefreshWarehouseAutomation();
+            if (selectedFacilityId == null) { RefreshModalStatus(); return; }
             var facility = snapshot.PrivateFacilities[selectedFacilityId];
             var recipe = Session.Content.GetRecipe(facility.Blueprint.RecipeId);
             RefreshIndustryRecipeSymbols(facility);
@@ -105,26 +131,40 @@ namespace SaltAndLedger.UnityHost
             SetText("facilityStatsLabel", "Age " + (snapshot.Day - facility.CreatedDay) + " days · " + facility.BatchesProduced + " batches\n" +
                 "Capital paid " + Money(facility.IsStarterGrant ? 0 : facility.ConstructionCost) +
                 (facility.IsStarterGrant ? " · starter facility grant" : " · construction paid once at order") +
-                "\nMarket purchases addressed through this facility " + Money(facility.ProcurementCost) +
                 (facility.Blueprint.WagePerBatch > 0 ? " · paid wages " + Money(facility.WagesPaid) + " (separate operating expense)" : "") +
-                " · actual local sale revenue " + Money(facility.SalesRevenue) + "\nConsumed: " + QuantityTotals(facility.ConsumedQuantities) +
+                "\nConsumed: " + QuantityTotals(facility.ConsumedQuantities) +
                 "\nProduced: " + QuantityTotals(facility.ProducedQuantities) +
                 "\n" + (snapshot.UsesPooledCompanyStorage ? "Shared town stock basis (once across all facilities) " : "Held material basis ") + Money(snapshot.Accounting.Stores[snapshot.GetFacilityStorage(facility.Id).Id].TotalCostBasis) +
-                ". Transferred inputs retain their original paid basis. Transaction totals describe orders addressed through this facility, not this recipe's material cost or profit. " +
+                ". Transferred inputs retain their original paid basis. Warehouse purchases and sales appear on the Warehouse tab. " +
                 "Shared inputs can serve other local facilities. " +
                 "Company material margin and wages are separate in the Ledger.");
-            SetText("facilityStateLabel", IndustryStatus(facility));
-            Element<Label>("facilityStateLabel").tooltip = "Current stock and funds before next-day procurement and other actors. Readiness does not reserve inputs, payroll or storage for the next attempt.";
-            SetText("facilityScheduleLabel", FacilitySchedule(facility));
+            var opportunity = EconomicSignals.PrivateProduction(snapshot, Session.Content, facility.Id);
+            SetText("facilityStateLabel", !facility.IsOperational ? "Under construction · " + facility.ConstructionDaysRemaining + " days remaining" :
+                "Now: " + (opportunity.ReadyFromCurrentState ? "Ready with current inputs, cash and space" :
+                    ArchipelagoLabSession.FacilityStatus(opportunity.CurrentReadiness)));
+            Element<Label>("facilityStateLabel").tooltip = IndustryStatus(facility) +
+                "\nCurrent stock and funds only; no reservation against intervening actors.";
+            SetText("facilityInputsSummary", opportunity.Inputs.Count == 0 ? "Extraction · no material inputs" :
+                "Stock / batch: " + string.Join(" · ", opportunity.Inputs.Select(input => Session.Content.GetGood(input.GoodId).Name +
+                    " " + Q(input.CurrentStock) + "/" + Q(input.Quantity))));
+            SetText("facilityScheduleLabel", (!facility.IsOperational ? "First batch D" + facility.FirstProductionDay :
+                opportunity.NextRateAdmittedDay.HasValue ? "Next eligible D" + opportunity.NextRateAdmittedDay.Value : "Production paused") +
+                " · full wage " + Money(facility.Blueprint.WagePerBatch) + " / batch");
+            Element<Label>("facilityScheduleLabel").tooltip = FacilitySchedule(facility);
+            SetText("facilityScheduleDetail", FacilitySchedule(facility));
+            SetText("facilityFlowLabel", "Next 12d potential: " + string.Join(" · ", recipe.Outputs.Select(output =>
+            {
+                var flow = EconomicSignals.CommodityFlow(snapshot, Session.Content, portId, output.GoodId, facility.OwnerId);
+                var own = flow.Production.First(item => item.Opportunity.FacilityId == facility.Id);
+                return SignedQuantity(own.IsActive ? own.OutputQuantity : 0) + " " + Session.Content.GetGood(output.GoodId).Name;
+            })) + " · requires inputs / wages / space");
             SetText("facilityInputStatusLabel", InputAvailability(facility));
-            SetText("industryAppliedPolicyLabel", "APPLIED NOW\n" + (facility.Enabled ? "Production enabled" : "Production disabled") +
-                " · input buying " + (facility.Policy.ProcurementEnabled ? "on" : "off") +
-                " · local output sales " + (facility.Policy.SalesEnabled ? "on" : "off") +
-                "\nInput: " + WaitText(facility.ProcurementWaitReason) + "; output: " + WaitText(facility.SalesWaitReason));
+            SetText("industryAppliedPolicyLabel", "APPLIED · " + (facility.Enabled ? "Enabled" : "Disabled") +
+                " · " + facility.OperatingRate + "% · " + facility.Priority + " priority");
             SetText("industryShippingLabel", FacilityShipping(facility));
             if (loadedPolicyFacilityId != selectedFacilityId) LoadIndustryPolicy(facility);
-            Element<Button>("applyIndustryPolicy").SetEnabled(!Session.IsChallengeEnded);
-            Element<Button>("recommendIndustryPresetButton").SetEnabled(!Session.IsChallengeEnded);
+            productionDraftSnapshot = snapshot;
+            RefreshIndustryDraftPreview();
             RefreshStorage();
             RefreshModalStatus();
         }
@@ -157,7 +197,7 @@ namespace SaltAndLedger.UnityHost
                 " · first batch eligible day " + schedule.FirstProductionDay +
                 (Session.Player.Cash < blueprint.ConstructionCost ? " · insufficient company cash" : ""));
             SetText("constructionTimingLabel", (delayed
-                ? "Construction: " + schedule.DelayDays + " day advances. Automatic operations stay off through completion day.\n"
+                ? "Construction: " + schedule.DelayDays + " day advances. Factory production stays off through completion day.\n"
                 : "Operational immediately; ordering spends no day.\n") +
                 "First opportunity: " + blueprint.IntervalDays + " days after completion, if enabled and supplied.\n" +
                 "Pay the town once; warehouse starts empty. Manual trades/transfers remain available under normal rules. Starter factories keep their schedule.");
@@ -170,23 +210,24 @@ namespace SaltAndLedger.UnityHost
         {
             if (!facility.IsOperational) return "UNDER CONSTRUCTION · " + facility.ConstructionDaysRemaining + " days remaining";
             if (!facility.Enabled) return "DISABLED · Enable production, then Apply.";
+            if (facility.OperatingRate == 0) return "PAUSED · 0% operating rate. Warehouse automation remains independent.";
             var predicted = Session.Snapshot.PreviewFacilityProduction(facility.Id, Session.Content);
             return "CURRENT STOCK/FUNDS: " + (predicted == ScheduledProductionOutcome.Produced ? "Ready with current stocks/funds" : ProductionRemedy(predicted)) +
-                "\nLast attempt: " + ArchipelagoLabSession.FacilityStatus(facility.LastOutcome) +
-                (facility.Policy.SalesEnabled && facility.SalesWaitReason != IndustryWaitReason.None &&
-                    facility.SalesWaitReason != IndustryWaitReason.ReserveRetained
-                    ? "\nLast local sale wait: " + WaitText(facility.SalesWaitReason) : "");
+                "\nLast attempt: " + ArchipelagoLabSession.FacilityStatus(facility.LastOutcome);
         }
 
         private string FacilitySchedule(PrivateFacilitySnapshot facility)
         {
             var schedule = !facility.IsOperational
                 ? "Ordered day " + facility.OrderedDay + " · completion day " + facility.ConstructionCompletionDay +
-                    "\nFirst eligible batch: day " + facility.FirstProductionDay + ". Automatic operations wait through completion."
+                    "\nFirst eligible batch: day " + facility.FirstProductionDay + ". Factory production waits through completion."
                 : (facility.IsStarterGrant ? "Already-built starter grant; no ascension construction delay.\n" : "Operational since day " + facility.ConstructionCompletionDay + ".\n") +
                     (facility.NextProductionDay <= Session.Snapshot.Day ? "Due since day " + facility.NextProductionDay + "; next day advance retries." :
                         "Next eligible batch: day " + facility.NextProductionDay + ".");
-            return schedule + (facility.Blueprint.WagePerBatch == 0 ? "" : "\nPayroll " + Money(facility.Blueprint.WagePerBatch) + " per completed batch.");
+            var opportunity = EconomicSignals.PrivateProduction(Session.Snapshot, Session.Content, facility.Id);
+            return schedule + "\nRate-admitted opportunity: " + (opportunity.NextRateAdmittedDay.HasValue ? "day " + opportunity.NextRateAdmittedDay.Value : "paused") +
+                " · " + facility.OperatingRate + "% · complete batches only" +
+                (facility.Blueprint.WagePerBatch == 0 ? "" : " · payroll " + Money(facility.Blueprint.WagePerBatch) + " / batch");
         }
 
         private string InputAvailability(PrivateFacilitySnapshot facility)
@@ -208,7 +249,9 @@ namespace SaltAndLedger.UnityHost
                 {
                     var preview = Session.Snapshot.PreviewWarehouseTrade(facility.OwnerId, facility.Id,
                         new TradeCommand(TradeDirection.Buy, input.GoodId, missing));
-                    return text + "\nManual missing-input order: " + (preview.Outcome == TradeOutcome.Traded
+                    var automatic = Session.Snapshot.PreviewWarehouseAutomation(facility.OwnerId, facility.PortId, TradeDirection.Buy, input.GoodId);
+                    return text + "\nWarehouse buy rule: " + WarehousePreviewText(automatic) +
+                        "\nManual missing-input order: " + (preview.Outcome == TradeOutcome.Traded
                         ? "exact " + Money(preview.TotalAmount) + " for " + Q(missing) + "." : WarehouseTradeOutcome(preview.Outcome) + ".");
                 }
                 catch (OverflowException) { return text + "\nMissing-input order exceeds financial bounds."; }
@@ -227,128 +270,63 @@ namespace SaltAndLedger.UnityHost
                 " · " + Session.CurrentDecision.Reason + "\n" + string.Join(" → ", ship.Itinerary.Stops.Select(item => PortName(item.PortId)));
         }
 
-        private IndustryPolicy RecommendedIndustryPolicy(string blueprintId)
-        {
-            if (Session.Snapshot.Economy != null)
-            {
-                if (blueprintId == WorldIds.BakeryBlueprint) return ExpandingEconomyScenario.BakeryPolicy();
-                if (blueprintId == ExpandingEconomyGeneration.MillBlueprint)
-                {
-                    var mill = ExpandingEconomyScenario.MillPolicy(false);
-                    return new IndustryPolicy(true, false, mill.CashReserve, mill.Inputs, mill.Outputs);
-                }
-                var blueprint = Session.Snapshot.IndustryBlueprints[blueprintId];
-                var recipe = Session.Content.GetRecipe(blueprint.RecipeId);
-                return new IndustryPolicy(recipe.Inputs.Count > 0, false, 80L * Session.Snapshot.MoneyScale,
-                    recipe.Inputs.Select(input => new InputStockRule(input.GoodId,
-                        checked(input.Quantity * 4 * Session.Snapshot.QuantityScale), 50)),
-                    recipe.Outputs.Select(output => new OutputSaleRule(output.GoodId, 0, 1)));
-            }
-            throw new InvalidOperationException("Production presets require the current regional economy.");
-        }
-
         private void LoadIndustryPolicy(PrivateFacilitySnapshot facility)
         {
-            var policy = facility.Policy;
-            // The shared scenario supplies an editable starting proposal. Only Apply commits it.
-            var unapplied = policy.Inputs.Count == 0 && policy.Outputs.Count == 0;
-            if (unapplied) policy = RecommendedIndustryPolicy(facility.Blueprint.Id);
-            PrepareIndustryDraft(facility, policy, facility.Enabled, unapplied
-                ? "Suggested draft only · Apply to authorize input buying. Output stays in the warehouse."
-                : "Applied rules · edits take effect only on Apply.");
-        }
-
-        private void PrepareIndustryDraft(PrivateFacilitySnapshot facility, IndustryPolicy policy, bool enabled, string message)
-        {
-            SetText("industryPolicyDraftLabel", message);
-            Element<Toggle>("facilityEnabled").SetValueWithoutNotify(enabled);
-            Element<Toggle>("procurementEnabled").SetValueWithoutNotify(policy.ProcurementEnabled);
-            Element<Toggle>("salesEnabled").SetValueWithoutNotify(policy.SalesEnabled);
-            Element<TextField>("industryCashReserve").SetValueWithoutNotify(Money(policy.CashReserve));
-            var recipe = Session.Content.GetRecipe(facility.Blueprint.RecipeId);
-            var inputs = Element<VisualElement>("inputPolicyRows"); inputs.Clear();
-            foreach (var input in recipe.Inputs)
-            {
-                var rule = policy.Inputs.FirstOrDefault(r => r.GoodId == input.GoodId);
-                inputs.Add(PolicyRule(input.GoodId, "input", "Target stock", rule?.TargetQuantity ?? checked(input.Quantity * Session.Snapshot.QuantityScale),
-                    "Buy ≤ per unit", rule?.MaxBuyPrice ?? 1));
-            }
-            var outputs = Element<VisualElement>("outputPolicyRows"); outputs.Clear();
-            foreach (var output in recipe.Outputs)
-            {
-                var rule = policy.Outputs.FirstOrDefault(r => r.GoodId == output.GoodId);
-                outputs.Add(PolicyRule(output.GoodId, "output", "Retain stock", rule?.ReserveQuantity ?? 0,
-                    "Sell ≥ per unit", rule?.MinSellPrice ?? 1));
-            }
+            Element<Toggle>("facilityEnabled").SetValueWithoutNotify(facility.Enabled);
+            Element<TextField>("facilityOperatingRate").SetValueWithoutNotify(Number(facility.OperatingRate));
+            Element<DropdownField>("facilityPriority").SetValueWithoutNotify(facility.Priority.ToString());
             loadedPolicyFacilityId = facility.Id;
-            RefreshIndustryDraftPreview();
-        }
-
-        private VisualElement PolicyRule(string goodId, string prefix, string quantityLabel, int quantity, string priceLabel, long price)
-        {
-            var container = new VisualElement(); container.AddToClassList("policy-rule");
-            var label = new Label(Session.Content.GetGood(goodId).Name); label.AddToClassList("policy-rule-name"); container.Add(label);
-            var quantityField = new TextField(quantityLabel) { name = prefix + "Target_" + goodId, value = Q(quantity) };
-            var priceField = new TextField(priceLabel) { name = prefix + "Price_" + goodId, value = Number(price) };
-            quantityField.RegisterValueChangedCallback(_ => IndustryDraftChanged());
-            priceField.RegisterValueChangedCallback(_ => IndustryDraftChanged());
-            container.Add(quantityField);
-            container.Add(priceField);
-            return container;
+            SetText("industryPolicyDraftLabel", "");
         }
 
         private void IndustryDraftChanged()
         {
-            SetText("industryPolicyDraftLabel", "Unapplied draft · review, then Apply");
+            SetText("industryPolicyDraftLabel", "Unapplied changes");
             RefreshIndustryDraftPreview();
         }
 
-        private IndustryPolicy ReadIndustryDraft()
+        private int ReadOperatingRate()
         {
-            if (selectedFacilityId == null) throw new InvalidOperationException("Select a private facility.");
-            var facility = Session.Snapshot.PrivateFacilities[selectedFacilityId];
-            var recipe = Session.Content.GetRecipe(facility.Blueprint.RecipeId);
-            var inputs = recipe.Inputs.Select(input => new InputStockRule(input.GoodId,
-                ReadIndustryQuantity("inputTarget_" + input.GoodId, "Input target", true), ReadLong("inputPrice_" + input.GoodId, "Buy limit", false))).ToArray();
-            var outputs = recipe.Outputs.Select(output => new OutputSaleRule(output.GoodId,
-                ReadIndustryQuantity("outputTarget_" + output.GoodId, "Output reserve", true), ReadLong("outputPrice_" + output.GoodId, "Sell floor", false))).ToArray();
-            return new IndustryPolicy(Element<Toggle>("procurementEnabled").value, Element<Toggle>("salesEnabled").value,
-                ReadIndustryMoney("industryCashReserve", "Cash reserve", true), inputs, outputs);
+            var rate = ReadInt("facilityOperatingRate", "Operating rate", true);
+            if (rate > 100) throw new ArgumentException("Operating rate must be between 0 and 100%.");
+            return rate;
         }
+
+        private ProductionPriority ReadProductionPriority() =>
+            (ProductionPriority)Enum.Parse(typeof(ProductionPriority), Element<DropdownField>("facilityPriority").value);
 
         private void RefreshIndustryDraftPreview()
         {
             if (selectedFacilityId == null) return;
+            var valid = false;
             try
             {
-                var draft = ReadIndustryDraft();
-                var lines = new List<string>
-                {
-                    "PROPOSED POLICY",
-                    Element<Toggle>("facilityEnabled").value ? "Production enabled; batches still require inputs and space." : "Production disabled.",
-                    "Retain company cash " + Money(draft.CashReserve) + "."
-                };
-                if (draft.ProcurementEnabled)
-                    lines.AddRange(draft.Inputs.Select(rule => "Buy " + Session.Content.GetGood(rule.GoodId).Name + " toward " + Q(rule.TargetQuantity) +
-                        " private units; worst marginal unit at most " + Number(rule.MaxBuyPrice) + "."));
-                else lines.Add("Automatic input purchases OFF.");
-                if (draft.SalesEnabled)
-                    lines.AddRange(draft.Outputs.Select(rule => "Sell " + Session.Content.GetGood(rule.GoodId).Name + " above " + Q(rule.ReserveQuantity) +
-                        " retained units; worst marginal unit at least " + Number(rule.MinSellPrice) + "."));
-                else lines.Add("Automatic local sales OFF · output stays in the company warehouse.");
-                lines.Add("Apply authorizes future daily operations; no immediate purchases or day advance.");
-                SetText("industryPolicyPreviewLabel", string.Join("\n", lines));
+                var rate = ReadOperatingRate();
+                var enabled = Element<Toggle>("facilityEnabled").value;
+                SetText("industryPolicyPreviewLabel", !enabled || rate == 0 ? "Production paused. Warehouse rules remain active." :
+                    rate + "% of scheduled opportunities; " + ReadProductionPriority() + " priority. Full inputs and wages per completed batch.");
+                valid = true;
             }
-            catch (ArgumentException exception) { SetText("industryPolicyPreviewLabel", "Incomplete draft: " + exception.Message); }
-            catch (OverflowException) { SetText("industryPolicyPreviewLabel", "Incomplete draft: a numeric value exceeds its allowed range."); }
+            catch (ArgumentException exception)
+            {
+                SetText("industryPolicyPreviewLabel", exception.Message);
+                SetText("industryPolicyDraftLabel", exception.Message);
+            }
+            catch (OverflowException)
+            {
+                SetText("industryPolicyPreviewLabel", "Operating rate exceeds its allowed range.");
+                SetText("industryPolicyDraftLabel", "Operating rate exceeds its allowed range.");
+            }
+            Element<Button>("applyIndustryPolicy").SetEnabled(valid && !Session.IsChallengeEnded);
         }
 
         private void ApplyIndustryPolicy()
         {
             Run(() =>
             {
-                Session.ConfigureFacility(selectedFacilityId, ReadIndustryDraft(), Element<Toggle>("facilityEnabled").value);
-                SetText("industryPolicyDraftLabel", "Policy applied · future days may spend within these limits. Nothing purchased now.");
+                Session.ConfigureProduction(selectedFacilityId, Element<Toggle>("facilityEnabled").value,
+                    ReadOperatingRate(), ReadProductionPriority(), productionDraftSnapshot);
+                SetText("industryPolicyDraftLabel", "Settings applied");
             });
         }
 
@@ -477,8 +455,8 @@ namespace SaltAndLedger.UnityHost
                 case IndustryWaitReason.CashReserve: return "cash reserved — earn funds or review the reserve";
                 case IndustryWaitReason.InsufficientCompanyFunds: return "company cash short — reduce purchases or earn funds";
                 case IndustryWaitReason.InsufficientMarketFunds: return "market cash short — use another funded customer";
-                case IndustryWaitReason.TargetSatisfied: return "input target met";
-                case IndustryWaitReason.ReserveRetained: return "output kept under reserve";
+                case IndustryWaitReason.TargetSatisfied: return "buy target met";
+                case IndustryWaitReason.ReserveRetained: return "retained stock protected";
                 case IndustryWaitReason.MarketInventoryFull: return "market full — ship to another town";
                 case IndustryWaitReason.CashAccountFull: return "cash account at supported bound";
                 default: return "ready";

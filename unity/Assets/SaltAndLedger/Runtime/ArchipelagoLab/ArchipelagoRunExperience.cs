@@ -132,7 +132,7 @@ namespace SaltAndLedger.UnityHost
             HasActiveRun = true;
             presentedResult = null;
             tradeShipId = Session.Player.Id;
-            selectedFacilityId = null;
+            ClearIndustryDrafts();
             status = null;
             statusIsError = false;
             Element<DropdownField>("speedDropdown").SetValueWithoutNotify("1×");

@@ -165,8 +165,8 @@ namespace SaltAndLedger.UnityHost
         private void OpenCommandIndustry()
         {
             Session.Pause();
-            selectedFacilityId = null;
-            loadedPolicyFacilityId = null;
+            SelectIndustryPane(false);
+            Element<ScrollView>("industryPolicyScroll").scrollOffset = UnityEngine.Vector2.zero;
             ShowModal("industryBackdrop", "closeIndustryButton");
             RefreshIndustry();
         }

@@ -126,7 +126,6 @@ namespace SaltAndLedger.UnityHost.Tests
             var originalSource = root.Q<Button>(sourceName);
             Click(sourceName);
             root.Q<Foldout>("industryAdvancedFoldout").value = true;
-            root.Q<Foldout>("industryDetailsFoldout").value = true;
             root.Q<Toggle>("facilityEnabled").value = !facility.Enabled;
             var before = controller.Session.Snapshot;
             Click("applyIndustryPolicy");
@@ -256,7 +255,7 @@ namespace SaltAndLedger.UnityHost.Tests
 
             var before = controller.Session.Snapshot;
             var saved = controller.Session.SaveText();
-            Assert.That(saved, Does.Contain("\"SchemaVersion\":5"));
+            Assert.That(saved, Does.Contain("\"SchemaVersion\":6"));
             var buy = before.PreviewWarehouseTrade(facility.OwnerId, facility.Id, new TradeCommand(TradeDirection.Buy, "grain", 10000));
             var sell = before.PreviewWarehouseTrade(facility.OwnerId, facility.Id, new TradeCommand(TradeDirection.Sell, "grain", 10000));
             Assert.That(buy.Outcome, Is.EqualTo(TradeOutcome.Traded));

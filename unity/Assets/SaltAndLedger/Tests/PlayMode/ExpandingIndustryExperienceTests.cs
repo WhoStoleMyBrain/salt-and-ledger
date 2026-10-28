@@ -47,17 +47,19 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(controller.Session.Snapshot.Day, Is.EqualTo(before.Day));
             Assert.That(root.Q<Button>("warehouseToShip").enabledInHierarchy, Is.False);
             Assert.That(root.Q<Label>("facilityInputStatusLabel").text, Does.Contain("warehouse 0.75/2").And.Contain("missing 1.25"));
-            Click("recommendIndustryPresetButton");
-            root.Q<TextField>("inputTarget_grain").value = "2.5";
-            root.Q<TextField>("industryCashReserve").value = "80.25";
+            Click("industryWarehouseTab");
+            root.Q<Toggle>("warehouseBuyEnabled_grain").value = true;
+            root.Q<TextField>("warehouseBuyTarget_grain").value = "2.5";
+            root.Q<TextField>("warehouseBuyPrice_grain").value = "24";
+            root.Q<TextField>("warehouseCashReserve").value = "80.25";
             var passive = controller.Session.Snapshot;
-            Assert.That(root.Q<Label>("industryPolicyPreviewLabel").text, Does.Contain("toward 2.5").And.Contain("cash 80.25"));
+            Assert.That(root.Q<Label>("warehouseBuyPreview_grain").text, Does.Contain("Now:"));
             Assert.That(controller.Session.Snapshot, Is.SameAs(passive));
-            Click("applyIndustryPolicy");
-            var applied = controller.Session.Snapshot.PrivateFacilities[stocked.Id].Policy;
-            Assert.That(applied.Inputs.Single().TargetQuantity, Is.EqualTo(25000));
+            Click("applyWarehousePolicy");
+            var applied = controller.Session.Snapshot.GetFacilityStorage(stocked.Id).Policy;
+            Assert.That(applied.Rules.Single(rule => rule.GoodId == "grain").BuyTarget, Is.EqualTo(25000));
             Assert.That(applied.CashReserve, Is.EqualTo(802500));
-            Assert.That(applied.Inputs.Single().MaxBuyPrice, Is.EqualTo(24));
+            Assert.That(applied.Rules.Single(rule => rule.GoodId == "grain").MaximumBuyPrice, Is.EqualTo(24));
             yield return null;
         }
 
@@ -100,11 +102,11 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("cityEconomyBackButton");
             Click("openIndustryButton");
             var facility = session.Snapshot.PrivateFacilities[RunScenario.StarterBakery];
-            var prediction = session.Snapshot.PreviewFacilityProduction(facility.Id, session.Content);
+            var prediction = EconomicSignals.PrivateProduction(session.Snapshot, session.Content, facility.Id).CurrentReadiness;
             var status = root.Q<Label>("facilityStateLabel").text;
-            Assert.That(status, Does.Contain("Last attempt:"));
+            Assert.That(root.Q<Label>("facilityStateLabel").tooltip, Does.Contain("Last attempt:"));
             Assert.That(status, Does.Contain(prediction == ScheduledProductionOutcome.Produced
-                ? "Ready with current stocks/funds" : ArchipelagoLabSession.FacilityStatus(prediction)));
+                ? "Ready with current inputs, cash and space" : ArchipelagoLabSession.FacilityStatus(prediction)));
             yield return null;
         }
 

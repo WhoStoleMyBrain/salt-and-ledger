@@ -334,8 +334,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(controller.Session.Player.CargoUnits, Is.Zero);
             Assert.That(controller.Session.Player.Cash, Is.EqualTo(before.Ships[controller.Session.Player.Id].Cash));
             Assert.That(controller.Session.Snapshot.GetFacilityStorage(facility.Id).Inventory["logs"], Is.EqualTo(20000));
-            root.Q<Toggle>("procurementEnabled").value = false;
-            root.Q<Toggle>("salesEnabled").value = false;
+            Assert.That(controller.Session.Snapshot.GetFacilityStorage(facility.Id).Policy.Rules, Is.Empty);
             Click("applyIndustryPolicy"); Click("closeIndustryButton");
             for (var day = 0; day < facility.Blueprint.IntervalDays; day++) Click("nextDayButton");
             facility = controller.Session.Snapshot.PrivateFacilities[facility.Id];
