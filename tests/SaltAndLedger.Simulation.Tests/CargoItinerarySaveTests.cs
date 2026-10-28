@@ -14,11 +14,12 @@ public sealed class CargoItinerarySaveTests
     private const string Ship = WorldIds.PlayerShipId;
     private static ContentCatalog Content() => ContentLoader.Load(ContentLoaderTests.CanonicalJson());
 
-    private static RegionalWorldState World(bool commission = false, int itineraryVersion = 1)
+    private static RegionalWorldState World(bool commission = false, int itineraryVersion = 1,
+        string charter = RunScenario.IndustrialCharter)
     {
         var draft = GrandCommissionDraft.Generate(42);
         return RunScenario.Create(Content(), new RunIdentity(commission ? GrandCommission.ChallengeId : null,
-            RunScenario.IndustrialCharter, RunWorldMode.ExpandingEconomy, 42,
+            charter, RunWorldMode.ExpandingEconomy, 42,
             RunDifficulty.SlowFoundations, livingPricingMode: LivingPricingMode.Coverage,
             commission: commission ? draft.Resolve(draft.Rounds.Select(r => r.Offers[0].TemplateId)) : null,
             companyStorageRules: CompanyStorageRules.Pooled, itineraryVersion: itineraryVersion));
@@ -169,20 +170,25 @@ public sealed class CargoItinerarySaveTests
         Assert.Equal(initial, WorldSaveCodec.Save(RunScenario.Create(Content(), restored.Snapshot().RunIdentity!)));
     }
 
-    [Fact]
-    public void SavedDailyBudgetDoesNotPermitAnExtraDepartureAfterReload()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SavedDailyBudgetDoesNotPermitAnExtraDepartureAfterReload(bool missingWarehouse)
     {
-        var world = World();
+        var world = World(charter: missingWarehouse ? RunScenario.MerchantCharter : RunScenario.IndustrialCharter);
         var snapshot = world.Snapshot();
         var dock = snapshot.Ships[Ship].DockedPortId!;
         var other = snapshot.Ports.Keys.First(p => p != dock);
-        var emptySale = new CargoItineraryCommand(CargoItineraryCommandKind.SellToMarket, "silver", 10000);
+        var blockedOrder = new CargoItineraryCommand(missingWarehouse ? CargoItineraryCommandKind.LoadFromCompanyTownStock :
+            CargoItineraryCommandKind.SellToMarket, "silver", 10000);
         var policy = new CargoItineraryPolicy("saved_daily_budget", new[]
         {
-            new CargoItineraryStop(dock, Enumerable.Repeat(emptySale, 8)),
-            new CargoItineraryStop(other, new[] { emptySale })
+            new CargoItineraryStop(dock, Enumerable.Repeat(blockedOrder, 8)),
+            new CargoItineraryStop(other, new[] { blockedOrder })
         });
         world.ConfigureItinerary(Ship, policy, true);
+        Assert.Equal(missingWarehouse ? CargoItineraryBlockReason.MissingCompanyStock : CargoItineraryBlockReason.SourceStock,
+            CargoItineraryEvaluator.Evaluate(world.Snapshot(), Ship).BlockReason);
         world.RunAutomation(Ship, 8);
         var saved = WorldSaveCodec.Save(world);
         var restored = WorldSaveCodec.Load(Content(), saved);
@@ -196,6 +202,77 @@ public sealed class CargoItinerarySaveTests
         AdvanceBoth(world, restored);
         AdvanceBoth(world, restored);
         Assert.Null(restored.Snapshot().Ships[Ship].DockedPortId);
+    }
+
+    [Theory]
+    [InlineData(CargoItineraryCommandKind.LoadFromCompanyTownStock, RunDifficulty.Normal)]
+    [InlineData(CargoItineraryCommandKind.LoadFromCompanyTownStock, RunDifficulty.SlowFoundations)]
+    [InlineData(CargoItineraryCommandKind.UnloadToCompanyTownStock, RunDifficulty.Normal)]
+    [InlineData(CargoItineraryCommandKind.UnloadToCompanyTownStock, RunDifficulty.SlowFoundations)]
+    public void MissingWarehousePlanSurvivesPauseSaveAndConstructionWithoutReassignment(
+        CargoItineraryCommandKind kind, RunDifficulty difficulty)
+    {
+        var world = RunScenario.Create(Content(), new RunIdentity(null, RunScenario.MerchantCharter,
+            RunWorldMode.ExpandingEconomy, 99, difficulty,
+            companyStorageRules: CompanyStorageRules.Pooled, itineraryVersion: 1));
+        var dock = world.Snapshot().Ships[Ship].DockedPortId!;
+        var other = world.Snapshot().Ports.Keys.First(p => p != dock);
+        var policy = new CargoItineraryPolicy("planned_warehouse", new[]
+        {
+            new CargoItineraryStop(dock, new[]
+            {
+                new CargoItineraryCommand(CargoItineraryCommandKind.BuyFromMarket, "grain", 10000),
+                new CargoItineraryCommand(kind, "grain", 10000, shortagePolicy: CargoItineraryShortagePolicy.Wait),
+                new CargoItineraryCommand(CargoItineraryCommandKind.BuyFromMarket, "silver", 10000,
+                    shortagePolicy: CargoItineraryShortagePolicy.Wait)
+            }),
+            new CargoItineraryStop(other, new[]
+            {
+                new CargoItineraryCommand(CargoItineraryCommandKind.LoadFromCompanyTownStock, "logs", 10000)
+            })
+        });
+        world.ConfigureItinerary(Ship, policy, true);
+        world.RunAutomation(Ship);
+        var waiting = world.Snapshot();
+        Assert.Empty(waiting.CompanyStockpiles);
+        Assert.Equal(CargoItineraryBlockReason.MissingCompanyStock, waiting.Ships[Ship].ItineraryProgress!.LastReason);
+        Assert.Equal(1, waiting.Ships[Ship].ItineraryProgress!.OperationsUsed);
+        var saved = WorldSaveCodec.Save(world);
+        var restored = WorldSaveCodec.Load(Content(), saved);
+        Assert.Equal(saved, WorldSaveCodec.Save(restored));
+        Assert.Equal(Events(world.RunAutomation(Ship)), Events(restored.RunAutomation(Ship)));
+        Assert.Equal(saved, WorldSaveCodec.Save(restored));
+
+        world.SetAutomationEnabled(Ship, false);
+        restored.SetAutomationEnabled(Ship, false);
+        saved = WorldSaveCodec.Save(restored);
+        restored = WorldSaveCodec.Load(Content(), saved);
+        Assert.Equal(saved, WorldSaveCodec.Save(restored));
+        Assert.Equal(CargoItineraryDecisionKind.Paused, CargoItineraryEvaluator.Evaluate(restored.Snapshot(), Ship).Kind);
+        foreach (var instance in new[] { world, restored })
+        {
+            instance.ConstructFacility(WorldIds.PlayerOwnerId, dock, ExpandingEconomyGeneration.FarmBlueprint, "planned_farm");
+            if (kind == CargoItineraryCommandKind.LoadFromCompanyTownStock)
+                instance.ExecuteWarehouseTrade(WorldIds.PlayerOwnerId, "planned_farm",
+                    new TradeCommand(TradeDirection.Buy, "grain", 10000));
+            instance.SetAutomationEnabled(Ship, true);
+        }
+        Assert.Equal(WorldSaveCodec.Save(world), WorldSaveCodec.Save(restored));
+        var completed = world.RunAutomation(Ship, 1);
+        Assert.Equal(Events(completed), Events(restored.RunAutomation(Ship, 1)));
+        Assert.Equal(10000, Assert.Single(completed.Transfers).TransferredQuantity);
+        Assert.Same(policy, completed.After.Ships[Ship].Itinerary);
+        Assert.True(policy.EquivalentTo(restored.Snapshot().Ships[Ship].Itinerary));
+        Assert.Equal(2, restored.Snapshot().Ships[Ship].ItineraryProgress!.ActionIndex);
+        Assert.Equal(2, restored.Snapshot().Ships[Ship].ItineraryProgress!.OperationsUsed);
+        Assert.Equal(0, restored.Snapshot().Day);
+        saved = WorldSaveCodec.Save(world);
+        restored = WorldSaveCodec.Load(Content(), saved);
+        Assert.Equal(saved, WorldSaveCodec.Save(restored));
+        Assert.Equal(Events(world.RunAutomation(Ship)), Events(restored.RunAutomation(Ship)));
+        Assert.Equal(2, restored.Snapshot().Ships[Ship].ItineraryProgress!.OperationsUsed);
+        Assert.Equal(WorldSaveCodec.Save(world), WorldSaveCodec.Save(restored));
+        for (var day = 0; day < 6; day++) AdvanceBoth(world, restored);
     }
 
     [Theory]
@@ -218,7 +295,6 @@ public sealed class CargoItinerarySaveTests
     [InlineData("invalid_shortage")]
     [InlineData("inapplicable_reserve")]
     [InlineData("missing_pool")]
-    [InlineData("missing_referenced_pool")]
     [InlineData("stop_index")]
     [InlineData("action_index")]
     [InlineData("future_cycle")]
@@ -287,7 +363,6 @@ public sealed class CargoItinerarySaveTests
             case "invalid_shortage": command["ShortagePolicy"] = 9; break;
             case "inapplicable_reserve": command["CashReserve"] = 1; break;
             case "missing_pool": ((JArray)data["CompanyStockpiles"]!).Clear(); break;
-            case "missing_referenced_pool": stops[1]!["Commands"]![0]!["Kind"] = (int)CargoItineraryCommandKind.LoadFromCompanyTownStock; break;
             case "stop_index": progress["StopIndex"] = 3; break;
             case "action_index": progress["ActionIndex"] = 4; break;
             case "future_cycle": progress["Cycle"] = 2; break;

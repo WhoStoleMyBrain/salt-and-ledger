@@ -7,10 +7,7 @@ namespace SaltAndLedger.Simulation
     /// <summary>Pure bounded proposals. Remote draft previews never grant execution permission.</summary>
     public static class CargoItineraryEvaluator
     {
-        public static void ValidatePolicy(RegionalWorldSnapshot snapshot, string shipId, CargoItineraryPolicy policy) =>
-            Validate(snapshot, shipId, policy, true);
-
-        private static void Validate(RegionalWorldSnapshot snapshot, string shipId, CargoItineraryPolicy policy, bool requireStock)
+        public static void ValidatePolicy(RegionalWorldSnapshot snapshot, string shipId, CargoItineraryPolicy policy)
         {
             if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
             if (policy == null) throw new ArgumentNullException(nameof(policy));
@@ -27,8 +24,6 @@ namespace SaltAndLedger.Simulation
                 {
                     _ = ship.Cargo[command.GoodId];
                     if (IsMarket(command.Kind)) _ = port.Quotes[command.GoodId];
-                    else if (requireStock && !snapshot.CompanyStockpiles.ContainsKey(CompanyStockpileSnapshot.StoreId(ship.OwnerId, stop.PortId)))
-                        throw new InvalidOperationException("Build owned industry at " + port.Name + " before applying company-stock instructions there.");
                 }
             }
         }
@@ -74,7 +69,7 @@ namespace SaltAndLedger.Simulation
         public static CargoItineraryDecision PreviewCommand(RegionalWorldSnapshot snapshot, string shipId,
             CargoItineraryPolicy policy, int stopIndex, int actionIndex)
         {
-            Validate(snapshot, shipId, policy, false);
+            ValidatePolicy(snapshot, shipId, policy);
             if (stopIndex < 0 || stopIndex >= policy.Stops.Count || actionIndex < 0 || actionIndex >= policy.Stops[stopIndex].Commands.Count)
                 throw new ArgumentOutOfRangeException(nameof(actionIndex));
             var command = policy.Stops[stopIndex].Commands[actionIndex];

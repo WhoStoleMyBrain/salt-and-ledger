@@ -412,16 +412,12 @@ public sealed class CargoItineraryTests
     }
 
     [Fact]
-    public void MissingTownStockWrongPortAndOldIdentityCannotGrantRemoteTransferAuthority()
+    public void WrongPortAndOldIdentityCannotGrantRemoteTransferAuthority()
     {
-        var world = World();
-        var before = world.Snapshot();
-        Assert.Throws<InvalidOperationException>(() => Configure(world, Policy(Load("bread"))));
-        Assert.Same(before, world.Snapshot());
         var old = World(itineraryVersion: 0);
         Assert.Throws<InvalidOperationException>(() => Configure(old, Policy(Buy("grain"))));
 
-        world = World(warehouse: Stock(("bread", Unit)));
+        var world = World(warehouse: Stock(("bread", Unit)));
         var policy = Policy(Load("bread"));
         Configure(world, policy);
         world.SetAutomationEnabled(Ship, false);
@@ -433,6 +429,53 @@ public sealed class CargoItineraryTests
         var result = world.RunAutomation(Ship);
         Assert.Empty(result.Transfers);
         Assert.Equal(Unit, result.After.GetFacilityStorage(Site).Inventory["bread"]);
+    }
+
+    [Theory]
+    [InlineData(CargoItineraryCommandKind.LoadFromCompanyTownStock, CargoItineraryShortagePolicy.Skip)]
+    [InlineData(CargoItineraryCommandKind.LoadFromCompanyTownStock, CargoItineraryShortagePolicy.Wait)]
+    [InlineData(CargoItineraryCommandKind.UnloadToCompanyTownStock, CargoItineraryShortagePolicy.Skip)]
+    [InlineData(CargoItineraryCommandKind.UnloadToCompanyTownStock, CargoItineraryShortagePolicy.Wait)]
+    public void MissingWarehouseIsAPlannableSkipOrWaitWithoutCreatingAssets(
+        CargoItineraryCommandKind kind, CargoItineraryShortagePolicy shortage)
+    {
+        var world = World(cargo: Stock(("logs", 2 * Unit)));
+        var policy = Policy(new CargoItineraryCommand(kind, "logs", Unit, shortagePolicy: shortage),
+            Buy("silver", shortage: CargoItineraryShortagePolicy.Wait));
+        var before = world.Snapshot();
+        CargoItineraryEvaluator.ValidatePolicy(before, Ship, policy);
+        var preview = CargoItineraryEvaluator.PreviewCommand(before, Ship, policy, 0, 0);
+        Assert.Same(before, world.Snapshot());
+        Assert.Equal(CargoItineraryBlockReason.MissingCompanyStock, preview.BlockReason);
+        Assert.Equal(shortage == CargoItineraryShortagePolicy.Skip ? CargoItineraryDecisionKind.Skip :
+            CargoItineraryDecisionKind.Wait, preview.Kind);
+        Configure(world, policy);
+        Assert.Equal(preview.BlockReason, Decision(world).BlockReason);
+        var result = world.RunAutomation(Ship, 1);
+        Audit(result);
+        Assert.Empty(result.Trades);
+        Assert.Empty(result.Transfers);
+        Assert.Empty(result.After.PrivateFacilities);
+        Assert.Empty(result.After.CompanyStockpiles);
+        Assert.Equal(before.TotalCash, result.After.TotalCash);
+        Assert.Equal(2 * Unit, result.After.Ships[Ship].Cargo["logs"]);
+        var progress = result.After.Ships[Ship].ItineraryProgress!;
+        Assert.Equal(shortage == CargoItineraryShortagePolicy.Skip ? 1 : 0, progress.ActionIndex);
+        Assert.Equal(progress.ActionIndex, progress.OperationsUsed);
+        Assert.Equal(CargoItineraryBlockReason.MissingCompanyStock, progress.LastReason);
+        Assert.Equal(North, result.After.Ships[Ship].DockedPortId);
+        if (shortage == CargoItineraryShortagePolicy.Wait)
+        {
+            Assert.Same(result.After, world.RunAutomation(Ship).After);
+            world.ConstructFacility(Owner, North, "plan", Site);
+            if (kind == CargoItineraryCommandKind.LoadFromCompanyTownStock)
+                world.ExecuteWarehouseTrade(Owner, Site, new TradeCommand(TradeDirection.Buy, "logs", Unit));
+            var resumed = world.RunAutomation(Ship, 1);
+            Assert.Same(policy, resumed.After.Ships[Ship].Itinerary);
+            Assert.Equal(Unit, Assert.Single(resumed.Transfers).TransferredQuantity);
+            Assert.Equal(1, resumed.After.Ships[Ship].ItineraryProgress!.ActionIndex);
+            Audit(resumed);
+        }
     }
 
     [Fact]
