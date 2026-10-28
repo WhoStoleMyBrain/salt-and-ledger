@@ -21,7 +21,11 @@ namespace SaltAndLedger.UnityHost
         private sealed class ItineraryStopDraft
         {
             public string PortId;
+            public bool PreserveOrder;
+            public bool AdvancedOpen;
             public readonly List<ItineraryActionDraft> Actions = new List<ItineraryActionDraft>();
+            public readonly Dictionary<string, ItineraryActionDraft> RemovedCells = new Dictionary<string, ItineraryActionDraft>(StringComparer.Ordinal);
+            public readonly List<ItineraryActionDraft> RetainedCellOrder = new List<ItineraryActionDraft>();
         }
 
         private sealed class ItineraryDraft
@@ -41,20 +45,21 @@ namespace SaltAndLedger.UnityHost
         private string itineraryApplyError;
         private long itineraryApplyErrorRevision = -1;
         private int plannerStop = -1, plannerAction = -1;
+        private int selectedItineraryStop;
         private bool UsesItineraries => Session != null;
         private ItineraryDraft ActiveItineraryDraft => itineraryDrafts[Session.Player.Id];
 
         private void ClearItineraryDrafts()
         {
             itineraryDrafts.Clear(); plannerStop = -1; plannerAction = -1; plannerHarborReturn = null; plannerIndustryReturn = null;
+            selectedItineraryStop = 0;
             harborReturnsToPlanner = false;
             itineraryApplyError = null;
         }
 
         private void BuildRoutePlanner()
         {
-            var screen = CreateScreen(ArchipelagoScreen.RoutePlanner, "Route planner",
-                "Ordered work at real docks. Edit a passive draft; Apply assigns it to this ship. Different goods stay aboard until explicitly sold or unloaded.");
+            var screen = CreateScreen(ArchipelagoScreen.RoutePlanner, "Route planner");
             var toolbar = Panel(screen, null, "itinerary-toolbar row");
             Dropdown(toolbar, "itineraryShip", "Owned ship", new List<string> { "Select ship" });
             Element<DropdownField>("itineraryShip").RegisterValueChangedCallback(change =>
@@ -63,9 +68,10 @@ namespace SaltAndLedger.UnityHost
                 var index = Element<DropdownField>("itineraryShip").index;
                 if (index < 0 || index >= itineraryShipIds.Count) return;
                 Session.SelectShip(itineraryShipIds[index]); EnsureItineraryDraft();
-                plannerStop = plannerAction = -1; RenderItineraryCards(); RefreshRoutePlannerStatus();
+                selectedItineraryStop = 0; plannerStop = plannerAction = -1; RenderItineraryCards(); RefreshRoutePlannerStatus();
             });
-            var manual = new Toggle("Manual control · route actions paused") { name = "itineraryManualToggle" };
+            var manual = new Toggle("Manual control / pause route") { name = "itineraryManualToggle",
+                tooltip = "Pause future route actions without changing cargo, the committed voyage or the next instruction. Uncheck to resume at the next stop or its incoming voyage." };
             toolbar.Add(manual);
             manual.RegisterValueChangedCallback(change =>
             {
@@ -82,7 +88,7 @@ namespace SaltAndLedger.UnityHost
             Text(screen, "itineraryLiveStatus", "", "run-copy itinerary-live");
             var scroll = new ScrollView(ScrollViewMode.Vertical) { name = "itineraryScroll" };
             scroll.AddToClassList("run-content-scroll"); screen.Add(scroll);
-            var evidence = new Foldout { name = "itineraryShipDetails", text = "Cargo and committed route state", value = false };
+            var evidence = new Foldout { name = "itineraryShipDetails", text = "Cargo, last outcome & daily budget", value = false };
             scroll.Add(evidence); Text(evidence, "itineraryCargo", "", "run-copy");
             var tools = Panel(scroll, null, "row run-actions");
             Button(tools, "itineraryExampleButton", "Draft Grain–Flour–Bread loop", DraftBreadItinerary);
@@ -93,9 +99,11 @@ namespace SaltAndLedger.UnityHost
             });
             Text(scroll, "itineraryDraftStatus", "", "run-copy");
             Text(scroll, "itineraryExampleHelp", "", "run-copy hidden");
-            Text(scroll, null, "Each action executes once per visit, up to its maximum. Below its minimum: Skip continues; Wait keeps that exact action. Eight operations per ship per day include skips and departure. Quotes below describe current stock, not promised future prices.", "run-footnote");
+            var rules = new Foldout { name = "itineraryRules", text = "How routes work", value = false }; scroll.Add(rules);
+            Text(rules, null, "Enter maximum whole units per visit. Blank or 0 means no order. Each instruction executes once, even if partially filled. Below minimum: Skip continues; Wait holds. Eight operations per ship per day include skips and departure. Current quotes do not predict arrival prices.", "run-copy");
             Panel(scroll, "itineraryStops", "itinerary-stops");
             Button(scroll, "itineraryAddStop", "Add stop", AddItineraryStop);
+            Panel(scroll, "itineraryStopEditor", "run-card itinerary-stop-editor");
             Text(screen, "itineraryValidation", "", "run-copy itinerary-validation");
             var actions = Panel(screen, null, "row run-actions itinerary-footer");
             Button(actions, "itineraryBackButton", "Back", CloseRoutePlanner);
@@ -173,7 +181,7 @@ namespace SaltAndLedger.UnityHost
             var draft = new ItineraryDraft { Id = policy.Id };
             foreach (var source in policy.Stops)
             {
-                var stop = new ItineraryStopDraft { PortId = source.PortId };
+                var stop = new ItineraryStopDraft { PortId = source.PortId, PreserveOrder = true };
                 foreach (var command in source.Commands) stop.Actions.Add(new ItineraryActionDraft
                 {
                     Kind = command.Kind, GoodId = command.GoodId, Maximum = Q(command.MaximumQuantity), Minimum = Q(command.MinimumQuantity),
@@ -191,7 +199,7 @@ namespace SaltAndLedger.UnityHost
             {
                 var draft = CopyItinerary(CargoItineraryPresets.BreadLoop(Session.Snapshot, Session.Player.Id));
                 draft.Changed = true; itineraryDrafts[Session.Player.Id] = draft;
-                plannerStop = plannerAction = -1; RenderItineraryCards(); RefreshRoutePlannerStatus();
+                selectedItineraryStop = 0; plannerStop = plannerAction = -1; RenderItineraryCards(); RefreshRoutePlannerStatus();
             }
             catch (Exception exception) when (exception is ArgumentException || exception is InvalidOperationException)
             { SetText("itineraryValidation", exception.Message); }
@@ -202,7 +210,8 @@ namespace SaltAndLedger.UnityHost
             var draft = ActiveItineraryDraft;
             var port = portIds.FirstOrDefault(id => draft.Stops.All(stop => stop.PortId != id));
             if (port == null || draft.Stops.Count >= 4 || draft.Stops.Sum(s => s.Actions.Count) >= 24) return;
-            var stop = new ItineraryStopDraft { PortId = port }; stop.Actions.Add(new ItineraryActionDraft()); draft.Stops.Add(stop);
+            var stop = new ItineraryStopDraft { PortId = port }; draft.Stops.Add(stop);
+            selectedItineraryStop = draft.Stops.Count - 1;
             RebuildChangedItinerary();
         }
 
@@ -217,32 +226,24 @@ namespace SaltAndLedger.UnityHost
         {
             var parent = Element<VisualElement>("itineraryStops"); parent.Clear();
             var draft = ActiveItineraryDraft;
+            selectedItineraryStop = Math.Max(0, Math.Min(selectedItineraryStop, draft.Stops.Count - 1));
             for (var i = 0; i < draft.Stops.Count; i++)
             {
-                var stopIndex = i; var stop = draft.Stops[i];
+                var stopIndex = i;
                 var card = Panel(parent, "itineraryStop" + i, "run-card itinerary-stop");
-                var top = Panel(card, null, "row itinerary-stop-heading");
-                Text(top, null, "STOP " + (i + 1), "run-eyebrow");
-                Dropdown(top, "itineraryPort" + i, "Town", portIds.Select(PortName).ToList());
-                var picker = Element<DropdownField>("itineraryPort" + i);
-                picker.SetValueWithoutNotify(PortName(stop.PortId));
-                picker.RegisterValueChangedCallback(change =>
-                { if (change.target != picker) return; stop.PortId = portIds[picker.index]; ItineraryEdited(); });
-                var tools = Panel(card, null, "row itinerary-order-tools");
-                Button(tools, "itineraryStopUp" + i, "Move stop up", () =>
-                { draft.Stops.RemoveAt(stopIndex); draft.Stops.Insert(stopIndex - 1, stop); RebuildChangedItinerary(); }).SetEnabled(i > 0);
-                Button(tools, "itineraryStopDown" + i, "Move stop down", () =>
-                { draft.Stops.RemoveAt(stopIndex); draft.Stops.Insert(stopIndex + 1, stop); RebuildChangedItinerary(); }).SetEnabled(i + 1 < draft.Stops.Count);
-                Button(tools, "itineraryRemoveStop" + i, "Remove stop", () =>
-                { draft.Stops.RemoveAt(stopIndex); RebuildChangedItinerary(); }).SetEnabled(draft.Stops.Count > 2);
-                Button(tools, "itineraryHarbor" + i, "Inspect harbor", () => OpenPlannerHarbor(stop.PortId));
+                card.EnableInClassList("itinerary-selected", i == selectedItineraryStop);
+                Button(card, "itinerarySelectStop" + i, "", () =>
+                {
+                    selectedItineraryStop = stopIndex; plannerStop = plannerAction = -1;
+                    RenderItineraryCards(); RefreshRoutePlannerStatus();
+                    Element<Button>("itinerarySelectStop" + stopIndex).Focus();
+                }, "itinerary-select-stop");
                 Text(card, "itineraryStopSummary" + i, "", "run-copy itinerary-stop-summary");
-                for (var j = 0; j < stop.Actions.Count; j++) RenderItineraryAction(card, stopIndex, j, stop.Actions[j]);
-                Button(card, "itineraryAddAction" + i, "Add action", () =>
-                { stop.Actions.Add(new ItineraryActionDraft()); RebuildChangedItinerary(); })
-                    .SetEnabled(stop.Actions.Count < 8 && draft.Stops.Sum(s => s.Actions.Count) < 24);
+                Text(card, "itineraryStopState" + i, "", "run-footnote itinerary-stop-state");
+                Text(card, "itineraryStopWarning" + i, "", "run-footnote itinerary-stop-warning");
             }
             Element<Button>("itineraryAddStop").SetEnabled(draft.Stops.Count < 4 && draft.Stops.Sum(s => s.Actions.Count) < 24);
+            RenderSelectedItineraryStop();
             UpdateItinerarySummaries();
         }
 
@@ -257,26 +258,27 @@ namespace SaltAndLedger.UnityHost
                 if (change.newValue)
                 {
                     plannerStop = stopIndex; plannerAction = actionIndex;
-                    foreach (var other in Element<VisualElement>("itineraryStops").Query<Foldout>().ToList())
+                    foreach (var other in Element<VisualElement>("itineraryOrderedActions").Query<Foldout>().ToList())
                         if (other != foldout) other.SetValueWithoutNotify(false);
                     RefreshRoutePlannerStatus();
                 }
             });
             var tools = Panel(foldout, null, "row itinerary-order-tools");
-            var actions = ActiveItineraryDraft.Stops[stopIndex].Actions;
+            var stop = ActiveItineraryDraft.Stops[stopIndex];
+            var actions = stop.Actions;
             Button(tools, "itineraryActionUp" + key, "Move action up", () =>
-            { actions.RemoveAt(actionIndex); actions.Insert(actionIndex - 1, action); RebuildChangedItinerary(); }).SetEnabled(actionIndex > 0);
+            { actions.RemoveAt(actionIndex); actions.Insert(actionIndex - 1, action); stop.RetainedCellOrder.Clear(); stop.PreserveOrder = true; RebuildChangedItinerary(); }).SetEnabled(actionIndex > 0);
             Button(tools, "itineraryActionDown" + key, "Move action down", () =>
-            { actions.RemoveAt(actionIndex); actions.Insert(actionIndex + 1, action); RebuildChangedItinerary(); }).SetEnabled(actionIndex + 1 < actions.Count);
+            { actions.RemoveAt(actionIndex); actions.Insert(actionIndex + 1, action); stop.RetainedCellOrder.Clear(); stop.PreserveOrder = true; RebuildChangedItinerary(); }).SetEnabled(actionIndex + 1 < actions.Count);
             Button(tools, "itineraryRemoveAction" + key, "Remove action", () =>
-            { actions.RemoveAt(actionIndex); RebuildChangedItinerary(); }).SetEnabled(actions.Count > 1);
+            { actions.RemoveAt(actionIndex); stop.RetainedCellOrder.Clear(); RebuildChangedItinerary(); });
             var form = Panel(foldout, null, "itinerary-fields");
             Dropdown(form, "itineraryKind" + key, "Instruction", new List<string> { "Buy from public market", "Sell to public market", "Load from company town stock", "Unload to company town stock" });
             var kind = Element<DropdownField>("itineraryKind" + key); kind.SetValueWithoutNotify(kind.choices[(int)action.Kind]);
             Dropdown(form, "itineraryGood" + key, "Commodity", goodIds.Select(id => Session.Content.GetGood(id).Name).ToList());
             var good = Element<DropdownField>("itineraryGood" + key); good.SetValueWithoutNotify(Session.Content.GetGood(action.GoodId).Name);
             good.RegisterValueChangedCallback(change =>
-            { if (change.target != good) return; action.GoodId = goodIds[good.index]; ItineraryEdited(); });
+            { if (change.target != good) return; action.GoodId = goodIds[good.index]; stop.RetainedCellOrder.Clear(); stop.PreserveOrder = true; ItineraryEdited(); });
             ItineraryField(form, "itineraryMax" + key, "Maximum whole units / visit", action.Maximum, value => action.Maximum = value);
             ItineraryField(form, "itineraryMin" + key, "Minimum whole units", action.Minimum, value => action.Minimum = value);
             Dropdown(form, "itineraryShortage" + key, "Below minimum", new List<string> { "Skip for this visit", "Wait at this stop" });
@@ -288,7 +290,7 @@ namespace SaltAndLedger.UnityHost
             ItineraryField(form, "itineraryBudget" + key, "Spend at most · blank unrestricted", action.Budget, value => action.Budget = value);
             ItineraryField(form, "itineraryWarehouseReserve" + key, "Keep units in town stock", action.WarehouseReserve, value => action.WarehouseReserve = value);
             kind.RegisterValueChangedCallback(change =>
-            { if (change.target != kind) return; action.Kind = (CargoItineraryCommandKind)kind.index; RefreshItineraryFieldVisibility(key, action.Kind); ItineraryEdited(); });
+            { if (change.target != kind) return; action.Kind = (CargoItineraryCommandKind)kind.index; stop.RetainedCellOrder.Clear(); stop.PreserveOrder = true; RefreshItineraryFieldVisibility(key, action.Kind); ItineraryEdited(); });
             RefreshItineraryFieldVisibility(key, action.Kind);
             Text(foldout, "itineraryQuote" + key, "", "run-copy itinerary-quote");
         }
@@ -321,18 +323,28 @@ namespace SaltAndLedger.UnityHost
 
         private void UpdateItinerarySummaries()
         {
-            for (var i = 0; i < ActiveItineraryDraft.Stops.Count; i++)
+            var draft = ActiveItineraryDraft;
+            for (var i = 0; i < draft.Stops.Count; i++)
             {
-                var stop = ActiveItineraryDraft.Stops[i];
-                SetText("itineraryStopSummary" + i, stop.Actions.Count + " ordered actions at " + PortName(stop.PortId) +
-                    " → " + PortName(ActiveItineraryDraft.Stops[(i + 1) % ActiveItineraryDraft.Stops.Count].PortId));
+                var stop = draft.Stops[i];
+                Element<Button>("itinerarySelectStop" + i).text = (i + 1) + ". " + PortName(stop.PortId);
+                SetText("itineraryStopSummary" + i, stop.Actions.Count == 0 ? "Choose goods below" :
+                    string.Join("\n", ItineraryKinds.Where(kind => stop.Actions.Any(action => action.Kind == kind)).Select(kind =>
+                        ItineraryVerb(kind) + " " + string.Join(", ", stop.Actions.Where(action => action.Kind == kind).Select(action =>
+                            action.Maximum + " " + Session.Content.GetGood(action.GoodId).Name)))));
+                var warning = MissingItineraryWarehouse(stop) ? "Warehouse needed \u00b7 orders follow Skip / Wait" : "";
+                SetText("itineraryStopWarning" + i, warning);
+                Element<Label>("itineraryStopWarning" + i).EnableInClassList("hidden", warning.Length == 0);
+                SetText("itineraryStopState" + i, ItineraryStopState(i) + " \u2192 " + PortName(draft.Stops[(i + 1) % draft.Stops.Count].PortId));
                 for (var j = 0; j < stop.Actions.Count; j++)
                 {
                     var action = stop.Actions[j];
-                    Element<Foldout>("itineraryAction" + i + "_" + j).text = (j + 1) + ". " + ItineraryVerb(action.Kind) + " " +
-                        action.Minimum + "–" + action.Maximum + " " + Session.Content.GetGood(action.GoodId).Name + " · " + action.Shortage;
+                    var foldout = Root.Q<Foldout>("itineraryAction" + i + "_" + j);
+                    if (foldout != null) foldout.text = (j + 1) + ". " + ItineraryVerb(action.Kind) + " " +
+                        action.Minimum + "\u2013" + action.Maximum + " " + Session.Content.GetGood(action.GoodId).Name + " \u00b7 " + action.Shortage;
                 }
             }
+            RefreshItineraryGrid();
         }
 
         private static string ItineraryVerb(CargoItineraryCommandKind kind)
@@ -401,6 +413,7 @@ namespace SaltAndLedger.UnityHost
                 var policy = ReadItineraryDraft();
                 Session.ApplyItinerary(policy, Session.Snapshot);
                 itineraryApplyError = null;
+                foreach (var stop in ActiveItineraryDraft.Stops) stop.PreserveOrder = true;
                 ActiveItineraryDraft.Changed = false; Refresh();
             }
             catch (Exception exception) when (exception is ArgumentException || exception is InvalidOperationException || exception is OverflowException)
@@ -429,15 +442,16 @@ namespace SaltAndLedger.UnityHost
             picker.SetValueWithoutNotify(picker.choices[itineraryShipIds.IndexOf(ship.Id)]);
             var current = ship.Itinerary == null ? null : CargoItineraryEvaluator.Evaluate(world, ship.Id);
             SetText("itineraryLiveStatus", ship.Name + " · " + (ship.DockedPortId == null
-                ? "Sailing to " + PortName(ship.DestinationPortId) + " · " + ship.RemainingTravelDays + " days remaining"
-                : "Docked at " + PortName(ship.DockedPortId)) + " · cargo " + Q(ship.CargoUnits) + "/" + Q(ship.CargoCapacity) +
-                (progress == null ? "\nNo itinerary assigned." : "\nPass " + (progress.Cycle + 1) + " · stop " + (progress.StopIndex + 1) + "/" + ship.Itinerary.Stops.Count +
-                    " · next " + (progress.ActionIndex < ship.Itinerary.Stops[progress.StopIndex].Commands.Count ? "action " + (progress.ActionIndex + 1) : "departure") +
-                    " at " + PortName(ship.Itinerary.Stops[progress.StopIndex].PortId) + " · " + (ship.AutomationEnabled ? "route enabled" : "manual control") +
-                    "\n" + current.Reason));
+                ? "Sailing → " + PortName(ship.DestinationPortId) + " · " + ship.RemainingTravelDays + "d"
+                : "Docked · " + PortName(ship.DockedPortId)) + " · hold " + Q(ship.CargoUnits) + "/" + Q(ship.CargoCapacity) +
+                " · free " + Q(ship.CargoCapacity - ship.CargoUnits) +
+                (progress == null ? "\nNo route assigned" : "\n" + (ship.AutomationEnabled ? "Active" : "Paused") + " · next " + ItineraryNextInstruction() + " · " + current.Reason));
+            Element<Label>("itineraryLiveStatus").tooltip = progress == null ? "Apply a draft, then uncheck Manual control to enable it." :
+                "Pass " + (progress.Cycle + 1) + ", stop " + (progress.StopIndex + 1) + "/" + ship.Itinerary.Stops.Count +
+                ". Current decision: " + current.Kind + ". " + current.Reason;
             SetText("itineraryCargo", "Company cash " + Money(ship.Cash) + " coins · cargo: " +
                 (ship.CargoUnits == 0 ? "empty" : string.Join(", ", ship.Cargo.Where(g => g.Value > 0).Select(g => Q(g.Value) + " " + Session.Content.GetGood(g.Key).Name))) +
-                (progress == null ? "" : "\nCommitted: " + progress.LastDecision + " / " + progress.LastReason + " · " + Q(progress.LastQuantity) + " units. " +
+                (progress == null ? "" : "\nLast outcome: " + progress.LastDecision + " / " + progress.LastReason + " · " + Q(progress.LastQuantity) + " units. " +
                     (progress.OperationsDay == world.Day ? progress.OperationsUsed : 0) + "/8 operations used today. Pass count advances when leaving the last listed stop."));
             Element<Toggle>("itineraryManualToggle").SetValueWithoutNotify(!ship.AutomationEnabled);
             Element<Toggle>("itineraryManualToggle").SetEnabled(ship.Itinerary != null && !Session.IsChallengeEnded);
@@ -445,12 +459,12 @@ namespace SaltAndLedger.UnityHost
             Element<Button>("itineraryNextDayButton").SetEnabled(!Session.IsChallengeEnded);
             Element<Button>("itineraryReloadButton").SetEnabled(ship.Itinerary != null);
             SetText("itineraryDraftStatus", (ActiveItineraryDraft.Changed ? "UNAPPLIED DRAFT" : "APPLIED PLAN") + " · " + ActiveItineraryDraft.Stops.Count +
-                " stops · " + ActiveItineraryDraft.Stops.Sum(s => s.Actions.Count) + "/24 actions. Viewing and editing spend no time or money.");
+                " stops · " + ActiveItineraryDraft.Stops.Sum(s => s.Actions.Count) + "/24 instructions · select a stop to edit goods");
             var example = ActiveItineraryDraft.Id == "bread_loop";
             Element<Label>("itineraryExampleHelp").EnableInClassList("hidden", !example);
             if (example)
-                SetText("itineraryExampleHelp", "Example intent: supply a funded Bakery with Flour and Logs, carry its Bread to the agricultural town, and bring Grain to processing for Flour. " +
-                    "Build the Bakery and fund its wages yourself. This draft creates no facilities, goods or money; skips and future prices can change its outcome.");
+                SetText("itineraryExampleHelp", "Bread loop: deliver Flour + Logs → owned Bakery; carry Bread → food source; Grain → processing. Plan now, build and fund the Bakery separately.");
+            UpdateItinerarySummaries();
             if (plannerStop >= 0 && plannerAction >= 0)
                 SetText("itineraryQuote" + plannerStop + "_" + plannerAction, "Complete the draft fields to inspect an authoritative current quote.");
             try
@@ -462,13 +476,15 @@ namespace SaltAndLedger.UnityHost
                 var partial = progress != null && progress.ActionIndex > 0 && progress.ActionIndex < ship.Itinerary.Stops[progress.StopIndex].Commands.Count;
                 var usedToday = progress != null && progress.OperationsDay == world.Day && progress.OperationsUsed > 0;
                 var message = Session.IsChallengeEnded ? "This run is frozen. You may inspect or draft, but cannot apply." : unchanged
-                    ? "This plan is already assigned. Reapplying preserves its exact cursor and daily budget, and leaves route actions paused." : ship.AutomationEnabled
-                    ? "Choose Manual control before applying. Pausing preserves cargo and the exact next action." : ship.DockedPortId == null
-                    ? "Apply after this voyage arrives. The applied itinerary and cargo remain intact." : partial
-                    ? "Finish or skip the remaining actions in this visit before replacing the route. Your partial visit is preserved."
-                    : usedToday ? "Advance a day before replacing orders already executed today. Editing cannot reset the ship's daily operation budget."
+                    ? "Already assigned · reapply pauses; cursor and daily budget stay intact." : ship.AutomationEnabled
+                    ? "Pause with Manual control before applying." : ship.DockedPortId == null
+                    ? "Apply after arrival at a route stop." : partial
+                    ? "Finish the remaining instructions before replacing this partial visit."
+                    : usedToday ? "Advance a day before replacing orders: today's operation budget stays spent."
                     : !policy.Stops.Any(s => s.PortId == ship.DockedPortId) ? "Include the actual dock among the new stops before applying."
-                    : "Ready to apply. Cargo stays aboard. Apply leaves route actions paused; enable them explicitly.";
+                    : "Ready to apply · cargo retained · route starts paused.";
+                var missing = ActiveItineraryDraft.Stops.Where(MissingItineraryWarehouse).Select(stop => PortName(stop.PortId)).ToArray();
+                if (missing.Length > 0) message += "\nWarehouse needed: " + string.Join(", ", missing) + ". Plan is valid; unavailable transfers follow Skip / Wait.";
                 var ready = !Session.IsChallengeEnded && (unchanged || !ship.AutomationEnabled && ship.DockedPortId != null && !partial && !usedToday && policy.Stops.Any(s => s.PortId == ship.DockedPortId));
                 Element<Button>("itineraryApplyButton").SetEnabled(ready);
                 SetText("itineraryValidation", itineraryApplyError == null ? message : itineraryApplyError + "\n" + message);
