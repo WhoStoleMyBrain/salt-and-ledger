@@ -14,8 +14,10 @@ namespace SaltAndLedger.UnityHost
 
         private void BindHarbor()
         {
-            SetChoices("harborTradeTarget", new List<string> { "Selected ship hold", "Company local stock" });
+            SetChoices("harborTradeTarget", new List<string> { "Ship cargo", "Company warehouse" });
             Element<DropdownField>("harborTradeTarget").RegisterValueChangedCallback(_ => RefreshHarbor());
+            SetChoices("harborFlowScope", new List<string> { "Town market", "Company warehouse" });
+            Element<DropdownField>("harborFlowScope").RegisterValueChangedCallback(_ => RefreshHarbor());
             Click("harborUnloadButton", () => HarborTransfer(TransferDirection.ShipToWarehouse));
             Click("harborLoadButton", () => HarborTransfer(TransferDirection.WarehouseToShip));
             Click("harborMaxUnload", () => MaximumHarborTransfer(TransferDirection.ShipToWarehouse));
@@ -58,15 +60,13 @@ namespace SaltAndLedger.UnityHost
             var stock = harborFacilityId == null ? null : tradeSnapshot.GetFacilityStorage(harborFacilityId);
             SetText("tradeTitle", port.Name + " · Harbor");
             SetText("tradeDay", "DAY " + Number(tradeSnapshot.Day));
-            SetText("tradeHeader", "Company cash " + Money(Session.Player.Cash) + " · Market cash " + Money(port.MarketCash) +
-                "\n" + ship.Name + (local ? " · DOCKED · hold " + Q(ship.CargoUnits) + "/" + Q(ship.CargoCapacity) + " (" + Q(ship.CargoCapacity - ship.CargoUnits) + " free)" : " · REMOTE MARKET, cargo inaccessible") +
-                " · " + (stock == null ? "No company store" : "Company local stock " +
-                Q(stock.StoredUnits) + "/" + Q(stock.Capacity)));
-            SetText("tradeAvailabilityLabel", !ownedShip ? "NPC inspection only. Select your ship for company actions." :
-                Session.IsChallengeEnded ? "Run concluded. Stocks are frozen; use Menu to view results or save." :
-                ship.AutomationEnabled ? "Ship route enabled: pause its automation for manual cargo orders. Local company stock can still trade." :
-                !local ? "Dock at " + port.Name + " to use this ship's cargo. Local company stock can trade here remotely." :
-                "Paid trades move cash. Load/unload moves owned goods only. Neither action advances a day.");
+            SetText("tradeHeader", "Company " + Money(Session.Player.Cash) + " · Market buying power " + Money(port.MarketCash) +
+                " · " + ship.Name + (local ? " · Docked · cargo " + Q(ship.CargoUnits) + "/" + Q(ship.CargoCapacity) : " · Cargo remote") +
+                " · Warehouse " + (stock == null ? "none" : Q(stock.StoredUnits) + "/" + Q(stock.Capacity)));
+            SetText("tradeAvailabilityLabel", !ownedShip ? "NPC inspection only" :
+                Session.IsChallengeEnded ? "Run concluded · stocks frozen" :
+                ship.AutomationEnabled ? "Pause ship automation for cargo orders. Warehouse trades remain available." :
+                !local ? "Cargo remote · dock here to load or trade ship goods" : "Docked · instant orders · no day advance");
             var sail = Element<Button>("tradeSailButton");
             sail.EnableInClassList("hidden", local || !ownedShip);
             sail.SetEnabled(manual && ship.DockedPortId != null && Session.HasRoute(ship.DockedPortId, port.Id));
@@ -76,6 +76,9 @@ namespace SaltAndLedger.UnityHost
             Element<Button>("harborRoutePlannerButton").EnableInClassList("hidden", !UsesItineraries);
             Element<Button>("harborRoutePlannerButton").SetEnabled(ownedShip);
             RefreshHarborRows(ship, port, stock, local);
+            RefreshCommodityIntelligence(ship, port);
+            SetText("harborSelectedHoldings", "Ship " + (local ? Q(ship.Cargo[SelectedGoodId()]) : "remote") + " · Warehouse " +
+                (stock == null ? "none" : Q(stock.Inventory[SelectedGoodId()])));
             SetText("tradeGoodDescription", Session.Content.GetGood(SelectedGoodId()).Description);
             SetText("harborStockExplanation", stock == null ? "Construct an eligible local facility to gain finite company storage." :
                 "One town stockpile. All your local facilities draw inputs and deposit output here; capacity includes paid pending sites.");
@@ -98,78 +101,27 @@ namespace SaltAndLedger.UnityHost
                         preview = HarborUsesLocalStock ? stock == null ? null : tradeSnapshot.PreviewWarehouseTrade(Session.Player.OwnerId, harborFacilityId,
                             new TradeCommand(direction, SelectedGoodId(), amount)) : tradeSnapshot.PreviewTrade(ship.Id, port.Id,
                             new TradeCommand(direction, SelectedGoodId(), amount));
-                        text = preview == null ? "No company store. Construct a local facility." :
-                            "Total " + Money(preview.TotalAmount) + " · Average " + AverageExecutionPrice(preview) + " / good\n" +
-                            (preview.Outcome == TradeOutcome.Traded ? (direction == TradeDirection.Buy ? "Company pays market" : "Gross market payment") : TradeRemedy(preview.Outcome, HarborUsesLocalStock)) +
-                            ServiceFeeText(preview);
+                        text = preview == null ? "No company warehouse" :
+                            (direction == TradeDirection.Buy ? "Pay " : "Gross ") + Money(preview.TotalAmount) +
+                            (preview.Outcome == TradeOutcome.Traded ? direction == TradeDirection.Sell ?
+                                "\nFee " + Money(preview.ServiceFee) + " · Net " + Money(preview.TraderCashChange.Delta) : "" :
+                                "\n" + TradeRemedy(preview.Outcome, HarborUsesLocalStock));
                     }
-                    else if (valid) text = "Ship cargo requires a positive whole quantity. Choose company local stock for fractional trades.";
+                    else if (valid) text = "Whole cargo only · use Warehouse for fractional trades.";
                 }
                 catch (OverflowException) { text = "Numeric limit exceeded. Reduce this order."; }
                 SetText(prefix + "PreviewLabel", text);
                 SetText(prefix + "Calculation", preview?.Price == null ? "No executable priced order." :
                     "First marginal " + Number(preview.Price.FirstMarginalPrice) + " → last " + Number(preview.Price.LastMarginalPrice) +
-                    "; exact total " + Money(preview.TotalAmount) + ". Average is display only; the order follows the stock-sensitive curve.");
-                Element<Button>(prefix + "Button").text = direction == TradeDirection.Buy ? "Buy → " + (HarborUsesLocalStock ? "local stock" : "ship") :
-                    "Sell " + (HarborUsesLocalStock ? "local stock" : "ship cargo");
+                    "; exact total " + Money(preview.TotalAmount) + "; average " + AverageExecutionPrice(preview) + "." + ServiceFeeText(preview));
+                Element<Button>(prefix + "Button").text = direction == TradeDirection.Buy ? "Market → " + (HarborUsesLocalStock ? "Warehouse" : "Ship") :
+                    (HarborUsesLocalStock ? "Warehouse" : "Ship") + " → Market";
                 Element<Button>(prefix + "Button").SetEnabled(TradeIsOpen && canTrade && preview?.Outcome == TradeOutcome.Traded && (HarborUsesLocalStock || whole));
             }
             Element<Button>("quantityMaxBuy").SetEnabled(canTrade);
             Element<Button>("quantityMaxSell").SetEnabled(canTrade);
             RefreshHarborTransfers(ship, local, stock != null, manual, valid, whole, amount);
             RefreshModalStatus();
-        }
-
-        private void RefreshHarborRows(RegionalShipSnapshot ship, RegionalPortSnapshot port, CompanyStockpileSnapshot stock, bool local)
-        {
-            var rows = Element<VisualElement>("tradeGoodsRows");
-            if (rows.childCount == 0)
-                foreach (var goodId in goodIds)
-                {
-                    var captured = goodId;
-                    var row = new Button(() => { SetIndex("goodDropdown", goodIds.IndexOf(captured)); RefreshHarbor(); }) { name = "tradeGood_" + goodId };
-                    row.AddToClassList("trade-goods-row");
-                    var glyph = new MaritimeGlyph(goodId); glyph.AddToClassList("sl-glyph-small"); row.Add(glyph);
-                    var name = new Label { name = "name", pickingMode = PickingMode.Ignore }; name.AddToClassList("trade-good-name"); row.Add(name);
-                    foreach (var field in new[] { "town", "ship", "local", "bid", "ask" })
-                    { var cell = new Label { name = field, pickingMode = PickingMode.Ignore }; cell.AddToClassList("trade-cell"); row.Add(cell); }
-                    rows.Add(row);
-                }
-            foreach (var goodId in goodIds)
-            {
-                var row = rows.Q<Button>("tradeGood_" + goodId);
-                var quote = tradeSnapshot.GetMarketQuote(port.Id, goodId);
-                var need = port.Consumption.Where(rule => rule.Configuration.GoodId == goodId)
-                    .Sum(rule => port.City == null ? (long)rule.Configuration.PreviewDemand(0, rule.DemandRemainder).Quantity :
-                        tradeSnapshot.PreviewHouseholdConsumption(port.Id, rule.Configuration.Id).RequestedQuantity);
-                if (need == 0) need = port.Facilities.Where(f => f.Enabled).Sum(f => Session.Content.GetRecipe(f.Configuration.Instance.RecipeId).Inputs
-                    .Where(input => input.GoodId == goodId).Sum(input => (long)input.Quantity * tradeSnapshot.QuantityScale));
-                var quantity = port.Inventory[goodId];
-                var condition = need == 0 ? "— Neutral" : quantity < need ? "! Short" : quantity == need ? "✓ Adequate" : "+ Surplus";
-                row.Q<Label>("name").text = Session.Content.GetGood(goodId).Name + "\n" + condition;
-                row.tooltip = need == 0 ? "No active household or enabled public-recipe need for this good." :
-                    "Market stock " + Q(quantity) + " versus " + Q(need) + " for one configured household/municipal opportunity, or one batch per public facility. This is a stock indicator, not guaranteed affordability.";
-                row.EnableInClassList("stock-short", need > 0 && quantity < need);
-                row.EnableInClassList("stock-adequate", need > 0 && quantity >= need);
-                row.Q<Label>("town").text = Q(quantity);
-                row.Q<Label>("ship").text = local ? Q(ship.Cargo[goodId]) : "—";
-                var localCell = row.Q<Label>("local");
-                var localNeed = stock == null ? 0 : tradeSnapshot.PrivateFacilities.Values.Where(f => f.OwnerId == stock.OwnerId &&
-                    f.PortId == stock.PortId && f.Enabled && f.IsOperational &&
-                    (tradeSnapshot.UsesPooledCompanyStorage || f.Id == harborFacilityId)).Sum(f =>
-                    Session.Content.GetRecipe(f.Blueprint.RecipeId).Inputs.Where(input => input.GoodId == goodId)
-                        .Sum(input => (long)input.Quantity * tradeSnapshot.QuantityScale));
-                localCell.text = stock == null ? "—" : Q(stock.Inventory[goodId]) + (localNeed == 0 ? "" :
-                    stock.Inventory[goodId] < localNeed ? "\n! Short" : stock.Inventory[goodId] == localNeed ? "\n✓ Ready" : "\n+ Surplus");
-                localCell.tooltip = localNeed == 0 ? "No enabled operational private recipe currently needs this input." :
-                    Q(localNeed) + " needed for one batch of each enabled operational facility using this store. Payroll and deadlines still apply.";
-                if (stock != null) row.tooltip += "\nCompany stock: " + Q(stock.Inventory[goodId]) + ". " + localCell.tooltip;
-                localCell.EnableInClassList("stock-short", stock != null && localNeed > stock.Inventory[goodId]);
-                localCell.EnableInClassList("stock-adequate", stock != null && localNeed > 0 && localNeed <= stock.Inventory[goodId]);
-                row.Q<Label>("bid").text = quote.Bid.HasValue ? Number(quote.Bid.Value) : "—";
-                row.Q<Label>("ask").text = quote.Ask.HasValue ? Number(quote.Ask.Value) : "—";
-                row.EnableInClassList("selected-good", goodId == SelectedGoodId());
-            }
         }
 
         private void RefreshHarborTransfers(RegionalShipSnapshot ship, bool local, bool hasStore, bool manual, bool valid, bool whole, int amount)
@@ -188,8 +140,8 @@ namespace SaltAndLedger.UnityHost
                     {
                         var preview = tradeSnapshot.PreviewTransferGoods(Session.Player.OwnerId, ship.Id, harborFacilityId, direction, SelectedGoodId(), amount);
                         executable = preview.Outcome == TransferOutcome.Transferred;
-                        reason = executable ? "Ready · no cash" : preview.Outcome == TransferOutcome.InsufficientInventory ? "Not enough source stock. Buy, produce or unload this good first." :
-                            "Destination is full. Sell or move goods to free capacity.";
+                        reason = executable ? "Ready · no cash" : preview.Outcome == TransferOutcome.InsufficientInventory ? "Source stock short" :
+                            "Destination full";
                     }
                     catch (InvalidOperationException exception) { reason = exception.Message; }
                     catch (ArgumentException exception) { reason = exception.Message; }

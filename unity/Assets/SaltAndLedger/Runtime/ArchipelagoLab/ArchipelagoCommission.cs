@@ -17,7 +17,7 @@ namespace SaltAndLedger.UnityHost
         private void BuildCommissionScreens()
         {
             var mapScreen = CreateScreen(ArchipelagoScreen.CommissionMap, "Read the archipelago",
-                "Select any town. This is your starting world; drafting changes no stock or geography.");
+                "Select a town to inspect your starting world.");
             Text(mapScreen, "commissionMapIdentity", "", "run-copy");
             var mapScroll = new ScrollView { name = "commissionMapScroll" };
             mapScroll.AddToClassList("run-content-scroll");
@@ -31,7 +31,7 @@ namespace SaltAndLedger.UnityHost
             var routes = new Foldout { name = "commissionRoutes", text = "Exact connections and starting travel times" };
             mapScroll.Add(routes);
             Text(routes, "commissionRouteDetails", "", "run-copy");
-            Text(mapScroll, null, "Every town can be inspected before drafting. Industries, inputs and wages stay finite; a legal choice is not a guarantee of victory.", "run-footnote");
+            Text(mapScroll, null, "Drafting is free. Production still needs materials, wages and storage.", "run-footnote");
             var mapActions = Panel(mapScreen, null, "row run-actions");
             Button(mapActions, "commissionMapBackButton", "Back to setup", () => ShowScreen(ArchipelagoScreen.Setup));
             Button(mapActions, "commissionMapNextButton", "Draft objectives", () =>
@@ -41,7 +41,7 @@ namespace SaltAndLedger.UnityHost
             }, "primary");
 
             var draft = CreateScreen(ArchipelagoScreen.CommissionDraft, "Draft your commission",
-                "Choose one of three objectives in each category. All four selected goals will be mandatory.");
+                "Choose one card per round. All four goals are mandatory.");
             Text(draft, "commissionRoundTitle", "", "run-objective");
             Text(draft, "commissionDraftWorld", "", "run-footnote");
             var draftScroll = new ScrollView { name = "commissionDraftScroll" };
@@ -60,7 +60,7 @@ namespace SaltAndLedger.UnityHost
             }, "primary");
 
             var review = CreateScreen(ArchipelagoScreen.CommissionReview, "Review & begin",
-                "These four goals are a single commission. They must all hold together with the cash minimum by the deadline.");
+                "Meet all four goals together, with the required cash, by the deadline.");
             Text(review, "commissionReviewWorld", "", "run-copy");
             Text(review, "commissionReviewDeadline", "", "run-objective");
             var reviewScroll = new ScrollView { name = "commissionReviewScroll" };
@@ -79,7 +79,7 @@ namespace SaltAndLedger.UnityHost
             Element<Button>("commissionBeginButton").SetEnabled(false);
 
             var journal = CreateScreen(ArchipelagoScreen.Objectives, "Objectives / Journal",
-                "All four goals are mandatory. Permanent achievements stay checked; current conditions can fall again.");
+                "All four required · Cumulative stays earned · Current can fall again");
             Text(journal, "objectivesOverview", "", "run-objective");
             Text(journal, "objectivesDeadline", "", "run-copy");
             var journalScroll = new ScrollView { name = "objectivesScroll" };
@@ -294,26 +294,36 @@ namespace SaltAndLedger.UnityHost
 
         private void RenderCommissionProgress(VisualElement parent, CommissionProgress progress)
         {
+            var expanded = parent.Query<Foldout>().ToList().Where(foldout => foldout.value).Select(foldout => foldout.name).ToArray();
             parent.Clear();
             foreach (var goal in progress.Goals)
             {
                 var card = Panel(parent, "objective_" + goal.Id, "run-card commission-progress-card");
                 Text(card, null, (goal.IsMet ? "✓ " : "○ ") + goal.Title, "run-objective");
                 Text(card, null, goal.IsPermanent && goal.IsMet ? "PERMANENTLY FINISHED" :
-                    goal.IsMet ? "CURRENTLY MET — can change" : "NOT YET MET", "run-eyebrow");
+                    goal.IsMet ? "CURRENTLY MET · can change" : "NOT YET MET", "run-eyebrow");
                 var bar = new ProgressBar { name = "objectiveBar_" + goal.Id, lowValue = 0, highValue = 100,
                     value = goal.Percent, title = goal.Percent + "%" };
                 bar.AddToClassList("commission-progress"); card.Add(bar);
-                Text(card, null, goal.Explanation, "run-copy");
+                var definition = Session.Identity.Commission.Goals.First(item => item.Id == goal.Id);
                 foreach (var condition in goal.Conditions)
                 {
                     var permanent = condition.Semantic == CommissionSemantic.Cumulative;
+                    var label = definition.Conditions.First(item => item.Id == condition.Id).Label;
                     var text = Text(card, "objectiveCondition_" + condition.Id,
-                        (condition.IsMet ? "✓ " : "○ ") + condition.Label + ": " + condition.CurrentText + " / " + condition.TargetText +
-                        "\n" + (permanent ? "Cumulative" : "Current condition") + " · " + condition.Reason, "commission-requirement");
+                        (condition.IsMet ? "✓ " : "○ ") + label + ": " + condition.CurrentText + " / " + condition.TargetText +
+                        " · " + (permanent ? "Cumulative" : "Current"), "commission-requirement commission-condition-summary");
+                    text.tooltip = condition.Label + "\n" + condition.Reason;
                     text.EnableInClassList("commission-finished", permanent && condition.IsMet);
                 }
-                Text(card, null, goal.Reason, "run-footnote");
+                var detailsName = "objectiveDetails_" + goal.Id;
+                var details = new Foldout { name = detailsName, text = "Details & blockers", value = expanded.Contains(detailsName) };
+                details.AddToClassList("commission-details"); card.Add(details);
+                Text(details, null, goal.Explanation, "run-copy");
+                foreach (var condition in goal.Conditions)
+                    Text(details, null, condition.Label + "\n" +
+                        (condition.Semantic == CommissionSemantic.Cumulative ? "Cumulative · " : "Current · ") + condition.Reason,
+                        "commission-requirement");
             }
         }
     }

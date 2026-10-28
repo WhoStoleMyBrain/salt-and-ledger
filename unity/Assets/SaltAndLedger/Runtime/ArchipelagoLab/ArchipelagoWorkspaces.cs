@@ -29,9 +29,11 @@ namespace SaltAndLedger.UnityHost
             Text(scroll, "fleetCommandStatus", "", "sl-problem");
             Text(scroll, "fleetCommandRoute", "", "command-copy");
             Text(scroll, "fleetCommandNext", "", "sl-card command-copy");
-            Text(scroll, "fleetCommandLast", "", "command-muted");
-            Button(inspector, "fleetEditRouteButton", "Inspect / edit route", OpenSelectedShipRoute, "primary");
-            Button(inspector, "fleetHarborButton", "Open docked Harbor", () => OpenTrade(Session.Snapshot.Ships[Session.SelectedShipId ?? Session.Player.Id].DockedPortId));
+            var activity = new Foldout { name = "fleetActivityDetails", text = "Committed activity", value = false };
+            scroll.Add(activity);
+            Text(activity, "fleetCommandLast", "", "command-muted");
+            Button(inspector, "fleetEditRouteButton", "Route planner", OpenSelectedShipRoute, "primary");
+            Button(inspector, "fleetHarborButton", "Docked Harbor", () => OpenTrade(Session.Snapshot.Ships[Session.SelectedShipId ?? Session.Player.Id].DockedPortId));
             Button(inspector, "fleetBackButton", "Back to map", () => SwitchCommandMode(CommandMode.Map));
 
             var economy = Panel(main, "economyWorkspace", "sl-paper command-economy hidden");
@@ -50,12 +52,15 @@ namespace SaltAndLedger.UnityHost
             Text(metrics, "economyFoodFact", "", "sl-metric command-economy-metric");
             Text(metrics, "economyCashFact", "", "sl-metric command-economy-metric");
             Text(metrics, "economyPeopleFact", "", "sl-metric command-economy-metric");
-            Text(economyScroll, "economyNeedDetail", "", "sl-card command-copy");
+            Text(economyScroll, "economyNeedSummary", "", "sl-card command-copy");
+            var foodDetails = new Foldout { name = "economyFoodDetails", text = "Food affordability & demand", value = false };
+            economyScroll.Add(foodDetails);
+            Text(foodDetails, "economyNeedDetail", "", "command-copy");
             Text(economyScroll, null, "Next production opportunities", "sl-section-title");
-            Text(economyScroll, null, "Current stock and funds, one canonical batch. Earlier ships, procurement and other facilities can change these facts before the attempt.", "command-muted");
+            Text(economyScroll, null, "One potential batch at current stock and funds; not reserved output.", "command-muted");
             Panel(economyScroll, "economyProductionRows", "");
             var actions = Panel(economy, null, "row run-actions");
-            Button(actions, "economyDetailsButton", "Full city accounts / pricing", () => OpenSecondary(ArchipelagoScreen.CityEconomy));
+            Button(actions, "economyDetailsButton", "Accounts & pricing", () => OpenSecondary(ArchipelagoScreen.CityEconomy));
             Button(actions, "economyLedgerButton", "Company ledger", () => OpenSecondary(ArchipelagoScreen.Ledger));
             Button(actions, "economyHarborButton", "Harbor", () => OpenTrade(Session.SelectedPortId), "primary");
             Button(actions, "economyBackButton", "Back to map", () => SwitchCommandMode(CommandMode.Map));
@@ -102,6 +107,7 @@ namespace SaltAndLedger.UnityHost
                 (progress.ActionIndex < itinerary.Stops[progress.StopIndex].Commands.Count ? ", order " + (progress.ActionIndex + 1) : ", departure pending") + " · pass " + progress.Cycle +
                 "\nDaily work " + (progress.OperationsDay == snapshot.Day ? progress.OperationsUsed : 0) + "/8" +
                 "\nLast committed: " + progress.LastDecision + " · " + progress.LastReason);
+            Element<Foldout>("fleetActivityDetails").EnableInClassList("hidden", progress == null);
             Element<Button>("fleetEditRouteButton").SetEnabled(selected.IsPlayer);
             Element<Button>("fleetHarborButton").SetEnabled(selected.DockedPortId != null);
             if (ReferenceEquals(economyPresented, snapshot) && economyPortPresented == Session.SelectedPortId) return;
@@ -124,6 +130,11 @@ namespace SaltAndLedger.UnityHost
             SetText("economyPeopleFact", city == null ? "People & prosperity\nNot modeled" : "Population " + city.Population +
                 (city.PopulationDelta == 0 ? " · stable" : city.PopulationDelta > 0 ? " · growing" : " · declining") +
                 "\nProsperity " + city.Prosperity + "/100");
+            SetText("economyNeedSummary", !need.Modeled || !need.HasNeed ? "No household Bread need scheduled." :
+                "Bread shortage: " + Q(need.StockShortfall) + " stock" + (need.PreviewAvailable ?
+                " · " + Q(need.AffordabilityShortfall.Value) + " unaffordable from available stock" : " · retail preview unavailable") +
+                (need.HasObservation ? "" : "\nAwaiting first need"));
+            Element<Label>("economyNeedSummary").tooltip = "Current stock and affordability gaps for the next Bread opportunity. Production, trades and later prices can change both.";
             SetText("economyNeedDetail", !need.Modeled ? "This historical world retains its original physical demand. It has no household account." : !need.HasNeed ?
                 "No essential household rule is configured." : (need.HasObservation ? "Next opportunity" : "Awaiting first need") +
                 " · current stock shortfall " + Q(need.StockShortfall) + " Bread." +
@@ -133,16 +144,21 @@ namespace SaltAndLedger.UnityHost
                 "\nAt current population " + need.Population + ", demand carry " + need.DemandRemainder + " → " + need.NextDemandRemainder +
                 ". This is a current-state comparison; intervening production, purchases and price changes are not forecast.");
             var rows = Element<VisualElement>("economyProductionRows");
+            var expanded = rows.Query<Foldout>().ToList().Where(foldout => foldout.value).Select(foldout => foldout.name).ToArray();
             rows.Clear();
             foreach (var production in TownProduction(port.Id))
             {
                 var card = Panel(rows, "productionSignal_" + production.FacilityId, "sl-card command-production-card");
-                Text(card, null, ProductionName(production) + (production.IsPrivate ? " · company stock" : " · public market"), "sl-section-title");
+                Text(card, null, ProductionName(production) + (production.IsPrivate ? " · Company warehouse" : " · Town market"), "sl-section-title");
                 Text(card, null, ReadinessLabel(production) + " · next eligible attempt D" + production.NextEligibleDay,
                     "sl-problem" + (IsProductionProblem(production) ? " sl-warning" : ""));
-                Text(card, null, ProductionDetails(production), "command-copy");
+                Text(card, null, ProductionRecipe(production), "command-copy");
+                var detailName = "productionDetails_" + production.FacilityId;
+                var details = new Foldout { name = detailName, text = "Inputs, payroll & last outcome", value = expanded.Contains(detailName) };
+                card.Add(details);
+                Text(details, null, ProductionDetails(production), "command-copy");
                 var id = production.FacilityId;
-                Button(card, "productionAct_" + id, production.IsPrivate ? "Manage facility" : "Inspect public inputs in Harbor", () =>
+                Button(card, "productionAct_" + id, production.IsPrivate ? "Manage facility" : "Harbor inputs", () =>
                 {
                     if (!production.IsPrivate) { OpenTrade(port.Id); return; }
                     selectedFacilityId = id; loadedPolicyFacilityId = null;
@@ -190,6 +206,11 @@ namespace SaltAndLedger.UnityHost
             }
         }
 
+        private string ProductionRecipe(ProductionOpportunitySignal signal) =>
+            (signal.Inputs.Count == 0 ? "Extraction" : string.Join(" + ", signal.Inputs.Select(i => Q(i.Quantity) + " " +
+                Session.Content.GetGood(i.GoodId).Name))) + " → " +
+            string.Join(" + ", signal.Outputs.Select(o => Q(o.Quantity) + " " + Session.Content.GetGood(o.GoodId).Name));
+
         private string ProductionDetails(ProductionOpportunitySignal signal) =>
             (signal.Inputs.Count == 0 ? "Extraction" : string.Join(" + ", signal.Inputs.Select(i => Q(i.Quantity) + " " +
                 Session.Content.GetGood(i.GoodId).Name + " (stock " + Q(i.CurrentStock) + ")"))) + " → " +
@@ -227,7 +248,7 @@ namespace SaltAndLedger.UnityHost
                 var next = order == null ? "Depart after completed stop" : ItineraryVerb(order.Kind) + " up to " + Q(order.MaximumQuantity) + " " + Session.Content.GetGood(order.GoodId).Name;
                 return "Next: " + next + " · " + PortName(stop.PortId) + "\n" + decision.Reason;
             }
-            return UsesItineraries && ship.IsPlayer ? "Use Route planner to draft and apply an itinerary." : DecisionText(Session.DecisionFor(ship.Id));
+            return UsesItineraries && ship.IsPlayer ? "No itinerary · assign one in Route planner" : DecisionText(Session.DecisionFor(ship.Id));
         }
 
         private bool ShipBlocked(RegionalShipSnapshot ship)

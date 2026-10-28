@@ -212,14 +212,14 @@ namespace SaltAndLedger.UnityHost.Tests
             var focus = root.focusController.focusedElement;
             RightClick("port_" + controller.Session.Player.DockedPortId);
             Assert.That(controller.TradeIsOpen, Is.True);
-            Assert.That(root.Q<Label>("tradeHeader").text, Does.Contain("DOCKED"));
+            Assert.That(root.Q<Label>("tradeHeader").text, Does.Contain("Docked"));
             Assert.That(root.Q<Button>("buyButton").enabledInHierarchy, Is.True);
             Assert.That(root.Q<Button>("nextDayButton").enabledInHierarchy, Is.False, "Modal blocks underlying clock");
             Escape();
             Assert.That(controller.TradeIsOpen, Is.False);
             Assert.That(root.focusController.focusedElement, Is.SameAs(focus));
             RightClick("port_" + WorldIds.East);
-            Assert.That(root.Q<Label>("tradeHeader").text, Does.Contain("REMOTE MARKET"));
+            Assert.That(root.Q<Label>("tradeHeader").text, Does.Contain("Cargo remote"));
             Assert.That(root.Q<Button>("buyButton").enabledInHierarchy, Is.False);
             Assert.That(root.Q<Button>("tradeSailButton").enabledInHierarchy, Is.True);
             Assert.That(controller.Session.Player.DockedPortId, Is.EqualTo(ExpandingEconomyGeneration.Generate(42).FoodSourcePortId));
@@ -271,8 +271,12 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("tradeGood_logs");
             Set("quantityField", "2");
             var preview = controller.Session.PreviewTrade(TradeDirection.Buy, "logs", 20000);
-            Assert.That(root.Q<Label>("buyPreviewLabel").text, Does.Contain("Total " + controller.Session.Coins(preview.TotalAmount)));
-            Assert.That(root.Q<Label>("buyPreviewLabel").text, Does.Contain("Average " + ArchipelagoLabController.AverageExecutionPrice(preview)));
+            Assert.That(root.Q<Label>("buyPreviewLabel").text, Does.Contain("Pay " + controller.Session.Coins(preview.TotalAmount)));
+            root.Q<Foldout>("harborCalculations").value = true;
+            Assert.That(root.Q<Label>("buyCalculation").text, Does.Contain("exact total " + controller.Session.Coins(preview.TotalAmount))
+                .And.Contain("average " + ArchipelagoLabController.AverageExecutionPrice(preview))
+                .And.Contain("First marginal " + preview.Price.FirstMarginalPrice + " → last " + preview.Price.LastMarginalPrice));
+            root.Q<Foldout>("harborCalculations").value = false;
             var max = controller.Session.Snapshot.MaximumTradeQuantity(controller.Session.Player.Id, controller.Session.Player.DockedPortId, TradeDirection.Buy, "logs");
             Click("quantityMaxBuy");
             Assert.That(root.Q<TextField>("quantityField").value, Is.EqualTo(controller.Session.Quantity(max)));

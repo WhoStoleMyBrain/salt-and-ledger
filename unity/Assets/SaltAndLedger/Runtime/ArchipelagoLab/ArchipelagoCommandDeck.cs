@@ -288,7 +288,7 @@ namespace SaltAndLedger.UnityHost
         {
             SetText("deckFact0", ship.DockedPortId == null ? "Arrival\nD" + checked(Session.Snapshot.Day + ship.RemainingTravelDays) + " · " + PortName(ship.DestinationPortId) :
                 "Docked\n" + PortName(ship.DockedPortId));
-            SetText("deckFact1", "Hold\n" + Q(ship.CargoUnits) + " / " + Q(ship.CargoCapacity));
+            SetText("deckFact1", "Ship cargo\n" + Q(ship.CargoUnits) + " / " + Q(ship.CargoCapacity));
             SetText("deckFact2", "Control\n" + (ship.AutomationEnabled ? "Automated" : "Manual"));
             SetText("deckReason", ShipInstruction(ship));
             Element<Label>("deckReason").EnableInClassList("sl-warning", ShipBlocked(ship));

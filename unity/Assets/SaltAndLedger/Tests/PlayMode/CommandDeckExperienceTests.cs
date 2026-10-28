@@ -143,7 +143,7 @@ namespace SaltAndLedger.UnityHost.Tests
             var publicName = "productionAct_" + publicFacility.Configuration.Instance.Id;
             var originalPublicSource = root.Q<Button>(publicName);
             Click(publicName);
-            root.Q<DropdownField>("harborTradeTarget").value = "Company local stock";
+            root.Q<DropdownField>("harborTradeTarget").value = "Company warehouse";
             root.Q<DropdownField>("goodDropdown").value = "Grain";
             root.Q<TextField>("quantityField").value = "1";
             Click("buyButton");
@@ -197,7 +197,7 @@ namespace SaltAndLedger.UnityHost.Tests
             var blocked = EconomicSignals.PrivateProduction(controller.Session.Snapshot, controller.Session.Content, mill.Id);
             Assert.That(blocked.CurrentReadiness, Is.EqualTo(ScheduledProductionOutcome.InputShortage));
             Click("industryHarborButton");
-            root.Q<DropdownField>("harborTradeTarget").value = "Company local stock";
+            root.Q<DropdownField>("harborTradeTarget").value = "Company warehouse";
             root.Q<DropdownField>("goodDropdown").value = "Grain";
             root.Q<TextField>("quantityField").value = "2";
             var before = controller.Session.Snapshot;
@@ -249,7 +249,7 @@ namespace SaltAndLedger.UnityHost.Tests
             controller.Session.WarehouseTrade(facility.Id, TradeDirection.Buy, "grain", 10000, preparation);
             Assert.That(controller.Session.Player.Cash, Is.EqualTo(purchase.TraderCashChange.After));
             Click("closeIndustryButton"); Click("openTradeButton");
-            root.Q<DropdownField>("harborTradeTarget").value = "Company local stock";
+            root.Q<DropdownField>("harborTradeTarget").value = "Company warehouse";
             root.Q<DropdownField>("goodDropdown").value = "Grain";
             root.Q<TextField>("quantityField").value = "1";
             yield return null; yield return null;
@@ -262,12 +262,10 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(buy.Outcome, Is.EqualTo(TradeOutcome.Traded));
             Assert.That(sell.Outcome, Is.EqualTo(TradeOutcome.Traded));
             Assert.That(sell.ServiceFee, Is.GreaterThan(0), "The witness must include the extra v3 service-fee lines.");
-            Assert.That(root.Q<Label>("buyPreviewLabel").text, Does.Contain("Total " + Money(buy.TotalAmount)));
-            Assert.That(root.Q<Label>("sellPreviewLabel").text, Does.Contain("Total " + Money(sell.TotalAmount))
-                .And.Contain("Service fee " + Money(sell.ServiceFee))
-                .And.Contain("net receipts " + Money(sell.TraderCashChange.Delta))
-                .And.Contain("Fee to market " + Money(sell.MarketServiceFee))
-                .And.Contain("local workers " + Money(sell.HouseholdServiceFee)));
+            Assert.That(root.Q<Label>("buyPreviewLabel").text, Does.Contain("Pay " + Money(buy.TotalAmount)));
+            Assert.That(root.Q<Label>("sellPreviewLabel").text, Does.Contain("Gross " + Money(sell.TotalAmount))
+                .And.Contain("Fee " + Money(sell.ServiceFee))
+                .And.Contain("Net " + Money(sell.TraderCashChange.Delta)));
             Assert.That(root.Q<Button>("buyButton").enabledInHierarchy, Is.True);
             Assert.That(root.Q<Button>("sellButton").enabledInHierarchy, Is.True);
             var scroll = root.Q<ScrollView>("tradeContentScroll");
@@ -285,6 +283,15 @@ namespace SaltAndLedger.UnityHost.Tests
                 Assert.That(bounds.xMax, Is.LessThanOrEqualTo(Math.Min(root.worldBound.xMax, viewport.xMax) + 1), id);
                 Assert.That(bounds.yMax, Is.LessThanOrEqualTo(Math.Min(root.worldBound.yMax, viewport.yMax) + 1), id);
             }
+            root.Q<Foldout>("harborCalculations").value = true;
+            Assert.That(root.Q<Label>("buyCalculation").text, Does.Contain("exact total " + Money(buy.TotalAmount))
+                .And.Contain("average " + ArchipelagoLabController.AverageExecutionPrice(buy)));
+            Assert.That(root.Q<Label>("sellCalculation").text, Does.Contain("exact total " + Money(sell.TotalAmount))
+                .And.Contain("average " + ArchipelagoLabController.AverageExecutionPrice(sell))
+                .And.Contain("Service fee " + Money(sell.ServiceFee))
+                .And.Contain("net receipts " + Money(sell.TraderCashChange.Delta))
+                .And.Contain("Fee to market " + Money(sell.MarketServiceFee))
+                .And.Contain("local workers " + Money(sell.HouseholdServiceFee)));
             Cancel();
             AssertUnchanged(before, saved);
         }

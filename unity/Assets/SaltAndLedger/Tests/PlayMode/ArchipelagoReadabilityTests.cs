@@ -68,7 +68,7 @@ namespace SaltAndLedger.UnityHost.Tests
                 Assert.That(root.Q<DropdownField>("goodDropdown").resolvedStyle.fontSize, Is.EqualTo(bodies[(int)scale]).Within(0.1f));
                 var quantity = root.Q<TextField>("quantityField");
                 quantity.Focus(); quantity.value = "3";
-                Assert.That(root.Q<Label>("buyPreviewLabel").text, Does.Contain("Total"));
+                Assert.That(root.Q<Label>("buyPreviewLabel").text, Does.Contain("Pay"));
                 Assert.That(root.focusController.focusedElement, Is.Not.Null);
                 Cancel();
                 Assert.That(controller.TradeIsOpen, Is.False);

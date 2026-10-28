@@ -151,12 +151,12 @@ namespace SaltAndLedger.UnityHost.Tests
             root.Q<DropdownField>("goodDropdown").value = session.Content.GetGood(goodId).Name;
             root.Q<TextField>("quantityField").value = "0.75";
             Assert.That(root.Q<Button>("buyButton").enabledInHierarchy, Is.False);
-            Assert.That(root.Q<Label>("buyPreviewLabel").text, Does.Contain("whole quantity"));
+            Assert.That(root.Q<Label>("buyPreviewLabel").text, Does.Contain("Whole cargo only"));
             var before = session.Snapshot;
             root.Q<TextField>("quantityField").value = "1";
             var preview = before.PreviewTrade(ship.Id, portId, new TradeCommand(TradeDirection.Buy, goodId, 10000));
-            Assert.That(root.Q<Label>("buyPreviewLabel").text, Does.Contain("Total " + session.Coins(preview.TotalAmount)));
-            Assert.That(root.Q<Label>("tradeHeader").text, Does.Contain("(10 free)"));
+            Assert.That(root.Q<Label>("buyPreviewLabel").text, Does.Contain("Pay " + session.Coins(preview.TotalAmount)));
+            Assert.That(root.Q<Label>("tradeHeader").text, Does.Contain("cargo " + session.Quantity(ship.CargoUnits) + "/" + session.Quantity(ship.CargoCapacity)));
             Click("buyButton");
             Assert.That(session.Player.Id, Is.EqualTo("player_ship_2"));
             Assert.That(session.Player.Cargo[goodId], Is.EqualTo(10000));

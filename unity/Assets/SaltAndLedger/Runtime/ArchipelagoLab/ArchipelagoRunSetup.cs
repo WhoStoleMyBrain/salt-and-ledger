@@ -15,7 +15,7 @@ namespace SaltAndLedger.UnityHost
         private void BuildRunSetup()
         {
             var screen = CreateScreen(ArchipelagoScreen.Setup, "Chart your course",
-                "Preview a world, choose your company and challenge, then begin. Nothing runs until you confirm Begin voyage.");
+                "Choose your company, inspect the map, then begin.");
             var scroll = new ScrollView(ScrollViewMode.Vertical) { name = "setupScroll" };
             scroll.AddToClassList("run-content-scroll");
             screen.Add(scroll);
@@ -35,7 +35,7 @@ namespace SaltAndLedger.UnityHost
             var rules = new Foldout { name = "setupRulesFoldout", text = "Construction and economy details", value = false };
             world.Add(rules);
             Text(rules, "setupDifficulty", "", "run-copy");
-            var pricing = new DropdownField("Living pricing", new System.Collections.Generic.List<string>
+            var pricing = new DropdownField("Pricing", new System.Collections.Generic.List<string>
                 { "Stock-sensitive baseline", "Coverage target hypothesis" }, 0) { name = "livingPricingPicker" };
             world.Add(pricing);
             Text(rules, "setupEconomyDescription", "", "run-footnote");
@@ -44,7 +44,7 @@ namespace SaltAndLedger.UnityHost
             Text(preview, null, "GEOGRAPHY PREVIEW", "run-eyebrow");
             Text(preview, "setupWorldIdentity", "", "run-objective");
             Button(preview, "previewWorldButton", "Explore full map", OpenCommissionMap, "primary");
-            Text(preview, null, "Inspect every town, starting stock, local needs and building opportunities before choosing your objectives.", "run-copy");
+            Text(preview, null, "Towns · stock · needs · eligible industries", "run-copy");
             var distances = new Foldout { name = "setupDistances", text = "Coordinates and exact sea distances", value = false };
             preview.Add(distances);
             Text(distances, "setupCoordinates", "", "run-copy");
@@ -61,18 +61,22 @@ namespace SaltAndLedger.UnityHost
                 choices = new[] { "Unlimited sandbox" }.Concat(RunScenario.Challenges.Select(c => c.Name)).ToList() };
             objective.Add(challenges);
             challenges.SetValueWithoutNotify(challenges.choices[1]);
-            Text(objective, "setupChallengeDescription", "", "run-copy");
             Text(objective, "setupObjective", "", "run-objective");
             Text(objective, "setupDeadline", "", "run-copy");
+            var objectiveDetails = new Foldout { name = "setupObjectiveDetails", text = "Victory rules", value = false };
+            objective.Add(objectiveDetails);
+            Text(objectiveDetails, "setupChallengeDescription", "", "run-copy");
             var charter = Panel(columns, null, "run-column run-card");
             Text(charter, null, "YOUR COMPANY", "run-eyebrow");
             var charters = new DropdownField { name = "charterPicker", choices = RunScenario.Charters.Select(c => c.Name).ToList() };
             charter.Add(charters);
             charters.SetValueWithoutNotify(charters.choices[0]);
-            Text(charter, "setupCharterDescription", "", "run-copy");
             Text(charter, "setupAssets", "", "run-objective");
-            Text(charter, "setupTradeoff", "", "run-copy");
-            Text(charter, null, "Starter assets are grants, not purchases. Charters replace each other; their advantages never stack.", "run-footnote");
+            var companyDetails = new Foldout { name = "setupCompanyDetails", text = "Company tradeoffs", value = false };
+            charter.Add(companyDetails);
+            Text(companyDetails, "setupCharterDescription", "", "run-copy");
+            Text(companyDetails, "setupTradeoff", "", "run-copy");
+            Text(companyDetails, null, "Starting assets are grants. Choose one charter; advantages do not stack.", "run-footnote");
             var actions = Panel(screen, null, "run-actions row");
             Button(actions, "setupBackButton", "Main Menu", () => ShowScreen(ArchipelagoScreen.MainMenu));
             Button(actions, "setupHelpButton", "Encyclopedia", () => OpenSecondary(ArchipelagoScreen.Encyclopedia));
@@ -118,10 +122,10 @@ namespace SaltAndLedger.UnityHost
             var charter = RunScenario.GetCharter(SetupCharterId());
             SetText("setupChallengeDescription", challenge?.Description ?? "Finite markets without a deadline or scored objective.");
             SetText("setupObjective", challenge?.Objective ?? "Explore, invest and automate at your own pace.");
-            SetText("setupDeadline", challenge == null ? "Unlimited sandbox." :
+            SetText("setupDeadline", challenge == null ? "No deadline." :
                 "Deadline: day " + challenge.Configuration.DeadlineDay + " · Minimum cash: " +
-                (challenge.Configuration.MinimumCash / EconomicUnits.MoneyScale) +
-                "\nCompleting the objective wins immediately. Missing it at the deadline ends the run in defeat.");
+                (challenge.Configuration.MinimumCash / EconomicUnits.MoneyScale) + " coins");
+            Element<Label>("setupDeadline").tooltip = "Success freezes the run immediately. Goals and cash must hold together by the deadline; otherwise the run ends in defeat.";
             var mode = SetupWorldMode();
             var difficulty = (RunDifficulty)Math.Max(0, Element<DropdownField>("difficultyPicker").index);
             var pricing = (LivingPricingMode)Math.Max(0, Element<DropdownField>("livingPricingPicker").index);
@@ -135,7 +139,7 @@ namespace SaltAndLedger.UnityHost
             SetText("seedValidation", valid ? "" : "Enter a signed 32-bit integer using ASCII digits. No spaces, decimals or exponents.");
             SetText("setupDifficulty", difficulty == RunDifficulty.Normal
                 ? "New private facilities operate immediately; their first batch waits one normal production interval."
-                : "Pay the full cost at order. New private sites spend two complete days under construction, then wait a full production interval. No automatic purchases, sales or production while building. The Industrial Consortium's granted bakery is already operational and keeps its original schedule.");
+                : "Pay once at order. Construction takes two days; first production follows one full recipe interval later. Automatic operations wait through completion day. Granted factories are already operational.");
             var plan = commission && valid ? SelectedCommission() : null;
             // An unfinished draft uses an ordinary day-zero sandbox preview; it cannot be started as a commission.
             setupIdentity = valid ? new RunIdentity(commission && plan == null ? null : id, charter.Id, mode,
@@ -144,7 +148,7 @@ namespace SaltAndLedger.UnityHost
             if (valid) charter = RunScenario.GetCharter(setupIdentity);
             SetText("setupCharterDescription", charter.Description);
             SetText("setupAssets", charter.Endowment);
-            SetText("setupTradeoff", "Opportunity cost\n" + charter.Tradeoff);
+            SetText("setupTradeoff", charter.Tradeoff);
             SetText("setupEconomyDescription", "Expanding Economy v3: exact paid needs, seven buildable industries, up to three ships, finite outside trade and a public Silver-backed Mint. Local sale fees and the bounded four-day food/payroll review transfer real money. Save explicitly to continue locally.");
             SetText("setupWorldIdentity", valid ? WorldIdentityText(setupIdentity) : "Preview unavailable until the seed is valid.");
             if (!valid) return;
@@ -167,8 +171,8 @@ namespace SaltAndLedger.UnityHost
             var content = Session.CanonicalContent.ForExpandingEconomy();
             const decimal scale = 10000m;
             string Units(long amount) => (amount / scale).ToString("0.####", CultureInfo.InvariantCulture);
-            SetText("setupRecoveryTown", "Vulnerable recovery town: " + PortName(generation.RecoveryPortId) +
-                ". Regional paid meals count; a delivery alone does not complete the challenge.");
+            SetText("setupRecoveryTown", "Recovery town: " + PortName(generation.RecoveryPortId) + " · needs paid meals");
+            Element<Label>("setupRecoveryTown").tooltip = "Recovery objectives count actual paid meals. Delivering Bread alone is not consumption.";
             foreach (var port in ports)
             {
                 var card = Panel(Element<VisualElement>("setupCityCards"), "setupCity_" + port.Id, "setup-city-card");

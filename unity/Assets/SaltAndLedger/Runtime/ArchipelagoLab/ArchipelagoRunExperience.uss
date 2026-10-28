@@ -113,6 +113,9 @@
 .commission-progress-card { flex-grow: 1; flex-basis: 44%; min-width: 0; margin: 6px; }
 .commission-progress-card .run-objective { margin-bottom: 6px; }
 .commission-progress-card .run-eyebrow { letter-spacing: 1px; }
+.commission-progress-card > .commission-condition-summary { margin: 4px 0; }
+.commission-details { margin-top: 6px; flex-shrink: 0; }
+.commission-details > .unity-toggle > .unity-toggle__label { font-size: var(--sl-body); }
 .commission-progress { height: var(--sl-control); flex-shrink: 0; margin: 4px 0 10px 0; }
 .commission-progress .unity-progress-bar__background { background-color: #0f2734; border-color: #53717a; border-width: 1px; }
 .commission-progress .unity-progress-bar__progress { background-color: #477c73; }

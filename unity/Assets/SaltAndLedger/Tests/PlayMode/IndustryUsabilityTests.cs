@@ -76,7 +76,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Contain("not this recipe's material cost or profit"));
             Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Not.Contain("Inputs remain in this facility's separate store"));
             Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Contain("Shared inputs can serve other local facilities"));
-            Assert.That(root.Q<Label>("facilityInputStatusLabel").text, Does.Contain("Flour: private 1/1 · missing 0"));
+            Assert.That(root.Q<Label>("facilityInputStatusLabel").text, Does.Contain("Flour: warehouse 1/1 · missing 0"));
             yield return null;
         }
 

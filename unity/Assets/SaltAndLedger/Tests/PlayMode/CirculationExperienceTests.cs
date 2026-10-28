@@ -47,7 +47,7 @@ namespace SaltAndLedger.UnityHost.Tests
         {
             controller.BeginRun(Modern());
             controller.OpenTrade(controller.Session.Player.DockedPortId);
-            root.Q<DropdownField>("harborTradeTarget").value = "Company local stock";
+            root.Q<DropdownField>("harborTradeTarget").value = "Company warehouse";
             root.Q<DropdownField>("goodDropdown").value = controller.Session.Content.GetGood("grain").Name;
             root.Q<TextField>("quantityField").value = "0.5";
             Click("buyButton");
@@ -56,7 +56,9 @@ namespace SaltAndLedger.UnityHost.Tests
             var preview = before.PreviewWarehouseTrade(facility.OwnerId, facility.Id,
                 new TradeCommand(TradeDirection.Sell, "grain", 5000));
             Assert.That(preview.ServiceFee, Is.GreaterThan(0));
-            Assert.That(root.Q<Label>("sellPreviewLabel").text, Does.Contain("Service fee").And.Contain("net receipts").And.Contain("local workers"));
+            Assert.That(root.Q<Label>("sellPreviewLabel").text, Does.Contain("Fee").And.Contain("Net"));
+            root.Q<Foldout>("harborCalculations").value = true;
+            Assert.That(root.Q<Label>("sellCalculation").text, Does.Contain("Service fee").And.Contain("net receipts").And.Contain("local workers"));
             Click("sellButton");
             Assert.That(controller.Session.Player.Cash, Is.EqualTo(preview.TraderCashChange.After));
             var after = controller.Session.Snapshot;

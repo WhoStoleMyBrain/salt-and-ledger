@@ -147,7 +147,7 @@ namespace SaltAndLedger.UnityHost
 
         private void BuildPauseMenu()
         {
-            var screen = CreateScreen(ArchipelagoScreen.Pause, "At anchor", "Economic time is paused. Inspect your accounts, change course, or leave this run.");
+            var screen = CreateScreen(ArchipelagoScreen.Pause, "At anchor", "Economic time is paused.");
             var pauseScroll = new ScrollView(ScrollViewMode.Vertical) { name = "pauseScroll" };
             pauseScroll.AddToClassList("run-pause-scroll");
             screen.Add(pauseScroll);
@@ -267,7 +267,10 @@ namespace SaltAndLedger.UnityHost
             Text(scroll, "resultFinances", "", "run-copy");
             Text(scroll, "resultAssets", "", "run-copy");
             Text(scroll, "resultOperations", "", "run-copy");
-            Text(scroll, null, "Material margin deducts FIFO material basis released by sales. Living Cities also reports all paid wages as a separate operating expense, including work whose output is still held. Transport operating costs, depreciation and asset resale are unmodeled. Grants have zero paid basis, not zero economic value. Compare scores within the same challenge, charter, ascension and exact world identity.", "run-footnote");
+            var accounting = new Foldout { name = "resultAccountingDetails", text = "Accounting & score details", value = false };
+            scroll.Add(accounting);
+            Text(accounting, "resultScoreDetails", "", "run-copy");
+            Text(accounting, null, "Material margin deducts FIFO material basis released by sales. Paid wages remain a separate operating expense, including work whose output is still held. Transport operating costs, depreciation and asset resale are unmodeled. Grants have zero paid basis, not zero economic value. Compare scores only within the same complete run identity.", "run-footnote");
             var actions = Panel(screen, "resultsActions", "run-actions row results-actions");
             Button(actions, "retryRunButton", "Retry Same World", () => BeginRun(Session.Identity), "primary");
             Button(actions, "resultsNewRunButton", "Change Setup", ChangeSetup);
@@ -286,7 +289,7 @@ namespace SaltAndLedger.UnityHost
             var scroll = new ScrollView { name = "completionScroll" }; scroll.AddToClassList("run-content-scroll"); screen.Add(scroll);
             Text(scroll, "completionTitle", "", "run-result-title");
             Text(scroll, "completionSummary", "", "run-objective");
-            Text(scroll, null, "Your victory is committed. Economic time has stopped; your stocks, accounts and objectives remain available to inspect and save.", "run-copy");
+            Text(scroll, null, "Victory recorded · time stopped · inspect or save to a local slot", "run-copy");
             var actions = Panel(screen, null, "row run-actions");
             Button(actions, "completionResultsButton", "View results", PresentResults, "primary");
             Button(actions, "completionJournalButton", "Inspect objectives", OpenObjectives);
@@ -319,8 +322,8 @@ namespace SaltAndLedger.UnityHost
             RefreshCommissionResults();
             SetText("resultScore", "Score " + result.TotalScore + "\nObjective " + result.ObjectiveScore +
                 " / 500 · Victory " + result.VictoryScore + " / 1,000 · Time remaining " + result.TimeScore +
-                " / 600 · Cash " + result.SolvencyScore + " / 100\n" +
-                "Comparison group: " + result.ComparisonGroup.Replace("/", " / ") +
+                " / 600 · Cash " + result.SolvencyScore + " / 100");
+            SetText("resultScoreDetails", "Comparison group: " + result.ComparisonGroup.Replace("/", " / ") +
                 (Session.Identity?.Commission == null ? "\nObjective: 500 × capped completion fraction." :
                 "\nObjective: floor(500 × sum of the four capped card percentages / 400).") +
                 " Victory: 1,000. Winning early: 10 per remaining day, capped at 60 days. Cash: 1 per 10, capped at 100.");
@@ -334,7 +337,7 @@ namespace SaltAndLedger.UnityHost
         private void BuildSettings()
         {
             var screen = CreateScreen(ArchipelagoScreen.Settings, "Presentation settings",
-                "Text size applies throughout the game and is remembered on this device. Other presentation settings last for this application session. Neither changes economic rules.");
+                "Text size is remembered on this device. Other settings last for this session.");
             var card = Panel(screen, null, "run-card");
             var smooth = new Toggle("Smooth ship movement between committed days") { name = "smoothMovementToggle", value = true };
             card.Add(smooth);
@@ -343,7 +346,7 @@ namespace SaltAndLedger.UnityHost
                 (int)TextScale.Current) { name = "textScaleDropdown" };
             card.Add(scale);
             scale.RegisterValueChangedCallback(_ => TextScale.Apply((ArchipelagoUiScale)scale.index));
-            Text(card, null, "Economic speed remains under your control on the map. Pause and menus stop the economic clock.", "run-copy");
+            Text(card, null, "Presentation only. Time advances through the map controls.", "run-copy");
             Button(screen, "settingsBackButton", "Back", () => ShowScreen(secondaryParent));
         }
 

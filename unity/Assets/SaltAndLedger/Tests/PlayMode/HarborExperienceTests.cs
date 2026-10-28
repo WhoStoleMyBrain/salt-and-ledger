@@ -107,7 +107,7 @@ namespace SaltAndLedger.UnityHost.Tests
 
         private void BeginIndustrial(CompanyStorageRules storage) => controller.BeginRun(new RunIdentity(null,
             RunScenario.IndustrialCharter, RunWorldMode.ExpandingEconomy, 42, companyStorageRules: storage));
-        private void LocalStock() => root.Q<DropdownField>("harborTradeTarget").value = "Company local stock";
+        private void LocalStock() => root.Q<DropdownField>("harborTradeTarget").value = "Company warehouse";
         private void Good(string id) => root.Q<DropdownField>("goodDropdown").value = controller.Session.Content.GetGood(id).Name;
         private void Quantity(string value) => root.Q<TextField>("quantityField").value = value;
         private void Click(string id, VisualElement parent = null)

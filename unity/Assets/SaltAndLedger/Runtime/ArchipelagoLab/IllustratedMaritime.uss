@@ -132,6 +132,11 @@
 .sl-theme .trade-modal .trade-cell.stock-short { color: var(--sl-rust-ink); }
 .sl-theme .trade-modal .trade-goods-row.stock-adequate > .trade-good-name,
 .sl-theme .trade-modal .trade-cell.stock-adequate { color: #285a4d; }
+.sl-theme .trade-modal .commodity-comparison { background-color: var(--sl-paper-100); border-color: var(--sl-border-300); border-width: 1px; }
+.sl-theme .trade-modal .commodity-comparison:hover, .sl-theme .trade-modal .commodity-comparison.selected-good { background-color: var(--sl-paper-selection); }
+.sl-theme .trade-modal .commodity-comparison .unity-label { color: var(--sl-ink-900); }
+.sl-theme .run-card .commission-progress .unity-progress-bar__title { color: var(--sl-paper-100); }
+.sl-theme .run-card .commission-progress .unity-progress-bar__progress { background-color: var(--sl-green-700); }
 .sl-theme .trade-column-header { background-color: var(--sl-paper-300); }
 .sl-theme .trade-column-header .unity-label { -unity-font-style: bold; color: var(--sl-ink-900); }
 .sl-theme .trade-quote-card, .sl-theme .warehouse-quote, .sl-theme .industry-policy,

@@ -46,7 +46,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(controller.Session.Snapshot.GetFacilityStorage(stocked.Id).Inventory["grain"], Is.EqualTo(7500));
             Assert.That(controller.Session.Snapshot.Day, Is.EqualTo(before.Day));
             Assert.That(root.Q<Button>("warehouseToShip").enabledInHierarchy, Is.False);
-            Assert.That(root.Q<Label>("facilityInputStatusLabel").text, Does.Contain("private 0.75/2").And.Contain("missing 1.25"));
+            Assert.That(root.Q<Label>("facilityInputStatusLabel").text, Does.Contain("warehouse 0.75/2").And.Contain("missing 1.25"));
             Click("recommendIndustryPresetButton");
             root.Q<TextField>("inputTarget_grain").value = "2.5";
             root.Q<TextField>("industryCashReserve").value = "80.25";
