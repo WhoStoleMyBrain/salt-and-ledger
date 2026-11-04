@@ -161,9 +161,7 @@ namespace SaltAndLedger.UnityHost
                 Button(card, "productionAct_" + id, production.IsPrivate ? "Manage facility" : "Harbor inputs", () =>
                 {
                     if (!production.IsPrivate) { OpenTrade(port.Id); return; }
-                    selectedFacilityId = id; loadedPolicyFacilityId = null;
-                    SelectIndustryPane(false);
-                    Session.Pause(); ShowModal("industryBackdrop", "closeIndustryButton"); RefreshIndustry();
+                    OpenApprovedFactory(id);
                 });
             }
             if (rows.childCount == 0) Text(rows, null, "No configured facilities at this town.", "command-copy");

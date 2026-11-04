@@ -1,0 +1,164 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:Style src="IndustryApprovedUX.uss" />
+    <ui:VisualElement class="industry-v3-shell">
+        <ui:VisualElement class="modal-heading industry-v3-heading">
+            <ui:VisualElement class="industry-v3-grow industry-v3-heading-copy">
+                <ui:Label name="industryBreadcrumb" text="TOWN / INDUSTRIES" class="industry-v3-eyebrow" />
+                <ui:Label name="industryTitle" text="Industries" class="industry-v3-title" />
+            </ui:VisualElement>
+            <ui:VisualElement class="industry-v3-heading-actions">
+                <ui:Button name="industryBackToOverview" text="‹ Industries" class="industry-v3-secondary hidden" />
+                <ui:Label name="facilityOwnership" class="industry-v3-badge hidden" />
+                <ui:VisualElement name="warehouseDirectionTabs" class="industry-v3-tabs hidden">
+                    <ui:Button name="warehouseBuyTab" text="→ Buy" tooltip="Buy toward target stock" />
+                    <ui:Button name="warehouseSellTab" text="← Sell" tooltip="Sell stock above reserve" />
+                </ui:VisualElement>
+                <ui:Button name="industryHarborButton" text="Manual trade" class="industry-v3-secondary" />
+                <ui:Button name="closeIndustryButton" text="×" tooltip="Close Industry" class="industry-v3-close" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="industryWorkspaceTabs" class="industry-v3-tabs">
+            <ui:Button name="industryFactoriesTab" text="Industries" />
+            <ui:Button name="industryWarehouseTab" text="Warehouse rules" />
+        </ui:VisualElement>
+        <ui:VisualElement name="industryFactoriesPane" class="industry-v3-grow">
+            <ui:ScrollView name="industryOverview" mode="Vertical" class="industry-v3-grow">
+              <ui:VisualElement class="industry-v3-columns industry-v3-overview-content">
+                <ui:VisualElement class="industry-v3-main-column">
+                    <ui:VisualElement class="industry-v3-row industry-v3-section-heading">
+                        <ui:Label text="OPERATING INDUSTRIES" class="industry-v3-eyebrow industry-v3-grow" />
+                        <ui:Label name="industryCounts" class="industry-v3-caption" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="industryOperatingList">
+                        <ui:VisualElement name="industryOperatingRows" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="industry-v3-build-column">
+                    <ui:Label text="BUILD HERE" class="industry-v3-eyebrow industry-v3-section-heading" />
+                    <ui:VisualElement name="industryBuildList">
+                        <ui:VisualElement name="industryBuildRows" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+              </ui:VisualElement>
+            </ui:ScrollView>
+            <ui:ScrollView name="industryPolicyScroll" mode="Vertical" class="industry-v3-grow hidden">
+                <ui:Label name="facilityRecipeLabel" class="industry-v3-caption" />
+                <ui:VisualElement name="industryRecipeSymbols" class="industry-v3-recipe" />
+                <ui:VisualElement class="industry-v3-row industry-v3-status-strip">
+                    <ui:Label name="facilityStateLabel" class="industry-v3-grow" />
+                    <ui:Button name="factoryShortagePurchase" text="OPEN WAREHOUSE →" class="industry-v3-secondary" />
+                </ui:VisualElement>
+                <ui:VisualElement class="industry-v3-columns">
+                    <ui:VisualElement class="industry-v3-main-column">
+                        <ui:VisualElement class="industry-v3-card">
+                            <ui:Label text="OPERATING RATE &amp; PAYROLL" class="industry-v3-eyebrow" />
+                            <ui:VisualElement name="factoryRateControls">
+                                <ui:VisualElement class="industry-v3-row">
+                                    <ui:SliderInt name="facilityRateSlider" low-value="0" high-value="100" class="industry-v3-grow" />
+                                    <ui:TextField name="facilityOperatingRate" value="100" is-delayed="true" tooltip="Operating rate from 0 to 100 percent" class="industry-v3-rate-field" />
+                                    <ui:Label text="%" />
+                                </ui:VisualElement>
+                                <ui:VisualElement class="industry-v3-presets">
+                                    <ui:Button name="facilityRate0" text="0%" />
+                                    <ui:Button name="facilityRate25" text="25%" />
+                                    <ui:Button name="facilityRate50" text="50%" />
+                                    <ui:Button name="facilityRate75" text="75%" />
+                                    <ui:Button name="facilityRate100" text="100%" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:VisualElement class="industry-v3-payroll-strip">
+                                <ui:Label name="factoryPayroll" class="industry-v3-caption industry-v3-grow" />
+                                <ui:Label name="factoryFunds" class="industry-v3-caption" />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:VisualElement class="industry-v3-card">
+                            <ui:Label text="12-DAY OUTLOOK" class="industry-v3-eyebrow" />
+                            <ui:Label name="facilityFlowLabel" class="industry-v3-metric" />
+                            <ui:Label name="facilityScheduleLabel" />
+                            <ui:Label name="factoryStorageSpace" class="industry-v3-caption" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="industry-v3-side-column">
+                        <ui:VisualElement class="industry-v3-card">
+                            <ui:Label name="factoryStockTitle" text="COMPANY WAREHOUSE" class="industry-v3-eyebrow" />
+                            <ui:VisualElement name="factoryWarehouseStock" />
+                            <ui:Button name="factoryWarehouseButton" text="Open warehouse →" class="industry-v3-secondary" />
+                            <ui:Button name="factoryAutomationButton" text="Automatic local trades →" class="industry-v3-link" />
+                        </ui:VisualElement>
+                        <ui:VisualElement name="factorySettings" class="industry-v3-card">
+                            <ui:Label text="FACTORY SETTINGS" class="industry-v3-eyebrow" />
+                            <ui:Toggle name="facilityEnabled" label="Production enabled" />
+                            <ui:Label text="Production priority" class="industry-v3-caption" />
+                            <ui:VisualElement class="industry-v3-presets">
+                                <ui:Button name="facilityPriorityLow" text="Low" />
+                                <ui:Button name="facilityPriorityNormal" text="Normal" />
+                                <ui:Button name="facilityPriorityHigh" text="High" />
+                            </ui:VisualElement>
+                            <ui:Label name="industryAppliedPolicyLabel" class="industry-v3-caption" />
+                            <ui:Label name="industryPolicyDraftLabel" class="industry-v3-draft" />
+                            <ui:VisualElement class="industry-v3-row">
+                                <ui:Button name="cancelIndustryPolicy" text="Cancel" class="industry-v3-secondary industry-v3-grow" />
+                                <ui:Button name="applyIndustryPolicy" text="Apply changes" class="industry-v3-primary industry-v3-grow" />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:Foldout name="industryAdvancedFoldout" text="Production details &amp; accounting" value="false" class="industry-v3-details">
+                    <ui:Label name="industryPolicyPreviewLabel" class="industry-v3-caption" />
+                    <ui:Label name="facilityInputsSummary" />
+                    <ui:Label name="facilityInputStatusLabel" />
+                    <ui:Label name="facilityScheduleDetail" />
+                    <ui:Label name="facilityStatsLabel" />
+                    <ui:Foldout name="industryShippingFoldout" text="Physical shipping" value="false">
+                        <ui:Label name="industryShippingLabel" />
+                        <ui:Button name="industryShippingButton" text="Open ship route →" class="industry-v3-secondary" />
+                    </ui:Foldout>
+                </ui:Foldout>
+            </ui:ScrollView>
+        </ui:VisualElement>
+        <ui:ScrollView name="industryWarehousePane" mode="Vertical" class="industry-v3-grow hidden">
+            <ui:VisualElement class="industry-v3-warehouse-summary">
+                <ui:VisualElement class="industry-v3-card industry-v3-grow">
+                    <ui:Label text="COMPANY STOCK" class="industry-v3-eyebrow" />
+                    <ui:Label name="warehouseAutomationSummary" class="industry-v3-metric" />
+                </ui:VisualElement>
+                <ui:VisualElement class="industry-v3-card industry-v3-grow">
+                    <ui:Label text="ENABLED RULES" class="industry-v3-eyebrow" />
+                    <ui:Label name="warehouseRuleCounts" class="industry-v3-metric" />
+                </ui:VisualElement>
+                <ui:VisualElement class="industry-v3-card industry-v3-grow">
+                    <ui:Label text="BUY RESERVE" tooltip="Company cash protected from automatic warehouse purchases" class="industry-v3-eyebrow" />
+                    <ui:Button name="editWarehouseCashReserve" class="industry-v3-secondary" />
+                </ui:VisualElement>
+                <ui:VisualElement class="industry-v3-card industry-v3-grow industry-v3-applied-card">
+                    <ui:Label name="warehouseSavedBadge" class="industry-v3-save-badge" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement class="industry-v3-rule-header">
+                <ui:Label text="GOOD · PAUSE" class="industry-v3-rule-name" />
+                <ui:Label text="TOWN STOCK" class="industry-v3-rule-stock" />
+                <ui:Label text="OUR STOCK" class="industry-v3-rule-stock" />
+                <ui:Label name="warehouseTargetHeading" text="BUY TO" class="industry-v3-rule-value" />
+                <ui:Label name="warehousePriceHeading" text="ASK CEILING" class="industry-v3-rule-value" />
+            </ui:VisualElement>
+            <ui:VisualElement name="warehouseAutomationScroll">
+                <ui:VisualElement name="warehouseBuyRows" />
+                <ui:VisualElement name="warehouseSellRows" class="hidden" />
+            </ui:VisualElement>
+            <ui:Label name="warehousePolicyDraftLabel" class="industry-v3-draft" />
+            <ui:Foldout name="warehouseAccountingDetails" text="Applied rules &amp; accounting" value="false" class="industry-v3-details">
+                <ui:Label name="warehouseAutomationAccounting" />
+                <ui:Button name="reloadWarehousePolicy" text="Discard invalid drafts" class="industry-v3-secondary" />
+            </ui:Foldout>
+        </ui:ScrollView>
+        <ui:ScrollView name="warehouseCashReservePopup" mode="Vertical" class="industry-v3-reserve-popup hidden">
+            <ui:Label text="Keep cash available" class="industry-v3-title" />
+            <ui:TextField name="warehouseCashReserve" label="Buy cash reserve" value="0" is-delayed="true" />
+            <ui:Label name="warehouseReserveFunds" />
+            <ui:Label name="warehouseReserveError" class="industry-v3-error" />
+            <ui:Label text="Protects warehouse auto-buy only; not factory wages or ship trades." class="industry-v3-caption" />
+            <ui:Button name="closeWarehouseCashReserve" text="Done" class="industry-v3-primary" />
+        </ui:ScrollView>
+        <ui:Label name="industryStatusLabel" class="industry-v3-status" />
+    </ui:VisualElement>
+</ui:UXML>

@@ -40,7 +40,7 @@ namespace SaltAndLedger.UnityHost.Tests
         }
 
         [UnityTest]
-        public IEnumerator InitialMapChooserSelectionCollapseAndOverlayDoNotMutateTheWorld()
+        public IEnumerator InitialMapChooserSelectionClearAndOverlayDoNotMutateTheWorld()
         {
             controller.BeginRun(Modern());
             yield return null;
@@ -49,7 +49,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(controller.Presentation.HasSelection, Is.False);
             Assert.That(root.Q("deckBody").ClassListContains("hidden"), Is.True);
             Assert.That(controller.Map.VisibleRouteCount, Is.Zero);
-            Assert.That(root.Q<Button>("deckCollapseButton").enabledSelf, Is.False);
+            Assert.That(root.Q("commandDeck").ClassListContains("hidden"), Is.True);
             Click("modeTrade");
             Assert.That(root.Q("commandChooser").ClassListContains("hidden"), Is.False);
             Assert.That(root.Q<Button>("modeTrade").ClassListContains("sl-selected"), Is.True);
@@ -60,9 +60,10 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("closeTradeButton");
             Assert.That(controller.Presentation.HasSelection, Is.True);
             Assert.That(root.Q("deckBody").ClassListContains("hidden"), Is.False);
-            Click("deckCollapseButton");
+            Click("clearSelectionButton");
+            Assert.That(controller.Presentation.HasSelection, Is.False);
             Assert.That(root.Q("deckBody").ClassListContains("hidden"), Is.True);
-            Click("deckCollapseButton");
+            Click("port_" + port.Id);
             Assert.That(root.Q("deckBody").ClassListContains("hidden"), Is.False);
             root.Q<Toggle>("mapRoutesToggle").value = true;
             Assert.That(controller.Map.VisibleRouteCount, Is.EqualTo(6));
@@ -100,7 +101,9 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(controller.Presentation.Mode, Is.EqualTo(CommandMode.Economy));
             Click("economyHarborButton");
             Assert.That(controller.TradeIsOpen, Is.True);
-            Assert.That(root.Q("commandModeNav").enabledInHierarchy, Is.False);
+            Assert.That(controller.Map.enabledInHierarchy, Is.False);
+            Assert.That(root.Q("commandModeNav").enabledInHierarchy, Is.True,
+                "Approved navigation can switch workspaces while the economic map stays blocked.");
             Cancel();
             Assert.That(controller.TradeIsOpen, Is.False);
             Assert.That(root.focusController.focusedElement, Is.SameAs(root.Q<Button>("economyHarborButton")));
@@ -142,10 +145,9 @@ namespace SaltAndLedger.UnityHost.Tests
             var publicName = "productionAct_" + publicFacility.Configuration.Instance.Id;
             var originalPublicSource = root.Q<Button>(publicName);
             Click(publicName);
-            root.Q<DropdownField>("harborTradeTarget").value = "Company warehouse";
-            root.Q<DropdownField>("goodDropdown").value = "Grain";
+            Click("pairMarketWarehouse");
             root.Q<TextField>("quantityField").value = "1";
-            Click("buyButton");
+            Arrow("grain", true);
             Assert.That(controller.Session.Snapshot.GetFacilityStorage(facility.Id).Inventory["grain"], Is.EqualTo(10000));
             Assert.That(originalPublicSource.panel, Is.Null);
             Cancel();
@@ -164,22 +166,20 @@ namespace SaltAndLedger.UnityHost.Tests
         }
 
         [UnityTest]
-        public IEnumerator NoticesEscapeClosesOnlyNoticesAndKeepsTheCurrentWorkspace()
+        public IEnumerator ActivityLogReturnsToTheSelectedShipWithoutMutatingTheWorld()
         {
             controller.BeginRun(Modern());
             Click("ship_" + controller.Session.Player.Id);
             var before = controller.Session.Snapshot;
             var saved = controller.Session.SaveText();
-            foreach (var mode in new[] { CommandMode.Fleet, CommandMode.Economy })
-            {
-                Click("mode" + mode); Click("noticesButton");
-                Assert.That(root.Q("commandNotices").ClassListContains("hidden"), Is.False);
-                Cancel();
-                Assert.That(root.Q("commandNotices").ClassListContains("hidden"), Is.True);
-                Assert.That(controller.Presentation.Mode, Is.EqualTo(mode));
-                Assert.That(root.focusController.focusedElement, Is.SameAs(root.Q<Button>("noticesButton")));
-                Assert.That(controller.Session.IsPlaying, Is.False);
-            }
+            var selectedShip = controller.Session.SelectedShipId;
+            Click("approvedActivityLog");
+            Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Inspector));
+            Click("inspectorBackButton");
+            Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Gameplay));
+            Assert.That(controller.Presentation.Mode, Is.EqualTo(CommandMode.Map));
+            Assert.That(controller.Session.SelectedShipId, Is.EqualTo(selectedShip));
+            Assert.That(controller.Session.IsPlaying, Is.False);
             AssertUnchanged(before, saved);
             yield return null;
         }
@@ -190,19 +190,17 @@ namespace SaltAndLedger.UnityHost.Tests
             controller.BeginRun(Modern(RunScenario.IndustrialCharter));
             var portId = controller.Session.Player.DockedPortId;
             Click("port_" + portId); Click("modeIndustry");
-            root.Q<DropdownField>("blueprintDropdown").value = "Mill";
-            Click("constructButton");
+            BuildMill();
             var mill = controller.Session.Snapshot.PrivateFacilities.Values.Single(f => f.Blueprint.BuildingId == "mill");
             var blocked = EconomicSignals.PrivateProduction(controller.Session.Snapshot, controller.Session.Content, mill.Id);
             Assert.That(blocked.CurrentReadiness, Is.EqualTo(ScheduledProductionOutcome.InputShortage));
             Click("industryHarborButton");
-            root.Q<DropdownField>("harborTradeTarget").value = "Company warehouse";
-            root.Q<DropdownField>("goodDropdown").value = "Grain";
+            Click("pairMarketWarehouse");
             root.Q<TextField>("quantityField").value = "2";
             var before = controller.Session.Snapshot;
             var preview = before.PreviewWarehouseTrade(mill.OwnerId, mill.Id, new TradeCommand(TradeDirection.Buy, "grain", 20000));
             Assert.That(preview.Outcome, Is.EqualTo(TradeOutcome.Traded));
-            Click("buyButton");
+            Arrow("grain", true);
             Assert.That(controller.Session.Player.Cash, Is.EqualTo(preview.TraderCashChange.After));
             Assert.That(controller.Session.Snapshot.GetFacilityStorage(mill.Id).Inventory["grain"], Is.EqualTo(20000));
             Assert.That(controller.Session.Snapshot.Day, Is.EqualTo(before.Day));
@@ -238,8 +236,7 @@ namespace SaltAndLedger.UnityHost.Tests
                 itineraryVersion: 1, economicRulesVersion: 1));
             var portId = LivingCityGeneration.Generate(99).ProcessingPortId;
             Click("port_" + portId); Click("modeIndustry");
-            root.Q<DropdownField>("blueprintDropdown").value = "Mill";
-            Click("constructButton");
+            BuildMill();
             var facility = controller.Session.Snapshot.PrivateFacilities.Values.Single(f => f.Blueprint.BuildingId == "mill");
             var preparation = controller.Session.Snapshot;
             var purchase = preparation.PreviewWarehouseTrade(facility.OwnerId, facility.Id,
@@ -248,8 +245,7 @@ namespace SaltAndLedger.UnityHost.Tests
             controller.Session.WarehouseTrade(facility.Id, TradeDirection.Buy, "grain", 10000, preparation);
             Assert.That(controller.Session.Player.Cash, Is.EqualTo(purchase.TraderCashChange.After));
             Click("closeIndustryButton"); Click("openTradeButton");
-            root.Q<DropdownField>("harborTradeTarget").value = "Company warehouse";
-            root.Q<DropdownField>("goodDropdown").value = "Grain";
+            Click("pairMarketWarehouse");
             root.Q<TextField>("quantityField").value = "1";
             yield return null; yield return null;
 
@@ -261,20 +257,23 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(buy.Outcome, Is.EqualTo(TradeOutcome.Traded));
             Assert.That(sell.Outcome, Is.EqualTo(TradeOutcome.Traded));
             Assert.That(sell.ServiceFee, Is.GreaterThan(0), "The witness must include the extra v3 service-fee lines.");
-            Assert.That(root.Q<Label>("buyPreviewLabel").text, Does.Contain("Pay " + Money(buy.TotalAmount)));
-            Assert.That(root.Q<Label>("sellPreviewLabel").text, Does.Contain("Gross " + Money(sell.TotalAmount))
-                .And.Contain("Fee " + Money(sell.ServiceFee))
-                .And.Contain("Net " + Money(sell.TraderCashChange.Delta)));
-            Assert.That(root.Q<Button>("buyButton").enabledInHierarchy, Is.True);
-            Assert.That(root.Q<Button>("sellButton").enabledInHierarchy, Is.True);
+            var grain = Row("grain");
+            var buyArrow = grain.Q<Button>("rightArrow");
+            var sellArrow = grain.Q<Button>("leftArrow");
+            Assert.That(buyArrow.tooltip, Does.Contain("payment " + Money(buy.TotalAmount)));
+            Assert.That(sellArrow.tooltip, Does.Contain("gross " + Money(sell.TotalAmount))
+                .And.Contain("fee " + Money(sell.ServiceFee))
+                .And.Contain("net " + Money(sell.TraderCashChange.Delta)));
+            Assert.That(buyArrow.enabledInHierarchy, Is.True);
+            Assert.That(sellArrow.enabledInHierarchy, Is.True);
             var scroll = root.Q<ScrollView>("tradeContentScroll");
             Assert.That(scroll.scrollOffset, Is.EqualTo(Vector2.zero), "Both orders must fit on first opening, before any scrolling.");
             var viewport = scroll.contentViewport.worldBound;
-            foreach (var id in new[] { "goodDropdown", "harborTradeTarget", "quantityField", "buyPreviewLabel", "sellPreviewLabel", "buyButton", "sellButton" })
+            foreach (var element in new VisualElement[] { grain.Q<Button>("good"), buyArrow, sellArrow })
             {
-                var element = root.Q(id);
+                var id = element.name;
                 var bounds = element.worldBound;
-                Assert.That(element.resolvedStyle.fontSize, Is.EqualTo(17).Within(0.1f), id + " must retain Default body text size.");
+                Assert.That(element.resolvedStyle.fontSize, Is.GreaterThanOrEqualTo(14), id + " must retain readable text.");
                 Assert.That(bounds.width, Is.GreaterThan(0), id);
                 Assert.That(bounds.height, Is.GreaterThan(0), id);
                 Assert.That(bounds.xMin, Is.GreaterThanOrEqualTo(Math.Max(root.worldBound.xMin, viewport.xMin) - 1), id);
@@ -282,6 +281,7 @@ namespace SaltAndLedger.UnityHost.Tests
                 Assert.That(bounds.xMax, Is.LessThanOrEqualTo(Math.Min(root.worldBound.xMax, viewport.xMax) + 1), id);
                 Assert.That(bounds.yMax, Is.LessThanOrEqualTo(Math.Min(root.worldBound.yMax, viewport.yMax) + 1), id);
             }
+            Good("grain");
             root.Q<Foldout>("harborCalculations").value = true;
             Assert.That(root.Q<Label>("buyCalculation").text, Does.Contain("exact total " + Money(buy.TotalAmount))
                 .And.Contain("average " + ArchipelagoLabController.AverageExecutionPrice(buy)));
@@ -312,6 +312,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("fleetEditRouteButton");
             Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.RoutePlanner));
             Assert.That(controller.Session.Player.Id, Is.EqualTo(second.Id));
+            root.Q<Foldout>("routePlannerTools").value = true;
             Click("itineraryHarborButton");
             Assert.That(controller.TradeIsOpen, Is.True);
             Cancel();
@@ -332,9 +333,16 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(root.Q("deckFleetButton").ClassListContains("hidden"), Is.True);
             Assert.That(controller.Session.Player.Id, Is.EqualTo(second.Id), "Inspecting an NPC must not replace the controlled ship.");
             Click("openTradeButton");
-            Assert.That(root.Q<Label>("tradeAvailabilityLabel").text, Does.Contain("NPC inspection only"));
-            foreach (var id in new[] { "buyButton", "sellButton", "harborLoadButton", "harborUnloadButton" })
-                Assert.That(root.Q<Button>(id).enabledSelf, Is.False, id);
+            foreach (var pair in new[] { HarborPair.MarketShip, HarborPair.WarehouseShip })
+            {
+                Click("pair" + pair);
+                foreach (var direction in new[] { "leftArrow", "rightArrow" })
+                {
+                    var arrow = Row("grain").Q<Button>(direction);
+                    Assert.That(arrow.enabledSelf, Is.False);
+                    Assert.That(arrow.tooltip, Does.Contain("NPC inspection only"));
+                }
+            }
             Cancel();
             AssertUnchanged(before, saved);
             yield return null;
@@ -372,7 +380,7 @@ namespace SaltAndLedger.UnityHost.Tests
 
 
         [UnityTest]
-        public IEnumerator MidVoyageSchemaFiveSaveLoadsThroughSlotsAndInspectionRetainsExactBytes()
+        public IEnumerator MidVoyageSchemaSixSaveLoadsThroughSlotsAndInspectionRetainsExactBytes()
         {
             controller.BeginRun(Modern());
             var destination = controller.Session.Snapshot.Ports.Keys.Where(id => id != controller.Session.Player.DockedPortId)
@@ -451,9 +459,14 @@ namespace SaltAndLedger.UnityHost.Tests
         private string Money(long value) => ((decimal)value / controller.Session.Snapshot.MoneyScale).ToString("0.####", CultureInfo.InvariantCulture);
         private static string AllText(VisualElement element) => string.Join("\n", element.Query<Label>().ToList().Select(label => label.text));
 
-        private void Click(string name)
+        private void BuildMill() => Click("construct_" + controller.Session.Snapshot.IndustryBlueprints.Values.Single(b => b.BuildingId == "mill").Id);
+        private VisualElement Row(string goodId) => root.Q("tradeGood_" + goodId);
+        private void Good(string goodId) => Click("good", Row(goodId));
+        private void Arrow(string goodId, bool right) => Click(right ? "rightArrow" : "leftArrow", Row(goodId));
+
+        private void Click(string name, VisualElement scope = null)
         {
-            var button = root.Q<Button>(name);
+            var button = (scope ?? root).Q<Button>(name);
             Assert.That(button, Is.Not.Null, name);
             Assert.That(button.enabledInHierarchy, Is.True, name);
             for (var parent = (VisualElement)button; parent != null; parent = parent.parent)

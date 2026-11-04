@@ -61,6 +61,7 @@ namespace SaltAndLedger.UnityHost
 
         public void OpenTrade(string portId)
         {
+            returnToFactory = false;
             Run(() =>
             {
                 var selectedShip = Session.SelectedShipId;
@@ -71,12 +72,14 @@ namespace SaltAndLedger.UnityHost
                 ShowModal("tradeBackdrop", "closeTradeButton");
                 RefreshHarborStorageSelection();
                 SetIndex("harborTradeTarget", !HarborShipIsLocal() && harborFacilityId != null ? 1 : 0);
+                TradingPair = HarborUsesLocalStock ? HarborPair.MarketWarehouse : HarborPair.MarketShip;
                 if (string.IsNullOrEmpty(Element<DropdownField>("goodDropdown").value)) SetIndex("goodDropdown", goodIds.IndexOf("logs"));
             });
         }
 
         private void ShowModal(string backdropId, string focusId)
         {
+            Session.Pause();
             if (!TradeIsOpen && !IndustryIsOpen)
             {
                 returnFocus = Root.focusController?.focusedElement as VisualElement;
@@ -85,15 +88,17 @@ namespace SaltAndLedger.UnityHost
             Element<VisualElement>("tradeBackdrop").EnableInClassList("hidden", backdropId != "tradeBackdrop");
             Element<VisualElement>("industryBackdrop").EnableInClassList("hidden", backdropId != "industryBackdrop");
             Element<VisualElement>("topBar").SetEnabled(false);
-            Element<VisualElement>("mainLayout").SetEnabled(false);
-            Root.Q("commandModeNav")?.SetEnabled(false);
-            Root.Q("commandDeck")?.SetEnabled(false);
+            Map.SetEnabled(false);
+            Root.Q(className: "map-footer")?.SetEnabled(false);
+            Root.Q("approvedActivity")?.SetEnabled(false);
+            Root.Q("commandModeNav")?.SetEnabled(true);
             RefreshCommandMode();
             Element<Button>(focusId).Focus();
         }
 
         public void CloseModals()
         {
+            DismissWarehouseReserve();
             var wasOpen = TradeIsOpen || IndustryIsOpen;
             Element<VisualElement>("tradeBackdrop").AddToClassList("hidden");
             Element<VisualElement>("industryBackdrop").AddToClassList("hidden");
@@ -101,6 +106,10 @@ namespace SaltAndLedger.UnityHost
             Element<VisualElement>("mainLayout").SetEnabled(true);
             Root.Q("commandModeNav")?.SetEnabled(Screen == ArchipelagoScreen.Gameplay);
             Root.Q("commandDeck")?.SetEnabled(Screen == ArchipelagoScreen.Gameplay);
+            Map.SetEnabled(true);
+            Root.Q(className: "map-footer")?.SetEnabled(true);
+            Root.Q("approvedActivity")?.SetEnabled(true);
+            ClearApprovedContext();
             RefreshCommandMode();
             var candidate = CanRestoreModalFocus(returnFocus) ? returnFocus :
                 string.IsNullOrEmpty(returnFocusName) ? null : Root.Q(returnFocusName);
@@ -108,6 +117,7 @@ namespace SaltAndLedger.UnityHost
             returnFocusName = null;
             if (!wasOpen) return;
             if (ConfirmationIsOpen) { Element<Button>("confirmCancelButton").Focus(); return; }
+            if (ReturnToFactoryAfterPurchase()) return;
             if (ReturnToPlannerAfterHarbor()) return;
             if (!CanRestoreModalFocus(candidate))
             {
@@ -179,6 +189,7 @@ namespace SaltAndLedger.UnityHost
                 if (label == null) continue;
                 label.text = status ?? Session.LastStatus;
                 label.EnableInClassList("error", statusIsError);
+                label.EnableInClassList("hidden", !statusIsError);
             }
         }
 

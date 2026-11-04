@@ -173,20 +173,23 @@ namespace SaltAndLedger.UnityHost.Tests
         public IEnumerator StarterCargoSalesShowAttributedMaterialMarginInsteadOfClosedCashProfit()
         {
             controller.BeginRun(null, RunScenario.IndependentCharter);
+            Click("port_" + controller.Session.Player.DockedPortId);
             Click("openTradeButton");
-            Click("tradeGood_grain");
-            root.Q<TextField>("quantityField").value = "4";
-            Click("sellButton");
-            Click("tradeGood_logs");
-            root.Q<TextField>("quantityField").value = "2";
-            Click("sellButton");
+            Click("pairMarketShip");
+            foreach (var goodId in new[] { "grain", "logs" })
+            {
+                root.Q<TextField>("quantityField").value = goodId == "grain" ? "4" : "2";
+                var sell = root.Q("tradeGood_" + goodId).Q<Button>("leftArrow");
+                Assert.That(sell.enabledInHierarchy, Is.True, goodId);
+                using (var evt = NavigationSubmitEvent.GetPooled()) { evt.target = sell; sell.SendEvent(evt); }
+            }
             Click("closeTradeButton");
             var finance = controller.Session.Snapshot.Accounting.Companies[controller.Session.Player.OwnerId];
             Assert.That(controller.Session.Player.CargoUnits, Is.Zero);
             Assert.That(finance.SalesRevenue, Is.GreaterThan(0));
             Assert.That(finance.CostOfGoodsSold, Is.Zero, "Granted starter cargo has no paid material basis.");
             Assert.That(finance.RealizedGrossMargin, Is.EqualTo(finance.SalesRevenue));
-            Click("ledgerButton");
+            Click("deckInspectButton"); Click("ledgerButton");
             var text = root.Q<Label>("ledgerFinances").text;
             Assert.That(text, Does.Contain("Realized material margin  +" + controller.Session.Coins(finance.RealizedGrossMargin)));
             Assert.That(text, Does.Contain("Held inventory material basis  0"));

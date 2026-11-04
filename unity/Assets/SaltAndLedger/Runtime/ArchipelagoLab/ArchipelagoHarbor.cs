@@ -26,7 +26,7 @@ namespace SaltAndLedger.UnityHost
             Click("harborWarehouseButton", () => OpenIndustryFromHarbor(true));
             Click("harborDisableRoute", () => Run(() => Session.SetAutomationEnabled(false)));
             Click("harborRoutePlannerButton", () => OpenRoutePlanner(tradeShipId));
-            Click("industryHarborButton", () => { var port = Session.SelectedPortId; CloseModals(); OpenTrade(port); SetIndex("harborTradeTarget", 1); RefreshHarbor(); });
+            Click("industryHarborButton", () => { var port = Session.SelectedPortId; CloseModals(); OpenTrade(port); SelectTradingPair(HarborPair.MarketWarehouse); });
         }
 
         private bool HarborShipIsLocal() => tradeShipId != null && Session.Snapshot.Ships.TryGetValue(tradeShipId, out var ship) &&
@@ -43,6 +43,7 @@ namespace SaltAndLedger.UnityHost
 
         private void OpenIndustryFromHarbor(bool warehouse = false)
         {
+            if (!warehouse && harborFacilityId != null) { OpenApprovedFactory(harborFacilityId); return; }
             if (selectedFacilityId != harborFacilityId) loadedPolicyFacilityId = null;
             selectedFacilityId = harborFacilityId;
             SelectIndustryPane(warehouse);
@@ -79,7 +80,6 @@ namespace SaltAndLedger.UnityHost
             Element<Button>("harborDisableRoute").EnableInClassList("hidden", !ownedShip || !ship.AutomationEnabled || Session.IsChallengeEnded);
             Element<Button>("harborRoutePlannerButton").EnableInClassList("hidden", !UsesItineraries);
             Element<Button>("harborRoutePlannerButton").SetEnabled(ownedShip);
-            RefreshHarborRows(ship, port, stock, local);
             RefreshCommodityIntelligence(ship, port);
             SetText("harborSelectedHoldings", "Ship " + (local ? Q(ship.Cargo[SelectedGoodId()]) : "remote") + " · Warehouse " +
                 (stock == null ? "none" : Q(stock.Inventory[SelectedGoodId()])));
@@ -92,7 +92,7 @@ namespace SaltAndLedger.UnityHost
                     "Construction — ready day " + f.ConstructionCompletionDay + ", first batch day " + f.FirstProductionDay) + " · " + f.BatchesProduced + " batches")));
             var valid = TryIndustryQuantity("quantityField", out var amount);
             var whole = valid && amount % tradeSnapshot.QuantityScale == 0;
-            var canTrade = ownedShip && !Session.IsChallengeEnded && (HarborUsesLocalStock ? stock != null : manual && local);
+            var canTrade = !Session.IsChallengeEnded && (HarborUsesLocalStock ? stock != null : ownedShip && manual && local);
             foreach (var direction in new[] { TradeDirection.Buy, TradeDirection.Sell })
             {
                 var prefix = direction == TradeDirection.Buy ? "buy" : "sell";
@@ -125,6 +125,7 @@ namespace SaltAndLedger.UnityHost
             Element<Button>("quantityMaxBuy").SetEnabled(canTrade);
             Element<Button>("quantityMaxSell").SetEnabled(canTrade);
             RefreshHarborTransfers(ship, local, stock != null, manual, valid, whole, amount);
+            RefreshApprovedTradeRows(ship, port, stock, local);
             RefreshModalStatus();
         }
 

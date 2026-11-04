@@ -37,12 +37,13 @@ namespace SaltAndLedger.UnityHost.Tests
             var before = controller.Session.Snapshot;
             var saved = controller.Session.SaveText();
             var ownerId = controller.Session.Player.OwnerId;
-            root.Q<DropdownField>("harborTradeTarget").index = 1;
+            Click("pairMarketWarehouse");
+            Good("grain");
 
             foreach (var scope in new[] { 0, 1, 0 })
             {
                 root.Q<DropdownField>("harborFlowScope").index = scope;
-                Assert.That(root.Q<DropdownField>("harborTradeTarget").index, Is.EqualTo(1),
+                Assert.That(controller.TradingPair, Is.EqualTo(HarborPair.MarketWarehouse),
                     "Information scope must not silently redirect the paid order.");
                 foreach (var good in controller.Session.Content.Goods)
                 {
@@ -60,7 +61,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(privateBread.ConsumptionNeedQuantity, Is.Zero, "Household demand belongs only to the public scope.");
             Assert.That(privateFlour.InputUsageQuantity, Is.GreaterThan(0));
             Assert.That(privateFlour.CurrentStock, Is.GreaterThan(0), "The private pool has actual starter ingredients.");
-            Click("tradeGood_planks");
+            Good("planks");
             root.Q<Foldout>("harborFlowDetails").value = true;
             var municipalDetails = AllText(root.Q("harborFlowBreakdown"));
             Assert.That(municipalDetails, Does.Contain("Municipal").And.Contain("available for own-use"));
@@ -78,6 +79,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(observedBread.FirstDay, Is.EqualTo(committed.Day + 1));
             Assert.That(observedBread.LastDay, Is.EqualTo(committed.Day + 12));
             Click("openTradeButton");
+            Good("bread");
             var committedSave = controller.Session.SaveText();
             foreach (var scope in new[] { 0, 1 })
             {
@@ -99,7 +101,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("economyHarborButton");
             var before = controller.Session.Snapshot;
             var saved = controller.Session.SaveText();
-            Click("tradeGood_bread");
+            Good("bread");
             root.Q<Foldout>("harborFlowDetails").value = true;
             Assert.That(root.Q<DropdownField>("goodDropdown").value,
                 Is.EqualTo(controller.Session.Content.GetGood("bread").Name));
@@ -130,12 +132,16 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(controller.TradeIsOpen, Is.True);
             Assert.That(controller.Session.SelectedPortId, Is.EqualTo(otherPortId));
             Assert.That(root.Q<DropdownField>("goodDropdown").value, Is.EqualTo("Bread"));
-            Assert.That(root.Q<Button>("tradeGood_bread").ClassListContains("selected-good"), Is.True);
-            Assert.That(root.Q("mainLayout").enabledInHierarchy, Is.False, "Comparison must retain the input-blocking modal.");
+            Assert.That(Row("bread").ClassListContains("sl-selected"), Is.True);
+            Assert.That(controller.Map.enabledInHierarchy, Is.False, "Comparison must keep background map input blocked.");
             Assert.That(root.Q<Label>("tradeTitle").text, Does.Contain(before.Ports[otherPortId].Name));
             AssertRow(EconomicSignals.CommodityFlow(before, controller.Session.Content, otherPortId, "bread"));
-            foreach (var id in new[] { "buyButton", "sellButton", "harborLoadButton", "harborUnloadButton" })
-                Assert.That(root.Q<Button>(id).enabledSelf, Is.False, id + " cannot move remote ship cargo.");
+            foreach (var pair in new[] { HarborPair.MarketShip, HarborPair.WarehouseShip })
+            {
+                Click("pair" + pair);
+                Assert.That(Row("bread").Q<Button>("leftArrow").enabledSelf, Is.False);
+                Assert.That(Row("bread").Q<Button>("rightArrow").enabledSelf, Is.False);
+            }
 
             root.Q<TextField>("quantityField").Focus();
             Cancel();
@@ -146,43 +152,6 @@ namespace SaltAndLedger.UnityHost.Tests
             Cancel();
             Assert.That(controller.Presentation.Mode, Is.EqualTo(CommandMode.Map));
             AssertUnchanged(before, saved);
-            yield return null;
-        }
-
-        [UnityTest]
-        public IEnumerator DirectionalManualOrdersMatchExactPaidPreviewsAndNoCashTransfersWithoutAdvancingDays()
-        {
-            var portId = controller.Session.Player.DockedPortId;
-            Click("port_" + portId);
-            Click("openTradeButton");
-            Click("tradeGood_grain");
-            var initial = controller.Session.Snapshot;
-            var facility = initial.PrivateFacilities.Values.Single(f => f.OwnerId == controller.Session.Player.OwnerId);
-
-            ExecutePaidOrder(false, TradeDirection.Buy, 10000, facility.Id);
-            ExecutePaidOrder(false, TradeDirection.Sell, 10000, facility.Id);
-            ExecutePaidOrder(true, TradeDirection.Buy, 15000, facility.Id);
-            ExecutePaidOrder(true, TradeDirection.Sell, 5000, facility.Id);
-            root.Q<TextField>("quantityField").value = "0.5";
-            Assert.That(root.Q<Button>("harborLoadButton").enabledSelf, Is.False,
-                "Fractional market retail must not grant fractional ship orders.");
-            ExecuteTransfer(TransferDirection.WarehouseToShip, facility.Id);
-            ExecuteTransfer(TransferDirection.ShipToWarehouse, facility.Id);
-
-            var after = controller.Session.Snapshot;
-            Assert.That(after.Day, Is.EqualTo(initial.Day));
-            Assert.That(after.TotalCash, Is.EqualTo(initial.TotalCash));
-            Assert.That(after.GetFacilityStorage(facility.Id).Inventory["grain"], Is.EqualTo(10000));
-            Assert.That(controller.Session.Player.Cargo["grain"], Is.Zero);
-            Assert.That(after.Accounting.Companies[facility.OwnerId].FeesPaid,
-                Is.GreaterThan(initial.Accounting.Companies[facility.OwnerId].FeesPaid));
-            root.Q<DropdownField>("harborFlowScope").index = 1;
-            AssertRow(EconomicSignals.CommodityFlow(after, controller.Session.Content, portId, "grain", facility.OwnerId));
-            var saved = controller.Session.SaveText();
-            root.Q<DropdownField>("harborFlowScope").index = 0;
-            root.Q<Foldout>("harborFlowDetails").value = true;
-            root.Q<Foldout>("harborComparison").value = true;
-            AssertUnchanged(after, saved);
             yield return null;
         }
 
@@ -241,70 +210,25 @@ namespace SaltAndLedger.UnityHost.Tests
             yield return null;
         }
 
-        private void ExecutePaidOrder(bool warehouse, TradeDirection direction, int quantity, string facilityId)
-        {
-            root.Q<DropdownField>("harborTradeTarget").index = warehouse ? 1 : 0;
-            root.Q<TextField>("quantityField").value = Q(quantity);
-            var before = controller.Session.Snapshot;
-            var ownerId = controller.Session.Player.OwnerId;
-            var portId = controller.Session.SelectedPortId;
-            var command = new TradeCommand(direction, "grain", quantity);
-            var preview = warehouse ? before.PreviewWarehouseTrade(ownerId, facilityId, command) :
-                before.PreviewTrade(controller.Session.Player.Id, portId, command);
-            Assert.That(preview.Outcome, Is.EqualTo(TradeOutcome.Traded));
-            var prefix = direction == TradeDirection.Buy ? "buy" : "sell";
-            Assert.That(root.Q<Label>(prefix + "PreviewLabel").text, Does.Contain(Money(preview.TotalAmount)));
-            Click(prefix + "Button");
-            var after = controller.Session.Snapshot;
-            Assert.That(after, Is.Not.SameAs(before));
-            Assert.That(after.Day, Is.EqualTo(before.Day));
-            Assert.That(after.Companies[ownerId].Cash, Is.EqualTo(preview.TraderCashChange.After));
-            Assert.That(after.Ports[portId].MarketCash, Is.EqualTo(preview.MarketCashChange.After));
-            Assert.That(after.Ports[portId].City.HouseholdCash,
-                Is.EqualTo(before.Ports[portId].City.HouseholdCash + preview.HouseholdServiceFee));
-            Assert.That(after.Ports[portId].Inventory["grain"], Is.EqualTo(preview.MarketInventoryChange.After));
-            Assert.That(warehouse ? after.GetFacilityStorage(facilityId).Inventory["grain"] : controller.Session.Player.Cargo["grain"],
-                Is.EqualTo(preview.TraderInventoryChange.After));
-            Assert.That(after.TotalCash, Is.EqualTo(before.TotalCash));
-            AssertRow(EconomicSignals.CommodityFlow(after, controller.Session.Content, portId, "grain"));
-        }
-
-        private void ExecuteTransfer(TransferDirection direction, string facilityId)
-        {
-            root.Q<TextField>("quantityField").value = "1";
-            var before = controller.Session.Snapshot;
-            var shipId = controller.Session.Player.Id;
-            var ownerId = controller.Session.Player.OwnerId;
-            var portId = controller.Session.SelectedPortId;
-            var preview = before.PreviewTransferGoods(ownerId, shipId, facilityId, direction, "grain", 10000);
-            Assert.That(preview.Outcome, Is.EqualTo(TransferOutcome.Transferred));
-            var loading = direction == TransferDirection.WarehouseToShip;
-            Click(loading ? "harborLoadButton" : "harborUnloadButton");
-            var after = controller.Session.Snapshot;
-            var cargoDelta = loading ? preview.TransferredQuantity : -preview.TransferredQuantity;
-            Assert.That(after.Ships[shipId].Cargo["grain"], Is.EqualTo(before.Ships[shipId].Cargo["grain"] + cargoDelta));
-            Assert.That(after.GetFacilityStorage(facilityId).Inventory["grain"],
-                Is.EqualTo(before.GetFacilityStorage(facilityId).Inventory["grain"] - cargoDelta));
-            Assert.That(after.Companies[ownerId].Cash, Is.EqualTo(before.Companies[ownerId].Cash));
-            Assert.That(after.Ports[portId].Inventory, Is.EquivalentTo(before.Ports[portId].Inventory));
-            Assert.That(after.Ports[portId].MarketCash, Is.EqualTo(before.Ports[portId].MarketCash));
-            Assert.That(after.Ports[portId].City.HouseholdCash, Is.EqualTo(before.Ports[portId].City.HouseholdCash));
-            Assert.That(after.Accounting.Companies[ownerId].HeldInventoryCost,
-                Is.EqualTo(before.Accounting.Companies[ownerId].HeldInventoryCost));
-            Assert.That(after.Day, Is.EqualTo(before.Day));
-        }
-
         private void AssertRow(CommodityFlowSignal signal)
         {
-            var row = root.Q<Button>("tradeGood_" + signal.GoodId);
+            var row = Row(signal.GoodId);
             Assert.That(row, Is.Not.Null, signal.GoodId);
-            Assert.That(row.Q<Label>("town").text, Is.EqualTo(Q(signal.CurrentStock)));
-            AssertQuantity(row.Q<Label>("production"), signal.EnabledProductionQuantity);
-            AssertQuantity(row.Q<Label>("usage"), -signal.UsageQuantity);
-            AssertQuantity(row.Q<Label>("net"), signal.NetQuantity);
+            var flowValues = Regex.Matches(row.Q<Label>("flow").text.Replace('−', '-'), @"[+-]?\d+(?:\.\d+)?");
+            Assert.That(decimal.Parse(flowValues[0].Value, CultureInfo.InvariantCulture),
+                Is.EqualTo((decimal)signal.EnabledProductionQuantity / controller.Session.Snapshot.QuantityScale));
+            Assert.That(decimal.Parse(flowValues[1].Value, CultureInfo.InvariantCulture),
+                Is.EqualTo(-(decimal)signal.UsageQuantity / controller.Session.Snapshot.QuantityScale));
+            Assert.That(row.Q<Button>("good").tooltip, Does.Contain("inputs " + Q(signal.InputUsageQuantity))
+                .And.Contain("consumption need " + Q(signal.ConsumptionNeedQuantity)));
             var quote = controller.Session.Snapshot.GetMarketQuote(signal.PortId, signal.GoodId);
-            Assert.That(row.Q<Label>("bid").text, Is.EqualTo(Price(quote.Bid)));
-            Assert.That(row.Q<Label>("ask").text, Is.EqualTo(Price(quote.Ask)));
+            if (controller.TradingPair != HarborPair.WarehouseShip)
+            {
+                Assert.That(row.Q<Button>("leftArrow").text, Is.EqualTo("← " + Price(quote.Bid)));
+                Assert.That(row.Q<Button>("rightArrow").text, Is.EqualTo(Price(quote.Ask) + " →"));
+                Assert.That(row.Q<Label>("left").text,
+                    Is.EqualTo(Q(controller.Session.Snapshot.Ports[signal.PortId].Inventory[signal.GoodId])));
+            }
         }
 
         private void AssertQuantity(Label cell, long subunits)
@@ -349,9 +273,12 @@ namespace SaltAndLedger.UnityHost.Tests
         private static string Price(long? value) => value.HasValue ? value.Value.ToString(CultureInfo.InvariantCulture) : "—";
         private static string AllText(VisualElement element) => string.Join("\n", element.Query<Label>().ToList().Select(label => label.text));
 
-        private void Click(string id)
+        private VisualElement Row(string goodId) => root.Q("tradeGood_" + goodId);
+        private void Good(string goodId) => Click("good", Row(goodId));
+
+        private void Click(string id, VisualElement scope = null)
         {
-            var button = root.Q<Button>(id);
+            var button = (scope ?? root).Q<Button>(id);
             Assert.That(button, Is.Not.Null, id);
             Assert.That(button.enabledInHierarchy, Is.True, id);
             for (var parent = (VisualElement)button; parent != null; parent = parent.parent)

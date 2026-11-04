@@ -124,6 +124,8 @@ namespace SaltAndLedger.UnityHost
 
         public void BeginRun(RunIdentity identity)
         {
+            returnToFactory = false;
+            harborReturnsToPlanner = false;
             CloseModals();
             Session.StartRun(identity);
             ClearItineraryDrafts();
@@ -299,6 +301,8 @@ namespace SaltAndLedger.UnityHost
 
         private void AcknowledgeCompletion()
         {
+            returnToFactory = false;
+            harborReturnsToPlanner = false;
             Session.Pause(); CloseModals(); presentedResult = Session.Snapshot;
             SetText("completionTitle", Session.Identity?.Commission != null ? "GRAND COMMISSION COMPLETE" : "OBJECTIVE ACHIEVED");
             SetText("completionSummary", Session.Snapshot.Challenge.Configuration.Title + " · day " + Session.Snapshot.Day +
@@ -310,6 +314,8 @@ namespace SaltAndLedger.UnityHost
         private void PresentResults()
         {
             Session.Pause();
+            returnToFactory = false;
+            harborReturnsToPlanner = false;
             CloseModals();
             presentedResult = Session.Snapshot;
             var result = new RunResults(presentedResult);
@@ -352,6 +358,13 @@ namespace SaltAndLedger.UnityHost
 
         private void OpenSecondary(ArchipelagoScreen screen)
         {
+            if (TradeIsOpen || IndustryIsOpen)
+            {
+                // A new destination dismisses the inset; only Back follows its nested return path.
+                returnToFactory = false;
+                harborReturnsToPlanner = false;
+                CloseModals();
+            }
             if (screen == ArchipelagoScreen.CityEconomy) cityReturnScreen = Screen;
             if (screen != Screen) secondaryParents[screen] = Screen;
             secondaryParent = Screen;
@@ -397,13 +410,15 @@ namespace SaltAndLedger.UnityHost
             if (secondaryParents.TryGetValue(screen, out var parent)) secondaryParent = parent;
             if (screen != ArchipelagoScreen.Gameplay) Session?.Pause();
             navigationRoot.EnableInClassList("hidden", screen == ArchipelagoScreen.Gameplay);
+            navigationRoot.EnableInClassList("ux-route-screen", screen == ArchipelagoScreen.RoutePlanner);
             foreach (var pair in screens) pair.Value.EnableInClassList("hidden", pair.Key != screen);
             Element<VisualElement>("topBar").SetEnabled(screen == ArchipelagoScreen.Gameplay);
             Element<VisualElement>("mainLayout").SetEnabled(screen == ArchipelagoScreen.Gameplay);
-            Root.Q("commandModeNav")?.SetEnabled(screen == ArchipelagoScreen.Gameplay);
+            Root.Q("commandModeNav")?.SetEnabled(screen == ArchipelagoScreen.Gameplay || screen == ArchipelagoScreen.RoutePlanner);
             Root.Q("commandDeck")?.SetEnabled(screen == ArchipelagoScreen.Gameplay);
             if (screen == ArchipelagoScreen.Gameplay) Root.Q<Button>("menuButton")?.Focus();
             else if (screens.TryGetValue(screen, out var active)) active.Q<Button>()?.Focus();
+            RefreshCommandMode();
         }
 
         private void RefreshRunExperience()

@@ -45,48 +45,6 @@ namespace SaltAndLedger.UnityHost
             return string.Join(" · ", statuses);
         }
 
-        private void RefreshHarborRows(RegionalShipSnapshot ship, RegionalPortSnapshot port, CompanyStockpileSnapshot stock, bool local)
-        {
-            var rows = Element<VisualElement>("tradeGoodsRows");
-            if (rows.childCount == 0)
-                foreach (var goodId in goodIds)
-                {
-                    var captured = goodId;
-                    var row = new Button(() => { SetIndex("goodDropdown", goodIds.IndexOf(captured)); RefreshHarbor(); })
-                        { name = "tradeGood_" + goodId };
-                    row.AddToClassList("trade-goods-row");
-                    var glyph = new MaritimeGlyph(goodId); glyph.AddToClassList("sl-glyph-small"); row.Add(glyph);
-                    var name = new Label { name = "name", pickingMode = PickingMode.Ignore };
-                    name.AddToClassList("trade-good-name"); row.Add(name);
-                    foreach (var field in new[] { "town", "ship", "production", "usage", "net", "bid", "ask" })
-                    {
-                        var cell = new Label { name = field, pickingMode = PickingMode.Ignore };
-                        cell.AddToClassList("trade-cell"); row.Add(cell);
-                    }
-                    rows.Add(row);
-                }
-            foreach (var goodId in goodIds)
-            {
-                var row = rows.Q<Button>("tradeGood_" + goodId);
-                var flow = HarborFlow(port.Id, goodId);
-                var quote = tradeSnapshot.GetMarketQuote(port.Id, goodId);
-                var status = FlowState(flow);
-                row.Q<Label>("name").text = Session.Content.GetGood(goodId).Name + "\n" + FlowRole(flow) +
-                    (status.Length == 0 ? "" : " · " + status);
-                row.Q<Label>("town").text = flow.HasStore ? Q(flow.CurrentStock) : "—";
-                row.Q<Label>("ship").text = local ? Q(ship.Cargo[goodId]) : "—";
-                row.Q<Label>("production").text = SignedQuantity(flow.EnabledProductionQuantity);
-                row.Q<Label>("usage").text = SignedQuantity(-flow.UsageQuantity);
-                row.Q<Label>("net").text = SignedQuantity(flow.NetQuantity);
-                row.Q<Label>("bid").text = quote.Bid.HasValue ? Number(quote.Bid.Value) : "—";
-                row.Q<Label>("ask").text = quote.Ask.HasValue ? Number(quote.Ask.Value) : "—";
-                row.tooltip = FlowRole(flow) + ". " + FlowSummary(flow) + "\nSelect for breakdown and other towns. Market quotes remain public in both views.";
-                row.EnableInClassList("stock-short", flow.CurrentStock < flow.UsageQuantity);
-                row.EnableInClassList("stock-adequate", flow.UsageQuantity > 0 && flow.CurrentStock >= flow.UsageQuantity);
-                row.EnableInClassList("selected-good", goodId == SelectedGoodId());
-            }
-        }
-
         private string FlowSummary(CommodityFlowSignal flow) => "Days " + flow.FirstDay + "–" + flow.LastDay +
             ": enabled output " + Q(flow.EnabledProductionQuantity) + "; inputs " + Q(flow.InputUsageQuantity) +
             "; consumption need " + Q(flow.ConsumptionNeedQuantity) + ". Conditional on successful batches and purchases, not future stock.";

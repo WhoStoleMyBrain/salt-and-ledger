@@ -57,24 +57,26 @@ namespace SaltAndLedger.UnityHost.Tests
             var before = controller.Session.Snapshot;
             var facility = before.PrivateFacilities.Values.First();
             var quote = before.PreviewWarehouseTrade(facility.OwnerId, facility.Id, new TradeCommand(TradeDirection.Buy, "grain", 15000));
-            Click("buyButton");
+            Arrow("grain", true);
             Assert.That(controller.Session.Player.Cash, Is.EqualTo(before.Companies[facility.OwnerId].Cash - quote.TotalAmount));
             Assert.That(controller.Session.Snapshot.GetFacilityStorage(facility.Id).Inventory["grain"], Is.EqualTo(15000));
-            Quantity("0.5"); Assert.That(root.Q<Button>("harborLoadButton").enabledSelf, Is.False);
+            Click("pairWarehouseShip");
+            Quantity("0.5"); Assert.That(Row("grain").Q<Button>("rightArrow").enabledSelf, Is.False);
             Quantity("1"); var paid = controller.Session.Snapshot;
-            Click("harborLoadButton");
+            Arrow("grain", true);
             Assert.That(controller.Session.Player.Cargo["grain"], Is.EqualTo(10000));
             Assert.That(controller.Session.Player.Cash, Is.EqualTo(paid.Companies[facility.OwnerId].Cash));
-            Click("harborUnloadButton");
+            Arrow("grain", false);
             Assert.That(controller.Session.Player.Cargo["grain"], Is.Zero);
             Assert.That(controller.Session.Snapshot.GetFacilityStorage(facility.Id).Inventory["grain"], Is.EqualTo(15000));
             Assert.That(controller.Session.Snapshot.Day, Is.EqualTo(before.Day));
             Click("closeTradeButton");
             var remote = controller.Session.Snapshot.Ports.Keys.First(id => id != controller.Session.Player.DockedPortId);
             controller.OpenTrade(remote);
-            Assert.That(root.Q<Button>("harborLoadButton").enabledSelf, Is.False);
-            Assert.That(root.Q<Button>("harborUnloadButton").enabledSelf, Is.False);
-            Assert.That(root.Q<Button>("tradeGood_grain").Q<Label>("ship").text, Is.EqualTo("—"));
+            Click("pairWarehouseShip");
+            Assert.That(Row("grain").Q<Button>("rightArrow").enabledSelf, Is.False);
+            Assert.That(Row("grain").Q<Button>("leftArrow").enabledSelf, Is.False);
+            Assert.That(root.Q<Label>("approvedRightOwner").text, Does.Contain("REMOTE"));
             yield return null;
         }
 
@@ -82,9 +84,11 @@ namespace SaltAndLedger.UnityHost.Tests
         public IEnumerator MillAndBakeryConsumeTheTownPoolThroughRealFundedDays()
         {
             BeginIndustrial(CompanyStorageRules.Pooled);
+            Click("port_" + controller.Session.Player.DockedPortId);
             Click("openIndustryButton");
-            root.Q<DropdownField>("blueprintDropdown").value = "Mill"; Click("constructButton");
-            Click("industryHarborButton"); LocalStock(); Good("grain"); Quantity("2"); Click("buyButton");
+            var blueprint = controller.Session.Snapshot.IndustryBlueprints.Values.Single(b => b.BuildingId == "mill");
+            Click("construct_" + blueprint.Id);
+            Click("industryHarborButton"); LocalStock(); Quantity("2"); Arrow("grain", true);
             Click("closeTradeButton");
             for (var day = 0; day < 4; day++) Click("nextDayButton");
             var snapshot = controller.Session.Snapshot;
@@ -98,6 +102,8 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(mill.Inventory.Values.All(quantity => quantity == 0), Is.True);
             Assert.That(bakery.Inventory.Values.All(quantity => quantity == 0), Is.True);
             controller.OpenTrade(mill.PortId);
+            Good("grain");
+            root.Q<Foldout>("harborProduction").value = true;
             Assert.That(root.Q<Label>("harborStockExplanation").text, Does.Contain("One town stockpile"));
             Assert.That(root.Q<Label>("harborProductionLabel").text, Does.Contain("Mill").And.Contain("Bakery"));
             yield return null;
@@ -107,8 +113,10 @@ namespace SaltAndLedger.UnityHost.Tests
 
         private void BeginIndustrial(CompanyStorageRules storage) => controller.BeginRun(new RunIdentity(null,
             RunScenario.IndustrialCharter, RunWorldMode.ExpandingEconomy, 42, companyStorageRules: storage));
-        private void LocalStock() => root.Q<DropdownField>("harborTradeTarget").value = "Company warehouse";
-        private void Good(string id) => root.Q<DropdownField>("goodDropdown").value = controller.Session.Content.GetGood(id).Name;
+        private void LocalStock() => Click("pairMarketWarehouse");
+        private VisualElement Row(string id) => root.Q("tradeGood_" + id);
+        private void Good(string id) => Click("good", Row(id));
+        private void Arrow(string id, bool right) => Click(right ? "rightArrow" : "leftArrow", Row(id));
         private void Quantity(string value) => root.Q<TextField>("quantityField").value = value;
         private void Click(string id, VisualElement parent = null)
         {

@@ -1,0 +1,104 @@
+/* ROUTE V2: the chart and instruction editor share one bounded workspace. */
+.route-v3-screen { max-width: none; min-width: 0; padding: 8px 10px; }
+.route-v3-heading { flex-direction: row; align-items: center; flex-shrink: 0; margin-bottom: 12px; padding: 12px 12px 0 12px; }
+.route-v3-title-group { flex-grow: 1; min-width: 0; }
+.route-v3-title-group .run-heading { margin-bottom: 3px; }
+.route-v3-subtitle { color: #b9cccc; font-size: var(--sl-caption); white-space: normal; }
+.route-v3-heading > .unity-base-field { max-width: 300px; min-width: 180px; flex-shrink: 1; flex-direction: column; margin-right: 12px; }
+.route-v3-body { flex-direction: row; flex-grow: 1; min-height: 0; }
+.route-v3-main { flex-grow: 2.2; flex-basis: 0; min-width: 0; margin-right: 16px; }
+.route-v3-chart-panel { flex-grow: 1; min-height: 220px; background-color: #1d4148; border-radius: 9px; overflow: hidden; }
+.route-v3-chart-panel .archipelago-map { min-height: 220px; }
+.route-v3-chart-panel .port-marker { background-color: #ece7d8; color: #233c47; border-color: #d4d4be; }
+.route-v3-passage { white-space: normal; color: #f7f3e8; background-color: #244d52; padding: 12px 16px; border-radius: 6px; margin-top: 10px; flex-shrink: 0; }
+.route-v3-context { flex-grow: 1; flex-basis: 0; min-width: 280px; max-width: 550px; background-color: #ebe6d7; color: #233744; border-radius: 9px; }
+.route-v3-context > .unity-scroll-view__content-viewport > .unity-scroll-view__content-container { padding: 18px; }
+.route-v3-context .unity-button, .route-v3-editor .unity-button { background-color: #f7f3e8; color: #233744; border-color: #d5d2c5; border-width: 1px; border-radius: 5px; margin: 3px 0; white-space: normal; }
+.route-v3-context .unity-button:hover, .route-v3-editor .unity-button:hover { background-color: #dbe5dc; border-color: #366569; }
+.route-v3-context .unity-button:focus { border-width: 2px; border-color: #233744; }
+.route-v3-context .unity-button.primary, .route-v3-editor .unity-button.primary { background-color: #183e46; border-color: #183e46; color: #f7f3e8; }
+.route-v3-context .unity-toggle__label, .route-v3-editor .unity-toggle__label, .route-v3-context .unity-foldout__text, .route-v3-editor .unity-foldout__text { color: #233744; }
+.route-v3-context-section { flex-shrink: 0; }
+.route-v3-context-title { font-size: var(--sl-heading); -unity-font-style: bold; color: #233744; margin: 4px 0 12px 0; white-space: normal; }
+.route-v3-eyebrow { color: #476169; font-size: var(--sl-caption); margin: 10px 0 4px 0; white-space: normal; }
+.route-v3-copy, .route-v3-context .run-copy, .route-v3-context .run-footnote { color: #233744; white-space: normal; margin: 4px 0; }
+.route-v3-muted { color: #52696d; white-space: normal; font-size: var(--sl-caption); margin: 5px 0; }
+.route-v3-warning { background-color: #f5dfbe; color: #81472e; padding: 12px; border-radius: 5px; white-space: normal; margin: 8px 0; }
+.route-v3-validation { color: #75492e; white-space: normal; font-size: var(--sl-caption); margin: 10px 0; }
+.route-v3-stop { background-color: #f7f3e8; border-radius: 5px; padding: 8px; margin: 3px 0; flex-shrink: 0; }
+.route-v3-stop.itinerary-selected { border-width: 1px; border-color: #43716a; background-color: #e0e6da; }
+.route-v3-stop .itinerary-stop-summary { font-size: var(--sl-caption); color: #233744; }
+.route-v3-stop .itinerary-stop-warning { color: #81472e; }
+.route-v3-stop-tools { flex-direction: row; justify-content: flex-end; margin-top: 3px; }
+.route-v3-stop-tools > .unity-button { min-width: var(--sl-control); padding: 3px 9px; margin-left: 5px; }
+.route-v3-editor { flex-grow: 1; min-height: 0; background-color: #ebe6d7; border-radius: 9px; color: #233744; }
+.route-v3-editor > .unity-scroll-view__content-viewport > .unity-scroll-view__content-container { padding: 16px; }
+.route-v3-stop-tabs { flex-direction: row; flex-wrap: wrap; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom-width: 1px; border-bottom-color: #d4d1c3; }
+.route-v3-stop-tabs > .unity-button { flex-grow: 1; flex-basis: 0; margin-right: 6px; min-width: 140px; }
+.route-v3-stop-tabs > .unity-button.route-v3-selected-tab { color: #f7f3e8; background-color: #183e46; }
+.route-v3-grid-groups { flex-direction: row; align-items: center; }
+.route-v3-good-heading { flex-grow: 1.2; flex-basis: 0; min-width: 145px; font-size: var(--sl-caption); color: #476169; }
+.route-v3-owner-heading { flex-grow: 2; flex-basis: 0; min-width: 0; -unity-text-align: middle-center; white-space: normal; font-size: var(--sl-caption); color: #233744; }
+.route-v3-grid-heading { border-bottom-width: 0; }
+.route-v3-good-row { background-color: #f4f0e4; border-bottom-width: 0; border-radius: 5px; margin: 3px 0; padding: 4px 0; }
+.route-v3-good-row .itinerary-good-name { color: #233744; }
+.route-v3-editor .route-v3-grid-cell { margin: 2px 5px; flex-grow: 1; flex-basis: 0; min-width: 0; background-color: #e9e8dd; border-color: #e9e8dd; }
+.route-v3-editor .route-v3-grid-cell.itinerary-cell-active { color: #183e46; background-color: #dce6d9; border-color: #6b9990; -unity-font-style: bold; }
+.route-v3-sequence { border-top-width: 1px; border-top-color: #d4d1c3; margin-top: 10px; padding-top: 5px; }
+.route-v3-instruction { flex-shrink: 0; background-color: #f7f3e8; padding: 8px 10px; margin: 5px 0; border-radius: 5px; }
+.route-v3-instruction-title { flex-direction: row; flex-wrap: wrap; align-items: center; }
+.route-v3-order-number { min-width: 32px; color: #52696d; font-size: var(--sl-caption); }
+.route-v3-order-title { flex-grow: 0; min-width: 125px; -unity-text-align: middle-left; border-width: 0; -unity-font-style: bold; }
+.route-v3-order-summary { flex-grow: 1; flex-shrink: 1; min-width: 180px; margin: 3px 10px; }
+.route-v3-instruction-title > .route-v3-stop-tools { margin-left: auto; margin-top: 0; flex-shrink: 0; }
+.route-v3-inline-editor { padding: 12px; margin-top: 7px; border-width: 1px; border-color: #88aaa0; border-radius: 6px; background-color: #edf0e6; }
+.route-v3-inline-fields { flex-direction: row; flex-wrap: wrap; align-items: center; }
+.route-v3-inline-fields > .unity-base-field { flex-grow: 1; flex-basis: 0; min-width: 140px; margin: 4px 8px 5px 0; flex-direction: column; align-items: stretch; }
+.route-v3-inline-fields .unity-base-field__label, .route-v3-inline-editor .unity-base-field__label { color: #233744; min-width: 0; white-space: normal; }
+.route-v3-inline-editor .unity-base-field__input { background-color: #f7f3e8; color: #233744; min-width: 0; border-color: #a1b5ac; border-width: 1px; border-radius: 4px; }
+.route-v3-inline-editor .unity-text-element { color: #233744; }
+.route-v3-inline-buttons { flex-direction: row; justify-content: flex-end; }
+.route-v3-inline-buttons > .unity-button { min-width: 110px; margin-left: 8px; }
+.route-v3-hold { background-color: #dfe7db; border-radius: 5px; padding: 12px; color: #233744; white-space: normal; margin-top: 15px; }
+.route-v3-activity { flex-direction: row; align-items: center; flex-shrink: 0; background-color: #ebe6d7; color: #233744; border-radius: 7px; margin-top: 14px; padding: 9px 14px; }
+.route-v3-live { flex-grow: 1; flex-shrink: 1; min-width: 0; white-space: normal; font-size: var(--sl-caption); color: #233744; }
+.route-v3-activity > .unity-button { margin-left: 8px; }
+.route-v3-town-hover { position: absolute; left: 12px; top: 12px; max-width: 330px; background-color: #f7f3e8; color: #233744; border-radius: 6px; border-width: 1px; border-color: #c5ccb9; padding: 12px; }
+.ui-narrow .route-v3-context { min-width: 260px; }
+.ui-narrow .route-v3-main { margin-right: 10px; }
+.ui-narrow .route-v3-context > .unity-scroll-view__content-viewport > .unity-scroll-view__content-container { padding: 12px; }
+.ui-narrow .route-v3-editor > .unity-scroll-view__content-viewport > .unity-scroll-view__content-container { padding: 10px; }
+.ui-narrow .route-v3-heading { margin-bottom: 6px; }
+.ui-narrow .route-v3-heading > .unity-base-field { min-width: 150px; max-width: 210px; }
+.ui-narrow .route-v3-activity { margin-top: 8px; padding: 6px 9px; }
+.route-v3-screen .hidden { display: none; }
+
+/* These surfaces sit above the still-mounted gameplay shell. Keep their
+   materials opaque and override the global dark input skin on paper. */
+.sl-theme .route-v3-heading .run-heading { color: #f7f3e8; }
+.sl-theme .route-v3-heading .run-eyebrow,
+.sl-theme .route-v3-heading .unity-base-field__label { color: #b9cccc; }
+.sl-theme .route-v3-context .unity-scroll-view__content-viewport,
+.sl-theme .route-v3-context .unity-scroll-view__content-container,
+.sl-theme .route-v3-editor .unity-scroll-view__content-viewport,
+.sl-theme .route-v3-editor .unity-scroll-view__content-container { background-color: #ebe6d7; }
+.sl-theme .route-v3-context .unity-base-field__input,
+.sl-theme .route-v3-editor .unity-base-field__input { background-color: #f7f3e8; color: #233744; border-color: #a1b5ac; }
+.sl-theme .route-v3-context .unity-toggle__text,
+.sl-theme .route-v3-context .unity-foldout__text,
+.sl-theme .route-v3-context .unity-base-field__label,
+.sl-theme .route-v3-editor .unity-toggle__text,
+.sl-theme .route-v3-editor .unity-foldout__text,
+.sl-theme .route-v3-editor .unity-base-field__label { color: #233744; }
+.sl-theme .route-v3-context .unity-toggle__checkmark,
+.sl-theme .route-v3-editor .unity-toggle__checkmark { background-color: #f7f3e8; border-color: #52696d; }
+.sl-theme .route-v3-context .unity-toggle__input:checked .unity-toggle__checkmark,
+.sl-theme .route-v3-editor .unity-toggle__input:checked .unity-toggle__checkmark { background-color: #43716a; border-color: #233744; }
+.sl-theme .route-v3-context .unity-scroller,
+.sl-theme .route-v3-context .unity-scroller .unity-base-field__input,
+.sl-theme .route-v3-context .unity-scroller .unity-base-slider__tracker,
+.sl-theme .route-v3-editor .unity-scroller,
+.sl-theme .route-v3-editor .unity-scroller .unity-base-field__input,
+.sl-theme .route-v3-editor .unity-scroller .unity-base-slider__tracker { background-color: #d5d2c5; }
+.sl-theme .route-v3-context .unity-scroller .unity-base-slider__dragger,
+.sl-theme .route-v3-editor .unity-scroller .unity-base-slider__dragger { background-color: #52696d; }

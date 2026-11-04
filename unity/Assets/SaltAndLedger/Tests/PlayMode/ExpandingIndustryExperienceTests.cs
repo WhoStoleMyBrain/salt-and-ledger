@@ -30,36 +30,45 @@ namespace SaltAndLedger.UnityHost.Tests
         public IEnumerator MultipleMillsAndFractionalWarehouseUseExactControlsWithoutFractionalCargo()
         {
             Click("openIndustryButton");
-            root.Q<DropdownField>("blueprintDropdown").value = "Mill";
-            Click("constructButton");
-            Assert.That(root.Q<Button>("constructButton").enabledInHierarchy, Is.True);
-            Click("constructButton");
+            var blueprint = controller.Session.Snapshot.IndustryBlueprints.Values.Single(b => b.BuildingId == "mill" &&
+                b.EligiblePortIds.Contains(controller.Session.SelectedPortId));
+            Click("construct_" + blueprint.Id);
+            Click("industryBackToOverview");
+            Assert.That(root.Q<Button>("construct_" + blueprint.Id).enabledInHierarchy, Is.True);
+            Click("construct_" + blueprint.Id);
             var mills = controller.Session.Snapshot.PrivateFacilities.Values.Where(f => f.Blueprint.BuildingId == "mill").ToArray();
             Assert.That(mills.Length, Is.EqualTo(2));
-            Assert.That(root.Q<DropdownField>("facilityDropdown").choices.Distinct().Count(), Is.EqualTo(3));
-            Assert.That(root.Q<Label>("constructionLabel").text, Does.Contain("Pay 260 now"));
-            root.Q<DropdownField>("storageGoodDropdown").value = "Grain";
-            root.Q<TextField>("storageQuantity").value = "0.75";
+            Click("industryBackToOverview");
+            foreach (var mill in mills) Assert.That(root.Q<Button>("manageFactory_" + mill.Id), Is.Not.Null);
+            Assert.That(root.Q<Label>("construction_" + blueprint.Id).text, Does.Contain("260 coins"));
+            var stocked = mills.Last();
+            Click("manageFactory_" + stocked.Id);
+            Click("factoryWarehouseButton");
+            root.Q<TextField>("quantityField").value = "0.75";
             var before = controller.Session.Snapshot;
-            Click("warehouseBuy");
-            var stocked = controller.Session.Snapshot.PrivateFacilities.Values.Single(f => f.Blueprint.BuildingId == "mill" && root.Q<DropdownField>("facilityDropdown").value.Contains("[" + f.Id + "]"));
+            var buy = root.Q("tradeGood_grain").Q<Button>("rightArrow");
+            Assert.That(buy.enabledInHierarchy, Is.True);
+            using (var evt = NavigationSubmitEvent.GetPooled()) { evt.target = buy; buy.SendEvent(evt); }
             Assert.That(controller.Session.Snapshot.GetFacilityStorage(stocked.Id).Inventory["grain"], Is.EqualTo(7500));
             Assert.That(controller.Session.Snapshot.Day, Is.EqualTo(before.Day));
-            Assert.That(root.Q<Button>("warehouseToShip").enabledInHierarchy, Is.False);
+            Click("pairWarehouseShip");
+            Assert.That(root.Q("tradeGood_grain").Q<Button>("rightArrow").enabledInHierarchy, Is.False);
+            Click("closeTradeButton");
             Assert.That(root.Q<Label>("facilityInputStatusLabel").text, Does.Contain("warehouse 0.75/2").And.Contain("missing 1.25"));
-            Click("industryWarehouseTab");
+            Click("factoryAutomationButton");
             root.Q<Toggle>("warehouseBuyEnabled_grain").value = true;
             root.Q<TextField>("warehouseBuyTarget_grain").value = "2.5";
             root.Q<TextField>("warehouseBuyPrice_grain").value = "24";
+            Click("editWarehouseCashReserve");
             root.Q<TextField>("warehouseCashReserve").value = "80.25";
-            var passive = controller.Session.Snapshot;
-            Assert.That(root.Q<Label>("warehouseBuyPreview_grain").text, Does.Contain("Now:"));
-            Assert.That(controller.Session.Snapshot, Is.SameAs(passive));
-            Click("applyWarehousePolicy");
+            Click("closeWarehouseCashReserve");
             var applied = controller.Session.Snapshot.GetFacilityStorage(stocked.Id).Policy;
             Assert.That(applied.Rules.Single(rule => rule.GoodId == "grain").BuyTarget, Is.EqualTo(25000));
             Assert.That(applied.CashReserve, Is.EqualTo(802500));
             Assert.That(applied.Rules.Single(rule => rule.GoodId == "grain").MaximumBuyPrice, Is.EqualTo(24));
+            var passive = controller.Session.Snapshot;
+            Click("warehouseSellTab"); Click("warehouseBuyTab");
+            Assert.That(controller.Session.Snapshot, Is.SameAs(passive));
             yield return null;
         }
 
@@ -81,7 +90,8 @@ namespace SaltAndLedger.UnityHost.Tests
             var selector = root.Q<DropdownField>("itineraryShip");
             Assert.That(selector.choices.Count, Is.EqualTo(2));
             var passive = session.Snapshot;
-            selector.value = selector.choices.Single(value => value.Contains("player_ship_2"));
+            var secondShip = session.OwnedShips.Single(ship => ship.Id == "player_ship_2");
+            selector.value = selector.choices.Single(value => value == secondShip.Name);
             Assert.That(session.Snapshot, Is.SameAs(passive));
             Assert.That(session.Player.Id, Is.EqualTo("player_ship_2"));
             Assert.That(session.Snapshot.Ships[WorldIds.PlayerShipId].AutomationEnabled, Is.False);
@@ -102,6 +112,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("cityEconomyBackButton");
             Click("openIndustryButton");
             var facility = session.Snapshot.PrivateFacilities[RunScenario.StarterBakery];
+            Click("manageFactory_" + facility.Id);
             var prediction = EconomicSignals.PrivateProduction(session.Snapshot, session.Content, facility.Id).CurrentReadiness;
             var status = root.Q<Label>("facilityStateLabel").text;
             Assert.That(root.Q<Label>("facilityStateLabel").tooltip, Does.Contain("Last attempt:"));

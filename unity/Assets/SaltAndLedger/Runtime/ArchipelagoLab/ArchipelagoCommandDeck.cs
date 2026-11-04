@@ -15,7 +15,6 @@ namespace SaltAndLedger.UnityHost
     {
         public CommandMode Mode { get; internal set; }
         public bool HasSelection { get; internal set; }
-        public bool DeckCollapsed { get; internal set; }
     }
 
     public sealed partial class ArchipelagoLabController
@@ -59,13 +58,6 @@ namespace SaltAndLedger.UnityHost
             var main = Element<VisualElement>("mainLayout");
             var deck = Panel(root, "commandDeck", "sl-paper command-deck");
             root.Insert(root.IndexOf(main) + 1, deck);
-            var deckTop = Panel(deck, "deckTop", "command-deck-top");
-            Text(deckTop, "deckHint", "Select a town or ship", "command-deck-hint");
-            Button(deckTop, "deckCollapseButton", "Collapse", () =>
-            {
-                Presentation.DeckCollapsed = !Presentation.DeckCollapsed;
-                RefreshCommandDeck();
-            });
             var body = Panel(deck, "deckBody", "command-deck-body");
             var identity = Panel(body, "deckIdentity", "command-deck-identity");
             identity.Add(Element<Label>("selectionTitle"));
@@ -100,6 +92,7 @@ namespace SaltAndLedger.UnityHost
             BuildCommandWorkspaces(main);
             commandDeckBuilt = true;
             ApplyMaritimeKit();
+            BuildApprovedShell();
             ResetPresentation();
         }
 
@@ -107,7 +100,6 @@ namespace SaltAndLedger.UnityHost
         {
             Presentation.Mode = CommandMode.Map;
             Presentation.HasSelection = false;
-            Presentation.DeckCollapsed = false;
             chooserMode = null;
             economyPresented = null;
             noticesPresented = null;
@@ -123,20 +115,20 @@ namespace SaltAndLedger.UnityHost
         public void SelectCommandPort(string portId)
         {
             Presentation.HasSelection = true;
-            Presentation.DeckCollapsed = false;
             Run(() => Session.SelectPort(portId));
         }
 
         public void SelectCommandShip(string shipId)
         {
             Presentation.HasSelection = true;
-            Presentation.DeckCollapsed = false;
             Run(() => Session.SelectShip(shipId));
         }
 
         public void SwitchCommandMode(CommandMode mode)
         {
             Session.Pause();
+            returnToFactory = false;
+            harborReturnsToPlanner = false;
             if (Screen != ArchipelagoScreen.Gameplay) ShowScreen(ArchipelagoScreen.Gameplay);
             CloseModals();
             Element<VisualElement>("commandNotices").AddToClassList("hidden");
@@ -165,6 +157,7 @@ namespace SaltAndLedger.UnityHost
         private void OpenCommandIndustry()
         {
             Session.Pause();
+            industryFactorySelected = false;
             SelectIndustryPane(false);
             Element<ScrollView>("industryPolicyScroll").scrollOffset = UnityEngine.Vector2.zero;
             ShowModal("industryBackdrop", "closeIndustryButton");
@@ -212,17 +205,18 @@ namespace SaltAndLedger.UnityHost
         private void RefreshCommandMode()
         {
             if (!commandDeckBuilt) return;
-            var mode = TradeIsOpen ? CommandMode.Trade : IndustryIsOpen ? CommandMode.Industry :
+            var mode = Screen == ArchipelagoScreen.RoutePlanner ? CommandMode.Fleet : TradeIsOpen ? CommandMode.Trade : IndustryIsOpen ? CommandMode.Industry :
                 Screen == ArchipelagoScreen.Objectives ? CommandMode.Objectives : chooserMode ?? Presentation.Mode;
             foreach (var pair in modeButtons) pair.Value.EnableInClassList("sl-selected", pair.Key == mode);
-            var fleet = Presentation.Mode == CommandMode.Fleet && chooserMode == null;
-            var economy = Presentation.Mode == CommandMode.Economy && chooserMode == null;
+            var modal = TradeIsOpen || IndustryIsOpen;
+            var fleet = Presentation.Mode == CommandMode.Fleet && chooserMode == null && !modal;
+            var economy = Presentation.Mode == CommandMode.Economy && chooserMode == null && !modal;
             Element<VisualElement>("archipelagoLab").EnableInClassList("command-fleet-mode", fleet);
             Root.Q(className: "map-side").EnableInClassList("hidden", economy || chooserMode != null);
             Element<VisualElement>("fleetCommandList").EnableInClassList("hidden", !fleet);
             Element<VisualElement>("fleetCommandInspector").EnableInClassList("hidden", !fleet);
             Element<VisualElement>("economyWorkspace").EnableInClassList("hidden", !economy);
-            Element<VisualElement>("commandDeck").EnableInClassList("hidden", fleet || economy || chooserMode != null);
+            Element<VisualElement>("commandDeck").EnableInClassList("hidden", fleet || economy || chooserMode != null || !Presentation.HasSelection);
             Element<VisualElement>("commandChooser").EnableInClassList("hidden", chooserMode == null);
         }
 
@@ -235,15 +229,10 @@ namespace SaltAndLedger.UnityHost
             var snapshot = Session.Snapshot;
             var port = snapshot.Ports[Session.SelectedPortId];
             var ship = Session.SelectedShipId == null ? null : snapshot.Ships[Session.SelectedShipId];
-            var expanded = Presentation.HasSelection && !Presentation.DeckCollapsed;
+            var expanded = Presentation.HasSelection;
             Element<VisualElement>("deckBody").EnableInClassList("hidden", !expanded);
             Element<Label>("deckReason").EnableInClassList("hidden", !expanded);
             Element<VisualElement>("voyageBar").EnableInClassList("hidden", !expanded || Session.PendingDestinationId == null);
-            SetText("deckHint", !Presentation.HasSelection ? "Select a town or ship" :
-                ship?.Name ?? port.Name);
-            Element<Label>("deckHint").EnableInClassList("hidden", expanded);
-            Element<Button>("deckCollapseButton").text = expanded ? "Collapse ▾" : "Expand ▴";
-            Element<Button>("deckCollapseButton").SetEnabled(Presentation.HasSelection);
             SetText("cashLabel", "Cash " + CompactCoins(Session.Player.Cash, snapshot.MoneyScale) +
                 (snapshot.Economy == null ? "" : " · Ref. value " + CompactCoins(snapshot.CompanyValue(Session.Player.OwnerId).Total, snapshot.MoneyScale)));
             Element<Label>("cashLabel").tooltip = "Spendable company cash: " + Money(Session.Player.Cash) + " coins." +
@@ -267,6 +256,7 @@ namespace SaltAndLedger.UnityHost
             RefreshCommandNotices();
             RefreshCommandWorkspaces();
             RefreshCommandMode();
+            RefreshApprovedContext();
             Element<Label>("statusLabel").EnableInClassList("hidden", !statusIsError);
         }
 

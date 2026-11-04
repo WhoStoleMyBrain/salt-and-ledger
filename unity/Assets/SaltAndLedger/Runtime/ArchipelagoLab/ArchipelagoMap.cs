@@ -28,9 +28,12 @@ namespace SaltAndLedger.UnityHost
         private float interpolation = 1;
         private float interval = 1;
         private bool showAllRoutes;
+        private bool allowShipSelection = true;
+        private string[] draftRoute;
 
         public event Action<string> PortSelected;
         public event Action<string> PortTradeRequested;
+        public event Action<string> PortHovered;
         public event Action<string> ShipSelected;
         public RegionalWorldSnapshot Snapshot => snapshot;
         public int PortMarkerCount => ports.Count;
@@ -38,6 +41,16 @@ namespace SaltAndLedger.UnityHost
         public MapViewport Viewport { get; private set; }
         public IReadOnlyList<string> HighlightedRoutePortIds => highlightedRoute.AsReadOnly();
         public int VisibleRouteCount => snapshot == null ? 0 : snapshot.Routes.Count(RouteIsVisible);
+        /// <summary>Course-only charts can show vessel positions without offering vessel selection.</summary>
+        public bool AllowShipSelection
+        {
+            get => allowShipSelection;
+            set
+            {
+                allowShipSelection = value;
+                foreach (var marker in ships.Values) { marker.SetEnabled(value); marker.focusable = value; }
+            }
+        }
         public bool ShowAllRoutes
         {
             get => showAllRoutes;
@@ -48,6 +61,13 @@ namespace SaltAndLedger.UnityHost
                 RefreshRouteVisibility();
                 ArrangeMarkers();
             }
+        }
+
+        /// <summary>Presentation-only ordered course; null restores the selected ship's applied route.</summary>
+        public void SetDraftRoute(IReadOnlyList<string> portIds)
+        {
+            draftRoute = portIds == null ? null : portIds.ToArray();
+            if (snapshot != null) Present(snapshot, selectedPortId, selectedShipId, false, 1);
         }
 
         public ArchipelagoMap()
@@ -83,7 +103,7 @@ namespace SaltAndLedger.UnityHost
             RefreshHighlightedRoute();
             foreach (var port in snapshot.Ports.Values)
             {
-                var stop = selectedShipId != null && snapshot.Ships[selectedShipId].Itinerary != null
+                var stop = draftRoute != null || selectedShipId != null && snapshot.Ships[selectedShipId].Itinerary != null
                     ? highlightedRoute.IndexOf(port.Id) : -1;
                 ports[port.Id].text = port.Name + "\n" + (stop < 0 ? ShortRole(port) : "Stop " + (stop + 1));
                 ports[port.Id].EnableInClassList("selected-marker", selectedShipId == null && port.Id == selectedPortId);
@@ -104,7 +124,8 @@ namespace SaltAndLedger.UnityHost
                     "\n" + Quantity(ship.CargoUnits) + "/" + Quantity(ship.CargoCapacity) + " cargo" +
                     (ship.DockedPortId != null ? "\nDocked at " + snapshot.Ports[ship.DockedPortId].Name :
                         "\nTo " + snapshot.Ports[ship.DestinationPortId].Name + " · " + ship.RemainingTravelDays + " days remain") +
-                    "\n" + (blocked ? "Waiting: " : ship.AutomationEnabled ? "Active: " : "Manual: ") + decision.Reason;
+                    "\n" + (blocked ? "Waiting: " : ship.AutomationEnabled ? "Active: " : "Manual: ") + decision.Reason +
+                    (AllowShipSelection ? "" : "\nPosition only. Select an owned ship above the route chart.");
             }
             var player = selectedShipId != null && snapshot.Ships.TryGetValue(selectedShipId, out var selected)
                 ? selected : snapshot.Ships.Values.Where(ship => ship.IsPlayer).OrderBy(ship => ship.Id, StringComparer.Ordinal).First();
@@ -133,10 +154,12 @@ namespace SaltAndLedger.UnityHost
         public Rect DisplayedShipMarkerBounds(string shipId) => shipMarkerBounds[shipId];
         public Vector2 WorldToViewport(Vector2 world) => Viewport.WorldToViewport(world);
         public Vector2 ViewportToWorld(Vector2 point) => Viewport.ViewportToWorld(point);
+        public void FitToWorld() { ArrangeMarkers(); MarkDirtyRepaint(); }
 
         private void RefreshHighlightedRoute()
         {
             highlightedRoute.Clear();
+            if (draftRoute != null) { highlightedRoute.AddRange(draftRoute.Where(snapshot.Ports.ContainsKey)); return; }
             if (selectedShipId == null || !snapshot.Ships.TryGetValue(selectedShipId, out var ship)) return;
             if (ship.Itinerary != null) highlightedRoute.AddRange(ship.Itinerary.Stops.Select(stop => stop.PortId));
             else if (ship.IsPlayer && snapshot.RunIdentity?.ItineraryVersion == 1)
@@ -162,7 +185,7 @@ namespace SaltAndLedger.UnityHost
         }
 
         private bool RouteIsVisible(SeaRoute route) => ShowAllRoutes ||
-            (selectedShipId != null ? RouteIsHighlighted(route) :
+            (draftRoute != null || selectedShipId != null ? RouteIsHighlighted(route) :
                 selectedPortId != null && (route.OriginPortId == selectedPortId || route.DestinationPortId == selectedPortId));
 
         private static bool Joins(SeaRoute route, string first, string second) =>
@@ -194,6 +217,8 @@ namespace SaltAndLedger.UnityHost
                 var button = new Button(() => PortSelected?.Invoke(id)) { name = "port_" + id };
                 button.AddToClassList("port-marker");
                 button.RegisterCallback<GeometryChangedEvent>(_ => ArrangeMarkers());
+                button.RegisterCallback<PointerEnterEvent>(_ => PortHovered?.Invoke(id));
+                button.RegisterCallback<PointerLeaveEvent>(_ => PortHovered?.Invoke(null));
                 button.RegisterCallback<PointerDownEvent>(evt =>
                 {
                     if (evt.button != 1) return;
@@ -228,7 +253,7 @@ namespace SaltAndLedger.UnityHost
                 var id = ship.Id;
                 if (!ships.TryGetValue(id, out var button))
                 {
-                    button = new Button(() => ShipSelected?.Invoke(id)) { name = "ship_" + id };
+                    button = new Button(() => { if (AllowShipSelection) ShipSelected?.Invoke(id); }) { name = "ship_" + id };
                     button.AddToClassList("ship-marker");
                     var glyph = new MaritimeGlyph("ship");
                     glyph.AddToClassList("sl-map-ship-glyph");
@@ -245,6 +270,8 @@ namespace SaltAndLedger.UnityHost
                 }
                 button.EnableInClassList("player-marker", ship.IsPlayer);
                 button.EnableInClassList("npc-marker", !ship.IsPlayer);
+                button.SetEnabled(AllowShipSelection);
+                button.focusable = AllowShipSelection;
                 button.Q<Label>(className: "sl-map-ship-label").text = ship.IsPlayer
                     ? "P" + (++playerIndex).ToString(CultureInfo.InvariantCulture) : "N" + (++npcIndex).ToString(CultureInfo.InvariantCulture);
             }
@@ -461,8 +488,7 @@ namespace SaltAndLedger.UnityHost
         {
             if (snapshot == null || contentRect.width < 1 || contentRect.height < 1) return;
             var painter = context.painter2D;
-            painter.fillGradient = FillGradient.MakeLinearGradient(new Color(0.063f, 0.23f, 0.27f),
-                new Color(0.12f, 0.34f, 0.37f), Vector2.zero, new Vector2(contentRect.width, contentRect.height), AddressMode.Clamp);
+            painter.fillColor = new Color(0.141f, 0.302f, 0.322f);
             painter.BeginPath();
             painter.MoveTo(Vector2.zero); painter.LineTo(new Vector2(contentRect.width, 0));
             painter.LineTo(new Vector2(contentRect.width, contentRect.height)); painter.LineTo(new Vector2(0, contentRect.height));
@@ -528,51 +554,6 @@ namespace SaltAndLedger.UnityHost
                 painter.LineTo(captionCenters[index]);
                 painter.Stroke();
             }
-            var islandColors = new[]
-            {
-                new Color(0.37f, 0.49f, 0.34f), new Color(0.29f, 0.44f, 0.34f),
-                new Color(0.46f, 0.49f, 0.32f), new Color(0.34f, 0.48f, 0.37f)
-            };
-            var islandIndex = 0;
-            foreach (var port in snapshot.Ports.Values.OrderBy(port => port.Id, StringComparer.Ordinal))
-            {
-                var point = PortPoint(port.Id);
-                var scale = IslandDecorationScale(port.Id);
-                var artwork = ShortRole(port) == "Forest" ? "forest-harbor" : "harbor";
-                if (MaritimeArtwork.Draw(context, "Illustrations/" + artwork,
-                    new Rect(point.x - 135 * scale, point.y - 96 * scale, 270 * scale, 159 * scale)))
-                {
-                    islandIndex++;
-                    continue;
-                }
-                var selected = selectedShipId == null && port.Id == selectedPortId;
-                painter.fillColor = new Color(0.28f, 0.57f, 0.55f, 0.28f);
-                painter.strokeColor = new Color(0.51f, 0.73f, 0.65f, 0.3f);
-                painter.lineWidth = 1;
-                IslandPath(painter, point, scale * 1.20f, islandIndex); painter.Fill(); painter.Stroke();
-                painter.fillColor = new Color(0.71f, 0.67f, 0.44f);
-                painter.strokeColor = selected ? new Color(0.98f, 0.86f, 0.57f) : new Color(0.80f, 0.76f, 0.55f);
-                painter.lineWidth = selected ? 3 : 1.5f;
-                IslandPath(painter, point, scale * 1.06f, islandIndex); painter.Fill(); painter.Stroke();
-                painter.fillColor = islandColors[islandIndex % islandColors.Length];
-                IslandPath(painter, point, scale, islandIndex); painter.Fill();
-                painter.strokeColor = new Color(0.73f, 0.77f, 0.49f, 0.6f);
-                painter.lineWidth = 1;
-                IslandPath(painter, point, scale * 0.82f, islandIndex); painter.Stroke();
-                // Authored chart hatching and small role silhouettes dress the town's real coordinate.
-                for (var hatch = 0; hatch < 5; hatch++)
-                {
-                    var origin = point + new Vector2(-80 + hatch * 9, -22 - hatch * 3) * scale;
-                    painter.BeginPath(); painter.MoveTo(origin); painter.LineTo(origin + new Vector2(8, -9) * scale); painter.Stroke();
-                }
-                var role = ShortRole(port);
-                var symbol = role == "Forest" ? "forest" : role == "Food source" ? "farm" :
-                    role == "Processing" ? "mill" : "lighthouse";
-                MaritimeGlyph.Draw(painter, symbol, new Rect(point.x - 20 * scale,
-                    point.y - ElementHeight(ports[port.Id], 48) / 2 - 39 * scale, 40 * scale, 38 * scale));
-                islandIndex++;
-            }
-            painter.lineWidth = 1.5f;
             painter.strokeColor = new Color(0.91f, 0.82f, 0.62f, 0.9f);
             foreach (var pair in portLabelBounds)
             {

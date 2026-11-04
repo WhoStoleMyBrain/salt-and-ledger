@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Linq;
 using NUnit.Framework;
 using SaltAndLedger.Simulation;
 using UnityEngine;
@@ -65,10 +66,11 @@ namespace SaltAndLedger.UnityHost.Tests
                 Click("openTradeButton");
                 yield return null;
                 Assert.That(root.Q<TextField>("quantityField").resolvedStyle.fontSize, Is.EqualTo(bodies[(int)scale]).Within(0.1f));
+                root.Q<Foldout>("approvedTradeDetails").value = true;
                 Assert.That(root.Q<DropdownField>("goodDropdown").resolvedStyle.fontSize, Is.EqualTo(bodies[(int)scale]).Within(0.1f));
                 var quantity = root.Q<TextField>("quantityField");
                 quantity.Focus(); quantity.value = "3";
-                Assert.That(root.Q<Label>("buyPreviewLabel").text, Does.Contain("Pay"));
+                Assert.That(root.Q("tradeGood_logs").Q<Button>("rightArrow").tooltip, Does.Contain("exact payment"));
                 Assert.That(root.focusController.focusedElement, Is.Not.Null);
                 Cancel();
                 Assert.That(controller.TradeIsOpen, Is.False);
@@ -135,65 +137,52 @@ namespace SaltAndLedger.UnityHost.Tests
                 yield return Reachable("openTradeButton");
                 Click("openTradeButton");
                 yield return null; yield return null;
-                if (scale == ArchipelagoUiScale.Default)
-                    foreach (var name in new[] { "tradeGood_bread", "quantityField", "buyPreviewLabel", "sellPreviewLabel", "buyButton", "sellButton" })
-                        AssertVisible(name, "Default trade core should fit without scrolling.");
+                foreach (var name in new[] { "pairMarketShip", "pairMarketWarehouse", "pairWarehouseShip", "quantityField", "quantityOne", "quantityFive", "quantityTen", "closeTradeButton" })
+                    yield return Reachable(name);
                 yield return Reachable("tradeGood_bread");
-                yield return Reachable("goodDropdown");
-                yield return Reachable("quantityField");
-                yield return Reachable("quantityMaxBuy");
-                yield return Reachable("quantityMaxSell");
-                yield return Reachable("buyButton");
-                yield return Reachable("sellButton");
-                yield return Reachable("closeTradeButton");
-                yield return Reachable("tradeAvailabilityLabel");
+                root.Q<Foldout>("approvedTradeDetails").value = true;
+                foreach (var name in new[] { "goodDropdown", "quantityMaxBuy", "quantityMaxSell", "buyButton", "sellButton", "tradeAvailabilityLabel" })
+                    yield return Reachable(name);
                 Assert.That(root.Q<Button>("nextDayButton").enabledInHierarchy, Is.False);
                 var town = root.Q<Button>("port_" + WorldIds.West);
                 Assert.That(root.panel.Pick(town.worldBound.center), Is.Not.SameAs(town), "Trade backdrop blocks the town marker.");
                 Cancel();
                 Click("openIndustryButton");
                 yield return null; yield return null;
-                if (scale == ArchipelagoUiScale.Default || scale == ArchipelagoUiScale.Large)
-                    foreach (var name in new[] { "facilityEnabled", "facilityOperatingRate", "facilityPriority", "applyIndustryPolicy", "facilityInputsSummary", "facilityScheduleLabel" })
-                        AssertVisible(name, "Factory settings, current inputs and full batch wage should fit before scrolling.");
-                yield return Reachable("closeIndustryButton");
-                yield return Reachable("constructButton");
-                yield return Reachable("facilityDropdown");
-                yield return Reachable("facilityEnabled");
-                yield return Reachable("facilityOperatingRate");
-                yield return Reachable("facilityPriority");
-                yield return Reachable("applyIndustryPolicy");
+                var facility = controller.Session.Snapshot.PrivateFacilities.Values.First(value => value.OwnerId == controller.Session.Player.OwnerId && value.PortId == controller.Session.SelectedPortId);
+                var eligible = controller.Session.Snapshot.IndustryBlueprints.Values.First(value => value.EligiblePortIds.Contains(facility.PortId));
+                yield return Reachable("construct_" + eligible.Id);
+                yield return Reachable("manageFactory_" + facility.Id);
+                Click("manageFactory_" + facility.Id);
+                foreach (var name in new[] { "facilityOperatingRate", "facilityRateSlider", "factoryPayroll", "facilityFlowLabel", "facilityScheduleLabel", "facilityEnabled", "facilityPriorityHigh", "applyIndustryPolicy", "cancelIndustryPolicy", "factoryWarehouseButton" })
+                    yield return Reachable(name);
                 var industryBefore = controller.Session.Snapshot;
                 root.Q<Foldout>("industryAdvancedFoldout").value = true;
-                Click("industryWarehouseTab");
-                yield return Reachable("warehouseCashReserve");
+                yield return Reachable("facilityInputsSummary");
+                root.Q<Foldout>("industryShippingFoldout").value = true;
+                yield return Reachable("industryShippingButton");
+                yield return Reachable("factoryAutomationButton"); Click("factoryAutomationButton");
+                yield return Reachable("editWarehouseCashReserve"); Click("editWarehouseCashReserve");
+                yield return Reachable("warehouseCashReserve"); Click("closeWarehouseCashReserve");
                 yield return Reachable("warehouseBuyEnabled_grain");
                 yield return Reachable("warehouseBuyTarget_silver");
                 Click("warehouseSellTab");
                 yield return Reachable("warehouseSellTarget_silver");
-                yield return Reachable("applyWarehousePolicy");
-                Click("industryFactoriesTab");
-                root.Q<Foldout>("industryShippingFoldout").value = true;
-                yield return Reachable("industryShippingButton");
-                root.Q<Foldout>("industryShippingFoldout").value = false;
-                root.Q<Foldout>("constructionRulesFoldout").value = true;
+                yield return Reachable("warehouseSavedBadge");
+                yield return Reachable("industryBackToOverview"); Click("industryBackToOverview");
                 yield return Reachable("closeIndustryButton");
-                root.Q<Foldout>("constructionRulesFoldout").value = false;
                 Assert.That(controller.Session.Snapshot, Is.SameAs(industryBefore));
-                yield return Reachable("storageQuantity");
-                yield return Reachable("shipToWarehouse");
-                yield return Reachable("warehouseToShip");
-                yield return Reachable("warehouseBuy");
-                yield return Reachable("warehouseSell");
                 Assert.That(root.panel.Pick(town.worldBound.center), Is.Not.SameAs(town), "Industry backdrop blocks the town marker.");
                 Cancel();
-                Click("mapDetailsButton");
+                Click("deckInspectButton");
                 yield return Reachable("contextControlsTab");
                 Click("contextControlsTab");
                 yield return Reachable("routePlannerButton");
                 Click("routePlannerButton");
-                yield return Reachable("itineraryApplyButton");
                 yield return Reachable("itineraryShip");
+                yield return Reachable("itineraryAddStop"); Click("itineraryAddStop");
+                Click("routeOrdersButton"); yield return Reachable("routeReviewButton"); Click("routeReviewButton");
+                yield return Reachable("itineraryApplyButton");
                 Click("itineraryBackButton");
                 Click("ledgerButton");
                 yield return Reachable("ledgerBackButton");
@@ -232,22 +221,25 @@ namespace SaltAndLedger.UnityHost.Tests
                 controller.TextScale.Apply(scale, false);
                 root.Q<ScrollView>("tradeContentScroll").scrollOffset = Vector2.zero;
                 yield return null; yield return null;
-                var market = root.Q(className: "trade-market").worldBound;
-                var order = root.Q(className: "trade-order").worldBound;
                 var rows = root.Q("tradeGoodsRows").worldBound;
-                var description = root.Q("tradeGoodDescription").worldBound;
+                var details = root.Q<Foldout>("approvedTradeDetails");
                 var context = size + " / " + scale;
-                Assert.That(market.height, Is.GreaterThan(0), context);
-                Assert.That(order.height, Is.GreaterThan(0), context);
-                Assert.That(market.Overlaps(order), Is.False, "Table and order sections: " + context);
-                Assert.That(rows.Overlaps(order), Is.False, "Commodity rows and order form: " + context);
-                Assert.That(rows.yMax, Is.LessThanOrEqualTo(market.yMax + 1), context);
-                Assert.That(description.yMax, Is.LessThanOrEqualTo(market.yMax + 1), context);
-                if (size.x == 1366 && (scale == ArchipelagoUiScale.Large || scale == ArchipelagoUiScale.ExtraLarge))
-                    Assert.That(order.yMin - market.yMax, Is.GreaterThanOrEqualTo(11), "Stacked sections need a visible gap: " + context);
+                Assert.That(rows.height, Is.GreaterThan(0), context);
+                Assert.That(rows.yMax, Is.LessThanOrEqualTo(details.worldBound.yMin + 1), "Commodity rows precede the progressive details section: " + context);
+                foreach (var good in controller.Session.Content.Goods)
+                {
+                    var row = root.Q("tradeGood_" + good.Id);
+                    var left = row.Q<Button>("leftArrow").worldBound;
+                    var center = row.Q<Button>("good").worldBound;
+                    var right = row.Q<Button>("rightArrow").worldBound;
+                    Assert.That(left.xMax, Is.LessThanOrEqualTo(center.xMin + 1), context + " / " + good.Id);
+                    Assert.That(center.xMax, Is.LessThanOrEqualTo(right.xMin + 1), context + " / " + good.Id);
+                }
                 yield return Reachable("tradeGood_logs");
+                details.value = true;
                 yield return Reachable("buyButton");
                 yield return Reachable("sellButton");
+                details.value = false;
                 Assert.That(controller.Session.Snapshot, Is.SameAs(before));
             }
         }

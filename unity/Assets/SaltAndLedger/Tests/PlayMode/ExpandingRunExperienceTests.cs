@@ -84,7 +84,7 @@ namespace SaltAndLedger.UnityHost.Tests
             controller.BeginRun(new RunIdentity(null, RunScenario.MerchantCharter, RunWorldMode.ExpandingEconomy, 42));
             var session = controller.Session;
             var config = session.Snapshot.Economy.Configuration;
-            Click("royalServicesButton"); Click("developmentTab1");
+            OpenCompany(); Click("developmentTab1");
             var before = session.Snapshot;
             Assert.That(root.Q<Button>("mintSilverButton").enabledInHierarchy, Is.False);
             Assert.That(root.Q<Label>("mintExchangeQuote").text, Does.Contain("physically"));
@@ -95,32 +95,31 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("developmentTab0"); Click("commissionShipButton");
             Assert.That(session.OwnedShips.Count, Is.EqualTo(1));
             Assert.That(session.Snapshot.Economy.ShipOrders.Count, Is.EqualTo(1));
-            Click("developmentBackButton");
+            CloseCompany();
             Click("port_" + config.SilverPortId); Click("openIndustryButton");
-            root.Q<DropdownField>("blueprintDropdown").value = "Silver Mine";
-            Click("constructButton"); Click("closeIndustryButton");
+            var mineBlueprint = session.Snapshot.IndustryBlueprints.Values.Single(value => value.BuildingId == "silver_mine");
+            Click("construct_" + mineBlueprint.Id); Click("closeIndustryButton");
             for (var day = 0; day < 4; day++) Click("nextDayButton");
             var mine = session.Snapshot.PrivateFacilities.Values.Single(f => f.Blueprint.BuildingId == "silver_mine");
             Assert.That(session.Snapshot.GetFacilityStorage(mine.Id).Inventory["silver"], Is.EqualTo(10000));
             Assert.That(mine.WagesPaid, Is.GreaterThan(0));
             Assert.That(session.Snapshot.Economy.MintStatus, Is.EqualTo(MintStatus.Active));
-            Click("royalServicesButton"); Click("developmentTab0"); Click("selectOwned_player_ship_2");
+            OpenCompany(); Click("developmentTab0"); Click("selectOwned_player_ship_2");
             Click("developmentTab1");
             Assert.That(root.Q<Button>("mintSilverButton").enabledInHierarchy, Is.False);
             Assert.That(root.Q<Label>("mintExchangeQuote").text, Does.Contain("Silver aboard this ship"));
-            Click("developmentBackButton");
+            CloseCompany();
             SailTo(config.SilverPortId);
-            Click("openIndustryButton");
-            root.Q<DropdownField>("storageGoodDropdown").value = "Silver";
-            root.Q<TextField>("storageQuantity").value = "1";
-            Click("warehouseToShip"); Click("closeIndustryButton");
+            controller.OpenTrade(config.SilverPortId); Click("pairWarehouseShip");
+            root.Q<TextField>("quantityField").value = "1";
+            Arrow("silver", true); Click("closeTradeButton");
             Assert.That(session.Player.Cargo["silver"], Is.EqualTo(10000));
-            Click("royalServicesButton"); Click("developmentTab1");
+            OpenCompany(); Click("developmentTab1");
             Assert.That(root.Q<Button>("mintSilverButton").enabledInHierarchy, Is.False);
             Assert.That(root.Q<Label>("mintExchangeQuote").text, Does.Contain("physically"));
-            Click("developmentBackButton");
+            CloseCompany();
             SailTo(config.MintPortId);
-            Click("royalServicesButton"); Click("developmentTab1");
+            OpenCompany(); Click("developmentTab1");
             var supplied = session.Snapshot;
             Click("mintSilverButton");
             Assert.That(session.Player.Cargo["silver"], Is.Zero);
@@ -140,24 +139,24 @@ namespace SaltAndLedger.UnityHost.Tests
         {
             controller.BeginRun(new RunIdentity(null, RunScenario.MerchantCharter, RunWorldMode.ExpandingEconomy, 42));
             var session = controller.Session;
-            Click("royalServicesButton"); Click("commissionShipButton"); Click("developmentBackButton");
+            OpenCompany(); Click("commissionShipButton"); CloseCompany();
             for (var day = 0; day < 4; day++) Click("nextDayButton");
-            Click("royalServicesButton"); Click("selectOwned_player_ship_2"); Click("developmentBackButton");
+            OpenCompany(); Click("selectOwned_player_ship_2"); CloseCompany();
             var ship = session.Player;
             var portId = ship.DockedPortId;
             var goodId = session.Content.Goods.Select(g => g.Id).First(id => session.Snapshot.PreviewTrade(ship.Id, portId,
                 new TradeCommand(TradeDirection.Buy, id, 10000)).Outcome == TradeOutcome.Traded);
             controller.OpenTrade(portId);
-            root.Q<DropdownField>("goodDropdown").value = session.Content.GetGood(goodId).Name;
+            Click("pairMarketShip");
             root.Q<TextField>("quantityField").value = "0.75";
-            Assert.That(root.Q<Button>("buyButton").enabledInHierarchy, Is.False);
-            Assert.That(root.Q<Label>("buyPreviewLabel").text, Does.Contain("Whole cargo only"));
+            Assert.That(Row(goodId).Q<Button>("rightArrow").enabledInHierarchy, Is.False);
+            Assert.That(Row(goodId).Q<Button>("rightArrow").tooltip, Does.Contain("whole goods"));
             var before = session.Snapshot;
             root.Q<TextField>("quantityField").value = "1";
             var preview = before.PreviewTrade(ship.Id, portId, new TradeCommand(TradeDirection.Buy, goodId, 10000));
-            Assert.That(root.Q<Label>("buyPreviewLabel").text, Does.Contain("Pay " + session.Coins(preview.TotalAmount)));
+            Assert.That(Row(goodId).Q<Button>("rightArrow").tooltip, Does.Contain("exact payment " + session.Coins(preview.TotalAmount)));
             Assert.That(root.Q<Label>("tradeHeader").text, Does.Contain("cargo " + session.Quantity(ship.CargoUnits) + "/" + session.Quantity(ship.CargoCapacity)));
-            Click("buyButton");
+            Arrow(goodId, true);
             Assert.That(session.Player.Id, Is.EqualTo("player_ship_2"));
             Assert.That(session.Player.Cargo[goodId], Is.EqualTo(10000));
             Assert.That(session.Snapshot.Ships[WorldIds.PlayerShipId].Cargo, Is.EqualTo(before.Ships[WorldIds.PlayerShipId].Cargo));
@@ -166,7 +165,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("closeTradeButton");
             session.SelectShip(WorldIds.TimberShipId);
             controller.OpenTrade(portId);
-            Assert.That(root.Q<Button>("buyButton").enabledInHierarchy, Is.False);
+            Assert.That(Row(goodId).Q<Button>("rightArrow").enabledInHierarchy, Is.False);
             Assert.That(root.Q<Label>("tradeAvailabilityLabel").text, Does.Contain("NPC inspection only"));
             Assert.That(session.Player.Id, Is.EqualTo("player_ship_2"));
             yield return null;
@@ -178,11 +177,11 @@ namespace SaltAndLedger.UnityHost.Tests
             controller.BeginRun(new RunIdentity(null, RunScenario.MerchantCharter, RunWorldMode.ExpandingEconomy, 42));
             var session = controller.Session;
             var mintPort = session.Snapshot.Economy.Configuration.MintPortId;
-            Click("royalServicesButton"); Click("commissionShipButton"); Click("developmentTab1"); Click("commissionMintButton");
-            Click("developmentBackButton");
-            Click("playerShipButton"); Click("port_" + mintPort); Click("sailButton"); Click("nextDayButton");
+            OpenCompany(); Click("commissionShipButton"); Click("developmentTab1"); Click("commissionMintButton");
+            CloseCompany();
+            Click("ship_" + controller.Session.Player.Id); Click("port_" + mintPort); Click("sailButton"); Click("nextDayButton");
             var saved = session.SaveText();
-            Click("royalServicesButton"); Click("developmentSaveButton");
+            OpenCompany(); Click("developmentSaveButton");
             Click("saveSlot1");
             Assert.That(File.ReadAllText(Path.Combine(saveDirectory, "slot-1.json")), Is.EqualTo(saved));
             Assert.That(session.HasUnsavedChanges, Is.False);
@@ -225,9 +224,19 @@ namespace SaltAndLedger.UnityHost.Tests
             yield return null;
         }
 
+        private void OpenCompany() { Click("modeFleet"); Click("fleetCompanyButton"); }
+        private void CloseCompany() { Click("developmentBackButton"); Click("modeMap"); }
+        private VisualElement Row(string good) => root.Q("tradeGood_" + good);
+        private void Arrow(string good, bool right)
+        {
+            var button = Row(good).Q<Button>(right ? "rightArrow" : "leftArrow");
+            Assert.That(button.enabledInHierarchy, Is.True);
+            using (var evt = NavigationSubmitEvent.GetPooled()) { evt.target = button; button.SendEvent(evt); }
+        }
+
         private void SailTo(string portId)
         {
-            Click("playerShipButton"); Click("port_" + portId); Click("sailButton");
+            Click("ship_" + controller.Session.Player.Id); Click("port_" + portId); Click("sailButton");
             for (var day = 0; day < 20 && controller.Session.Player.DockedPortId == null; day++) Click("nextDayButton");
             Assert.That(controller.Session.Player.DockedPortId, Is.EqualTo(portId));
         }
