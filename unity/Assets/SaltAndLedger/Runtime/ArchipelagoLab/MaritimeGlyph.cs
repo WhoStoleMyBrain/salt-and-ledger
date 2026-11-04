@@ -27,7 +27,9 @@ namespace SaltAndLedger.UnityHost
             Key = key;
             generateVisualContent += context =>
             {
-                if (!MaritimeArtwork.DrawGlyph(context, Key, contentRect))
+                var approved = ApprovedMaritimeAssets.Good(Key) ?? ApprovedMaritimeAssets.Industry(Key);
+                if (approved != null) MaritimeArtwork.DrawTexture(context, approved, contentRect);
+                else
                     Draw(context.painter2D, Key, contentRect);
             };
         }

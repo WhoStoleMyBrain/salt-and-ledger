@@ -36,6 +36,11 @@ namespace SaltAndLedger.UnityHost
                 if (texture == null) return false;
                 Textures[path] = texture;
             }
+            return DrawTexture(context, texture, bounds, region);
+        }
+
+        public static bool DrawTexture(MeshGenerationContext context, Texture2D texture, Rect bounds, Rect? region = null)
+        {
             if (bounds.width < 1 || bounds.height < 1) return true;
             // UV regions isolate the two goods on the supplied sheet; its source pixels stay intact.
             var uv = region ?? new Rect(0, 0, 1, 1);
