@@ -23,6 +23,8 @@ namespace SaltAndLedger.UnityHost
                         new Rect(776f / 1448, 263f / 1086, 629f / 1448, 496f / 1086));
                 case "ship":
                     return Draw(context, "Illustrations/ship", bounds);
+                case "bakery":
+                    return Draw(context, "Illustrations/bakery", bounds);
                 default:
                     return false;
             }

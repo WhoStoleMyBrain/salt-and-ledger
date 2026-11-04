@@ -57,6 +57,11 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("chooseCommand_" + port.Id);
             Assert.That(controller.TradeIsOpen, Is.True);
             Assert.That(root.Q<Label>("tradeTitle").text, Does.Contain(port.Name));
+            var harborArt = root.Q<MaritimeIllustration>("harborIllustration");
+            Assert.That(harborArt.Kind, Is.EqualTo("harbor"));
+            Assert.That(harborArt.pickingMode, Is.EqualTo(PickingMode.Ignore));
+            Assert.That(harborArt.parent, Is.SameAs(root.Q("tradeDialog").Q(className: "modal-heading")));
+            Assert.That(root.Q<MaritimeIllustration>("fleetIllustration").Kind, Is.EqualTo("ship"));
             Click("closeTradeButton");
             Assert.That(controller.Presentation.HasSelection, Is.True);
             Assert.That(root.Q("deckBody").ClassListContains("hidden"), Is.False);

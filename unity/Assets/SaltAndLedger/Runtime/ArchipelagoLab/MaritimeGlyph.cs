@@ -27,7 +27,10 @@ namespace SaltAndLedger.UnityHost
             Key = key;
             generateVisualContent += context =>
             {
-                var approved = ApprovedMaritimeAssets.Good(Key) ?? ApprovedMaritimeAssets.Industry(Key);
+                if (MaritimeArtwork.DrawGlyph(context, Key, contentRect)) return;
+                // Retain compact imported symbols only for industries without an authored equivalent.
+                var approved = Key == "lumber_camp" || Key == "sawmill" || Key == "furniture_workshop" ||
+                    Key == "natural" || Key == "bakery" ? ApprovedMaritimeAssets.Industry(Key) : null;
                 if (approved != null) MaritimeArtwork.DrawTexture(context, approved, contentRect);
                 else
                     Draw(context.painter2D, Key, contentRect);
@@ -54,6 +57,7 @@ namespace SaltAndLedger.UnityHost
                 case "farm": return "Food source";
                 case "forest": return "Forest";
                 case "mill": return "Processing";
+                case "bakery": return "Bakery";
                 case "lighthouse": return "Coastal town";
                 default: return "Information";
             }

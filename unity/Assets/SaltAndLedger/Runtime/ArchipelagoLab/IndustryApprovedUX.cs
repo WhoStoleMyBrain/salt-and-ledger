@@ -110,6 +110,7 @@ namespace SaltAndLedger.UnityHost
         private void RefreshIndustry()
         {
             if (!IndustryIsOpen) return;
+            Root.Q<MaritimeIllustration>("industryIllustration").AddToClassList("hidden");
             var portId = Session.SelectedPortId;
             if (industryPortId != null && industryPortId != portId)
             {
@@ -225,6 +226,7 @@ namespace SaltAndLedger.UnityHost
             var signal = facility != null ? EconomicSignals.PrivateProduction(snapshot, Session.Content, facility.Id) :
                 EconomicSignals.PublicProduction(snapshot, Session.Content, Session.SelectedPortId, selectedPublicFacilityId);
             SetText("industryTitle", Session.Content.GetBuilding(signal.BuildingId).Name);
+            Root.Q<MaritimeIllustration>("industryIllustration").EnableInClassList("hidden", signal.BuildingId != "bakery");
             SetText("facilityOwnership", facility == null ? "TOWN · READ ONLY" : "OWNED");
             SetText("facilityRecipeLabel", "NEXT BATCH / " + (signal.Inputs.Count == 0 ? "EXTRACTION" : string.Join(" + ", signal.Inputs.Select(i => Q(i.Quantity) + " " + Session.Content.GetGood(i.GoodId).Name))) +
                 " → " + string.Join(" + ", signal.Outputs.Select(o => Q(o.Quantity) + " " + Session.Content.GetGood(o.GoodId).Name)));

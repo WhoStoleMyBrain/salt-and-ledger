@@ -554,6 +554,14 @@ namespace SaltAndLedger.UnityHost
                 painter.LineTo(captionCenters[index]);
                 painter.Stroke();
             }
+            foreach (var port in snapshot.Ports.Values.OrderBy(port => port.Id, StringComparer.Ordinal))
+            {
+                var point = PortPoint(port.Id);
+                var scale = IslandDecorationScale(port.Id);
+                var artwork = ShortRole(port) == "Forest" ? "forest-harbor" : "harbor";
+                MaritimeArtwork.Draw(context, "Illustrations/" + artwork,
+                    new Rect(point.x - 135 * scale, point.y - 96 * scale, 270 * scale, 159 * scale));
+            }
             painter.strokeColor = new Color(0.91f, 0.82f, 0.62f, 0.9f);
             foreach (var pair in portLabelBounds)
             {

@@ -32,6 +32,10 @@ namespace SaltAndLedger.UnityHost.Tests
             controller.BeginRun(null, RunScenario.MerchantCharter);
             Click("openIndustryButton"); Click("construct_" + WorldIds.BakeryBlueprint);
             var bakery = controller.Session.Snapshot.PrivateFacilities.Values.Single();
+            var bakeryArt = root.Q<MaritimeIllustration>("industryIllustration");
+            Assert.That(bakeryArt.Kind, Is.EqualTo("bakery"));
+            Assert.That(bakeryArt.ClassListContains("hidden"), Is.False);
+            Assert.That(bakeryArt.pickingMode, Is.EqualTo(PickingMode.Ignore));
             Assert.That(root.Q("factoryInput_flour").ClassListContains("industry-v3-blocked"), Is.True);
             var ordered = controller.Session.Snapshot;
             Click("factoryShortagePurchase");
@@ -74,6 +78,8 @@ namespace SaltAndLedger.UnityHost.Tests
         public IEnumerator InvalidWarehouseEditRetainsLastPolicyWhileOtherGoodsSaveAndOppositeRuleRepairsIt()
         {
             Click("openIndustryButton"); Click("industryWarehouseTab");
+            Assert.That(root.Q("industryIllustration").ClassListContains("hidden"), Is.True,
+                "A Bakery illustration must not imply that the shared warehouse is a Bakery.");
             root.Q<TextField>("warehouseBuyTarget_bread").value = "2";
             root.Q<Toggle>("warehouseBuyEnabled_bread").value = true;
             Click("warehouseSellTab");

@@ -19,7 +19,6 @@ namespace SaltAndLedger.UnityHost
             var dialog = Element<VisualElement>("tradeDialog");
             dialog.AddToClassList("ux-trading");
             var heading = dialog.Q(className: "modal-heading");
-            Root.Q("harborIllustration")?.RemoveFromHierarchy();
             heading.Q(className: "eyebrow")?.RemoveFromHierarchy();
             Element<Label>("tradeDay").AddToClassList("hidden");
             var tabs = Panel(heading, "approvedTradeTabs", "ux-trade-tabs");
