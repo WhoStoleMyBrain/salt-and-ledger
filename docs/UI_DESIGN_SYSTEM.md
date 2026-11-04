@@ -2,7 +2,7 @@
 
 The playable archipelago follows the approved [Salt & Ledger Figma UX redesign](https://www.figma.com/design/YhPqWIwZSE2JW7fAttB8Ac/Salt---Ledger---UX-Redesign): a persistent left navigation rail, live nautical chart, right context inspector and bottom activity strip. Harbor, Industry, Route V2 and Warehouse V2 are working views over the same simulation. Dark sea surfaces hold navigation and geography; parchment surfaces hold decisions and exact numbers. Symbols identify actual goods and production rather than supplying fictional game data.
 
-This document describes component and interaction contracts. The Figma file is the visual authority; the [asset record](design/task-3.0/ASSETS.md) identifies its isolated symbol exports. Design screenshots and asset contact sheets do not constitute evidence of a running Unity game. Historical verification records describe their own implementation versions.
+This document describes component and interaction contracts. Figma defines the Task 3.0 layout and workflows; the original painterly Mediterranean artwork in `Resources/Maritime` defines the game's visual identity. The [asset record](design/task-3.0/ASSETS.md) identifies retained secondary Figma exports. Design screenshots and asset contact sheets do not constitute evidence of a running Unity game. Historical verification records describe their own implementation versions.
 
 ## Surface hierarchy and player flow
 
@@ -116,7 +116,7 @@ These are inherited glyph/layout sizes, not a transform. Larger layouts wrap ins
 | `sl-problem`, `sl-warning`, `sl-calm` | Concise current reason; calm by default, warning only when appropriate |
 | `sl-goods-row`, `sl-recipe`, `sl-recipe-good` | Recognizable good symbol plus text; exact canonical input/output identity |
 | `sl-primary`, `sl-secondary`, `sl-danger`, `sl-selected` | Consistent command and selection treatments |
-| `MaritimeGlyph`, `ApprovedMaritimeAssets` | Seven approved transparent commodity symbols and available industry symbols, fitted without distortion and paired with labels |
+| `MaritimeGlyph`, `MaritimeArtwork` | Original seven commodity illustrations, ship and Bakery art, fitted without distortion and paired with labels; authored vectors and unmatched industry symbols supply fallbacks |
 | `ux-inspector`, `ux-activity`, `ux-trade-row` | Selected context, current attention cards and paired physical inventory rows |
 | `industry-v3-*`, `route-v3-*` | Scoped factory/warehouse and route workflows using the shared maritime palette and text scale |
 | `MaritimeIllustration`, `sl-illustration-small`, `sl-illustration-banner` | Restrained decorative harbor/workshop/ship tile; never a building census or economic state |
@@ -127,7 +127,9 @@ Buttons retain hover, pressed, keyboard focus and disabled states. Dark chrome u
 
 The seven goods are **Logs** (round bark logs), **Planks** (milled boards), **Grain** (sheaf), **Flour** (sack), **Bread** (scored loaf), **Furniture** (chair) and **Silver** (ingot). Ship, workshop, balance scales, coins, warehouse, warning and information symbols share their palette and outline language. Map landmarks add food-source, forest, processing and coastal identity.
 
-The approved commodity and industry symbol kit is exported from individual Figma vector layers, retained as source SVGs and imported as compact transparent PNGs. `ApprovedMaritimeAssets` uses stable local resource names; it does not fetch Figma URLs at runtime. See its [complete mapping, provenance and import settings](design/task-3.0/ASSETS.md). The approved component set has no Silver Mine building icon; its canonical name and Silver output remain truthful without an invented approved image.
+The shared glyph renderer prefers original `Maritime` artwork, then existing project-authored vectors. `ApprovedMaritimeAssets` supplies only unmatched compact industry symbols (Lumber Camp, Sawmill, Furniture Workshop and the generic natural source; Bakery falls back there only if its original texture is missing). Its commodity exports remain available but are not the default rendering path. All sources and import settings are preserved; no runtime URL fetching occurs. See the [Figma export provenance](design/task-3.0/ASSETS.md) and [restored artwork verification](TASK-3.0a-VERIFICATION.md).
+
+Map islands reuse bounded harbor/forest illustrations without moving labels or hit targets. Harbor and Bakery headings use small original illustrations; the Bakery image appears only for that facility type. Narrow layouts omit these decorative headings to protect control space. Fleet retains its scrollable ship illustration. Ship markers reuse the original ship glyph beside their compact P/N labels; arrows and status retain authored utility symbols; navigation labels remain unchanged. Decorative elements ignore pointer picking and never represent a census or forecast.
 
 Existing user-supplied illustrations and source-native fallback symbols retain their [previous asset provenance](design/task-2.5/PRODUCTION-ASSETS.md). No mockup screenshot is a runtime panel. The map remains live geography rather than a pasted background. Decorative vignettes are not a building census or new ship type.
 
