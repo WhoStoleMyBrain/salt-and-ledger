@@ -10,11 +10,11 @@ Exchange goods with a town using the company's finite cash account\.
 
 Buy follows Market → Ship or Market → Warehouse and pays the town\. Sell follows Ship → Market or Warehouse → Market; the market pays your company less the sale fee\. Ship orders require the actual local dock\. Company warehouse trades can be managed remotely, but goods remain at that town\.
 
-Choose a good and quantity, then read the exact order total before confirming\. Manual trades execute the complete requested quantity or leave goods and cash unchanged\. Quantity shortcuts only edit the proposal\. Transactions do not advance the economic day\.
+Choose Market ↔ Ship, Market ↔ Store or Store ↔ Ship, where Store means your company warehouse\. Set the order quantity, then use the commodity row's directional arrow to execute immediately\. Paid arrows show current first marginal prices; their tooltip and selected\-good details show the exact bulk amount and sale fee\. Quantity shortcuts only edit the proposal\. A manual order executes its complete quantity or leaves goods and cash unchanged, without advancing the day\.
 
-Select a town or owned ship, then use Harbor on its command deck or the Trade mode\. Without a selection, Trade offers a town chooser\. Opening Harbor pauses playback; closing it returns to the previous context and stays paused\. Disable that ship's automation before issuing manual trades or sailing orders\.
+Select a town or owned ship, then open Harbor from its right inspector or the left navigation rail\. Without a selection, Harbor offers a town chooser\. Opening Harbor pauses playback; closing it restores the previous context and stays paused\. Pause that ship's automation before manual cargo trades or sailing orders\.
 
-Harbor separates Inspect \(Town market or Company warehouse\) from Trade with \(Ship cargo or Company warehouse\)\. Inspection scope never changes the order destination\. Load follows Warehouse → Ship; Unload follows Ship → Warehouse\. Both need the real dock and move no cash\. Exact previews and blockers explain which paid or no\-cash action can execute\.
+The paired inventories identify the source and destination of each arrow\. Store ↔ Ship uses Load: Warehouse → Ship and Unload: Ship → Warehouse, with no cash and only at the real dock\. Select the center commodity button for economic details and town comparison\. The details' Town market or Company warehouse information scope never redirects the selected order pair\. Blocked arrows explain the actual dock, control, stock, capacity or financial constraint\.
 
 New modern v3 circulation runs charge 2% port handling on completed company sales, including NPC sales\. Harbor shows the gross market payment, exact fee, net receipts and local market/worker shares\. Buying, private transfers and public contracts have no handling fee\. Rejected orders and previews charge nothing\.
 

@@ -12,7 +12,7 @@ Departing changes the ship's voyage immediately without spending a day\. Advanci
 
 Duration follows the route's distance and the ship's configured speed\. Seeded geography derives all six direct distances from the generated integer positions\. Distances are abstract chart units, not coastline\-aware sailing paths\. Map drawing and playback speed never alter travel or economic calculations\. You cannot trade or transfer while sailing\.
 
-There are currently no simulated ship\-crew wages, fuel, voyage fees or transport losses\. Living Cities models production wages only\. Unmodeled transport expenditure is not a claim that shipping has no real economic cost\.
+There are currently no simulated ship\-crew wages, fuel, voyage fees or transport losses\. The economy models production wages but no ship\-crew wages\. Unmodeled transport expenditure is not a claim that shipping has no real economic cost\.
 
 ## Related entries
 

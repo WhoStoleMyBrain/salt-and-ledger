@@ -14,7 +14,7 @@ Inventory purchases are cash outflows, while held inventory cost describes the p
 
 The ledger identifies committed transactions, transfers, production, and grants with their company, store, commodity, quantity, time, and relevant cash or cost\. The visible journal is bounded; authoritative lifetime summaries remain available after old detail entries leave the display\.
 
-Historical modes do not value ships and factories\. Expanding Economy v3 adds a disclosed reference Company Value, not liquidation proceeds\. Material gross margin remains revenue minus FIFO material cost\. Living modes separately expense all actual wages: operating surplus after wages subtracts them, including wages for output still held\. This is not full net profit after travel, depreciation, overhead or taxes\.
+Expanding Economy v3 reports a disclosed reference Company Value, not liquidation proceeds\. Material gross margin remains revenue minus FIFO material cost\. The accounts separately expense all actual wages: operating surplus after wages subtracts them, including wages for output still held\. This is not full net profit after travel, depreciation, overhead or taxes\.
 
 Port service fees are separate from material FIFO and wages\. Surplus after wages and fees subtracts both operating expenses from realized material margin; it excludes construction capital, Mint receipts and unmodeled costs\. Fees are paid from actual sale proceeds, half to the local market and the remainder to local workers\. Lifetime rounding is shared across the company's sales in each town\.
 

@@ -8,13 +8,15 @@ title: "Warehouse buying and selling"
 
 One local Buy/Sell policy for each company town warehouse, independent of its factories\.
 
-Open Warehouse from Industry or Warehouse automation from Harbor\. Buy and Sell tabs list every commodity, including logistics goods unrelated to local recipes\. Enable a Buy rule, desired maximum stock and maximum marginal price; enable a Sell rule, minimum retained stock and minimum marginal price\. Zero price means unrestricted\. A common company cash reserve limits automatic buying, not production wages\.
+Open Warehouse from Industry or Warehouse automation from Harbor\. Buy and Sell tabs list all seven commodities, including logistics goods unrelated to local recipes\. Each direction has an ON/OFF switch, stock target or retained reserve, and a marginal price limit\. Zero price means unrestricted\. The Buy cash reserve popup is available from either tab and edits the same purchase reserve; it does not reserve cash for sales, production wages or ship orders\.
 
 Buying runs before private production; selling runs afterward\. Each good receives at most one ordinary paid transaction in each phase\. Exact marginal pricing, finite market cash and stock, actual warehouse capacity, FIFO material basis and sale fees are the same as manual trades\. A proposal explains the current limiting constraint and is not a guarantee about the next day\.
 
 When both directions are enabled, the Buy target must be no greater than the Sell reserve\. Buying therefore cannot immediately create sellable surplus\. Production or delivered cargo may create a real surplus\. Retain inputs or shipping stock explicitly; rules never reserve it from production or create missing resources\.
 
 Town warehouse trading is independent of factory enabled states and rates\. Real paid pending facilities already provide storage which can buy or sell; the factories themselves cannot produce until operational and due\. Without a real local facility there is no company warehouse\. New warehouses begin with every automatic rule off\.
+
+Valid completed field edits and switches apply automatically to the town warehouse policy\. Invalid text or a Buy target above an enabled Sell reserve stays highlighted and leaves the previous applied rule active\. Fix it or use Discard invalid drafts\. Changing tabs or commodities retains the other settings; pausing a rule retains its limits\. There is no separate warehouse Apply step\. These changes run no trade or day and do not save a local run slot: save the run separately\.
 
 ## Related entries
 

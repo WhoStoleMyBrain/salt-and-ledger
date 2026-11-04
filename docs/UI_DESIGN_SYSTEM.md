@@ -1,45 +1,49 @@
-# Illustrated Maritime Ledger UI
+# Approved Maritime Command UI
 
-The playable archipelago uses a nautical chart, a compact contextual deck and focused management views. Task 2.6 adds commodity-level economic visibility and progressive disclosure to the Task 2.5 maritime kit. Dark sea surfaces hold navigation and geography; calm parchment surfaces hold decisions and exact numbers. Illustration identifies goods, ships and production rather than supplying fictional game data.
+The playable archipelago follows the approved [Salt & Ledger Figma UX redesign](https://www.figma.com/design/YhPqWIwZSE2JW7fAttB8Ac/Salt---Ledger---UX-Redesign): a persistent left navigation rail, live nautical chart, right context inspector and bottom activity strip. Harbor, Industry, Route V2 and Warehouse V2 are working views over the same simulation. Dark sea surfaces hold navigation and geography; parchment surfaces hold decisions and exact numbers. Symbols identify actual goods and production rather than supplying fictional game data.
 
-This document describes the implemented component and interaction contracts. The [verification record](REPOSITORY-CLEANUP.md) separates actual Editor/player captures and operation tests from unsupported native-device checks; the concept sheets remain inspiration only.
+This document describes component and interaction contracts. The Figma file is the visual authority; the [asset record](design/task-3.0/ASSETS.md) identifies its isolated symbol exports. Design screenshots and asset contact sheets do not constitute evidence of a running Unity game. Historical verification records describe their own implementation versions.
 
 ## Surface hierarchy and player flow
 
 | Surface | First information | Working destination |
 | --- | --- | --- |
-| Global bar | Day/deadline, spendable company cash, reference Company Value, goal cue, notices, time controls, menu | Real Journal, current notices, explicit Play/Pause/Next day and pause menu |
-| Map | Real seeded positions, town names/roles, distinct owned/NPC ships and contextual routes | Select a town or ship; the bottom deck opens without a world command |
-| Town deck | Name/short role, three compact facts, one prioritized current reason | Harbor, Industry and Economy for that town |
-| Ship deck | Dock/voyage, hold occupancy, manual/automation state and current instruction | Docked Harbor, owned Route Planner, Fleet or inspection details |
-| Trade | Scoped commodity stock, local role, conditional 12-day production/use/net and public bid/ask | Selected-good breakdown and cross-town comparison; exact paid Buy/Sell or docked no-cash Load/Unload |
-| Industry | Actual facility/recipe, construction, current readiness, stock and policy | Existing construction, warehouse and per-facility controls |
+| Global bar | Day/deadline, spendable company cash, reference Company Value, goal cue and time controls | Real Journal, explicit Play/Pause/Next day and pause menu |
+| Navigation rail | One active Map, Harbor, Industry, Fleet, Economy or Goals destination | Switch workspace while keeping the relevant town and owned ship |
+| Map | Real seeded positions, town names/roles, distinct owned/NPC ships and contextual routes | Select a town or ship; Clear selection restores the unselected chart |
+| Town inspector | Name/role, public production, population, prosperity, household needs and current blockers | Harbor, Industry and Economy for that town |
+| Ship inspector | Dock/voyage, actual cargo/capacity, automation and next instruction | Docked Harbor, owned Route Planner, Fleet or inspection details |
+| Activity strip | Current food constraint, actual fleet state and commission cue | Relevant workspace, current notices and operational log |
+| Harbor | Paired actual inventories, commodity symbols, current marginal quotes and conditional 12-day flows | Immediate directional orders; selected-good exact calculations, breakdown and town comparison |
+| Industry | Public/private facility overview, eligible construction and selected factory recipe/readiness | Build, manage Enabled/rate/priority, buy missing inputs and open the shared warehouse rules |
 | Fleet | Owned ship list, the same map, selected ship's actual route and next instruction | Existing planner, docked Harbor and Company/shipwright; committed cursor/budget in disclosure |
 | Economy | Next Bread opportunity and shortfalls, separate accounts, population/prosperity and current batch readiness | Food and production breakdowns, full City Economy/pricing, Ledger, Harbor and private-facility management |
 | Objectives | Exact current/target values, Current/Cumulative markers and authoritative completion bars | One Details & blockers foldout per card; original goals/results navigation |
 
-An unselected new run has a quiet collapsed deck. A deliberate selection opens it; Collapse preserves that context and Expand restores it. Map is the return point from Fleet/Economy. Trade and Industry are existing overlays over the originating workspace, so closing them restores that context. Without a selection, their mode buttons open a real town chooser.
+An unselected new run hides the right inspector. Selecting a town or ship reveals the relevant context; Clear selection hides it again without changing the world. Map is the return point from Fleet/Economy. Harbor and Industry occupy the chart work area and return to their originating context. Their navigation entries offer a town chooser when there is no selection.
 
 The representative loop is **Map → town → Harbor → Industry → Fleet/Economy → Map**. Select the processing town, compare its public or owned input shortage and next opportunity, then use Harbor to make a legitimate transaction. Return to inspect the newly committed stock. Industry keeps actual recipes and shared-stock policies; buying an input does not promise production if payroll, capacity or earlier facilities can still block it. Fleet follows the selected owned ship into the existing planner and back. Economy distinguishes a physical Bread shortfall from affordability at current quotes, then offers detailed accounting one level deeper.
 
-Harbor's **Inspect** scope and **Trade with** destination are independent. Town market includes only public production and household/municipal needs; Company warehouse includes only the selected company's local industrial stock and recipes. The selected good's breakdown and comparison are keyboard-accessible foldouts, with hover text as a supplement. Compare towns retains the good selection and uses actual public stock, marginal quotes, buyer cash and current-dock travel durations. A new town selection changes inspection context, never the ship's physical location.
+Harbor has three physical pairs: **Market ↔ Ship**, **Market ↔ Store** and **Store ↔ Ship**, where Store is the company warehouse. Each row has actual left/right stock, one commodity button and directional order buttons. The global quantity field and shortcuts change the proposed amount; an arrow executes that row's order immediately. Paid arrows show the current first marginal bid/ask, while their tooltips retain the exact bulk payment or gross/fee/net proceeds. Selecting the commodity opens the same information as accessible details, together with the conditional economic breakdown and cross-town comparison.
+
+The details' information scope remains independent of the order pair. Town market includes public facilities and household/municipal needs; Company warehouse includes the selected company's local industrial recipes. Changing this scope never redirects an order. Compare towns retains the good selection and uses actual public stock, marginal quotes, buyer cash and current-dock travel durations. A new inspected town never changes a ship's physical location.
 
 Use the same physical nouns throughout: **Town market**, **Company warehouse**, **Ship cargo**. Paid actions follow Market → Ship, Ship → Market, Market → Warehouse and Warehouse → Market; no-cash actions use Load: Warehouse → Ship and Unload: Ship → Warehouse. Full exact arithmetic, actual financial counters, route state and production blockers remain available in named disclosures. Setup keeps starting assets, cash floor and deadline visible; the Journal keeps condition values and reversible/cumulative meaning visible while moving repeated explanation and full facility identifiers into Details.
 
-The operational inspector remains available through **Details / log**, with activity, identity, pricing, Ledger, Company and help destinations. Player automation uses the Fleet itinerary planner; retired two-port player editors are removed. See [Harbor](HARBOR.md), [automation](AUTOMATION.md) and the [player guide](PLAYER_GUIDE.md).
+The activity strip's **View log** opens operational details, with activity, identity, pricing, Ledger, Company and help destinations. Player automation uses the Fleet itinerary planner; retired two-port player editors are removed. See [Harbor](HARBOR.md), [automation](AUTOMATION.md) and the [player guide](PLAYER_GUIDE.md).
 
-Task 2.7's Route Planner keeps the full repeating route visible as compact selectable stop cards. A single selected-stop grid pairs existing commodity art with Unload/Sell/Load/Buy quantity fields. Advanced limits and exact command order are a disclosure, not the primary entry method. New stops use disposal-first ordering; reopened, preset and custom-ordered stops retain exact instructions, including duplicates. A duplicate cell links the user to its ordered instructions rather than pretending it is one combined order. Future warehouse warnings are separate from structural validation and do not prohibit Apply. Current cursor, cargo/free capacity and last committed outcome are distinct from passive draft summaries.
+Route V2 has Course, Orders, Review and Applied states. Plot two to four actual towns, reorder or remove stops, then use a selected stop's **Sell / Buy / Unload / Load** grid. A commodity/action cell opens one inline editor; **Save order** updates only the draft and Cancel keeps the previous draft instruction. The ordered list preserves and exposes exact execution order, including duplicates. New orders retain the established disposal-first defaults. **Review route → Apply route** assigns the validated plan and leaves execution paused; Start route is separate. Current hold and free space are actual state, never a predicted arrival manifest. Future warehouse warnings remain distinct from structural validation and do not prohibit application.
 
 ## Ownership, input and return contracts
 
-`ArchipelagoLabSession` remains the sole host-facing selection and command owner. Its selected port, inspected ship and owned command ship retain their existing meanings. `PresentationContext` stores only the active command mode, whether a deliberate selection exists and deck collapse. Existing screen/overlay parent state handles returns. No economic quantity, route cursor or save field lives in this presentation context.
+`ArchipelagoLabSession` remains the sole host-facing selection and command owner. Its selected port, inspected ship and owned command ship retain their existing meanings. `PresentationContext` tracks presentation mode and deliberate selection. Screen/overlay parent state handles returns. No economic quantity, route cursor or save field lives in this presentation context.
 
 - Mode navigation and management overlays pause playback. Returning from those views does not resume playback or enable an automation policy. Explicit time controls remain the only source of requested economic days.
-- Map selection, the Routes overlay, hover, focus, deck collapse and pure projections do not issue world commands. A visual ship interpolation never changes the authoritative dock or voyage.
+- Map selection, Clear selection, Fit map, the Routes overlay, hover, focus and pure projections do not issue world commands. A visual ship interpolation never changes the authoritative dock or voyage.
 - Harbor retains the selected ship and town. NPC inspection is read-only; a remote hold is information, not permission to trade or transfer. Company stock uses the actual local store and can trade remotely under the existing rules.
 - Fleet lists owned ships separately. It keeps the selected owned ship through Map, Harbor and planner returns. NPC markers remain inspectable; their automation is not editable.
 - Escape/NavigationCancel closes the active Harbor/Industry overlay first, then follows the existing secondary-screen return path. Fleet/Economy/choosers return to Map; ordinary Map opens pause. Confirmation keeps its existing priority and destructive-progress safeguards.
-- UI Toolkit buttons own pointer and keyboard picking. Decorative glyphs and child text ignore picking. Modal opening records return focus, disables the underlying map/deck/navigation, and focuses Close. Closing restores focus without an economic operation.
+- UI Toolkit buttons own pointer and keyboard picking. Decorative glyphs and child text ignore picking. Opening a management view records return focus, blocks the background map and time controls, and focuses Close. The navigation rail remains available for deliberate workspace changes. Closing restores valid originating focus without an economic operation; a missing source falls back to the active navigation entry.
 - Stable fleet/market rows update bound values. Economy cards refresh on committed snapshot or selected-town change, rather than rebuilding every frame. Internal detail scrolling is separate from the full-screen layout.
 
 The supported host uses current v3 households and pooled company warehouses. Only current schema6 saves load; obsolete formats fail without replacing the active session. Terminal worlds remain frozen while their Map, Journal and results can be inspected.
@@ -64,35 +68,35 @@ The HUD formats coins with invariant `0.#` precision: at most one decimal, with 
 
 ## Shared visual tokens
 
-`IllustratedMaritime.uss` owns the palette under the root `sl-theme` class. The original `ArchipelagoLab.uss` remains the source of inherited text/layout size tokens. New surfaces use semantic classes; existing Harbor, Industry and run cards receive shared adapters rather than independent color copies.
+`IllustratedMaritime.uss` supplies the shared semantic theme; `ArchipelagoApprovedUX.uss` applies the approved palette and shell under `sl-theme`/`ux-shell`. `ArchipelagoLab.uss` remains the source of inherited text/layout size tokens. Scoped Industry and Route styles reuse this language without changing economic state.
 
 | Token | HEX | Use |
 | --- | --- | --- |
-| `--sl-sea-900` | `#103B45` | Chart and primary action surfaces |
+| `--sl-sea-900` | `#183C44` | Navigation and maritime framing |
 | `--sl-sea-700` | `#2F6C73` | Ocean accent and hover/active navigation |
-| `--sl-navy-950` | `#0D2631` | Compact HUD and dark framing |
-| `--sl-paper-100` | `#F4ECD8` | Quiet cards, fields and highlighted paper |
-| `--sl-paper-200` | `#E9DFC6` | Parchment workspaces |
-| `--sl-paper-300` | `#DDD0AE` | Table headers and paper separation |
-| `--sl-ink-900` | `#26343B` | Paper text and precise numbers |
+| `--sl-navy-950` | `#122632` | Compact HUD and dark framing |
+| `--sl-paper-100` | `#F7F3E8` | Quiet cards, fields and highlighted paper |
+| `--sl-paper-200` | `#EAE5D8` | Parchment workspaces |
+| `--sl-paper-300` | `#E1DCCF` | Table headers and paper separation |
+| `--sl-ink-900` | `#253640` | Paper text and precise numbers |
 | `--sl-gold-500` | `#C4A36A` | Restrained trim and art accents |
 | `--sl-gold-ink` | `#775527` | Readable small category labels on paper |
-| `--sl-green-700` | `#396C60` | Primary/selected/ready treatment |
+| `--sl-green-700` | `#386E59` | Primary/selected/ready treatment |
 | `--sl-rust-600` | `#A45139` | Warning trim, artwork and danger fill |
 | `--sl-rust-ink` | `#93452F` | Readable small warning text on paper |
-| `--sl-border-300` | `#B7AA8F` | Quiet paper boundaries |
-| `--sl-muted-600` | `#536067` | Secondary paper labels |
+| `--sl-border-300` | `#C6C9BB` | Quiet paper boundaries |
+| `--sl-muted-600` | `#53646A` | Readable secondary paper labels |
 | `--sl-paper-selection` | `#D2E0D2` | Selected goods and calm status rows |
 | `--sl-paper-warning` | `#F1DFC4` | Grounded warning rows |
 | `--sl-focus-light` | `#FFE6A6` | Focus against dark chrome |
 
-Calculated sRGB solid-swatch contrast is **9.67:1** for ink/parchment, **4.89:1** muted/parchment, **5.09:1** dark gold/parchment, **5.05:1** warning ink/parchment, **4.54:1** green/parchment, **5.11:1** cream/primary green and **13.32:1** cream/navy. Actual screenshot review remains necessary: those ratios do not establish layout, icon recognition or rendered focus quality. The darker muted/warning text is an intentional adjustment to the reference palette.
+Secondary ink is darkened from the reference's pale muted text so small paper labels remain readable. Verify contrast against each actual backing surface, including selections and warnings; no earlier palette's numerical contrast claim establishes the new rendered result. Actual Editor/player screenshot review remains necessary for clipping, icon recognition, disabled controls and keyboard focus.
 
 Shared spacing tokens are 4/8/12/18px. Gold is trim, not vital pale numerical text. Calm/manual/ready states do not receive rust styling; `sl-warning` is attached only when a current fact warrants it. Warnings retain a reason or symbol as well as color.
 
 ## Typography and reusable components
 
-The existing readable runtime font remains in use, with no new font file or license dependency. Heading hierarchy comes from weight, size and spacing. This deliberately favors legibility over reproducing the moodboard's decorative serif lettering.
+The existing readable runtime font remains in use, with no new font file or license dependency. Heading hierarchy comes from weight, size and spacing, following the approved functional typography.
 
 | Scale | Body | Caption | Emphasis | Page heading | Minimum standard control |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -101,7 +105,7 @@ The existing readable runtime font remains in use, with no new font file or lice
 | Large | 21px | 19px | 24px | 34px | 43px |
 | Extra Large | 25px | 23px | 29px | 40px | 49px |
 
-These are actual inherited glyph/layout sizes, not a transform. Larger layouts wrap the deck/actions and retain internal scrolling in detailed views. Text preference alone persists in PlayerPrefs, independently of run saves.
+These are inherited glyph/layout sizes, not a transform. Larger layouts wrap inspector actions and retain internal scrolling in detailed views. Text preference alone persists in PlayerPrefs, independently of run saves.
 
 | Component/classes | Contract |
 | --- | --- |
@@ -112,18 +116,20 @@ These are actual inherited glyph/layout sizes, not a transform. Larger layouts w
 | `sl-problem`, `sl-warning`, `sl-calm` | Concise current reason; calm by default, warning only when appropriate |
 | `sl-goods-row`, `sl-recipe`, `sl-recipe-good` | Recognizable good symbol plus text; exact canonical input/output identity |
 | `sl-primary`, `sl-secondary`, `sl-danger`, `sl-selected` | Consistent command and selection treatments |
-| `MaritimeGlyph`, `sl-glyph-small`, `sl-glyph`, `sl-glyph-large` | Generated commodity images and source-native shared symbols in 24/30/48px defaults, 28/34/56px for larger text layouts |
+| `MaritimeGlyph`, `ApprovedMaritimeAssets` | Seven approved transparent commodity symbols and available industry symbols, fitted without distortion and paired with labels |
+| `ux-inspector`, `ux-activity`, `ux-trade-row` | Selected context, current attention cards and paired physical inventory rows |
+| `industry-v3-*`, `route-v3-*` | Scoped factory/warehouse and route workflows using the shared maritime palette and text scale |
 | `MaritimeIllustration`, `sl-illustration-small`, `sl-illustration-banner` | Restrained decorative harbor/workshop/ship tile; never a building census or economic state |
 
-Buttons retain distinct hover, pressed, keyboard focus and disabled states. Dark chrome uses a light focus border; paper actions use an ink border. Fields have an explicit focused border, readable input text and matching popup/toggle styling. Semantic state never depends solely on color. The shared style adapters preserve the existing Harbor table, exact gross/fee/net previews, Industry forms and route-editor layout rather than replacing their controls.
+Buttons retain hover, pressed, keyboard focus and disabled states. Dark chrome uses a light focus border; paper actions use an ink border. Fields have an explicit focused border, readable input text and matching popup/toggle styling. Semantic state never depends solely on color. Redesigned controls still bind the existing exact gross/fee/net previews, production commands and ordered itinerary engine.
 
 ## Artwork and asset ownership
 
 The seven goods are **Logs** (round bark logs), **Planks** (milled boards), **Grain** (sheaf), **Flour** (sack), **Bread** (scored loaf), **Furniture** (chair) and **Silver** (ingot). Ship, workshop, balance scales, coins, warehouse, warning and information symbols share their palette and outline language. Map landmarks add food-source, forest, processing and coastal identity.
 
-Runtime materials and illustrations include user-supplied generated raster artwork, with original Painter2D geometry retained for shared symbols and fallback drawing. Stable resource names and metadata wire the assets; no moodboard screenshot is used as a runtime panel. No external font or runtime network fetch is required. Workshop/harbor and ship images are reusable vignettes, not a building census or a new ship type. See the [production asset inventory and provenance](design/task-2.5/PRODUCTION-ASSETS.md).
+The approved commodity and industry symbol kit is exported from individual Figma vector layers, retained as source SVGs and imported as compact transparent PNGs. `ApprovedMaritimeAssets` uses stable local resource names; it does not fetch Figma URLs at runtime. See its [complete mapping, provenance and import settings](design/task-3.0/ASSETS.md). The approved component set has no Silver Mine building icon; its canonical name and Silver output remain truthful without an invented approved image.
 
-The [visual reference guide](design/task-2.5/UI-REFERENCE.md) distinguishes functional wireframes, illustrated inspiration and actual running-game evidence. The map remains live geography rather than a pasted background.
+Existing user-supplied illustrations and source-native fallback symbols retain their [previous asset provenance](design/task-2.5/PRODUCTION-ASSETS.md). No mockup screenshot is a runtime panel. The map remains live geography rather than a pasted background. Decorative vignettes are not a building census or new ship type.
 
 ## Map viewport contract
 
@@ -139,10 +145,12 @@ The unselected chart does not display six permanent distance captions. Selecting
 
 ## Implementation and verification boundaries
 
-Industry uses one existing parchment modal with sibling **Factories / Warehouse** tabs. Factory controls are enabled state, operating rate and priority; recipe art, available inputs, full wage and blocker stay alongside them. Warehouse Buy/Sell tabs use the shared seven commodity symbols, stock and signed12-day flows, compact editable thresholds and marginal prices. Both panes preserve draft values until Apply or explicit reload. Harbor opens the same warehouse view; manual stock and physical transfer controls remain available. Automatic proposals and production signals come from simulation snapshots, never UI pricing or schedule arithmetic.
+Industry's overview distinguishes public facilities, owned sites and actual eligible construction. Selecting a private facility opens its recipe, input stock, wage, lifecycle and current blocker beside Enabled, rate and priority. **Apply changes** commits those factory settings together; Cancel restores the applied settings. A missing-input action opens **Market ↔ Store** with the relevant good and quantity, then returns to that factory. Purchasing ingredients does not run a batch or solve an unrelated wage/storage blocker.
 
-The main source boundaries are `ArchipelagoCommandDeck.cs` (shell/context/navigation), `ArchipelagoWorkspaces.cs` (Fleet/Economy), `ArchipelagoCommodityIntelligence.cs` (Harbor flow/comparison binding), `ArchipelagoMaritimeKit.cs` (shared visual components), `EconomicSignals.cs` / `CommodityFlowSignals.cs` (pure current facts and conditional schedules), and `ArchipelagoMap.cs` / `MapViewport.cs` (chart projection). Existing Harbor/Industry/Route Planner partials remain the operation destinations.
+Warehouse V2's Buy/Sell tabs expose one shared company/town policy. Completing a valid field edit or toggling a valid rule applies it immediately; invalid input stays highlighted and leaves the previous policy active. Editing another commodity or changing tabs never silently erases the opposite side's settings. The cash-reserve popup edits the same purchase reserve from either tab: it does not invent a sale reserve or protect production wages. Configuration autosave is not a local run-slot write, immediate trade or day advance. Save the run separately. Automatic proposals and production signals come from snapshots, never UI pricing or schedule arithmetic.
 
-Focused tests cover projections, viewport transforms, bound shell values and inspection/navigation without mutation. The [Task 2.6 verification record](TASK-2.6-VERIFICATION.md) contains the completed full suites, ordinary production/trade/route witnesses, exact save continuation and actual 1366×768 / 1920×1080 Default/Large captures. It separately records the unavailable native-device input check and remaining density/polish debts.
+The source boundaries are `ArchipelagoApprovedUX.cs` (approved shell), `ArchipelagoApprovedTrading.cs` (paired orders), `IndustryApprovedUX.cs` / `ArchipelagoWarehouseAutomation.cs` (factory detail and valid-policy autosave), and `RouteApprovedUX.cs` (Course/Orders/Review). They compose `ArchipelagoCommandDeck.cs`, `ArchipelagoWorkspaces.cs`, the existing itinerary draft/evaluator, and `ArchipelagoCommodityIntelligence.cs`. `EconomicSignals.cs` / `CommodityFlowSignals.cs` remain pure projections; `ArchipelagoMap.cs` / `MapViewport.cs` remain the sole chart projection. Simulation, save schema and economic execution stay unchanged.
 
-Deferred work remains deliberately small and explicit: polished bespoke town paintings, a licensed serif-heading option, larger-map camera controls and deeper economic forecasting are future proposals. No placeholder captain, curse, blessing or other future-mode control is added to this UI.
+Focused tests exercise bound arrow totals and all six physical flows, stale proposals, actual docks, manual/NPC restrictions, second-ship selection, input-shortage purchases, factory settings, warehouse autosave/validation, route review/execution and exact save continuation. Navigation and text-scale tests compare pre/post snapshots and serialized state. Required visual checks use actual Unity at 1366×768 and 1920×1080 with supported text scales; automated source compilation or Figma renders alone do not verify those interactions.
+
+The rejected Trading D design, speculative five-input factory and archived Warehouse Review/Apply designs are not part of the current interface. Camera zoom/pan, bespoke town paintings and economic forecasting remain outside this milestone. No placeholder future-mode control is added.

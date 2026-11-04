@@ -22,7 +22,7 @@ These explanations are shared with the offline in-game encyclopedia. For exact d
 - [The Grand Commission and Objectives Journal](mechanics/help_grand_commission.md) — Read the seeded map, draft four mandatory goals, and track real economic accomplishments\.
 - [Market liquidity](mechanics/help_liquidity.md) — Stock and money are separate finite limits\.
 - [Commodity roles and twelve\-day signals](mechanics/help_market_signals.md) — Read local production, input needs and possible trade destinations without forecasting stock\.
-- [Map, command deck, pause and navigation](mechanics/help_navigation.md) — Inspect, pause, and begin another run without accidentally advancing the economy\.
+- [Map, inspector, pause and navigation](mechanics/help_navigation.md) — Inspect, pause, and begin another run without accidentally advancing the economy\.
 - [Company, market, and private ownership](mechanics/help_ownership.md) — One company cash account supports distinct ship cargo and private warehouses\.
 - [Marginal prices and execution averages](mechanics/help_prices.md) — The displayed next price and the cost of a whole order answer different questions\.
 - [Warehouse buying and selling](mechanics/help_procurement.md) — One local Buy/Sell policy for each company town warehouse, independent of its factories\.

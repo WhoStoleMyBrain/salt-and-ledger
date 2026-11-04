@@ -10,15 +10,17 @@ Set production enabled, operating rate and priority; trade through the town ware
 
 The active scenario lists blueprints, eligible towns, construction payments, intervals and storage limits\. Construction pays the local market once and creates empty owned storage\. Ascension 0 is immediately operational; Ascension 1 new player sites complete after two economic days\. The first batch is eligible one full production interval after completion, with inputs and capacity still required\.
 
-Industry has Factories and Warehouse tabs\. A factory has three primary settings: Enabled, Operating rate from0 to100%, and Low/Normal/High priority\. Apply commits these together\. Its recipe, real shared inputs, full wage, production opportunity and blocker explain readiness\. Advanced accounting and shipping information remain available\.
+Industry opens an overview of public facilities, owned factories and eligible Build cards\. Select an owned factory to manage Enabled, Operating rate from 0 to 100%, and Low/Normal/High priority\. Apply changes commits these settings together; Cancel restores the applied settings\. Its recipe, real shared inputs, full wage, production opportunity and blocker remain visible\. Advanced accounting and shipping information stay available\.
 
 A charter may grant an initial facility or goods\. Those starter assets are grants, not purchases or construction payments during the run\. Starter facilities are already operational at both ascensions and retain their initial schedule\. Capital spending remains separate from material cost and sale margin\.
 
-Living Cities has town\-specific construction eligibility\. An industry may be absent and also impossible to build locally\. Cash alone cannot override this restriction; use the eligible\-town list and import missing inputs through real trades or shipping\.
+Construction eligibility is specific to each town\. An industry may be absent and also impossible to build locally\. Cash alone cannot override this restriction; use the eligible\-town list and import missing inputs through real trades or shipping\.
 
 V3 makes Farms, Lumber Camps, Mills, Sawmills, Bakeries, Furniture Workshops and Silver Mines constructible somewhere, with eligibility visible before purchase\. Multiple separate sites of the same eligible kind are allowed\. A second Mill still needs Grain, paid labor, storage and customers; no construction creates free inputs\. The public Royal Mint is commissioned separately and is never a private blueprint\.
 
 Same\-town factories share one owned store\. High priority runs before Normal and Low; equal priorities use stable facility IDs\. Only a successful complete batch consumes materials and pays its full wage\. Rate50 admits every second scheduled opportunity, rate25 every fourth; skipped opportunities do not become catch\-up batches\. An admitted shortage retries without earning another admission\. Disabled or rate0 preserves scheduling phase and consumes nothing\.
+
+A missing\-input action opens Market ↔ Store with the needed commodity and quantity\. Make the ordinary paid purchase, then close Harbor to return to the same factory\. The purchase spends no day and runs no batch; stock can become ready while production still waits for its scheduled opportunity\. Missing wages, storage or construction readiness require their own remedies\. Warehouse automation is a separate action\.
 
 ## Related entries
 

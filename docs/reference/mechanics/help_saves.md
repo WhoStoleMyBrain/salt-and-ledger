@@ -22,7 +22,7 @@ Complete validation precedes session replacement\. Unsupported versions, damage 
 - [Challenges and run outcomes](../mechanics/help_challenges.md)
 - [Fractional goods and exact coins](../mechanics/help_exact_units.md)
 - [The Grand Commission and Objectives Journal](../mechanics/help_grand_commission.md)
-- [Map, command deck, pause and navigation](../mechanics/help_navigation.md)
+- [Map, inspector, pause and navigation](../mechanics/help_navigation.md)
 - [Seeded worlds and exact retries](../mechanics/help_seeded_worlds.md)
 
 [All player mechanics](../catalog-mechanics.md) · [All content](../index.md)

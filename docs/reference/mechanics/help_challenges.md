@@ -21,7 +21,7 @@ Retry Same World reconstructs the original identity and assets\. Continue restor
 - [Starting company charters](../mechanics/help_charters.md)
 - [Financial reports and the ledger](../mechanics/help_finances.md)
 - [The Grand Commission and Objectives Journal](../mechanics/help_grand_commission.md)
-- [Map, command deck, pause and navigation](../mechanics/help_navigation.md)
+- [Map, inspector, pause and navigation](../mechanics/help_navigation.md)
 - [Results and scoring](../mechanics/help_scoring.md)
 
 [All player mechanics](../catalog-mechanics.md) · [All content](../index.md)

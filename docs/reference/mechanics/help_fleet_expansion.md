@@ -12,9 +12,9 @@ V3 permits the starting ship and two additional ships\. The processing harbor sh
 
 Pending orders count toward the three\-ship limit and retain paid capital in Company Value\. Missing company cash or actual market Planks prevents the order without partial payment or a phantom ship\. Private\-factory Ascension timing is separate from this shipbuilding schedule\.
 
-Select the intended owned ship before trading, sailing, transfer or route editing\. All ships share one company account, but each has its own cargo, position, policy and enabled state\. New itineraries retain an exact stop/action/pass and daily budget; older industrial routes retain their original stage\. Ships act in stable priority and ID order through one atomic day; one ship cannot load another ship's cargo\.
+Select the intended owned ship before trading, sailing, transfer or route editing\. All ships share one company account, but each has its own cargo, position, policy and enabled state\. Player itineraries retain an exact stop/action/pass and daily budget\. Ships act in stable priority and ID order through one atomic day; one ship cannot load another ship's cargo\.
 
-Fleet mode lists owned ships beside the map and selected\-ship inspector\. Cargo, dock or ETA, route and next instruction or wait reason remain visible; Committed activity reveals the cursor, daily work budget and last reason\. Route planner opens that ship's ordered Buy/Sell/Load/Unload editor; Company / shipwright opens purchases and public services\. Inspection never changes route enablement, cargo, funds or time\.
+Fleet lists owned ships beside the map and selected\-ship inspector\. Cargo, dock or ETA, route and next instruction or wait reason remain visible; Committed activity reveals the cursor, daily work budget and last reason\. Route planner separates plotting towns, editing stop orders, reviewing and applying\. Starting or pausing route execution is separate\. Company / shipwright opens purchases and public services\. Inspection never changes route enablement, cargo, funds or time\.
 
 ## Related entries
 

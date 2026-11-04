@@ -8,9 +8,9 @@ title: "Commodity roles and twelve-day signals"
 
 Read local production, input needs and possible trade destinations without forecasting stock\.
 
-Harbor marks each good Produces, Uses, Makes \+ uses or Trade only\. Inspect Town market for public facilities and household/municipal needs; inspect Company warehouse for your local industrial recipes and owned stock\. Current market bid/ask stays public in both views\. Inspection is independent of the Ship cargo or Company warehouse trade destination\.
+Harbor commodity buttons show compact signed output/use and open details for Produces, Uses, Makes \+ uses or Trade only\. Town market information covers public facilities and household/municipal needs; Company warehouse information covers your local industrial recipes\. Market quotes remain public\. This information scope is independent of the paired physical inventories and never changes where an order moves goods\.
 
-Signed production, use and net share one window: the next 12 economic days, tomorrow through day \+12 inclusive\. Output and input totals assume each scheduled enabled operational batch succeeds\. Overdue work gets one next\-day opportunity followed by its usual interval, with no catch\-up output\. Disabled and pending sites remain visible as installed capability in the breakdown but do not contribute to enabled totals\.
+Signed production and use in the rows, and net in the selected\-good breakdown, share the next 12 economic days: tomorrow through day \+12 inclusive\. Output and input totals assume each scheduled enabled operational batch succeeds\. Overdue work gets one next\-day opportunity followed by its usual interval, with no catch\-up output\. Disabled and pending sites remain visible as installed capability in the breakdown but do not contribute to enabled totals\.
 
 Blocked marks current input, payroll, storage or output limits; the row still shows conditional enabled potential\. Even Ready from current state does not reserve materials or wages\. Another local facility can consume shared inputs first\. Net is potential enabled output minus recipe inputs and consumption needs, not a promised future inventory\. No trade, procurement, automatic sale, ship transfer, voyage, contract or Mint flow is counted as passive production\.
 

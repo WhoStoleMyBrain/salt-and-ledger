@@ -10,7 +10,7 @@ Choose one presentation scale for every ArchipelagoLab screen\.
 
 Settings offers Compact, Default, Large and Extra Large text throughout gameplay, map labels, trade, industry, automation, ledger, encyclopedia, setup, pause and results\. Default body text is 17 pixels; Large and Extra Large use 21 and 25\. Compact uses 14 for a deliberately denser presentation\.
 
-The map keeps the main play area while a collapsible parchment command deck shows the selected town or ship\. Dedicated Fleet and Economy workspaces expose focused facts; Details / log retains longer inspector details\. Panels wrap and scroll internally where text grows\. Buttons, numeric fields and hit targets adjust with text rather than using paint\-only zoom; long documents and advanced configuration intentionally retain scrolling\.
+The chart sits between a left navigation rail and the selected town or ship's right inspector, with current activity below\. Harbor and Industry use the chart work area\. Fleet and Economy expose focused details, while View log retains the operational inspector\. Panels wrap and scroll internally as text grows\. Numeric fields and hit targets follow the text scale rather than paint\-only zoom; long details and advanced configuration intentionally retain scrolling\.
 
 Goods and status symbols keep visible labels or tooltips; warnings use words as well as color\. HUD cash and reference value use at most one decimal, with an exact tooltip; a positive value below 0\.1 appears as &lt;0\.1\. Harbor totals and Ledger money keep exact precision\. Display rounding never changes an order, affordability or score\.
 
@@ -19,7 +19,7 @@ Changing text size is passive: it does not advance time, change revision, spend 
 ## Related entries
 
 - [Owning a factory](../mechanics/help_factories.md)
-- [Map, command deck, pause and navigation](../mechanics/help_navigation.md)
+- [Map, inspector, pause and navigation](../mechanics/help_navigation.md)
 - [Seeded worlds and exact retries](../mechanics/help_seeded_worlds.md)
 - [Buying and selling](../mechanics/help_trading.md)
 
