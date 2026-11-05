@@ -222,11 +222,18 @@ namespace SaltAndLedger.Simulation
                 throw new InvalidOperationException("There is no direct sea connection between these ports.");
         }
 
+        /// <summary>The deterministic physical path; intermediate towns do not grant docking or visits.</summary>
+        public SeaPath GetPath(string from, string to, int speed)
+        {
+            if (!Ports.ContainsKey(from) || !Ports.ContainsKey(to)) throw new KeyNotFoundException("Unknown route port.");
+            return SeaNavigation.FindPath(Routes, from, to, speed);
+        }
+
         public int TravelDays(string shipId, string destinationPortId)
         {
             var ship = Ships[shipId];
-            return GetRoute(ship.DockedPortId ?? throw new InvalidOperationException("Ship is already sailing."),
-                destinationPortId).DurationDays(ship.Configuration.Speed);
+            return GetPath(ship.DockedPortId ?? throw new InvalidOperationException("Ship is already sailing."),
+                destinationPortId, ship.Configuration.Speed).DurationDays;
         }
 
         public MarketPrice GetMarketQuote(string portId, string goodId)

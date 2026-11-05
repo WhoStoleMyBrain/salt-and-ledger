@@ -23,9 +23,9 @@ internal static class GrandCommissionWitness
         var automated = Victory(content, 99, Console.WriteLine, itinerary: true);
         Console.WriteLine("Itinerary commission: " + JsonConvert.SerializeObject(Summary(automated.Snapshot())));
         var idle = Create(content, 99);
-        for (var day = 0; day < 180; day++) idle.AdvanceDay();
+        while (idle.Snapshot().Challenge!.Status == ChallengeStatus.Active) idle.AdvanceDay();
         Require(idle.Snapshot().Challenge!.Status == ChallengeStatus.Failed, "Idle control must fail.");
-        Console.WriteLine("Idle control: day 180, Failed, " + GrandCommission.Progress(idle.Snapshot()).CurrentlyMetCount + "/4 goals.");
+        Console.WriteLine("Idle control: day " + idle.Snapshot().Day + ", Failed, " + GrandCommission.Progress(idle.Snapshot()).CurrentlyMetCount + "/4 goals.");
         return 0;
     }
 
@@ -40,7 +40,7 @@ internal static class GrandCommissionWitness
     }
 
     /// <summary>Two short prescribed journeys. Every state change uses an ordinary world command.</summary>
-    internal static RegionalWorldState Victory(ContentCatalog content, int seed, Action<string>? observe = null, bool itinerary = false)
+    internal static RegionalWorldState Victory(ContentCatalog content, int seed, Action<string>? observe = null, bool itinerary = false, long? finalArrivalDay = null)
     {
         var world = Create(content, seed);
         var g = ExpandingEconomyGeneration.Generate(seed);
@@ -86,6 +86,7 @@ internal static class GrandCommissionWitness
         }
         void Sail(string port, bool save = false)
         {
+            if (world.Snapshot().Ships[ship].DockedPortId == port) return;
             Apply("Depart to " + port, w => w.Depart(ship, port));
             Step();
             if (save)
@@ -98,35 +99,43 @@ internal static class GrandCommissionWitness
             }
             while (world.Snapshot().Ships[ship].DockedPortId == null) Step();
         }
+        string Site(string recipe, string? good = null) => g.EligiblePorts(recipe)
+            .OrderByDescending(id => good == null ? 0 : world.Snapshot().Ports[id].Inventory[good])
+            .ThenBy(id => id, StringComparer.Ordinal).First();
         if (seed == 42)
         {
             Trade(TradeDirection.Sell, "grain", 4);
             Trade(TradeDirection.Sell, "logs", 2);
-            Build("witness_camp", g.RecoveryPortId, ExpandingEconomyGeneration.LumberBlueprint, 1);
-            Build("witness_sawmill", g.ProcessingPortId, WorldIds.SawmillBlueprint, 4);
+            Build("witness_camp", Site("harvest_logs"), ExpandingEconomyGeneration.LumberBlueprint, 1);
+            Build("witness_sawmill", Site("saw_planks", "logs"), WorldIds.SawmillBlueprint, 4);
             BuyInput("witness_sawmill", "logs", 8);
         }
         else
         {
-            Build("witness_mill", g.ProcessingPortId, ExpandingEconomyGeneration.MillBlueprint, 1);
-            Build("witness_bakery", g.RecoveryPortId, WorldIds.BakeryBlueprint, 1);
+            Build("witness_mill", Site("mill_flour", "grain"), ExpandingEconomyGeneration.MillBlueprint, 1);
+            Build("witness_bakery", Site("bake_bread", "flour"), WorldIds.BakeryBlueprint, 1);
             BuyInput("witness_mill", "grain", 2);
             BuyInput("witness_bakery", "flour", 1);
             BuyInput("witness_bakery", "logs", 1);
         }
-        Build("witness_mine", g.FurniturePortId, ExpandingEconomyGeneration.SilverMineBlueprint, 1);
+        var minePort = Site("mine_silver");
+        Build("witness_mine", minePort, ExpandingEconomyGeneration.SilverMineBlueprint, 1);
         Apply("Commission public Mint", w => w.CommissionMint(owner));
         if (itinerary)
         {
+            var origin = world.Snapshot().Ships[ship].DockedPortId!;
+            var destination = world.Snapshot().Ports.Keys.Where(id => id != origin)
+                .OrderBy(id => world.Snapshot().GetPath(origin, id, RunScenario.StartingShipSpeed).DurationDays)
+                .ThenBy(id => id, StringComparer.Ordinal).First();
             var route = new CargoItineraryPolicy("witness_food", new[] {
-                new CargoItineraryStop(g.FoodSourcePortId, new[] {
-                    new CargoItineraryCommand(CargoItineraryCommandKind.BuyFromMarket, "bread", 40000, 40000) }),
-                new CargoItineraryStop(g.RecoveryPortId, new[] {
-                    new CargoItineraryCommand(CargoItineraryCommandKind.SellToMarket, "bread", 40000, 40000) }) });
+                new CargoItineraryStop(origin, new[] {
+                    new CargoItineraryCommand(CargoItineraryCommandKind.BuyFromMarket, "bread", 10000, 10000) }),
+                new CargoItineraryStop(destination, new[] {
+                    new CargoItineraryCommand(CargoItineraryCommandKind.SellToMarket, "bread", 10000, 10000) }) });
             Apply("Apply and enable food itinerary", w => w.ConfigureItinerary(ship, route, true));
             Apply("Itinerary buys Bread and departs", w => w.RunAutomation(ship));
-            Require(world.Snapshot().Ships[ship].Cargo["bread"] == 40000 &&
-                world.Snapshot().Ships[ship].DestinationPortId == g.RecoveryPortId, "Itinerary must buy and sail physically.");
+            Require(world.Snapshot().Ships[ship].Cargo["bread"] == 10000 &&
+                world.Snapshot().Ships[ship].DestinationPortId == destination, "Itinerary must buy and sail physically.");
             Step();
             var saved = WorldSaveCodec.Save(world);
             world = WorldSaveCodec.Load(content, saved);
@@ -138,21 +147,50 @@ internal static class GrandCommissionWitness
         }
         else
         {
-            Trade(TradeDirection.Buy, "bread", 4);
-            Sail(g.RecoveryPortId, save: true);
-            Trade(TradeDirection.Sell, "bread", 4);
+            Trade(TradeDirection.Buy, "bread", 1);
+            var destination = world.Snapshot().Ports.Keys.First(id => id != world.Snapshot().Ships[ship].DockedPortId);
+            Sail(destination, save: true);
+            Trade(TradeDirection.Sell, "bread", 1);
         }
-        Sail(g.FurniturePortId);
-        Apply("Load one physically produced Silver", w => w.TransferGoods(owner, ship, "witness_mine", TransferDirection.WarehouseToShip, "silver", 10000));
-        Trade(TradeDirection.Buy, "furniture", 1);
-        Sail(g.ProcessingPortId);
-        Apply("Fulfill finite Furniture contract", w => w.FulfillExternalContract(ship, "royal_furniture", 10000));
-        Apply("Issue coins against physical Silver", w => w.MintSilver(ship));
         if (seed == 99)
         {
-            Trade(TradeDirection.Buy, "flour", 4);
+            var net = world.Snapshot().CommissionHistory!.Markets.FirstOrDefault(m => m.PortId == g.FoodSourcePortId && m.GoodId == "flour")?.NetQuantity ?? 0;
+            var flourNeeded = checked((int)((40000 - net + 9999) / 10000));
+            var source = world.Snapshot().Ports.Keys.Where(id => id != g.FoodSourcePortId &&
+                    world.Snapshot().MaximumTradeQuantity(ship, id, TradeDirection.Buy, "flour") >= flourNeeded * 10000)
+                .OrderByDescending(id => world.Snapshot().Ports[id].Inventory["flour"]).First();
+            Sail(source);
+            Trade(TradeDirection.Buy, "flour", flourNeeded);
             Sail(g.FoodSourcePortId, save: true);
-            Trade(TradeDirection.Sell, "flour", 4);
+            Trade(TradeDirection.Sell, "flour", flourNeeded);
+        }
+        else
+        {
+            var source = world.Snapshot().Ports.Keys.Where(id => world.Snapshot().MaximumTradeQuantity(ship, id, TradeDirection.Buy, "furniture") >= 10000)
+                .OrderBy(id => id == world.Snapshot().Ships[ship].DockedPortId ? 0 : world.Snapshot().GetPath(world.Snapshot().Ships[ship].DockedPortId!, id, RunScenario.StartingShipSpeed).DurationDays)
+                .ThenBy(id => id, StringComparer.Ordinal).First();
+            Sail(source);
+            Trade(TradeDirection.Buy, "furniture", 1);
+            Sail(g.MintPortId);
+            Apply("Fulfill finite Furniture contract", w => w.FulfillExternalContract(ship, "royal_furniture", 10000));
+        }
+        Sail(minePort);
+        while (world.Snapshot().PrivateFacilities["witness_mine"].BatchesProduced == 0) Step();
+        Apply("Load one physically produced Silver", w => w.TransferGoods(owner, ship, "witness_mine", TransferDirection.WarehouseToShip, "silver", 10000));
+        Sail(g.MintPortId);
+        Apply("Issue coins against physical Silver", w => w.MintSilver(ship));
+        foreach (var port in world.Snapshot().Ports.Keys)
+        {
+            if (world.Snapshot().Challenge!.Status != ChallengeStatus.Active) break;
+            if (!world.Snapshot().CommissionHistory!.Ships.Single().Visits.ContainsKey(port))
+            {
+                if (finalArrivalDay.HasValue && world.Snapshot().CommissionHistory!.Ships.Single().Visits.Count == world.Snapshot().Ports.Count - 1)
+                {
+                    var duration = world.Snapshot().GetPath(world.Snapshot().Ships[ship].DockedPortId!, port, RunScenario.StartingShipSpeed).DurationDays;
+                    while (world.Snapshot().Day < finalArrivalDay.Value - duration) Step();
+                }
+                Sail(port, save: true);
+            }
         }
         var final = world.Snapshot();
         Require(final.Challenge!.Status == ChallengeStatus.Succeeded && GrandCommission.Progress(final).Qualified,

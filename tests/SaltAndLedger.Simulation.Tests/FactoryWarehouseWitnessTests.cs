@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using SaltAndLedger.Simulation;
 using Xunit;
 using Xunit.Abstractions;
@@ -19,8 +20,24 @@ public sealed class FactoryWarehouseWitnessTests
     public void PaidFlourVoyageAndCampSupplyThreeCompetingBakeries(bool changePriority)
     {
         var content = ContentLoader.Load(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "content.json")));
-        var world = RunScenario.Create(content, new RunIdentity(null, RunScenario.MerchantCharter, seed: 99));
-        var generation = ExpandingEconomyGeneration.Generate(99);
+        // This shared-stock contention fixture deliberately permits local producer/consumer pairs.
+        // Normal generated runs keep separation enabled; its construction guard is covered separately.
+        var json = JObject.Parse(WorldGenerationConfiguration.Default.ToJson());
+        json["enforceProductionSeparation"] = false;
+        json["townCount"]!["min"] = 8;
+        json["townCount"]!["max"] = 8;
+        json["npc"]!["minimumCount"] = 0;
+        json["npc"]!["maximumCount"] = 0;
+        json["npc"]!["tradersPerTownPermille"] = 0;
+        foreach (var industry in (JArray)json["industries"]!)
+            if ((string?)industry["industryId"] == "lumber_camp" || (string?)industry["industryId"] == "bakery")
+            { industry["privateTowns"]!["min"] = 8; industry["privateTowns"]!["max"] = 8; }
+        json["startingInventories"]!["flour"]!["min"] = 20;
+        json["startingInventories"]!["flour"]!["max"] = 20;
+        var configuration = WorldGenerationConfiguration.Parse(json.ToString());
+        var world = RunScenario.Create(content, new RunIdentity(null, RunScenario.MerchantCharter, seed: 99,
+            generationConfiguration: configuration));
+        var generation = ExpandingEconomyGeneration.Generate(99, configuration: configuration);
         var owner = WorldIds.PlayerOwnerId;
         var ship = WorldIds.PlayerShipId;
         var town = generation.FoodSourcePortId;
@@ -41,6 +58,7 @@ public sealed class FactoryWarehouseWitnessTests
         void Days(int count) { for (var i = 0; i < count; i++) Audit(world.AdvanceDay().After); }
         void Sail(string port)
         {
+            if (world.Snapshot().Ships[ship].DockedPortId == port) return;
             world.Depart(ship, port);
             while (world.Snapshot().Ships[ship].DockedPortId == null) Days(1);
         }

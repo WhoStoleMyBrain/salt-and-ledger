@@ -169,29 +169,49 @@ public sealed class LivingEconomicTests
     public void ForestFurnitureTownActuallyImportsPlanksBeforeExceedingItsInitialInputEndowment()
     {
         var content = ContentLoader.Load(ContentLoaderTests.CanonicalJson());
-        var generated = LivingCityGeneration.Generate(42);
         var world = RunScenario.Create(content, new RunIdentity(null, RunScenario.MerchantCharter,
             RunWorldMode.ExpandingEconomy, 42));
-        var port = world.Snapshot().Ports[generated.FurniturePortId];
-        Assert.Contains(port.Facilities, facility => facility.Configuration.Instance.BuildingId == "lumber_camp");
+        var port = world.Snapshot().Ports.Values.First(p => p.Facilities.Any(f => f.Configuration.Instance.RecipeId == "make_furniture"));
         Assert.Contains(port.Facilities, facility => facility.Configuration.Instance.BuildingId == "furniture_workshop");
         Assert.DoesNotContain(port.Facilities, facility => facility.Configuration.Instance.BuildingId == "sawmill");
-        Assert.DoesNotContain(generated.FurniturePortId, world.Snapshot().IndustryBlueprints[WorldIds.SawmillBlueprint].EligiblePortIds);
+        Assert.DoesNotContain(port.Id, world.Snapshot().IndustryBlueprints[WorldIds.SawmillBlueprint].EligiblePortIds);
         var initialPlanks = port.Inventory["planks"];
         var imports = 0;
         var batches = 0;
-        for (var day = 0; day < 90; day++)
+        void Advance()
         {
             var result = world.AdvanceDay();
-            imports += result.Trades.Where(trade => trade.PortId == generated.FurniturePortId &&
+            imports += result.Trades.Where(trade => trade.PortId == port.Id &&
                 trade.Trade.GoodId == "planks" && trade.Trade.Direction == TradeDirection.Sell).Sum(trade => trade.Trade.ExecutedQuantity);
-            batches += result.Production.Count(production => production.PortId == generated.FurniturePortId &&
+            batches += result.Production.Count(production => production.PortId == port.Id &&
                 production.RecipeId == "make_furniture" && production.Outcome == ScheduledProductionOutcome.Produced);
         }
+        void Sail(string target)
+        {
+            if (world.Snapshot().Ships[WorldIds.PlayerShipId].DockedPortId == target) return;
+            world.Depart(WorldIds.PlayerShipId, target);
+            while (world.Snapshot().Ships[WorldIds.PlayerShipId].DockedPortId == null) Advance();
+        }
+        var source = world.Snapshot().Ports.Values.Where(p => p.Id != port.Id &&
+                p.Facilities.Any(f => f.Configuration.Instance.RecipeId == "saw_planks"))
+            .OrderByDescending(p => p.Inventory["planks"]).First().Id;
+        Sail(source);
+        while (world.Snapshot().MaximumTradeQuantity(WorldIds.PlayerShipId, source, TradeDirection.Buy, "planks") < 40000)
+        {
+            Assert.True(world.Snapshot().Day < 30, "The configured public source must offer the finite input shipment.");
+            Advance();
+        }
+        Assert.Equal(TradeOutcome.Traded, world.ExecuteTrade(WorldIds.PlayerShipId, source,
+            new TradeCommand(TradeDirection.Buy, "planks", 40000)).Trades.Single().Trade.Outcome);
+        Sail(port.Id);
+        var imported = world.ExecuteTrade(WorldIds.PlayerShipId, port.Id, new TradeCommand(TradeDirection.Sell, "planks", 40000));
+        Assert.Equal(TradeOutcome.Traded, imported.Trades.Single().Trade.Outcome);
+        imports += imported.Trades.Single().Trade.ExecutedQuantity;
+        while (world.Snapshot().Day < 90) Advance();
         Assert.True(imports > 0);
         var planksPerBatch = content.GetRecipe("make_furniture").Inputs.Single(input => input.GoodId == "planks").Quantity;
         Assert.True((long)batches * EconomicUnits.FromWhole(planksPerBatch) > initialPlanks);
-        Assert.Throws<InvalidOperationException>(() => world.ConstructFacility("player", generated.FurniturePortId,
+        Assert.Throws<InvalidOperationException>(() => world.ConstructFacility(WorldIds.PlayerOwnerId, port.Id,
             WorldIds.SawmillBlueprint, "forbidden_sawmill"));
     }
 

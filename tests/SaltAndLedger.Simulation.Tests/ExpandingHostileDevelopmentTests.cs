@@ -90,9 +90,10 @@ public sealed class ExpandingHostileDevelopmentTests
     [Fact]
     public void LaterProductionOverflowRollsBackEarlierPayrollVoyagesAndDuePublicAndShipCompletion()
     {
+        var lastPort = Generation().Ports.Last().Id;
         var world = World(changePort: p =>
         {
-            if (p.Id != "westhaven") return p;
+            if (p.Id != lastPort) return p;
             var stock = p.Market.InitialQuantities.ToDictionary(v => v.Key, v => v.Value);
             stock["logs"] = int.MaxValue - 1;
             return CopyPort(p, stock, facilities: new[]
@@ -193,9 +194,18 @@ public sealed class ExpandingHostileDevelopmentTests
     [Fact]
     public void TwoIndustrialShipsKeepIndependentStagesAndCompeteForActualSharedStock()
     {
-        var world = World(second: true);
+        var generation = Generation();
+        var world = World(second: true, changePort: port =>
+        {
+            if (port.Id != generation.MintPortId) return port;
+            var stock = port.Market.InitialQuantities.ToDictionary(pair => pair.Key, pair => pair.Value);
+            stock["planks"] = 100000;
+            return CopyPort(port, stock);
+        });
         var config = world.Snapshot().Economy!.Configuration;
-        world.ConstructFacility(Owner, config.MintPortId, WorldIds.SawmillBlueprint, "shipping_store");
+        var eligibleBlueprint = world.Snapshot().IndustryBlueprints.Values
+            .First(blueprint => blueprint.EligiblePortIds.Contains(config.MintPortId));
+        world.ConstructFacility(Owner, config.MintPortId, eligibleBlueprint.Id, "shipping_store");
         world.SetFacilityEnabled(Owner, "shipping_store", false);
         world.ExecuteWarehouseTrade(Owner, "shipping_store", new TradeCommand(TradeDirection.Buy, "planks", 40000));
         IndustrialRoutePolicy Policy(int maximum, int minimum) => new(config.MintPortId, config.SilverPortId,
@@ -213,7 +223,8 @@ public sealed class ExpandingHostileDevelopmentTests
         Assert.Equal(IndustrialRouteStage.AcquireOutbound, world.Snapshot().Ships["second"].IndustrialStage);
         Assert.Equal(0, world.Snapshot().Ships["second"].CargoUnits);
         world.AdvanceDay();
-        world.ExecuteWarehouseTrade(Owner, "shipping_store", new TradeCommand(TradeDirection.Buy, "planks", 20000));
+        Assert.Equal(TradeOutcome.Traded, world.ExecuteWarehouseTrade(Owner, "shipping_store",
+            new TradeCommand(TradeDirection.Buy, "planks", 20000)).WarehouseTrades.Single().Trade.Outcome);
         world.RunAutomation("second");
         var after = world.Snapshot();
         Assert.Equal(IndustrialRouteStage.DeliverOutbound, after.Ships["second"].IndustrialStage);

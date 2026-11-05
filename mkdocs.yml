@@ -29,6 +29,8 @@ nav:
       - Recipes: reference/catalog-recipes.md
       - Mechanics: reference/catalog-mechanics.md
   - Development:
+      - World generation: WORLD_GENERATION.md
+      - Task 3.1 verification: TASK-3.1-VERIFICATION.md
       - Architecture: ARCHITECTURE.md
       - Exact mechanics: MECHANICS.md
       - Game design: GAME_DESIGN.md

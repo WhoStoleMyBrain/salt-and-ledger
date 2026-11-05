@@ -3,12 +3,13 @@ using System.IO;
 using System.Linq;
 using SaltAndLedger.Simulation;
 
-const string usage = "Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--grand-commission [--check] | --economic-circulation [--check] [output.json] | --expanding-economy [--reinvestment] [--deep] [--check] [output.json]]";
+const string usage = "Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--world-generation [--config file.json] [--seed int32] [--days 0..10000] [--check] [output.json] | --grand-commission [--check] | --economic-circulation [--check] [output.json] | --expanding-economy [--reinvestment] [--deep] [--check] [output.json]]";
 if (args.Length == 0) { Console.Error.WriteLine(usage); return 1; }
 try
 {
     var content = ContentLoader.Load(File.ReadAllText(args[0]));
     var mode = args.Length == 1 ? "--grand-commission" : args[1];
+    if (mode == "--world-generation") return WorldGenerationReport.Run(content, args.Skip(2).ToArray());
     var options = args.Skip(2).ToList();
     var reinvestment = options.Remove("--reinvestment");
     var deep = options.Remove("--deep");

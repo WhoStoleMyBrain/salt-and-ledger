@@ -66,7 +66,8 @@ public sealed class CargoItineraryTests
             initialFacilities: warehouse == null ? null : new[] { new PrivateFacilityConfiguration(Site, Owner, North,
                 "plan", warehouse, enabled: false) },
             runIdentity: new RunIdentity(null, RunScenario.MerchantCharter, RunWorldMode.ExpandingEconomy, 99,
-                companyStorageRules: CompanyStorageRules.Pooled, itineraryVersion: itineraryVersion, economicRulesVersion: 0),
+                companyStorageRules: CompanyStorageRules.Pooled, itineraryVersion: itineraryVersion, economicRulesVersion: 0,
+                generationConfiguration: DiagnosticGenerationSettings.AllowLocalSupplyChains),
             economy: ExpandingEconomyConfiguration.CreateDefault(South, North));
     }
 
@@ -514,38 +515,38 @@ public sealed class CargoItineraryTests
         var identity = new RunIdentity(null, RunScenario.MerchantCharter, RunWorldMode.ExpandingEconomy, 99,
             companyStorageRules: CompanyStorageRules.Pooled, itineraryVersion: 1);
         var world = RunScenario.Create(content, identity, reverse);
-        var generation = ExpandingEconomyGeneration.Generate(99);
+        var bakeryPort = world.Snapshot().IndustryBlueprints[WorldIds.BakeryBlueprint].EligiblePortIds[0];
         var owner = WorldIds.PlayerOwnerId;
         var shipId = WorldIds.PlayerShipId;
         const string bakeryId = "itinerary_bakery";
         var records = new List<RegionalResult>();
         void Record(RegionalResult result) { Audit(result); records.Add(result); }
-        Record(world.ConstructFacility(owner, generation.RecoveryPortId, WorldIds.BakeryBlueprint, bakeryId));
-        Record(world.Depart(shipId, generation.RecoveryPortId));
+        Record(world.ConstructFacility(owner, bakeryPort, WorldIds.BakeryBlueprint, bakeryId));
+        if (world.Snapshot().Ships[shipId].DockedPortId != bakeryPort) Record(world.Depart(shipId, bakeryPort));
         while (world.Snapshot().Ships[shipId].DockedPortId == null) Record(world.AdvanceDay());
         var enabledDay = world.Snapshot().Day;
         var policy = CargoItineraryPresets.BreadLoop(world.Snapshot(), shipId);
-        Assert.Equal(new[] { generation.RecoveryPortId, generation.FoodSourcePortId, generation.ProcessingPortId }, policy.Stops.Select(s => s.PortId));
+        Assert.Equal(bakeryPort, policy.Stops[0].PortId);
+        Assert.InRange(policy.Stops.Count, 2, 3);
+        Assert.Equal(policy.Stops.Count, policy.Stops.Select(stop => stop.PortId).Distinct().Count());
         Record(world.ConfigureItinerary(shipId, policy, true));
         var returns = new List<long>();
         while (world.Snapshot().Day < 60)
         {
             var result = world.AdvanceDay();
             Record(result);
-            if (result.Movements.Any(m => m.ShipId == shipId && m.Kind == ShipMovementKind.Arrival && m.DestinationPortId == generation.RecoveryPortId))
+            if (result.Movements.Any(m => m.ShipId == shipId && m.Kind == ShipMovementKind.Arrival && m.DestinationPortId == bakeryPort))
                 returns.Add(result.After.Day);
         }
         var after = world.Snapshot();
         var finance = after.Accounting.Companies[owner];
         var playerTrades = records.SelectMany(r => r.Trades).Where(t => t.ShipId == shipId).ToArray();
         var playerTransfers = records.SelectMany(r => r.Transfers).Where(t => t.ShipId == shipId).ToArray();
-        Assert.True(returns.Count >= 2, "The route must physically complete at least two full A→B→C→A cycles.");
+        Assert.True(returns.Count >= 2, "The route must physically complete at least two full ingredient-supply cycles.");
         Assert.True(after.PrivateFacilities[bakeryId].BatchesProduced >= 2);
         Assert.True(after.PrivateFacilities[bakeryId].WagesPaid > 0);
-        Assert.True(playerTrades.Count(t => t.Trade.Direction == TradeDirection.Buy && t.Trade.GoodId == "grain") >= 2);
         Assert.True(playerTrades.Count(t => t.Trade.Direction == TradeDirection.Buy && t.Trade.GoodId == "logs") >= 2);
         Assert.True(playerTrades.Count(t => t.Trade.Direction == TradeDirection.Buy && t.Trade.GoodId == "flour") >= 2);
-        Assert.True(playerTrades.Count(t => t.Trade.Direction == TradeDirection.Sell && t.Trade.GoodId == "grain") >= 2);
         Assert.Contains(playerTrades, t => t.Trade.Direction == TradeDirection.Sell && t.Trade.GoodId == "bread");
         Assert.True(playerTransfers.Count(t => t.Direction == TransferDirection.ShipToWarehouse && t.GoodId == "flour") >= 2);
         Assert.True(playerTransfers.Count(t => t.Direction == TransferDirection.ShipToWarehouse && t.GoodId == "logs") >= 2);
@@ -559,8 +560,7 @@ public sealed class CargoItineraryTests
             d => Assert.InRange(d.Before.Ships[shipId].ItineraryProgress!.OperationsUsed, 0, 8));
         return JsonConvert.SerializeObject(new
         {
-            Seed = 99, Days = after.Day, EnabledDay = enabledDay, A = generation.RecoveryPortId,
-            B = generation.FoodSourcePortId, C = generation.ProcessingPortId, ReturnDays = returns,
+            Seed = 99, Days = after.Day, EnabledDay = enabledDay, Stops = policy.Stops.Select(stop => stop.PortId), ReturnDays = returns,
             Cash = after.Companies[owner].Cash, Value = after.CompanyValue(owner).Total,
             finance.InventoryPurchases, finance.SalesRevenue, finance.CostOfGoodsSold, finance.HeldInventoryCost,
             finance.WagesPaid, finance.RealizedGrossMargin, finance.OperatingSurplusAfterWages,

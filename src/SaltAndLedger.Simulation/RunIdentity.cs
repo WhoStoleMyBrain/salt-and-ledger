@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using Newtonsoft.Json;
 
 namespace SaltAndLedger.Simulation
 {
@@ -21,6 +22,9 @@ namespace SaltAndLedger.Simulation
         public CompanyStorageRules CompanyStorageRules { get; }
         public int ItineraryVersion { get; }
         public int EconomicRulesVersion { get; }
+        [JsonIgnore]
+        public WorldGenerationConfiguration GenerationConfiguration { get; }
+        public string GenerationConfigurationFingerprint => GenerationConfiguration.Fingerprint;
         public bool ShouldSerializeEconomicRulesVersion() => EconomicRulesVersion != 0;
         public bool ShouldSerializeItineraryVersion() => ItineraryVersion != 0;
         public bool ShouldSerializeCompanyStorageRules() => CompanyStorageRules != CompanyStorageRules.Legacy;
@@ -36,7 +40,7 @@ namespace SaltAndLedger.Simulation
             Ascension.ToString(CultureInfo.InvariantCulture) + "/" +
             "expanding-v" + GeneratorVersion.ToString(CultureInfo.InvariantCulture) + "-seed" +
             Seed!.Value.ToString(CultureInfo.InvariantCulture) + "-" + LivingPricingMode.ToString().ToLowerInvariant() +
-            "-content3-value1" +
+            "-content3-value1/config-" + GenerationConfigurationFingerprint +
             (Commission == null ? "" : "/commission-v" + Commission.Version.ToString(CultureInfo.InvariantCulture) + "-" + Commission.Signature) +
             (CompanyStorageRules == CompanyStorageRules.Pooled ? "/storage-v2" : "") +
             (ItineraryVersion == 0 ? "" : "/itinerary-v" + ItineraryVersion.ToString(CultureInfo.InvariantCulture)) +
@@ -47,8 +51,9 @@ namespace SaltAndLedger.Simulation
             LivingPricingMode livingPricingMode = LivingPricingMode.StockOnly,
             int? contentVersion = null, int? valuationVersion = null, GrandCommissionPlan? commission = null,
             CompanyStorageRules companyStorageRules = CompanyStorageRules.Pooled, int itineraryVersion = 1,
-            int economicRulesVersion = 1)
+            int economicRulesVersion = 1, WorldGenerationConfiguration? generationConfiguration = null)
         {
+            GenerationConfiguration = WorldGenerationConfiguration.Parse((generationConfiguration ?? commission?.GenerationConfiguration ?? WorldGenerationConfiguration.Default).ToJson());
             if (challengeId != null) RunScenario.GetChallenge(challengeId);
             RunScenario.GetCharter(charterId);
             if (!Enum.IsDefined(typeof(RunWorldMode), worldMode))
@@ -70,8 +75,9 @@ namespace SaltAndLedger.Simulation
                 throw new ArgumentOutOfRangeException(nameof(livingPricingMode));
             if ((challengeId == GrandCommission.ChallengeId) != (commission != null))
                 throw new ArgumentException("Grand Commission requires exactly one complete mission plan; other runs cannot carry one.", nameof(commission));
-            if (commission != null && (worldMode != RunWorldMode.ExpandingEconomy || commission.Seed != seed))
-                throw new ArgumentException("The commission must belong to this exact v3 seed.", nameof(commission));
+            if (commission != null && (worldMode != RunWorldMode.ExpandingEconomy || commission.Seed != seed ||
+                commission.GenerationConfiguration.Fingerprint != GenerationConfiguration.Fingerprint))
+                throw new ArgumentException("The commission must belong to this exact seed and generation configuration.", nameof(commission));
             var supportedVersion = ExpandingEconomyGeneration.CurrentVersion;
             if (generatorVersion.HasValue && generatorVersion.Value != supportedVersion)
                 throw new ArgumentOutOfRangeException(nameof(generatorVersion), "Unsupported map generator version.");
@@ -97,7 +103,8 @@ namespace SaltAndLedger.Simulation
             Seed == other.Seed && GeneratorVersion == other.GeneratorVersion && Difficulty == other.Difficulty &&
             LivingPricingMode == other.LivingPricingMode && Commission?.Signature == other.Commission?.Signature &&
             CompanyStorageRules == other.CompanyStorageRules && ItineraryVersion == other.ItineraryVersion &&
-            EconomicRulesVersion == other.EconomicRulesVersion;
+            EconomicRulesVersion == other.EconomicRulesVersion &&
+            GenerationConfigurationFingerprint == other.GenerationConfigurationFingerprint;
 
         public override bool Equals(object? obj) => obj is RunIdentity other && Equals(other);
 

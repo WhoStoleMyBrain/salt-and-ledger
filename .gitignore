@@ -1,4 +1,5 @@
 # Local tooling and build products
+/work/
 .venv/
 .dotnet/
 .nuget/

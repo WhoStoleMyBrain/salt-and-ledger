@@ -71,7 +71,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("port_" + port.Id);
             Assert.That(root.Q("deckBody").ClassListContains("hidden"), Is.False);
             root.Q<Toggle>("mapRoutesToggle").value = true;
-            Assert.That(controller.Map.VisibleRouteCount, Is.EqualTo(6));
+            Assert.That(controller.Map.VisibleRouteCount, Is.EqualTo(controller.Session.Snapshot.Routes.Count));
             root.Q<Toggle>("mapRoutesToggle").value = false;
             Assert.That(controller.Map.VisibleRouteCount, Is.EqualTo(3));
             AssertUnchanged(before, saved);

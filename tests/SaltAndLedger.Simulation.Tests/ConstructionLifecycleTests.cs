@@ -264,7 +264,7 @@ public sealed class ConstructionLifecycleTests
             Assert.Equal(ScheduledProductionOutcome.Produced, slow.AdvanceDay().PrivateProduction.Single().Outcome);
             Assert.Equal(0, slow.Snapshot().Accounting.Companies[WorldIds.PlayerOwnerId].ConstructionExpenditure);
         }
-        var order = slow.ConstructFacility(WorldIds.PlayerOwnerId, WorldIds.North,
+        var order = slow.ConstructFacility(WorldIds.PlayerOwnerId, initial.IndustryBlueprints[WorldIds.BakeryBlueprint].EligiblePortIds[0],
             WorldIds.BakeryBlueprint, "new_player_bakery");
         Assert.Equal(ConstructionOutcome.Started, order.Construction.Single().Outcome);
         Assert.Equal(2, order.After.PrivateFacilities["new_player_bakery"].ConstructionDaysRemaining);

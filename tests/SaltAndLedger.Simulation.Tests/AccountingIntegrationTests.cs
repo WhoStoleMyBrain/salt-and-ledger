@@ -230,9 +230,15 @@ public sealed class AccountingIntegrationTests
     public void NinetyDaysOfEnterpriseAutomationReconcileAllCompaniesAndEveryHeldGood()
     {
         var world = RunScenario.Create(Content(), new RunIdentity(null, RunScenario.MerchantCharter, seed: 99));
-        world.ConstructFacility(WorldIds.PlayerOwnerId, WorldIds.West,
+        var bakeryPort = world.Snapshot().IndustryBlueprints[WorldIds.BakeryBlueprint].EligiblePortIds.First();
+        world.ConstructFacility(WorldIds.PlayerOwnerId, bakeryPort,
             WorldIds.BakeryBlueprint, Factory);
-        world.ConfigureWarehouse(WorldIds.PlayerOwnerId, WorldIds.West, ExpandingEconomyScenario.BakeryWarehousePolicy(true), world.Snapshot());
+        // This accounting witness accepts current generated prices; it tests finite paid flows,
+            // not the profitability of the old role-specific price thresholds.
+            world.ConfigureWarehouse(WorldIds.PlayerOwnerId, bakeryPort, new WarehousePolicy(800000,
+                new[] { new WarehouseCommodityRule("flour", true, 40000, 0, false, 0, 0),
+                    new WarehouseCommodityRule("logs", true, 40000, 0, false, 0, 0),
+                    new WarehouseCommodityRule("bread", false, 0, 0, true, 0, 0) }), world.Snapshot());
         var startingCash = world.Snapshot().TotalCash;
         for (var day = 0; day < 90; day++)
         {

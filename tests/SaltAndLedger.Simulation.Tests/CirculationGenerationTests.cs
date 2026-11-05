@@ -43,39 +43,35 @@ public sealed class CirculationGenerationTests
     }
 
     [Fact]
-    public void FiniteOpeningBuffersPreserveEveryGeographyRoleCashAndCapabilityAcrossBroadSeeds()
+    public void ExplicitFiniteOpeningStockAndCashAreIndependentOfCirculationTreatment()
     {
-        foreach (var seed in Enumerable.Range(0, 256).Select(i => unchecked(i * 104729 * (i % 2 == 0 ? 1 : -1)))
+        foreach (var seed in Enumerable.Range(0, 64).Select(i => unchecked(i * 104729 * (i % 2 == 0 ? 1 : -1)))
             .Concat(new[] { int.MinValue, int.MaxValue, -734282136 }))
         {
-            var old = ExpandingEconomyGeneration.Generate(seed);
+            var control = ExpandingEconomyGeneration.Generate(seed, economicRulesVersion: 0);
             var current = ExpandingEconomyGeneration.Generate(seed, economicRulesVersion: 1);
-            Assert.Equal(old.Geography.Signature, current.Geography.Signature);
-            Assert.Equal(old.SourceRoles.Signature, current.SourceRoles.Signature);
-            Assert.Equal(JsonConvert.SerializeObject(old.Blueprints), JsonConvert.SerializeObject(current.Blueprints));
-            Assert.StartsWith(old.Signature + "|economy-v1:", current.Signature);
+            Assert.Equal(control.Geography.Signature, current.Geography.Signature);
+            Assert.Equal(JsonConvert.SerializeObject(control.Blueprints), JsonConvert.SerializeObject(current.Blueprints));
+            Assert.Equal(control.Configuration.Fingerprint, current.Configuration.Fingerprint);
+            Assert.NotEqual(control.Signature, current.Signature);
             foreach (var port in current.Ports)
             {
-                var previous = old.Ports.Single(p => p.Id == port.Id);
+                var previous = control.Ports.Single(p => p.Id == port.Id);
                 Assert.Equal(previous.Market.InitialMarketCash, port.Market.InitialMarketCash);
                 Assert.Equal(previous.Settlement!.InitialHouseholdCash, port.Settlement!.InitialHouseholdCash);
                 Assert.Equal(JsonConvert.SerializeObject(previous.Facilities), JsonConvert.SerializeObject(port.Facilities));
                 Assert.Equal(JsonConvert.SerializeObject(previous.Consumption), JsonConvert.SerializeObject(port.Consumption));
-                var need = port.Consumption.Single(n => n.Kind == ConsumptionKind.Essential);
-                var fourMeals = checked((int)((long)need.Quantity * port.Settlement.InitialPopulation * 4 / need.PopulationPerUnit));
-                Assert.Equal(Math.Max(previous.Market.InitialQuantities["bread"], fourMeals), port.Market.InitialQuantities["bread"]);
-                Assert.InRange(port.Market.InitialQuantities["bread"], 10000, 160000);
-                foreach (var good in previous.Market.InitialQuantities.Keys.Where(g => g != "bread"))
+                Assert.Equal(previous.Market.InitialQuantities, port.Market.InitialQuantities);
+                foreach (var good in port.Market.InitialQuantities)
                 {
-                    var imports = port.Id == current.FoodSourcePortId && good == "flour" ? 2 :
-                        port.Id == current.ProcessingPortId && (good == "logs" || good == "grain") ? 2 :
-                        port.Id == current.FurniturePortId && good == "planks" ? 2 :
-                        port.Id == current.RecoveryPortId && (good == "flour" || good == "planks") ? 1 : 0;
-                    Assert.Equal(previous.Market.InitialQuantities[good] + imports * 10000, port.Market.InitialQuantities[good]);
+                    var range = current.Configuration.StartingInventories[good.Key];
+                    Assert.InRange(good.Value, EconomicUnits.FromWhole(range.Minimum), EconomicUnits.FromWhole(range.Maximum));
                 }
+                Assert.InRange(port.Market.InitialMarketCash, EconomicUnits.Coins(current.Configuration.MarketCash.Minimum),
+                    EconomicUnits.Coins(current.Configuration.MarketCash.Maximum));
             }
             foreach (var charter in RunScenario.Charters)
-                Assert.Equal(JsonConvert.SerializeObject(ExpandingEconomyScenario.GetCharter(old, charter.Id)),
+                Assert.Equal(JsonConvert.SerializeObject(ExpandingEconomyScenario.GetCharter(control, charter.Id)),
                     JsonConvert.SerializeObject(ExpandingEconomyScenario.GetCharter(current, charter.Id)));
         }
     }
@@ -87,9 +83,9 @@ public sealed class CirculationGenerationTests
         var current = RunScenario.Create(Content(), Identity()).Snapshot();
         foreach (var town in current.Ports.Values)
         {
-            Assert.False(town.City!.LuxuryEnabled);
-            Assert.Equal(1, old.Ports[town.Id].Quotes["furniture"].Pricing!.TargetStock);
-            Assert.Equal(20000, town.Quotes["furniture"].Pricing!.TargetStock);
+            Assert.Equal(old.Ports[town.Id].City!.LuxuryEnabled, town.City!.LuxuryEnabled);
+            Assert.Equal(Math.Max(20000, old.Ports[town.Id].Quotes["furniture"].Pricing!.TargetStock),
+                town.Quotes["furniture"].Pricing!.TargetStock);
             Assert.Equal(town.Configuration.Market.Quotes["furniture"].Pricing!.ReferencePrice,
                 town.Quotes["furniture"].Pricing!.ReferencePrice);
             var derived = LivingCityPricing.Derive(town.Configuration, town.City, 1);

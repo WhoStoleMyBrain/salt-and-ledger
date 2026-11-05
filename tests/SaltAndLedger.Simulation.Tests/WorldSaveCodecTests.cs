@@ -47,7 +47,7 @@ public sealed class WorldSaveCodecTests
     public void PendingIndustryAndWarehouseFifoContinueExactly(RunDifficulty difficulty)
     {
         var world = RunScenario.Create(Content(), Identity(RunWorldMode.ExpandingEconomy, difficulty: difficulty));
-        world.ConstructFacility(Owner, ExpandingEconomyGeneration.Generate(-42).ProcessingPortId, WorldIds.BakeryBlueprint, "saved_bakery");
+        world.ConstructFacility(Owner, ExpandingEconomyGeneration.Generate(-42).EligiblePorts("bake_bread")[0], WorldIds.BakeryBlueprint, "saved_bakery");
         world.ConfigureWarehouse(Owner, world.Snapshot().PrivateFacilities["saved_bakery"].PortId,
             ExpandingEconomyScenario.BakeryWarehousePolicy(), world.Snapshot());
         world.ExecuteWarehouseTrade(Owner, "saved_bakery", new TradeCommand(TradeDirection.Buy, "flour", EconomicUnits.FromWhole(3)));
@@ -100,15 +100,19 @@ public sealed class WorldSaveCodecTests
     [Fact]
     public void V3PendingFleetMintFactoriesSilverAndContractsHaveExactContinuation()
     {
-        var world = RunScenario.Create(Content(), Identity(RunWorldMode.ExpandingEconomy,
-            difficulty: RunDifficulty.SlowFoundations));
+        var world = RunScenario.Create(Content(), new RunIdentity(null, RunScenario.MerchantCharter, seed: -42,
+            difficulty: RunDifficulty.SlowFoundations, generationConfiguration: CommissionTestSettings.FiniteFood()));
         var economy = world.Snapshot().Economy!;
         var config = economy.Configuration;
+        Assert.Equal(TradeOutcome.Traded, world.ExecuteTrade(Ship, world.Snapshot().Ships[Ship].DockedPortId!,
+            new TradeCommand(TradeDirection.Buy, "planks", 30000)).Trades.Single().Trade.Outcome);
         world.CommissionMint(Owner);
         world.CommissionShip(Owner, config.ShipwrightPortId);
-        world.ConstructFacility(Owner, config.SilverPortId, ExpandingEconomyGeneration.SilverMineBlueprint, "save_silver_mine");
-        world.ConstructFacility(Owner, config.MintPortId, ExpandingEconomyGeneration.MillBlueprint, "save_mill");
-        world.Depart(Ship, config.SilverPortId);
+        var generation = ExpandingEconomyGeneration.Generate(-42);
+        var minePort = generation.EligiblePorts("mine_silver")[0];
+        world.ConstructFacility(Owner, minePort, ExpandingEconomyGeneration.SilverMineBlueprint, "save_silver_mine");
+        world.ConstructFacility(Owner, generation.EligiblePorts("mill_flour")[0], ExpandingEconomyGeneration.MillBlueprint, "save_mill");
+        if (world.Snapshot().Ships[Ship].DockedPortId != minePort) world.Depart(Ship, minePort);
         Assert.Single(world.Snapshot().Economy!.ShipOrders);
         Assert.Equal(MintStatus.UnderConstruction, world.Snapshot().Economy!.MintStatus);
         Assert.Equal(FacilityConstructionStatus.UnderConstruction, world.Snapshot().PrivateFacilities["save_silver_mine"].ConstructionStatus);
@@ -184,7 +188,8 @@ public sealed class WorldSaveCodecTests
     [Fact]
     public void FactoryRatesPrioritiesAndTownTradingResumeTheSameWholeBatchesAndFifo()
     {
-        var world = RunScenario.Create(Content(), Identity(RunWorldMode.ExpandingEconomy, RunScenario.IndustrialCharter));
+        var world = RunScenario.Create(Content(), new RunIdentity(null, RunScenario.IndustrialCharter, seed: -42,
+            generationConfiguration: CommissionTestSettings.FiniteFood()));
         var port = world.Snapshot().PrivateFacilities[RunScenario.StarterBakery].PortId;
         world.ConstructFacility(Owner, port, WorldIds.BakeryBlueprint, "second_bakery");
         world.ConfigureProduction(Owner, RunScenario.StarterBakery, true, 75, ProductionPriority.High, world.Snapshot());
@@ -202,7 +207,7 @@ public sealed class WorldSaveCodecTests
         Assert.Equal(50, world.Snapshot().PrivateFacilities["second_bakery"].ProductionCredit);
         var saved = WorldSaveCodec.Save(world);
         var json = JObject.Parse(saved);
-        Assert.Equal(6, (int)json["SchemaVersion"]!);
+        Assert.Equal(WorldSaveCodec.SchemaVersion, (int)json["SchemaVersion"]!);
         Assert.All(json["Facilities"]!, facility => Assert.Null(facility["Policy"]));
         Assert.Equal(4, json["CompanyStockpiles"]![0]!["Policy"]!["Rules"]!.Count());
         var resumed = WorldSaveCodec.Load(Content(), saved);
@@ -226,7 +231,8 @@ public sealed class WorldSaveCodecTests
     [Fact]
     public void AdmittedBlockedBatchSurvivesPausedSaveWithoutAccumulatingCredit()
     {
-        var world = RunScenario.Create(Content(), Identity(RunWorldMode.ExpandingEconomy, RunScenario.IndustrialCharter));
+        var world = RunScenario.Create(Content(), new RunIdentity(null, RunScenario.IndustrialCharter, seed: -42,
+            generationConfiguration: CommissionTestSettings.FiniteFood()));
         var port = world.Snapshot().PrivateFacilities[RunScenario.StarterBakery].PortId;
         world.ExecuteWarehouseTrade(Owner, RunScenario.StarterBakery, new TradeCommand(TradeDirection.Sell, "flour", 20000));
         world.ConfigureProduction(Owner, RunScenario.StarterBakery, true, 75, ProductionPriority.High, world.Snapshot());
@@ -257,7 +263,8 @@ public sealed class WorldSaveCodecTests
     [Fact]
     public void InvalidAutomationSaveFieldsAreRejectedEvenWithARecomputedChecksum()
     {
-        var world = RunScenario.Create(Content(), Identity(RunWorldMode.ExpandingEconomy, RunScenario.IndustrialCharter));
+        var world = RunScenario.Create(Content(), new RunIdentity(null, RunScenario.IndustrialCharter, seed: -42,
+            generationConfiguration: CommissionTestSettings.FiniteFood()));
         var port = world.Snapshot().PrivateFacilities[RunScenario.StarterBakery].PortId;
         world.ConfigureWarehouse(Owner, port, new WarehousePolicy(rules: new[]
         { new WarehouseCommodityRule("flour", true, 20000, 28, true, 30000, 30) }), world.Snapshot());
@@ -297,7 +304,7 @@ public sealed class WorldSaveCodecTests
         obsolete["SchemaVersion"] = 5;
         obsolete["Facilities"]![0]!["Policy"] = new JObject();
         var failure = Assert.Throws<WorldSaveException>(() => WorldSaveCodec.Load(Content(), obsolete.ToString(Formatting.None)));
-        Assert.Contains("schema 6", failure.Message);
+        Assert.Contains("schema 7", failure.Message);
         Assert.Same(snapshot, world.Snapshot());
     }
     private static void AdvanceBoth(RegionalWorldState first, RegionalWorldState second) =>
@@ -310,7 +317,7 @@ public sealed class WorldSaveCodecTests
         var before = world.Snapshot();
         var saved = WorldSaveCodec.Save(world);
         foreach (var damaged in new[] { "", saved[..^1], saved + " {}", saved.Replace("\"Day\":0", "\"Day\":1"),
-            saved.Replace("\"SchemaVersion\":6", "\"SchemaVersion\":99"),
+            saved.Replace("\"SchemaVersion\":7", "\"SchemaVersion\":99"),
             saved.Replace("\"Day\":0", "\"Day\":0,\"Day\":0"),
             saved.Replace("\"Day\":0", "\"Day\":0.0"),
             saved.Insert(1, "\"$type\":\"System.IO.FileInfo\","), saved.Insert(1, "\"unexpected\":0,") })

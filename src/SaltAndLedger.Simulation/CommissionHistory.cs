@@ -15,7 +15,7 @@ namespace SaltAndLedger.Simulation
             Ships = Array.AsReadOnly(ships.OrderBy(s => s.AcquisitionOrder).ToArray());
             Markets = Array.AsReadOnly(markets.OrderBy(m => m.PortId, StringComparer.Ordinal)
                 .ThenBy(m => m.GoodId, StringComparer.Ordinal).ToArray());
-            if (Ships.Count > 3 || Markets.Count > 28) throw new InvalidOperationException("Commission history exceeds its fixed world bounds.");
+            if (Ships.Count > 256 || Markets.Count > 16384) throw new InvalidOperationException("Commission history exceeds supported world bounds.");
         }
 
         internal static CommissionHistory Initial(IEnumerable<RegionalShipSnapshot> ships, string ownerId, long day) =>
@@ -34,7 +34,7 @@ namespace SaltAndLedger.Simulation
             ShipId = shipId; AcquisitionOrder = acquisitionOrder;
             Visits = new ReadOnlyDictionary<string, long>(new SortedDictionary<string, long>(
                 visits.ToDictionary(p => p.Key, p => p.Value), StringComparer.Ordinal));
-            if (Visits.Count > 4) throw new InvalidOperationException("A commission has four towns.");
+            if (Visits.Count > 256) throw new InvalidOperationException("Commission visit history exceeds supported world bounds.");
         }
     }
 
@@ -63,7 +63,7 @@ namespace SaltAndLedger.Simulation
             var index = ships.FindIndex(s => s.ShipId == shipId);
             if (index < 0)
             {
-                if (ships.Count == 3) throw new InvalidOperationException("Commission fleet exceeds three owned ships.");
+                if (ships.Count == 256) throw new InvalidOperationException("Commission fleet exceeds supported world bounds.");
                 ships.Add(new CommissionShipVisits(shipId, ships.Count, new Dictionary<string, long> { [portId] = day }));
                 return;
             }

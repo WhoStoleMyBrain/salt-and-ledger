@@ -20,6 +20,8 @@ namespace SaltAndLedger.Simulation
                     ContentVersion = identity.ContentVersion, ValuationVersion = identity.ValuationVersion,
                     CompanyStorageRules = identity.CompanyStorageRules, ItineraryVersion = identity.ItineraryVersion,
                     EconomicRulesVersion = identity.EconomicRulesVersion,
+                    GenerationConfiguration = Newtonsoft.Json.Linq.JObject.Parse(identity.GenerationConfiguration.ToJson()),
+                    GenerationConfigurationFingerprint = identity.GenerationConfigurationFingerprint,
                     Commission = identity.Commission == null ? null : new RegionalSaveCommissionPlan
                     {
                         Seed = identity.Commission.Seed, Version = identity.Commission.Version,

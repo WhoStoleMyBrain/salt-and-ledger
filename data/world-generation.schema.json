@@ -1,0 +1,417 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://salt-and-ledger.invalid/world-generation.schema.json",
+  "title": "Salt & Ledger world distribution configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "townCount": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 64
+        },
+        "max": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 64
+        }
+      },
+      "required": [
+        "min",
+        "max"
+      ]
+    },
+    "geography": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "width": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 10000
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 10000
+        },
+        "margin": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4999
+        },
+        "minimumTownSpacing": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 14000
+        },
+        "minimumLaneDistance": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 15000
+        },
+        "maximumLaneDistance": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 15000
+        },
+        "extraLaneCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 256
+        },
+        "candidateCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32
+        },
+        "placementAttempts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        }
+      },
+      "required": []
+    },
+    "enabledGoods": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*$"
+      }
+    },
+    "industries": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "industryId": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "publicTowns": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "min": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 64
+              },
+              "max": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 64
+              }
+            },
+            "required": [
+              "min",
+              "max"
+            ]
+          },
+          "privateTowns": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "min": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 64
+              },
+              "max": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 64
+              }
+            },
+            "required": [
+              "min",
+              "max"
+            ]
+          }
+        },
+        "required": [
+          "industryId",
+          "publicTowns",
+          "privateTowns"
+        ]
+      }
+    },
+    "enforceProductionSeparation": {
+      "type": "boolean"
+    },
+    "requireSupplyChains": {
+      "type": "boolean"
+    },
+    "population": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min": {
+          "type": "integer",
+          "minimum": 10,
+          "maximum": 5000
+        },
+        "max": {
+          "type": "integer",
+          "minimum": 10,
+          "maximum": 5000
+        }
+      },
+      "required": [
+        "min",
+        "max"
+      ]
+    },
+    "prosperity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "min",
+        "max"
+      ]
+    },
+    "marketCash": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "max": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "min",
+        "max"
+      ]
+    },
+    "householdCashPerResident": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "max": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        }
+      },
+      "required": [
+        "min",
+        "max"
+      ]
+    },
+    "startingInventories": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "min": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "max": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          }
+        },
+        "required": [
+          "min",
+          "max"
+        ]
+      }
+    },
+    "npc": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tradersPerTownPermille": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "minimumCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 128
+        },
+        "maximumCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 128
+        },
+        "startingCash": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "min": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000
+            },
+            "max": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000
+            }
+          },
+          "required": [
+            "min",
+            "max"
+          ]
+        },
+        "cargoCapacity": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "min": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "max": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            }
+          },
+          "required": [
+            "min",
+            "max"
+          ]
+        },
+        "speed": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        }
+      },
+      "required": []
+    },
+    "institutions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "startingPortIndex": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 63
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "mintPortIndex": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 63
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "silverPortIndex": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 63
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "shipyardPortIndex": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 63
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": []
+    },
+    "fleetLimit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 32
+    },
+    "deadlineDays": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 36500
+    },
+    "economicCandidateCount": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 64
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "townCount",
+    "geography",
+    "enabledGoods",
+    "industries",
+    "enforceProductionSeparation",
+    "requireSupplyChains",
+    "population",
+    "prosperity",
+    "marketCash",
+    "householdCashPerResident",
+    "startingInventories",
+    "npc",
+    "institutions"
+  ]
+}

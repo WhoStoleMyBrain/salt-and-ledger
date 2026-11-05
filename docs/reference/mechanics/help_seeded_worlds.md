@@ -8,13 +8,13 @@ title: "Seeded worlds and exact retries"
 
 Inspect the seeded economic map and retry the exact current run identity\.
 
-Current runs use Expanding Economy v3\. Enter an ASCII signed integer from\-2147483648 through2147483647, without spaces or separators\. The same seed retains exact geography and role draws; no world is repaired after observing strategy performance\.
+Generator4 creates 8–12 towns by default from a canonical validated configuration\. Enter an ASCII signed integer from \-2147483648 through 2147483647, without spaces or separators\. The same seed, configuration, content and generator version reproduce the same world\.
 
-Pure integer geography uses four separated jittered slots and six integer ceiling\-square\-root distances\. A separate bounded stream permutes food supply, processing, forest furniture and vulnerable coast roles\. Forest furniture needs imported Planks because it cannot build a Sawmill\.
+Bounded integer placement enforces spacing\. A minimum spanning tree connects every town, with additional configured lanes for loops\. Navigation follows the fastest physical connected path, including intermediate lanes\. Passing a town grants no dock visit or trade\.
 
-Identity includes seed, generator/content3, valuation1, pricing, charter, Ascension, objective draft, storage2, itinerary1 and circulation1\. Retry restores this original initial world\. Loading restores a saved position\.
+Public production and permitted private construction share recipe\-derived specialization\. A producer cannot share a town with another industry consuming its output\. Imports and stored goods remain legal\. Public/private counts, economic ranges, NPC density, institutions, fleet limit and deadline can be configured in a file\.
 
-Randomize or Reroll explicitly chooses another draft seed, shows the preview and waits for a separate start\. Menus and inspection never reroll\. Structural production paths do not guarantee perpetual solvency or victory\.
+Identity includes seed, generator4/content3, full generation configuration, valuation1, pricing, charter, Ascension, objective draft2, storage2, itinerary1 and circulation1\. Retry starts the same world; Load resumes the exact saved state\. Structural supply paths do not guarantee profitability or victory\.
 
 ## Related entries
 

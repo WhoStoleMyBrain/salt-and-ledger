@@ -9,7 +9,7 @@ from unittest.mock import patch
 from tools.content import ContentError, ROOT
 from tools.prepare_unity import (
     BUILT_DLL, GENERATED, MANIFEST, PROJECT, SIMULATION_DLL, SOURCE_CONTENT,
-    UNITY_CONTENT, UNITY_ENCYCLOPEDIA, ENCYCLOPEDIA_PATH, check_prepared, metadata_outputs, prepare,
+    UNITY_CONTENT, UNITY_ENCYCLOPEDIA, UNITY_GENERATION, SOURCE_GENERATION, GENERATION_SCHEMA, ENCYCLOPEDIA_PATH, check_prepared, metadata_outputs, prepare,
 )
 
 
@@ -18,7 +18,7 @@ class UnityPreparationTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
-        for path in (PROJECT, SOURCE_CONTENT, Path("data/content.schema.json"),
+        for path in (PROJECT, SOURCE_CONTENT, SOURCE_GENERATION, GENERATION_SCHEMA, Path("data/content.schema.json"),
                      Path("global.json"), Path("tools/content.py"), Path("tools/prepare_unity.py"),
                      PROJECT.parent / "packages.lock.json", ENCYCLOPEDIA_PATH,
                      Path("tools/generate_docs.py"), Path("tools/player_help.py"),
@@ -51,12 +51,13 @@ class UnityPreparationTests(unittest.TestCase):
         self.prepare()
         staged = {path.relative_to(self.root) for path in (self.root / GENERATED).rglob("*")
                   if path.is_file()}
-        expected = set(metadata_outputs()) | {SIMULATION_DLL, UNITY_CONTENT, UNITY_ENCYCLOPEDIA}
+        expected = set(metadata_outputs()) | {SIMULATION_DLL, UNITY_CONTENT, UNITY_ENCYCLOPEDIA, UNITY_GENERATION}
         expected.remove(Path(str(GENERATED) + ".meta"))
         self.assertEqual(expected, staged)
         self.assertEqual((self.root / BUILT_DLL).read_bytes(), (self.root / SIMULATION_DLL).read_bytes())
         self.assertEqual((self.root / SOURCE_CONTENT).read_bytes(), (self.root / UNITY_CONTENT).read_bytes())
         self.assertEqual((self.root / ENCYCLOPEDIA_PATH).read_bytes(), (self.root / UNITY_ENCYCLOPEDIA).read_bytes())
+        self.assertEqual((self.root / SOURCE_GENERATION).read_bytes(), (self.root / UNITY_GENERATION).read_bytes())
         self.assertEqual([], check_prepared(self.root))
         build = self.run.call_args_list[1].args[0]
         self.assertIn("-p:RestoreLockedMode=true", build)
@@ -120,6 +121,24 @@ class UnityPreparationTests(unittest.TestCase):
         self.prepare()
         self.assertEqual(source.read_bytes(), (self.root / UNITY_CONTENT).read_bytes())
         self.assertEqual([], check_prepared(self.root))
+
+    def test_generation_config_change_is_detected_and_restage_preserves_exact_bytes(self):
+        self.prepare()
+        source = self.root / SOURCE_GENERATION
+        source.write_bytes(source.read_bytes() + b"\n")
+        errors = "\n".join(check_prepared(self.root))
+        self.assertIn("Stale staging inputs", errors)
+        self.assertIn("Staged generation configuration differs", errors)
+        self.prepare()
+        self.assertEqual(source.read_bytes(), (self.root / UNITY_GENERATION).read_bytes())
+        self.assertEqual([], check_prepared(self.root))
+
+    def test_invalid_generation_configuration_prevents_build_or_staging(self):
+        (self.root / SOURCE_GENERATION).write_text('{"schemaVersion": 99}', encoding="utf-8")
+        with self.assertRaises(ContentError):
+            self.prepare()
+        self.run.assert_not_called()
+        self.assertFalse((self.root / GENERATED).exists())
 
     def test_invalid_canonical_content_prevents_build_or_staging(self):
         (self.root / SOURCE_CONTENT).write_text('{"schemaVersion": 99}', encoding="utf-8")

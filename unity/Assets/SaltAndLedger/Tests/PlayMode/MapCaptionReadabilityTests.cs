@@ -36,7 +36,7 @@ namespace SaltAndLedger.UnityHost.Tests
                 yield return null;
                 var captions = controller.Map.Query<Label>(className: "route-distance").ToList();
                 var markers = controller.Map.Query<Button>().ToList();
-                Assert.That(captions.Count, Is.EqualTo(6));
+                Assert.That(captions.Count, Is.EqualTo(controller.Session.Snapshot.Routes.Count));
                 for (var index = 0; index < markers.Count; index++)
                 {
                     var bounds = markers[index].worldBound;

@@ -163,7 +163,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(session.Snapshot.Day, Is.EqualTo(before.Day));
             Assert.That(session.Player.Cash, Is.EqualTo(before.Companies[ship.OwnerId].Cash - preview.TotalAmount));
             Click("closeTradeButton");
-            session.SelectShip(WorldIds.TimberShipId);
+            session.SelectShip(GeneratedWorldFixture.Npc(controller.Session.Snapshot));
             controller.OpenTrade(portId);
             Assert.That(Row(goodId).Q<Button>("rightArrow").enabledInHierarchy, Is.False);
             Assert.That(root.Q<Label>("tradeAvailabilityLabel").text, Does.Contain("NPC inspection only"));

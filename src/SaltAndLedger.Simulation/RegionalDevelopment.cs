@@ -47,7 +47,7 @@ namespace SaltAndLedger.Simulation
             var count = Ships.Values.Count(s => s.OwnerId == ownerId) + economy.ShipOrders.Count(s => s.OwnerId == ownerId);
             var outcome = count >= config.MaximumPlayerShips ? DevelopmentOutcome.FleetLimit :
                 Companies[ownerId].Cash < config.ShipCost ? DevelopmentOutcome.InsufficientFunds :
-                port.Inventory["planks"] < config.ShipPlanks ? DevelopmentOutcome.InsufficientStock : DevelopmentOutcome.Started;
+                port.Inventory[ExpandingEconomyConfiguration.ShipMaterialGoodId] < config.ShipPlanks ? DevelopmentOutcome.InsufficientStock : DevelopmentOutcome.Started;
             var completion = checked(Day + config.ShipConstructionDays);
             if (outcome == DevelopmentOutcome.Started)
             {
@@ -56,8 +56,8 @@ namespace SaltAndLedger.Simulation
             }
             return new DevelopmentAttempt(DevelopmentKind.ShipCommission, outcome, ownerId, portId,
                 "player_ship_" + economy.NextShipNumber.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                "planks", config.ShipPlanks, config.ShipCost, 0, config.ShipLaborPayment, completion,
-                outcome == DevelopmentOutcome.FleetLimit ? "The three-ship limit includes ships under construction." :
+                ExpandingEconomyConfiguration.ShipMaterialGoodId, config.ShipPlanks, config.ShipCost, 0, config.ShipLaborPayment, completion,
+                outcome == DevelopmentOutcome.FleetLimit ? "The configured " + config.MaximumPlayerShips.ToString(System.Globalization.CultureInfo.InvariantCulture) + "-ship limit includes ships under construction." :
                 outcome == DevelopmentOutcome.InsufficientFunds ? "Insufficient company cash for shipbuilding." :
                 outcome == DevelopmentOutcome.InsufficientStock ? "The shipwright needs actual local market Planks." :
                 "Payment and hull materials are charged once; the empty ship arrives after four days.");
@@ -69,7 +69,7 @@ namespace SaltAndLedger.Simulation
             if (quantity != config.SilverPerBatch) throw new ArgumentOutOfRangeException(nameof(quantity), "One authorized Silver batch per exchange.");
             var outcome = economy.MintStatus != MintStatus.Active || Day < economy.NextMintDay ? DevelopmentOutcome.NotReady :
                 economy.MintBatches >= config.MaximumMintBatches ? DevelopmentOutcome.Exhausted :
-                ship.Cargo["silver"] < quantity ? DevelopmentOutcome.InsufficientStock : DevelopmentOutcome.Completed;
+                ship.Cargo[ExpandingEconomyConfiguration.MintInputGoodId] < quantity ? DevelopmentOutcome.InsufficientStock : DevelopmentOutcome.Completed;
             if (outcome == DevelopmentOutcome.Completed)
             {
                 _ = checked(ship.Cash + config.SupplierSharePerBatch);
@@ -78,7 +78,7 @@ namespace SaltAndLedger.Simulation
                 _ = checked(Day + config.MintIntervalDays);
             }
             return new DevelopmentAttempt(DevelopmentKind.MintExchange, outcome, ship.OwnerId, config.MintPortId,
-                "royal_mint", "silver", quantity, config.SupplierSharePerBatch, config.TreasurySharePerBatch, 0, null,
+                "royal_mint", ExpandingEconomyConfiguration.MintInputGoodId, quantity, config.SupplierSharePerBatch, config.TreasurySharePerBatch, 0, null,
                 outcome == DevelopmentOutcome.NotReady ? "Mint construction or its batch interval has not completed." :
                 outcome == DevelopmentOutcome.Exhausted ? "The finite royal issuance authorization is exhausted." :
                 outcome == DevelopmentOutcome.InsufficientStock ? "Deliver one whole Silver aboard this ship." :
@@ -130,11 +130,12 @@ namespace SaltAndLedger.Simulation
         private void ValidateExpandingConfiguration(ExpandingEconomyConfiguration config)
         {
             if (!state.Ports.ContainsKey(config.MintPortId) || !state.Ports.ContainsKey(config.SilverPortId) ||
+                !state.Ports.ContainsKey(config.ShipwrightPortId) ||
                 state.Ports.Values.Any(p => p.City?.Configuration.QuantityScale != 10000))
                 throw new ArgumentException("V3 requires scaled living ports and valid public institutions.");
             foreach (var good in content.Goods)
                 if (!config.GoodsReferencePrices.ContainsKey(good.Id)) throw new ArgumentException("Missing reference price.");
-            content.GetGood("silver"); content.GetBuilding("royal_mint");
+            content.GetGood(ExpandingEconomyConfiguration.MintInputGoodId); content.GetBuilding("royal_mint");
             foreach (var contract in config.Contracts) { content.GetGood(contract.GoodId); _ = state.Ports[contract.PortId]; }
             foreach (var ship in state.Ships.Values)
                 if (ship.Cargo.Values.Any(q => q % 10000 != 0) || ship.CargoCapacity % 10000 != 0)
@@ -193,7 +194,7 @@ namespace SaltAndLedger.Simulation
                 Companies[ownerId].Cash = checked(Companies[ownerId].Cash - attempt.Payment);
                 port.Cash = checked(port.Cash + attempt.Payment - attempt.HouseholdAmount);
                 port.City!.ReceiveWage(attempt.HouseholdAmount);
-                port.Inventory.Commit(new Dictionary<string, int> { ["planks"] = checked(port.Inventory.GetQuantity("planks") - attempt.Quantity) });
+                port.Inventory.Commit(new Dictionary<string, int> { [ExpandingEconomyConfiguration.ShipMaterialGoodId] = checked(port.Inventory.GetQuantity(ExpandingEconomyConfiguration.ShipMaterialGoodId) - attempt.Quantity) });
                 CashTransfers.Add(new CityCashTransfer(CityCashTransferKind.Wage, ownerId, "households:" + portId, portId,
                     attempt.HouseholdAmount, attempt.AssetId));
                 economy.Orders.Add(new ShipConstructionOrder(attempt.AssetId!, ownerId, portId, Day, attempt.CompletionDay!.Value, attempt.Payment));
@@ -206,7 +207,7 @@ namespace SaltAndLedger.Simulation
                 var attempt = View().PreviewMintExchange(shipId, quantity); Development.Add(attempt);
                 if (attempt.Outcome != DevelopmentOutcome.Completed) return;
                 var economy = Economy!; var config = economy.Configuration; var ship = Ships[shipId];
-                RemoveDevelopmentCargo(ship, "silver", quantity);
+                RemoveDevelopmentCargo(ship, ExpandingEconomyConfiguration.MintInputGoodId, quantity);
                 Companies[attempt.OwnerId].Cash = checked(Companies[attempt.OwnerId].Cash + attempt.Payment);
                 economy.Treasury = checked(economy.Treasury + attempt.TreasuryAmount);
                 economy.Minted = checked(economy.Minted + config.CurrencyPerBatch);

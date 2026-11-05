@@ -49,7 +49,7 @@ namespace SaltAndLedger.Simulation
             if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
             if (policy == null) throw new ArgumentNullException(nameof(policy));
             var ship = snapshot.Ships[shipId];
-            snapshot.GetRoute(policy.OriginPortId, policy.DestinationPortId);
+            snapshot.GetPath(policy.OriginPortId, policy.DestinationPortId, snapshot.Ships[shipId].Configuration.Speed);
             ValidateLeg(snapshot, ship, policy.Outbound, policy.OriginPortId, policy.DestinationPortId);
             if (policy.ReturnLeg != null)
                 ValidateLeg(snapshot, ship, policy.ReturnLeg, policy.DestinationPortId, policy.OriginPortId);

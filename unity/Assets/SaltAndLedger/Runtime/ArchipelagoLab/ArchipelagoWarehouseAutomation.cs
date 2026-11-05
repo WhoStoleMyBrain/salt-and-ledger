@@ -247,6 +247,7 @@ namespace SaltAndLedger.UnityHost
         {
             if (!IndustryIsOpen || !industryWarehouseSelected || loadedWarehousePortId == null) return;
             var pool = LocalWarehouse(); if (pool == null) return;
+            if (!goodIds.Contains(selectedWarehouseGood)) selectedWarehouseGood = goodIds[0];
             var goodId = selectedWarehouseGood;
             var sell = warehouseSellSelected;
             var prefix = "warehouse" + (sell ? "Sell" : "Buy");

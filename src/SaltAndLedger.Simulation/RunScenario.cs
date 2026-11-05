@@ -60,7 +60,7 @@ namespace SaltAndLedger.Simulation
         {
             if (identity == null) throw new ArgumentNullException(nameof(identity));
             return ExpandingEconomyScenario.GetCharter(ExpandingEconomyGeneration.Generate(identity.Seed!.Value,
-                identity.GeneratorVersion, identity.LivingPricingMode, identity.EconomicRulesVersion), identity.CharterId);
+                identity.GeneratorVersion, identity.LivingPricingMode, identity.EconomicRulesVersion, identity.GenerationConfiguration), identity.CharterId);
         }
 
         public static IReadOnlyList<RunChallenge> Challenges { get; } = Array.AsReadOnly(new[] { GrandCommission.Definition });
@@ -79,7 +79,7 @@ namespace SaltAndLedger.Simulation
         {
             if (identity == null) throw new ArgumentNullException(nameof(identity));
             return ExpandingEconomyGeneration.Generate(identity.Seed!.Value, identity.GeneratorVersion,
-                identity.LivingPricingMode, identity.EconomicRulesVersion).Geography;
+                identity.LivingPricingMode, identity.EconomicRulesVersion, identity.GenerationConfiguration).Geography;
         }
     }
 

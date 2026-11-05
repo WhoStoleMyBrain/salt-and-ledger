@@ -85,7 +85,7 @@ namespace SaltAndLedger.Simulation
 
         internal static void ValidatePolicy(RegionalWorldSnapshot snapshot, string shipId, TradeRoutePolicy policy)
         {
-            snapshot.GetRoute(policy.OriginPortId, policy.DestinationPortId);
+            snapshot.GetPath(policy.OriginPortId, policy.DestinationPortId, snapshot.Ships[shipId].Configuration.Speed);
             // Disabled evaluation still validates canonical commodities and quotes.
             RoutePolicyEvaluator.Evaluate(Project(snapshot, shipId, policy), policy, false,
                 quantityStep: snapshot.QuantityScale);
@@ -97,7 +97,7 @@ namespace SaltAndLedger.Simulation
             return new MaritimeWorldSnapshot(snapshot.Day,
                 new[] { snapshot.Ports[policy.OriginPortId].Market, snapshot.Ports[policy.DestinationPortId].Market },
                 ship.OwnerId, ship.Cash, ship.Ship,
-                snapshot.GetRoute(policy.OriginPortId, policy.DestinationPortId).DurationDays(ship.Configuration.Speed));
+                snapshot.GetPath(policy.OriginPortId, policy.DestinationPortId, ship.Configuration.Speed).DurationDays);
         }
 
         public static string Explain(AutomationReason reason)

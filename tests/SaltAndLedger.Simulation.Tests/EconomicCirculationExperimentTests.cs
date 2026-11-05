@@ -41,7 +41,7 @@ public sealed class EconomicCirculationExperimentTests
     }
 
     [Fact]
-    public void HistoricalControlStaysUntouchedAndReversedModernReplayMatches()
+    public void DiagnosticRulesZeroUsesTheSameGeneratedWorldAndReversedModernReplayMatches()
     {
         var content = Content();
         var old = EconomicCirculationExperiments.RunCase(content, -42, LivingPricingMode.Coverage, false, 0, CirculationMode.None, 30);

@@ -36,6 +36,7 @@ namespace SaltAndLedger.UnityHost
 
         private RegionalWorldState world;
         private readonly ContentCatalog baseContent;
+        private readonly WorldGenerationConfiguration defaultGenerationConfiguration;
         private readonly List<ArchipelagoActivity> activity = new List<ArchipelagoActivity>();
         private readonly ReadOnlyCollection<ArchipelagoActivity> activityView;
         private readonly Dictionary<string, string> lastReasons = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -75,17 +76,18 @@ namespace SaltAndLedger.UnityHost
         public double PlaybackInterval => SecondsPerDay / PlaybackSpeed;
         public string LastStatus { get; private set; }
         public long CashChange => checked(Player.Cash - initialPlayerCash);
-        public ArchipelagoLabSession(ContentCatalog content)
+        public ArchipelagoLabSession(ContentCatalog content, WorldGenerationConfiguration generationConfiguration = null)
         {
             baseContent = content ?? throw new ArgumentNullException(nameof(content));
             Content = baseContent;
+            defaultGenerationConfiguration = generationConfiguration ?? WorldGenerationConfiguration.Default;
             activityView = activity.AsReadOnly();
             Reset();
         }
 
         public void Reset()
         {
-            var replacement = RunScenario.Create(baseContent, Identity ?? new RunIdentity(null, RunScenario.MerchantCharter));
+            var replacement = RunScenario.Create(baseContent, Identity ?? new RunIdentity(null, RunScenario.MerchantCharter, generationConfiguration: defaultGenerationConfiguration));
             InstallWorld(replacement, false);
         }
 
@@ -96,7 +98,7 @@ namespace SaltAndLedger.UnityHost
             ActivePlayerShipId = WorldIds.PlayerShipId;
             initialPlayerCash = Snapshot.Accounting.Companies[Player.OwnerId].InitialCash;
             LastSavedRevision = loaded ? Snapshot.Revision : (long?)null;
-            SelectedPortId = Player.DockedPortId ?? WorldIds.North;
+            SelectedPortId = Player.DockedPortId ?? Player.DestinationPortId ?? Snapshot.Ports.Keys.First();
             SelectedShipId = null;
             PendingDestinationId = null;
             NavigationArmed = false;
@@ -199,9 +201,13 @@ namespace SaltAndLedger.UnityHost
                 : "Inspecting " + ship.Name + ". NPC ships use their own accounts and policies.";
         }
 
-        public bool HasRoute(string from, string to) => Snapshot.Routes.Any(route =>
-            route.OriginPortId == from && route.DestinationPortId == to ||
-            route.OriginPortId == to && route.DestinationPortId == from);
+        public bool HasRoute(string from, string to)
+        {
+            if (from == to || !Snapshot.Ports.ContainsKey(from) || !Snapshot.Ports.ContainsKey(to)) return false;
+            try { return Snapshot.GetPath(from, to, Player.Configuration.Speed).Legs.Count > 0; }
+            catch (ArgumentException) { return false; }
+            catch (InvalidOperationException) { return false; }
+        }
 
         public void Play()
         {

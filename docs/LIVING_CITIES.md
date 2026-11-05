@@ -18,6 +18,6 @@ Grand Commission welfare cards use actual recent paid Bread and the greater curr
 
 ## Generation and circulation
 
-V3 preserves pure seeded geography and the domain-separated11-draw role permutation from LivingCityGeneration. Food source, processing, forest furniture and vulnerable coast have complementary industries, initial finite accounts and permitted private construction. Forest furniture cannot build Sawmills and needs imported Planks. Every seed has potential production paths, not a guaranteed winning or sustainable strategy.
+Generator4 distributes geographically correlated capabilities across the configured town count. Public production, private eligibility and starter grants share a recipe-derived direct dependency exclusion: a town producing an industry input cannot also host that consuming industry. Supply-chain validation requires potential sources in the connected world, while finite inventories and accounts preserve ordinary shortages. See [world generation](WORLD_GENERATION.md).
 
 Current circulation1 applies bounded real commercial fees and a four-day levy/relief review. Fee revenue splits between local market and households; fiscal transfers protect actual next food and ready payroll reserves. Modest initial role imports apply at creation only and never refill. Coverage quote parameters are fixed for the day and rederived from finite purchasing power at the next boundary. See [measured circulation](ECONOMIC_CIRCULATION_REVIEW.md) for exact rules, matched controls and counterexamples.

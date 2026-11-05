@@ -108,6 +108,15 @@ namespace SaltAndLedger.Simulation
                 if (blueprint.WagePerBatch > 0 && blueprint.EligiblePortIds.Any(id => locations.Single(p => p.Id == id).City == null))
                     throw new ArgumentException("Paid private industries require local households.");
             }
+            if (runIdentity?.GenerationConfiguration.EnforceProductionSeparation == true)
+                foreach (var port in locations)
+                {
+                    var capabilities = port.Facilities.Select(f => f.Configuration.Instance.RecipeId)
+                        .Concat(blueprints.Where(b => b.EligiblePortIds.Contains(port.Id)).Select(b => b.RecipeId)).ToArray();
+                    var conflict = ProductionSpecialization.Conflict(content, capabilities) ??
+                        (economy == null ? null : ProductionSpecialization.InstitutionConflict(content, capabilities, port.Id, economy));
+                    if (conflict != null) throw new ArgumentException("Invalid production capability at '" + port.Id + "': " + conflict);
+                }
             if (challenge != null)
             {
                 if (!accounts.ContainsKey(challenge.OwnerId) || !locations.Any(p => p.Id == challenge.PortId))
@@ -746,6 +755,16 @@ namespace SaltAndLedger.Simulation
                 var port = Ports[portId];
                 var blueprint = before.IndustryBlueprints[blueprintId];
                 if (!blueprint.EligiblePortIds.Contains(portId)) throw new InvalidOperationException("This industry cannot be built at this port.");
+                if (before.RunIdentity?.GenerationConfiguration.EnforceProductionSeparation == true)
+                {
+                    var capabilities = port.Facilities.Select(f => f.Configuration.Instance.RecipeId)
+                            .Concat(before.IndustryBlueprints.Values.Where(b => b.EligiblePortIds.Contains(portId)).Select(b => b.RecipeId))
+                            .Concat(PrivateFacilities.Values.Where(f => f.PortId == portId).Select(f => f.Blueprint.RecipeId))
+                            .Concat(new[] { blueprint.RecipeId }).ToArray();
+                    var conflict = ProductionSpecialization.Conflict(content, capabilities) ??
+                        (before.Economy == null ? null : ProductionSpecialization.InstitutionConflict(content, capabilities, portId, before.Economy.Configuration));
+                    if (conflict != null) throw new InvalidOperationException("Construction violates production separation at '" + portId + "': " + conflict);
+                }
                 if (PrivateFacilities.ContainsKey(facilityId) ||
                     Ports.Values.Any(p => p.Facilities.Any(f => f.Configuration.Instance.Id == facilityId)))
                     throw new ArgumentException("A facility with this ID already exists.");
@@ -1075,8 +1094,8 @@ namespace SaltAndLedger.Simulation
             {
                 var ship = Ships[shipId];
                 if (ship.Dock == null) throw new InvalidOperationException("A sailing ship cannot depart again.");
-                var route = before.GetRoute(ship.Dock, destinationPortId);
-                ship.Duration = route.DurationDays(ship.Configuration.Speed);
+                var path = before.GetPath(ship.Dock, destinationPortId, ship.Configuration.Speed);
+                ship.Duration = path.DurationDays;
                 ship.Remaining = ship.Duration;
                 ship.Origin = ship.Dock;
                 ship.Destination = destinationPortId;

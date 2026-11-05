@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using SaltAndLedger.Simulation;
 using Xunit;
 
@@ -15,7 +16,11 @@ public sealed class ExpandingDevelopmentTests
     private static RegionalWorldState Fixture(long cash = 30000000, long external = 12000000,
         IReadOnlyDictionary<string, int>? cargo = null, long initialDay = 0, long treasury = 0)
     {
-        var generation = ExpandingEconomyGeneration.Generate(42);
+        var json = JObject.Parse(WorldGenerationConfiguration.Default.ToJson());
+        json["startingInventories"]!["planks"]!["min"] = 20;
+        json["startingInventories"]!["planks"]!["max"] = 20;
+        var generation = ExpandingEconomyGeneration.Generate(42,
+            configuration: WorldGenerationConfiguration.Parse(json.ToString()));
         var config = ExpandingEconomyConfiguration.CreateDefault(generation.MintPortId, generation.SilverPortId);
         config = new ExpandingEconomyConfiguration(config.MintPortId, config.SilverPortId,
             config.Contracts, config.GoodsReferencePrices, external, treasury);

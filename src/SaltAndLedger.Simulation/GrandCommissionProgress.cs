@@ -66,13 +66,13 @@ namespace SaltAndLedger.Simulation
     public static class GrandCommission
     {
         public const string ChallengeId = "grand_commission";
-        public const long DeadlineDay = 180;
+        public const long DeadlineDay = 720;
         public const long MinimumCash = 1000000;
-        public static RunChallenge Definition { get; } = new RunChallenge(Create(WorldIds.East),
+        public static RunChallenge Definition { get; } = new RunChallenge(Create(ExpandingEconomyGeneration.Generate(42).RecoveryPortId),
             "Inspect the full seeded map, then choose four mandatory economic objectives in four rounds.",
-            "Complete all four drafted goals together by day 180, with at least 100 liquid company coins.");
-        public static ChallengeConfiguration Create(string targetPortId) => new ChallengeConfiguration(ChallengeId,
-            "The Grand Commission", WorldIds.PlayerOwnerId, targetPortId, "bread", 100, DeadlineDay,
+            "Complete all four drafted goals together by the configured deadline (720 days by default), with at least 100 liquid company coins.");
+        public static ChallengeConfiguration Create(string targetPortId, long deadlineDay = DeadlineDay) => new ChallengeConfiguration(ChallengeId,
+            "The Grand Commission", WorldIds.PlayerOwnerId, targetPortId, "bread", 100, deadlineDay,
             MinimumCash, ChallengeKind.GrandCommission);
 
         public static CommissionProgress Progress(RegionalWorldSnapshot world)
@@ -82,13 +82,17 @@ namespace SaltAndLedger.Simulation
             if (world.Economy == null || world.CommissionHistory == null) throw new InvalidOperationException("Commission requires its v3 economy and authoritative history.");
             var owner = world.Challenge?.Configuration.OwnerId ?? WorldIds.PlayerOwnerId;
             var owned = world.PrivateFacilities.Values.Where(f => f.OwnerId == owner).OrderBy(f => f.Id, StringComparer.Ordinal).ToArray();
-            // Every v3 Mill is legally in the sole processing town. Pick the most accomplished matching sites,
-            // then an actual Bakery elsewhere. These are the same two sites for ownership and funded batches.
-            var mill = owned.Where(f => f.Blueprint.RecipeId == "mill_flour").OrderByDescending(FundedBatches)
-                .ThenByDescending(f => f.IsOperational).ThenBy(f => f.Id, StringComparer.Ordinal).FirstOrDefault();
-            var bakery = owned.Where(f => f.Blueprint.RecipeId == "bake_bread" &&
-                    f.PortId != (mill?.PortId ?? ExpandingEconomyGeneration.Generate(plan.Seed).ProcessingPortId))
-                .OrderByDescending(FundedBatches).ThenByDescending(f => f.IsOperational).ThenBy(f => f.Id, StringComparer.Ordinal).FirstOrDefault();
+            // Choose the strongest actual distinct-town pair. With several mill locations, choosing
+            // the best mill in isolation can hide another complete, funded pair.
+            var pairs = (from millSite in owned.Where(f => f.Blueprint.RecipeId == "mill_flour")
+                         from bakerySite in owned.Where(f => f.Blueprint.RecipeId == "bake_bread" && f.PortId != millSite.PortId)
+                         select new { Mill = millSite, Bakery = bakerySite })
+                .OrderByDescending(p => p.Mill.IsOperational && p.Bakery.IsOperational && FundedBatches(p.Mill) > 0 && FundedBatches(p.Bakery) > 0)
+                .ThenByDescending(p => (p.Mill.IsOperational ? 1 : 0) + (p.Bakery.IsOperational ? 1 : 0))
+                .ThenByDescending(p => Math.Min(FundedBatches(p.Mill), FundedBatches(p.Bakery)))
+                .ThenBy(p => p.Mill.Id, StringComparer.Ordinal).ThenBy(p => p.Bakery.Id, StringComparer.Ordinal).FirstOrDefault();
+            var mill = pairs?.Mill ?? owned.FirstOrDefault(f => f.Blueprint.RecipeId == "mill_flour");
+            var bakery = pairs?.Bakery ?? owned.FirstOrDefault(f => f.Blueprint.RecipeId == "bake_bread" && f.PortId != mill?.PortId);
             return new CommissionProgress(plan.Goals.Select(goal => new CommissionGoalProgress(goal,
                 goal.Conditions.Select(condition => Evaluate(world, owner, owned, mill, bakery, condition)))));
         }

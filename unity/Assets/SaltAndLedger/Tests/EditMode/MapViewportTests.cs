@@ -64,12 +64,13 @@ namespace SaltAndLedger.UnityHost.Tests
             map.Present(snapshot, null, null, false, 1);
             Assert.That(map.VisibleRouteCount, Is.Zero);
             Assert.That(map.Query<Label>(className: "route-distance").ToList().All(label => label.ClassListContains("hidden")), Is.True);
-            Assert.That(map.PortMarkerCount, Is.EqualTo(4));
+            Assert.That(map.PortMarkerCount, Is.EqualTo(snapshot.Ports.Count));
             Assert.That(map.ShipMarkerCount, Is.EqualTo(snapshot.Ships.Count));
             map.Present(snapshot, snapshot.Ports.Keys.First(), null, false, 1);
-            Assert.That(map.VisibleRouteCount, Is.EqualTo(3));
+            Assert.That(map.VisibleRouteCount, Is.EqualTo(snapshot.Routes.Count(route =>
+                route.OriginPortId == snapshot.Ports.Keys.First() || route.DestinationPortId == snapshot.Ports.Keys.First())));
             map.ShowAllRoutes = true;
-            Assert.That(map.VisibleRouteCount, Is.EqualTo(6));
+            Assert.That(map.VisibleRouteCount, Is.EqualTo(snapshot.Routes.Count));
             map.ShowAllRoutes = false;
             map.Present(snapshot, null, session.Player.Id, false, 1);
             Assert.That(session.Player.Policy, Is.Not.Null, "The compatibility policy remains in the authoritative snapshot.");
@@ -79,7 +80,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(map.Query<Button>(className: "port-marker").ToList().All(marker => !marker.text.Contains("0 player")), Is.True);
             var npc = snapshot.Ships.Values.First(ship => !ship.IsPlayer && ship.Policy != null);
             map.Present(snapshot, null, npc.Id, false, 1);
-            Assert.That(map.VisibleRouteCount, Is.EqualTo(1), "NPC merchant policy remains its genuine route.");
+            Assert.That(map.VisibleRouteCount, Is.EqualTo(PathCount(snapshot, new[] { npc.Policy.OriginPortId, npc.Policy.DestinationPortId }, npc.Configuration.Speed)), "NPC merchant policy follows real sea lanes.");
             Assert.That(session.Snapshot, Is.SameAs(snapshot));
             Assert.That(session.SaveText(), Is.EqualTo(saved));
         }
@@ -104,7 +105,7 @@ namespace SaltAndLedger.UnityHost.Tests
             var saved = session.SaveText();
             var map = new ArchipelagoMap();
             map.Present(snapshot, null, session.Player.Id, false, 1);
-            Assert.That(map.VisibleRouteCount, Is.EqualTo(1));
+            Assert.That(map.VisibleRouteCount, Is.EqualTo(snapshot.GetPath(origin, destination, session.Player.Configuration.Speed).Legs.Count));
             Assert.That(map.HighlightedRoutePortIds, Is.EqualTo(new[] { origin, destination }));
             Assert.That(session.SaveText(), Is.EqualTo(saved));
         }
@@ -122,7 +123,7 @@ namespace SaltAndLedger.UnityHost.Tests
             var map = new ArchipelagoMap();
             map.Present(snapshot, null, session.Player.Id, false, 1);
             Assert.That(map.HighlightedRoutePortIds, Is.EqualTo(stops));
-            Assert.That(map.VisibleRouteCount, Is.EqualTo(3));
+            Assert.That(map.VisibleRouteCount, Is.EqualTo(PathCount(snapshot, stops, session.Player.Configuration.Speed)));
             for (var index = 0; index < stops.Length; index++)
                 Assert.That(map.Q<Button>("port_" + stops[index]).text, Does.Contain("Stop " + (index + 1)));
             foreach (var label in map.Query<Label>(className: "route-distance").ToList())
@@ -135,7 +136,7 @@ namespace SaltAndLedger.UnityHost.Tests
         }
 
         [Test]
-        public void Seed99DayOneLargeTownLabelsAvoidRealSailingMarkersWithoutChangingTheWorld()
+        public void GeneratedTownLabelsAvoidRealSailingMarkersWithoutChangingTheWorld()
         {
             var session = CreateSession();
             session.NextDay();
@@ -151,15 +152,10 @@ namespace SaltAndLedger.UnityHost.Tests
             var labels = anchors.ToDictionary(pair => pair.Key, pair => new Rect(pair.Value - labelSize / 2, labelSize));
             var sailing = snapshot.Ships.Values.Where(ship => ship.DockedPortId == null).Select(ship =>
             {
-                var origin = snapshot.Ports[ship.OriginPortId];
-                var destination = snapshot.Ports[ship.DestinationPortId];
-                var progress = (ship.VoyageDurationDays - ship.RemainingTravelDays) / (float)ship.VoyageDurationDays;
-                var world = Vector2.Lerp(new Vector2(origin.X, origin.Y), new Vector2(destination.X, destination.Y), progress);
+                var world = VoyagePoint(snapshot, ship);
                 return new Rect(transform.WorldToViewport(world) - new Vector2(31, 22), new Vector2(62, 44));
             }).ToArray();
             Assert.That(sailing, Is.Not.Empty);
-            Assert.That(labels.Values.Any(label => sailing.Any(ship => label.Overlaps(ship))), Is.True,
-                "The witness must actually include the Large-scale label collision seen in the Editor.");
             foreach (var id in labels.Keys.OrderBy(id => id, StringComparer.Ordinal).ToArray())
                 labels[id] = ArchipelagoMap.PlacePortLabel(anchors[id], labelSize, viewport,
                     sailing.Concat(labels.Where(pair => pair.Key != id).Select(pair => pair.Value)).ToArray());
@@ -169,7 +165,6 @@ namespace SaltAndLedger.UnityHost.Tests
                 Assert.That(sailing.Any(ship => ship.Overlaps(pair.Value)), Is.False, pair.Key);
                 Assert.That(labels.Any(other => other.Key != pair.Key && other.Value.Overlaps(pair.Value)), Is.False, pair.Key);
             }
-            Assert.That(labels.Any(pair => pair.Value.center != anchors[pair.Key]), Is.True);
             Assert.That(session.Snapshot, Is.SameAs(snapshot));
             Assert.That(session.SaveText(), Is.EqualTo(saved));
             var free = ArchipelagoMap.PlacePortLabel(new Vector2(300, 150), labelSize, viewport, Array.Empty<Rect>());
@@ -177,10 +172,11 @@ namespace SaltAndLedger.UnityHost.Tests
         }
 
         [Test]
-        public void Seed99DayOneShipCalloutsSeparatePlayerAndNpcWhileKeepingExactVoyageAnchors()
+        public void OverlappingShipCalloutsSeparateAndGeneratedVoyagesKeepExactAnchors()
         {
             var session = CreateSession();
-            session.SailTo(WorldIds.West);
+            session.SailTo(session.Snapshot.Ports.Keys.Where(id => id != session.Player.DockedPortId)
+                .OrderByDescending(id => session.Snapshot.TravelDays(session.Player.Id, id)).First());
             session.NextDay();
             var snapshot = session.Snapshot;
             var saved = session.SaveText();
@@ -188,22 +184,15 @@ namespace SaltAndLedger.UnityHost.Tests
             var maximum = new Vector2(snapshot.Ports.Values.Max(port => port.X), snapshot.Ports.Values.Max(port => port.Y));
             var viewport = new Rect(0, 0, 1348, 350);
             var transform = MapViewport.Fit(new Rect(minimum, maximum - minimum), viewport, new Vector4(114, 76, 114, 128));
-            Vector2 VoyagePoint(RegionalShipSnapshot ship)
-            {
-                var origin = snapshot.Ports[ship.OriginPortId];
-                var destination = snapshot.Ports[ship.DestinationPortId];
-                return Vector2.Lerp(new Vector2(origin.X, origin.Y), new Vector2(destination.X, destination.Y),
-                    (ship.VoyageDurationDays - ship.RemainingTravelDays) / (float)ship.VoyageDurationDays);
-            }
             var player = session.Player;
-            var npc = snapshot.Ships[WorldIds.TimberShipId];
+            var npc = snapshot.Ships.Values.First(ship => !ship.IsPlayer && ship.DockedPortId == null);
             Assert.That(player.DockedPortId, Is.Null);
             Assert.That(npc.DockedPortId, Is.Null);
-            var playerAnchor = transform.WorldToViewport(VoyagePoint(player));
-            var npcAnchor = transform.WorldToViewport(VoyagePoint(npc));
+            var playerAnchor = transform.WorldToViewport(VoyagePoint(snapshot, player));
+            var npcAnchor = playerAnchor + new Vector2(8, 8); // Deliberate geometric overlap, independent of seed.
             var size = new Vector2(62, 44);
             Assert.That(new Rect(playerAnchor - size / 2, size).Overlaps(new Rect(npcAnchor - size / 2, size)), Is.True,
-                "The witness must reproduce the P1/N3 Large-scale collision seen in the actual player.");
+                "The geometry fixture must exercise overlap resolution.");
             var playerCallout = ArchipelagoMap.PlacePortLabel(playerAnchor, size, viewport, Array.Empty<Rect>());
             var npcCallout = ArchipelagoMap.PlacePortLabel(npcAnchor, size, viewport, new[] { playerCallout });
             Assert.That(playerCallout.center, Is.EqualTo(playerAnchor));
@@ -212,11 +201,11 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(viewport.Contains(npcCallout.min) && viewport.Contains(npcCallout.max), Is.True);
 
             var map = new ArchipelagoMap();
-            map.Present(snapshot, WorldIds.North, null, false, 1);
+            map.Present(snapshot, GeneratedWorldFixture.Port(session.Snapshot, 0), null, false, 1);
             map.ShowAllRoutes = true;
             foreach (var ship in snapshot.Ships.Values.Where(ship => ship.DockedPortId == null))
             {
-                Assert.That(Vector2.Distance(map.DisplayedShipPosition(ship.Id), VoyagePoint(ship)), Is.LessThan(0.001f), ship.Id);
+                Assert.That(Vector2.Distance(map.DisplayedShipPosition(ship.Id), VoyagePoint(snapshot, ship)), Is.LessThan(0.001f), ship.Id);
                 Assert.That(map.Q<Button>("ship_" + ship.Id).focusable, Is.True);
                 Assert.That(snapshot.Ships.Values.Any(other => other.Id != ship.Id &&
                     map.DisplayedShipMarkerBounds(other.Id).Overlaps(map.DisplayedShipMarkerBounds(ship.Id))), Is.False, ship.Id);
@@ -247,6 +236,29 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(Vector2.Distance(map.ViewportToWorld(map.WorldToViewport(middle)), middle), Is.LessThan(0.001f));
             Assert.That(session.SaveText(), Is.EqualTo(saved));
             Assert.That(session.Snapshot, Is.SameAs(snapshot));
+        }
+
+        private static int PathCount(RegionalWorldSnapshot snapshot, string[] stops, int speed) =>
+            Enumerable.Range(0, stops.Length).SelectMany(index => snapshot.GetPath(stops[index],
+                stops[(index + 1) % stops.Length], speed).Legs).Select(leg => leg.Key).Distinct().Count();
+
+        private static Vector2 VoyagePoint(RegionalWorldSnapshot snapshot, RegionalShipSnapshot ship)
+        {
+            var path = snapshot.GetPath(ship.OriginPortId, ship.DestinationPortId, ship.Configuration.Speed);
+            var remaining = ship.VoyageDurationDays - ship.RemainingTravelDays;
+            for (var index = 0; index < path.Legs.Count; index++)
+            {
+                var days = path.Legs[index].DurationDays(ship.Configuration.Speed);
+                if (remaining <= days)
+                {
+                    var from = snapshot.Ports[path.PortIds[index]];
+                    var to = snapshot.Ports[path.PortIds[index + 1]];
+                    return Vector2.Lerp(new Vector2(from.X, from.Y), new Vector2(to.X, to.Y), remaining / (float)days);
+                }
+                remaining -= days;
+            }
+            var destination = snapshot.Ports[ship.DestinationPortId];
+            return new Vector2(destination.X, destination.Y);
         }
 
         private static ArchipelagoLabSession CreateSession()

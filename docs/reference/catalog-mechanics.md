@@ -18,7 +18,7 @@ These explanations are shared with the offline in-game encyclopedia. For exact d
 - [Expanding production chains](mechanics/help_expanding_industry.md) — Invest in real capacity and inspect the next finite bottleneck\.
 - [Owning a factory](mechanics/help_factories.md) — Set production enabled, operating rate and priority; trade through the town warehouse\.
 - [Financial reports and the ledger](mechanics/help_finances.md) — Separate cash, revenue, attributed costs, realized margin, and capital\.
-- [Commission and direct a fleet](mechanics/help_fleet_expansion.md) — Up to three owned ships share cash but keep separate cargo and routes\.
+- [Commission and direct a fleet](mechanics/help_fleet_expansion.md) — A configurable fleet of owned ships share cash but keep separate cargo and routes\.
 - [The Grand Commission and Objectives Journal](mechanics/help_grand_commission.md) — Read the seeded map, draft four mandatory goals, and track real economic accomplishments\.
 - [Market liquidity](mechanics/help_liquidity.md) — Stock and money are separate finite limits\.
 - [Commodity roles and twelve\-day signals](mechanics/help_market_signals.md) — Read local production, input needs and possible trade destinations without forecasting stock\.

@@ -17,7 +17,7 @@ internal static class EconomicCirculationExperiments
     private static readonly long[] CheckpointDays = { 30, 90, 140, 180, 365 };
     private const string Owner = WorldIds.PlayerOwnerId, Ship = WorldIds.PlayerShipId;
     private const string Farm = "circulation_farm", Mill = "circulation_mill", Bakery = "circulation_bakery", Camp = "circulation_camp";
-    private static readonly JsonSerializerOptions Options = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
+    private static readonly JsonSerializerOptions Options = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = false };
     private static int Q(int value) => EconomicUnits.FromWhole(value);
     private static long M(long value) => EconomicUnits.Coins(value);
     internal static string Json(object value) => System.Text.Json.JsonSerializer.Serialize(value, Options).Replace("\r\n", "\n");
@@ -36,7 +36,7 @@ internal static class EconomicCirculationExperiments
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
             File.WriteAllText(path, json, new UTF8Encoding(false));
         }
-        Console.WriteLine(FormattableString.Invariant($"Circulation: {report.Runs.Count} version1 A/B worlds + {report.HistoricalControls.Count} version0 controls; {report.PrimaryWorldDays} primary days in {timer.Elapsed.TotalSeconds:F3}s."));
+        Console.WriteLine(FormattableString.Invariant($"Circulation: {report.Runs.Count} version1 A/B worlds + {report.DiagnosticControls.Count} version0 controls; {report.PrimaryWorldDays} primary days in {timer.Elapsed.TotalSeconds:F3}s."));
         Console.WriteLine("Per-operation global/regional money, physical goods, company cash and FIFO checks passed; representative replay/culture and default-mode save continuations passed.");
         Console.WriteLine((check ? "Fresh report: " : "Wrote report: ") + path);
         return 0;
@@ -49,7 +49,7 @@ internal static class EconomicCirculationExperiments
         foreach (var pricing in new[] { LivingPricingMode.StockOnly, LivingPricingMode.Coverage })
         foreach (var managed in new[] { false, true })
         {
-            report.HistoricalControls.Add(RunCase(content, seed, pricing, managed, 0, CirculationMode.None, 365));
+            report.DiagnosticControls.Add(RunCase(content, seed, pricing, managed, 0, CirculationMode.None, 365));
             foreach (var arm in new[] { CirculationMode.None, CirculationMode.FeesOnly, CirculationMode.MunicipalOnly, CirculationMode.Combined })
                 report.Runs.Add(RunCase(content, seed, pricing, managed, 1, arm, 365));
         }
@@ -57,12 +57,12 @@ internal static class EconomicCirculationExperiments
         {
             var untreated = report.Runs.Single(r => r.Seed == row.Seed && r.Pricing == row.Pricing &&
                 r.Strategy == row.Strategy && r.Arm == CirculationMode.None.ToString());
-            var historical = report.HistoricalControls.Single(r => r.Seed == row.Seed && r.Pricing == row.Pricing && r.Strategy == row.Strategy);
+            var historical = report.DiagnosticControls.Single(r => r.Seed == row.Seed && r.Pricing == row.Pricing && r.Strategy == row.Strategy);
             Require(Json(row.Initial.Towns) == Json(untreated.Initial.Towns) && Json(row.Initial.Companies) == Json(untreated.Initial.Companies),
                 "Fiscal arms changed initial town endowments, quotes or company accounts.");
             report.Comparisons.Add(new { row.Seed, row.Pricing, row.Strategy, row.Arm,
                 VersusRevision1NoFiscal = Difference(row.Final, untreated.Final),
-                VersusUntouchedRevision0 = Difference(row.Final, historical.Final) });
+                VersusDiagnosticRules0 = Difference(row.Final, historical.Final) });
         }
         var reference = report.Runs.Single(r => r.Seed == 42 && r.Pricing == "Coverage" && r.Strategy == "managed" && r.Arm == "Combined");
         Require(Json(reference) == Json(RunCase(content, 42, LivingPricingMode.Coverage, true, 1, CirculationMode.Combined, 365, true)),
@@ -111,6 +111,10 @@ internal static class EconomicCirculationExperiments
         private readonly ContentCatalog content;
         private readonly ExpandingEconomyGeneration generation;
         private readonly bool managed;
+        private string FarmPort => generation.FirstEligiblePort("harvest_grain");
+        private string MillPort => generation.FirstEligiblePort("mill_flour");
+        private string BakeryPort => generation.FirstEligiblePort("bake_bread");
+        private string CampPort => generation.FirstEligiblePort("harvest_logs");
         private readonly List<string>? events;
         private readonly BigInteger initialAll, initialRegional;
 
@@ -119,24 +123,24 @@ internal static class EconomicCirculationExperiments
             this.content = content; World = world; this.managed = managed; this.events = events;
             var state = world.Snapshot(); var identity = state.RunIdentity!;
             generation = ExpandingEconomyGeneration.Generate(identity.Seed!.Value, pricingMode: identity.LivingPricingMode,
-                economicRulesVersion: identity.EconomicRulesVersion);
+                economicRulesVersion: identity.EconomicRulesVersion, configuration: identity.GenerationConfiguration, content: content);
             initialAll = state.TotalCash - state.Economy!.MintedCurrency;
             initialRegional = state.RegionalCash - state.Economy.MintedCurrency - state.Economy.ExternalNetInflow;
             Row = new Row { Seed = identity.Seed.Value, Pricing = identity.LivingPricingMode.ToString(),
                 Strategy = managed ? "managed" : "idle", EconomicRulesVersion = identity.EconomicRulesVersion,
-                Identity = identity.ComparisonGroup, Arm = state.Circulation?.Configuration.Mode.ToString() ?? "Historical",
+                Identity = identity.ComparisonGroup, Arm = state.Circulation?.Configuration.Mode.ToString() ?? "DiagnosticRules0",
                 Initial = Sample(state) };
         }
 
         internal void Initialize()
         {
             if (!managed) return;
-            Build(Farm, generation.FoodSourcePortId, ExpandingEconomyGeneration.FarmBlueprint,
+            Build(Farm, FarmPort, ExpandingEconomyGeneration.FarmBlueprint,
                 ExperimentWarehousePolicies.Sell("grain", M(100)));
-            Build(Mill, generation.ProcessingPortId, ExpandingEconomyGeneration.MillBlueprint, ExpandingEconomyScenario.MillWarehousePolicy());
-            Build(Bakery, generation.RecoveryPortId, WorldIds.BakeryBlueprint,
+            Build(Mill, MillPort, ExpandingEconomyGeneration.MillBlueprint, ExpandingEconomyScenario.MillWarehousePolicy());
+            Build(Bakery, BakeryPort, WorldIds.BakeryBlueprint,
                 ExperimentWarehousePolicies.RecoveryBakery(M(100)));
-            Build(Camp, generation.RecoveryPortId, ExpandingEconomyGeneration.LumberBlueprint,
+            Build(Camp, CampPort, ExpandingEconomyGeneration.LumberBlueprint,
                 ExperimentWarehousePolicies.Sell("logs", M(100)));
         }
 
@@ -161,13 +165,13 @@ internal static class EconomicCirculationExperiments
             Manage(Bakery, "bread", 24); Manage(Camp, "logs", 12);
             var ship = World.Snapshot().Ships[Ship];
             if (ship.AutomationEnabled || ship.DockedPortId == null) return;
-            if (ship.DockedPortId != generation.ProcessingPortId)
-                Apply(w => w.Depart(Ship, generation.ProcessingPortId));
+            if (ship.DockedPortId != MillPort)
+                Apply(w => w.Depart(Ship, MillPort));
             else
-                Apply(w => w.ConfigureIndustrialAutomation(Ship, new IndustrialRoutePolicy(generation.ProcessingPortId,
-                    generation.RecoveryPortId, new IndustrialRouteLeg("flour", Q(4), Q(1),
+                Apply(w => w.ConfigureIndustrialAutomation(Ship, new IndustrialRoutePolicy(MillPort,
+                    BakeryPort, new IndustrialRouteLeg("flour", Q(4), Q(1),
                         destinationKind: IndustrialEndpointKind.Warehouse, destinationFacilityId: Bakery, maximumBuyPrice: 22),
-                    new IndustrialRouteLeg("logs", Q(8), Q(1), maximumBuyPrice: 12, minimumSellPrice: 1),
+                    new IndustrialRouteLeg("bread", Q(4), Q(1), maximumBuyPrice: 50, minimumSellPrice: 1),
                     cashReserve: M(100), allowEmptyReturn: true), true));
         }
 
@@ -399,16 +403,17 @@ internal static class EconomicCirculationExperiments
 
     internal sealed class Report
     {
-        public int FormatVersion => 3;
+        public int FormatVersion => 4;
+        public int GeneratorVersion => ExpandingEconomyGeneration.CurrentVersion;
         public int QuantityScale => EconomicUnits.QuantityScale;
         public long MoneyScale => EconomicUnits.MoneyScale;
-        public string Methodology => "Four seeds, two pricing modes, idle/managed, four fiscal arms: 64 revision 1 worlds + 16 revision 0 pooled/itinerary controls, all using current factory/warehouse automation. Merchant charter, Ascension 0, Sandbox, 365 days. All new arms share revision 1 finite initial imports and Coverage floor. Each fiscal arm is compared with revision 1 None, holding buffers and the target floor fixed. None versus historical controls measures the buffer/floor package; Combined versus historical controls measures the full revision effect. The submitted seed shares geography and roles with the read-only fixture, not its Industrial/A1 charter or unknown command history. Fixed managed policy retains the documented Farm/Mill/Bakery/Lumber investments, marginal limits, cash controls and physical Flour/Logs shipping. Task2.8 consolidates local rules into one town warehouse: a sold input retains at least its buy target, and factory disablement leaves warehouse trading active. All factories retain100% Normal production; no prices or recipes are retuned. No Mint, external contracts, fabricated inventory/cash, per-seed rescue or outcome-driven tuning. All numeric goods/coins are raw 1/10,000; prices are coins per whole good. Quotes are hypothetical current-state player proposals, not permission to trade remotely. Checkpoints retain actual state only; no terminal fixture is advanced. Runtime is printed only. Positive company reference value and food consumed are not proof of universal or perpetual sustainability.";
+        public string Methodology => "Generator4 matched circulation experiments: four seeds, two pricing modes, idle/managed, four fiscal arms (64 rules1 worlds) plus16 diagnostic rules0 controls, all on the same modern generated geography and configuration. Merchant charter, Ascension0, Sandbox,365days. Fiscal arms share initial finite goods and accounts; no old four-town generation mode is retained. Managed facilities resolve canonical recipe eligibility, enforcing local producer/consumer separation. Every command audits money, physical goods, fees and FIFO; same-world reverse enumeration, culture replay and exact save continuation are checked. No Mint, external contracts, hidden inventory, subsidies or outcome-driven repair. Compact format4 preserves actual town-level economic checkpoints. Numeric goods/coins are raw1/10000; quotes are hypothetical current-state proposals, never remote trade permission. Positive value or food consumption does not establish indefinite sustainability.";
         public int[] Seeds => EconomicCirculationExperiments.Seeds;
         public int Horizon => 365;
-        public string ManagedPolicy => "At day 0 pay for food-source Farm, processor Mill, recovery Bakery and recovery Lumber Camp. Farm sells Grain; Processor warehouse buys Grain (target8, maximum24 coins) and sells Flour (reserve0, minimum6 coins). Recovery warehouse buys Logs (target3, maximum18 coins), sells Bread (reserve0, minimum1 coin) and sells only Logs above reserve3 (minimum1 coin), preventing a buy/sell cycle. Food-source warehouse sells Grain (reserve0, minimum1 coin). Town cash reserves are100 coins except processor80; disabling a factory leaves these local trading rules active. Enable each facility only with company cash >= 120 coins and public output stock below Grain 24 / Flour 12 / Bread 24 / Logs 12 respectively. Sail the initially empty Merchant ship to processor; apply one real Flour/Logs industrial route. Buy up to 4 Flour (minimum 1, maximum 22 coins), physically unload to recovery warehouse; buy up to 8 Logs (minimum 1, maximum 12 coins) there and sell at processor (minimum 1 coin). Route reserve 100 coins, empty returns allowed. No other ships, goods, direct stock assignments or cash interventions. These prescribed policies can still stall; checkpoints report that outcome.";
-        public long PrimaryWorldDays => Runs.Sum(r => r.Final.Day) + HistoricalControls.Sum(r => r.Final.Day);
+        public string ManagedPolicy => "At day0 pay for Farm, Mill, Bakery and Lumber Camp in their first ordinal eligible towns. Each input producer is separate from its direct consumer. Farm and Camp sell outputs; Mill buys Grain(target8,max24) and sells Flour(min6); Bakery buys Flour(target2,max30) and Logs(target3,max18) and sells Bread(min1). Actual warehouse rules combine safely if compatible facilities share a town. Reserves100coins except Mill80. Enable factories only with cash>=120 and public output below Grain24/Flour12/Bread24/Logs12. Physically position the Merchant at Mill, then ship up to4 Flour(min1,max22) into the Bakery warehouse and return up to4 Bread(min1,max50) to the Mill market. Route reserve100, empty returns allowed. No extra vessels or direct state assignments; finite stocks and purchasing power may stall this policy.";
+        public long PrimaryWorldDays => Runs.Sum(r => r.Final.Day) + DiagnosticControls.Sum(r => r.Final.Day);
         public List<Row> Runs { get; } = new();
-        public List<Row> HistoricalControls { get; } = new();
+        public List<Row> DiagnosticControls { get; } = new();
         public List<object> Comparisons { get; } = new();
         public List<string> Verification { get; } = new();
     }

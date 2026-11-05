@@ -19,7 +19,7 @@ namespace SaltAndLedger.Simulation
             {
                 var stop = policy.Stops[i];
                 var port = snapshot.Ports[stop.PortId];
-                snapshot.GetRoute(stop.PortId, policy.Stops[(i + 1) % policy.Stops.Count].PortId);
+                snapshot.GetPath(stop.PortId, policy.Stops[(i + 1) % policy.Stops.Count].PortId, ship.Configuration.Speed);
                 foreach (var command in stop.Commands)
                 {
                     _ = ship.Cargo[command.GoodId];
