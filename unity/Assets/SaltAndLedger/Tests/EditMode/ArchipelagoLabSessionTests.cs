@@ -22,14 +22,14 @@ namespace SaltAndLedger.UnityHost.Tests
         public void SelectionPlaybackConfigurationAndPauseAreEconomicallyPassive()
         {
             var before = session.Snapshot;
-            session.SelectPort(WorldIds.East);
-            session.SelectShip(WorldIds.TimberShipId);
+            session.SelectPort(GeneratedWorldFixture.Port(session.Snapshot, 2));
+            session.SelectShip(GeneratedWorldFixture.Npc(session.Snapshot));
             session.SetPlaybackSpeed(10);
             session.Play();
             session.Pause();
             Assert.That(session.Snapshot, Is.SameAs(before));
-            Assert.That(session.Snapshot.Ports.Count, Is.EqualTo(4));
-            Assert.That(session.Snapshot.Ships.Count, Is.EqualTo(4));
+            Assert.That(session.Snapshot.Ports.Count, Is.InRange(8, 12));
+            Assert.That(session.Snapshot.Ships.Count, Is.EqualTo(before.Ships.Count));
             Assert.That(session.IsPlaying, Is.False);
         }
 
@@ -50,8 +50,8 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(session.Snapshot.Day, Is.Zero);
             Assert.That(session.Snapshot.Revision, Is.EqualTo(2));
             Assert.That(session.Player.Cargo["logs"], Is.EqualTo(10000));
-            Assert.That(session.Snapshot.Ports[WorldIds.North].Facilities[0].NextDueDay,
-                Is.EqualTo(before.Ports[WorldIds.North].Facilities[0].NextDueDay));
+            Assert.That(session.Snapshot.Ports.Values.SelectMany(town => town.Facilities).Select(facility => facility.NextDueDay),
+                Is.EqualTo(before.Ports.Values.SelectMany(town => town.Facilities).Select(facility => facility.NextDueDay)));
         }
 
         [Test]
@@ -72,13 +72,13 @@ namespace SaltAndLedger.UnityHost.Tests
         public void VoyageNeedsPlayerSelectionAndConfirmation()
         {
             var before = session.Snapshot;
-            session.SelectShip(WorldIds.TimberShipId);
-            session.SelectPort(WorldIds.South);
+            session.SelectShip(GeneratedWorldFixture.Npc(session.Snapshot));
+            session.SelectPort(GeneratedWorldFixture.Destination(session.Snapshot));
             Assert.That(session.PendingDestinationId, Is.Null);
             Assert.Throws<InvalidOperationException>(() => session.Sail());
             session.SelectShip(WorldIds.PlayerShipId);
-            session.SelectPort(WorldIds.South);
-            Assert.That(session.PendingDestinationId, Is.EqualTo(WorldIds.South));
+            session.SelectPort(GeneratedWorldFixture.Destination(session.Snapshot));
+            Assert.That(session.PendingDestinationId, Is.EqualTo(GeneratedWorldFixture.Destination(session.Snapshot)));
             Assert.That(session.Snapshot, Is.SameAs(before));
             session.Sail();
             Assert.That(session.Snapshot.Day, Is.Zero);
@@ -89,9 +89,9 @@ namespace SaltAndLedger.UnityHost.Tests
         public void ConfiguredVoyageArrivesAfterWholeDaysAndAllowsImmediateTrade()
         {
             session.Trade(TradeDirection.Buy, "logs", 20000);
-            var days = session.Snapshot.TravelDays(session.Player.Id, WorldIds.South);
+            var days = session.Snapshot.TravelDays(session.Player.Id, GeneratedWorldFixture.Destination(session.Snapshot));
             session.SelectShip(session.Player.Id);
-            session.SelectPort(WorldIds.South);
+            session.SelectPort(GeneratedWorldFixture.Destination(session.Snapshot));
             session.Sail();
             Assert.That(session.Player.RemainingTravelDays, Is.EqualTo(days));
             for (var day = 1; day <= days; day++)
@@ -99,7 +99,7 @@ namespace SaltAndLedger.UnityHost.Tests
                 session.NextDay();
                 Assert.That(session.Player.RemainingTravelDays, Is.EqualTo(days - day));
             }
-            Assert.That(session.Player.DockedPortId, Is.EqualTo(WorldIds.South));
+            Assert.That(session.Player.DockedPortId, Is.EqualTo(GeneratedWorldFixture.Destination(session.Snapshot)));
             session.Trade(TradeDirection.Sell, "logs", 20000);
             Assert.That(session.Snapshot.Day, Is.EqualTo(days));
             Assert.That(session.Player.CargoUnits, Is.Zero);
@@ -111,18 +111,18 @@ namespace SaltAndLedger.UnityHost.Tests
             session.ApplyItinerary(new CargoItineraryPolicy("travel", new[] {
                 new CargoItineraryStop(session.Player.DockedPortId, new[] {
                     new CargoItineraryCommand(CargoItineraryCommandKind.BuyFromMarket, "bread", 10000) }),
-                new CargoItineraryStop(WorldIds.South, new[] {
+                new CargoItineraryStop(GeneratedWorldFixture.Destination(session.Snapshot), new[] {
                     new CargoItineraryCommand(CargoItineraryCommandKind.SellToMarket, "bread", 10000) }) }));
             session.SelectShip(session.Player.Id);
-            session.SelectPort(WorldIds.South);
-            Assert.That(session.PendingDestinationId, Is.EqualTo(WorldIds.South));
+            session.SelectPort(GeneratedWorldFixture.Destination(session.Snapshot));
+            Assert.That(session.PendingDestinationId, Is.EqualTo(GeneratedWorldFixture.Destination(session.Snapshot)));
             session.SetAutomationEnabled(true);
             session.RunDockside();
             Assert.That(session.PendingDestinationId, Is.Null);
             var duration = session.Player.RemainingTravelDays;
             for (var day = 0; day < duration; day++) session.NextDay();
             session.SetAutomationEnabled(false);
-            Assert.That(session.Player.DockedPortId, Is.EqualTo(WorldIds.South));
+            Assert.That(session.Player.DockedPortId, Is.EqualTo(GeneratedWorldFixture.Destination(session.Snapshot)));
             Assert.That(session.PendingDestinationId, Is.Null);
             Assert.Throws<InvalidOperationException>(() => session.Sail());
         }
@@ -162,7 +162,7 @@ namespace SaltAndLedger.UnityHost.Tests
         public void ScheduledEconomyAndNpcMovementAreObservedFromStructuredResults()
         {
             var first = session.NextDay();
-            Assert.That(first.Movements.Any(movement => movement.ShipId == WorldIds.TimberShipId &&
+            Assert.That(first.Movements.Any(movement => !session.Snapshot.Ships[movement.ShipId].IsPlayer &&
                 movement.Kind == ShipMovementKind.Departure), Is.True);
             Assert.That(session.Snapshot.DockedShips(session.Player.DockedPortId).Any(s => s.Id == session.Player.Id), Is.True);
             var results = Enumerable.Range(0, 5).Select(_ => session.NextDay()).ToArray();

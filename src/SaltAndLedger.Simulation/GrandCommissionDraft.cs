@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace SaltAndLedger.Simulation
 {
@@ -89,60 +90,69 @@ namespace SaltAndLedger.Simulation
     {
         public int Seed { get; }
         public int Version { get; }
+        [JsonIgnore]
+        public WorldGenerationConfiguration GenerationConfiguration { get; }
         public IReadOnlyList<GrandCommissionGoal> Goals { get; }
         public string Signature { get; }
-        internal GrandCommissionPlan(int seed, int version, IEnumerable<GrandCommissionGoal> goals)
+        internal GrandCommissionPlan(int seed, int version, IEnumerable<GrandCommissionGoal> goals, WorldGenerationConfiguration configuration)
         {
-            Seed = seed; Version = version; Goals = Array.AsReadOnly(goals.ToArray());
+            Seed = seed; Version = version; GenerationConfiguration = configuration; Goals = Array.AsReadOnly(goals.ToArray());
             var canonical = "grand-commission:" + version.ToString(CultureInfo.InvariantCulture) + ":" +
-                seed.ToString(CultureInfo.InvariantCulture) + "|" + string.Join("|", Goals.Select(g => g.CanonicalParameters));
+                seed.ToString(CultureInfo.InvariantCulture) + "|" + configuration.Fingerprint + "|" + string.Join("|", Goals.Select(g => g.CanonicalParameters));
             using (var hash = SHA256.Create())
                 Signature = string.Concat(hash.ComputeHash(Encoding.UTF8.GetBytes(canonical)).Select(b => b.ToString("x2", CultureInfo.InvariantCulture)));
         }
-        public static GrandCommissionPlan Restore(int seed, int version, IEnumerable<string> templateIds, string signature)
+        public static GrandCommissionPlan Restore(int seed, int version, IEnumerable<string> templateIds, string signature, WorldGenerationConfiguration? configuration = null)
         {
-            var plan = GrandCommissionDraft.Generate(seed, version).Resolve(templateIds);
+            var plan = GrandCommissionDraft.Generate(seed, version, configuration).Resolve(templateIds);
             if (!StringComparer.Ordinal.Equals(plan.Signature, signature)) throw new ArgumentException("Commission signature does not match its resolved objectives.", nameof(signature));
             return plan;
         }
-        public static GrandCommissionPlan Restore(int seed, int version, IEnumerable<GrandCommissionGoal> goals, string signature)
+        public static GrandCommissionPlan Restore(int seed, int version, IEnumerable<GrandCommissionGoal> goals, string signature, WorldGenerationConfiguration? configuration = null)
         {
             if (goals == null) throw new ArgumentNullException(nameof(goals));
             var supplied = goals.ToArray();
-            var plan = Restore(seed, version, supplied.Select(g => g.TemplateId), signature);
+            var plan = Restore(seed, version, supplied.Select(g => g.TemplateId), signature, configuration);
             if (!plan.Goals.Select(g => g.CanonicalParameters).SequenceEqual(supplied.Select(g => g.CanonicalParameters), StringComparer.Ordinal))
                 throw new ArgumentException("Commission parameters do not match the known versioned catalogue.", nameof(goals));
             return plan;
         }
-        public void Validate() => Restore(Seed, Version, Goals, Signature);
+        public void Validate() => Restore(Seed, Version, Goals, Signature, GenerationConfiguration);
     }
 
     /// <summary>Four independent salted streams; choosing an offer never consumes economic randomness.</summary>
     public sealed class GrandCommissionDraft
     {
-        public const int CurrentVersion = 1;
+        public const int CurrentVersion = 2;
         public int Seed { get; }
         public int Version { get; }
+        [JsonIgnore]
+        public WorldGenerationConfiguration GenerationConfiguration { get; }
         public IReadOnlyList<GrandCommissionRound> Rounds { get; }
-        private GrandCommissionDraft(int seed, int version)
+        private GrandCommissionDraft(int seed, int version, WorldGenerationConfiguration configuration)
         {
-            Seed = seed; Version = version;
-            var generation = ExpandingEconomyGeneration.Generate(seed);
+            Seed = seed; Version = version; GenerationConfiguration = configuration;
+            var generation = ExpandingEconomyGeneration.Generate(seed, configuration: configuration);
             var rounds = new List<GrandCommissionRound>();
             var titles = new[] { "Navigation / Fleet", "Production / Industry", "Markets / Commerce", "Civic / Capital Development" };
             foreach (CommissionCategory category in Enum.GetValues(typeof(CommissionCategory)))
             {
-                var salt = "salt-and-ledger:grand-commission:" + version.ToString(CultureInfo.InvariantCulture) + ":" + ((int)category).ToString(CultureInfo.InvariantCulture);
+                // The offer permutation stream remains stable; draft version 2 changes resolved world targets.
+                var salt = "salt-and-ledger:grand-commission:1:" + ((int)category).ToString(CultureInfo.InvariantCulture);
                 uint state = unchecked((uint)seed ^ 2166136261u);
                 foreach (var character in salt) state = unchecked((state ^ character) * 16777619u);
-                rounds.Add(new GrandCommissionRound(category, titles[(int)category], Catalog(category, generation), state));
+                var catalog = Catalog(category, generation).Where(goal => IsFeasible(goal, generation)).ToArray();
+                if (catalog.Length == 0)
+                    throw new ArgumentException("Generation configuration offers no structurally feasible " + category +
+                        " commission objectives. Enable the required production or choose Sandbox.", nameof(configuration));
+                rounds.Add(new GrandCommissionRound(category, titles[(int)category], catalog, state));
             }
             Rounds = Array.AsReadOnly(rounds.ToArray());
         }
-        public static GrandCommissionDraft Generate(int seed, int version = CurrentVersion)
+        public static GrandCommissionDraft Generate(int seed, int version = CurrentVersion, WorldGenerationConfiguration? configuration = null)
         {
             if (version != CurrentVersion) throw new ArgumentOutOfRangeException(nameof(version), "Unsupported mission draft version.");
-            return new GrandCommissionDraft(seed, version);
+            return new GrandCommissionDraft(seed, version, WorldGenerationConfiguration.Parse((configuration ?? WorldGenerationConfiguration.Default).ToJson()));
         }
         public GrandCommissionPlan Resolve(IEnumerable<string> templateIds)
         {
@@ -152,14 +162,137 @@ namespace SaltAndLedger.Simulation
             var goals = new GrandCommissionGoal[4];
             for (var i = 0; i < 4; i++) goals[i] = Rounds[i].Offers.SingleOrDefault(o => o.TemplateId == ids[i]) ??
                 throw new ArgumentException("The selected objective was not offered in its round.", nameof(templateIds));
-            return new GrandCommissionPlan(Seed, Version, goals);
+            return new GrandCommissionPlan(Seed, Version, goals, GenerationConfiguration);
+        }
+
+        private static bool IsFeasible(GrandCommissionGoal goal, ExpandingEconomyGeneration generation)
+        {
+            var content = GenerationContent.Catalog.ForExpandingEconomy();
+            var horizon = generation.Configuration.DeadlineDays;
+            var availableRecipes = content.Recipes.Where(r => generation.PublicPorts(r.Id).Count > 0 ||
+                generation.EligiblePorts(r.Id).Count > 0).ToArray();
+            const int unreachable = int.MaxValue / 4;
+            var travelTimes = new Dictionary<string, int>(StringComparer.Ordinal);
+            int Travel(string from, string to)
+            {
+                if (from == to) return 0;
+                var key = from + ":" + to;
+                if (!travelTimes.TryGetValue(key, out var days))
+                {
+                    days = SeaNavigation.FindPath(generation.Geography.Routes, from, to, RunScenario.StartingShipSpeed).DurationDays;
+                    travelTimes[key] = days; travelTimes[to + ":" + from] = days;
+                }
+                return days;
+            }
+            var supplyTimes = new Dictionary<string, int>(StringComparer.Ordinal);
+            int SupplyAt(string good, long quantity, string destination, HashSet<string> chain, bool excludeLocalStock = false)
+            {
+                var key = good + ":" + quantity.ToString(CultureInfo.InvariantCulture) + ":" + destination + ":" + excludeLocalStock;
+                if (chain.Count == 0 && supplyTimes.TryGetValue(key, out var cached)) return cached;
+                var local = generation.Ports.Single(p => p.Id == destination).Market.InitialQuantities;
+                if (!excludeLocalStock && local.TryGetValue(good, out var localStock) && localStock >= quantity) return 0;
+                if (!chain.Add(good)) return unreachable;
+                var best = unreachable;
+                foreach (var town in generation.Ports)
+                {
+                    var stock = !excludeLocalStock || town.Id != destination
+                        ? (town.Market.InitialQuantities.TryGetValue(good, out var amount) ? amount : 0) : 0;
+                    if (stock >= quantity) { best = Math.Min(best, Travel(town.Id, destination)); continue; }
+                    foreach (var recipe in availableRecipes.Where(r => r.Outputs.Any(o => o.GoodId == good) &&
+                        ((!excludeLocalStock || town.Id != destination) && generation.PublicPorts(r.Id).Contains(town.Id) || generation.EligiblePorts(r.Id).Contains(town.Id))))
+                    {
+                        var output = checked(recipe.Outputs.Where(o => o.GoodId == good).Sum(o => (long)o.Quantity) * EconomicUnits.QuantityScale);
+                        var batches = checked((quantity - stock + output - 1) / output);
+                        var inputReady = 0;
+                        foreach (var input in recipe.Inputs)
+                            inputReady = Math.Max(inputReady, SupplyAt(input.GoodId, checked(batches * input.Quantity * EconomicUnits.QuantityScale),
+                                town.Id, new HashSet<string>(chain, StringComparer.Ordinal)));
+                        if (inputReady == unreachable) continue;
+                        var intervals = town.Facilities.Where(f => f.Instance.RecipeId == recipe.Id && (!excludeLocalStock || town.Id != destination)).Select(f => (long)f.IntervalDays * batches)
+                            .Concat(generation.Blueprints.Where(b => b.RecipeId == recipe.Id && b.EligiblePortIds.Contains(town.Id)).Select(b => 2L + b.IntervalDays * batches));
+                        var ready = checked(inputReady + intervals.Min() + Travel(town.Id, destination));
+                        if (ready < best) best = (int)ready;
+                    }
+                }
+                if (chain.Count == 1) supplyTimes[key] = best;
+                return best;
+            }
+            bool Supply(string good, long quantity) => generation.Ports.Any(p =>
+                SupplyAt(good, quantity, p.Id, new HashSet<string>(StringComparer.Ordinal)) <= horizon);
+            bool Private(string recipeId, long batches = 1)
+            {
+                var blueprint = generation.Blueprints.FirstOrDefault(b => b.RecipeId == recipeId && b.EligiblePortIds.Count > 0);
+                if (blueprint == null) return false;
+                var recipe = content.GetRecipe(recipeId);
+                return blueprint.EligiblePortIds.Any(port => recipe.Inputs.Select(i => SupplyAt(i.GoodId,
+                    checked(batches * i.Quantity * EconomicUnits.QuantityScale), port, new HashSet<string>(StringComparer.Ordinal)))
+                    .DefaultIfEmpty(0).Max() + checked(2L + blueprint.IntervalDays * batches) <= horizon);
+            }
+            long VisitLowerBound(IEnumerable<string> requested)
+            {
+                var pending = requested.Distinct(StringComparer.Ordinal).OrderBy(id => id, StringComparer.Ordinal).ToList();
+                if (pending.Count < 2) return 0;
+                var reached = new List<string> { pending[0] };
+                pending.RemoveAt(0);
+                long total = 0;
+                while (pending.Count > 0)
+                {
+                    var edge = (from origin in reached from destination in pending
+                        select new { Destination = destination, Days = Travel(origin, destination) })
+                        .OrderBy(e => e.Days).ThenBy(e => e.Destination, StringComparer.Ordinal).First();
+                    total = checked(total + edge.Days);
+                    reached.Add(edge.Destination); pending.Remove(edge.Destination);
+                }
+                return total;
+            }
+            var minimumLeg = generation.Geography.Routes.Min(route => route.DurationDays(RunScenario.StartingShipSpeed));
+            if (goal.Id == "all_harbors" && VisitLowerBound(generation.Ports.Select(p => p.Id)) > horizon) return false;
+            int Delivered(string good, long quantity, string port) => SupplyAt(good, quantity, port, new HashSet<string>(StringComparer.Ordinal));
+            if (goal.Id == "second_command" && (generation.Configuration.FleetLimit < 2 ||
+                (long)Delivered("planks", 40000, generation.ShipyardPortId) + 4 +
+                    generation.Ports.Where(p => p.Id != generation.ShipyardPortId).Min(p => Travel(generation.ShipyardPortId, p.Id)) > horizon)) return false;
+            if (goal.Id == "new_industry" && !generation.EligiblePorts("mill_flour").Any(m => generation.EligiblePorts("bake_bread").Any(b => b != m))) return false;
+            if (goal.Id == "breadworks" && generation.EligiblePorts("bake_bread").Count < 2) return false;
+            if (goal.Id == "royal_institution" && Math.Max(4, Delivered("silver", 10000, generation.MintPortId)) > horizon) return false;
+            if (goal.Id == "royal_exporter")
+            {
+                var contracts = ExpandingEconomyConfiguration.CreateDefault(generation.MintPortId, generation.SilverPortId,
+                    generation.ShipyardPortId, generation.Configuration.FleetLimit, horizon, generation.Configuration.EnabledGoods).Contracts;
+                var receipts = goal.Conditions.Single(c => c.Rule == CommissionRule.ExportReceipts).Target;
+                if (!contracts.Any(contract =>
+                {
+                    var units = checked((receipts + contract.UnitPrice - 1) / contract.UnitPrice);
+                    var cargo = checked((units + EconomicUnits.QuantityScale - 1) / EconomicUnits.QuantityScale * EconomicUnits.QuantityScale);
+                    return cargo <= contract.Quantity && Delivered(contract.GoodId, cargo, contract.PortId) <= contract.DeadlineDay;
+                })) return false;
+            }
+            foreach (var condition in goal.Conditions)
+            {
+                if (condition.RecipeId != null && !Private(condition.RecipeId)) return false;
+                if (condition.Rule == CommissionRule.PrivateProduction && !generation.Blueprints.Any(b => content.GetRecipe(b.RecipeId).Outputs.Any(o =>
+                    o.GoodId == condition.GoodId && Private(b.RecipeId, checked((condition.Target + (long)o.Quantity * EconomicUnits.QuantityScale - 1) / ((long)o.Quantity * EconomicUnits.QuantityScale)))))) return false;
+                if (condition.Rule == CommissionRule.VisitedPorts && checked((condition.Target - 1) * minimumLeg) > horizon) return false;
+                if (condition.Rule == CommissionRule.NamedVisits && VisitLowerBound(condition.PortIds) > horizon) return false;
+                if (condition.Rule == CommissionRule.FoodObservations && horizon < condition.Target * 4) return false;
+                if ((condition.Rule == CommissionRule.NetMarketSales || condition.Rule == CommissionRule.PublicPlanks) &&
+                    SupplyAt(condition.GoodId!, condition.Target, condition.PortId!, new HashSet<string>(StringComparer.Ordinal),
+                        excludeLocalStock: condition.Rule == CommissionRule.NetMarketSales) > horizon) return false;
+                if (condition.Rule == CommissionRule.FoodCoverage)
+                {
+                    var population = generation.Ports.Single(p => p.Id == condition.PortId).Settlement!.InitialPopulation;
+                    if (!Supply("bread", checked((long)population * EconomicUnits.QuantityScale * 6 * condition.Target / 20 / 100))) return false;
+                }
+            }
+            return true;
         }
 
         private static GrandCommissionGoal[] Catalog(CommissionCategory category, ExpandingEconomyGeneration g)
         {
-            var coast = LivingCityGeneration.PortName(g.RecoveryPortId);
-            var forest = LivingCityGeneration.PortName(g.FurniturePortId);
-            var food = LivingCityGeneration.PortName(g.FoodSourcePortId);
+            string Name(string id) => g.Ports.Single(p => p.Id == id).Name;
+            var coast = Name(g.RecoveryPortId);
+            var forest = Name(g.FurniturePortId);
+            var food = Name(g.FoodSourcePortId);
+            var survey = new[] { g.RecoveryPortId, g.ProcessingPortId, g.FurniturePortId }.Distinct(StringComparer.Ordinal).ToArray();
             CommissionConditionDefinition C(string id, CommissionRule rule, string label, long target = 1,
                 CommissionSemantic semantic = CommissionSemantic.Current, CommissionUnit unit = CommissionUnit.Count,
                 string? port = null, string? role = null, string? good = null, string? recipe = null, string[]? ports = null) =>
@@ -175,12 +308,12 @@ namespace SaltAndLedger.Simulation
             switch (category)
             {
                 case CommissionCategory.Navigation: return new[] {
-                    G("all_harbors", "All Harbors", "Visit all four towns with owned ships. Your initial dock counts.", C("visits", CommissionRule.VisitedPorts, "Distinct towns visited", 4, CommissionSemantic.Cumulative)),
+                    G("all_harbors", "All Harbors", "Visit all " + g.Ports.Count + " generated towns with owned ships. Your initial dock counts.", C("visits", CommissionRule.VisitedPorts, "Distinct towns visited", g.Ports.Count, CommissionSemantic.Cumulative)),
                     G("second_command", "Second Command", "Own two completed ships and sail your second acquired ship to another town.", C("fleet", CommissionRule.CompletedShips, "Completed owned ships", 2), C("second_visits", CommissionRule.SecondShipVisits, "Second ship's distinct towns", 2, CommissionSemantic.Cumulative)),
                     G("regional_survey", "Regional Survey", "Visit the recovery, processing and forest towns with owned ships.", C("role_visits", CommissionRule.NamedVisits,
-                        "Visit " + string.Join(", ", new[] { g.RecoveryPortId, g.ProcessingPortId, g.FurniturePortId }.Select(LivingCityGeneration.PortName)), 3,
-                        CommissionSemantic.Cumulative, ports: new[] { g.RecoveryPortId, g.ProcessingPortId, g.FurniturePortId })),
-                    G("open_routes", "Open the Routes", "Visit three towns and retain positive net sales of a good at a town other than your initial dock. Buybacks reverse credit.", C("visits", CommissionRule.VisitedPorts, "Distinct towns visited", 3, CommissionSemantic.Cumulative), C("remote_sale", CommissionRule.RemoteNetSale, "Positive net sale away from initial town", 1, unit: CommissionUnit.Goods)) };
+                        "Visit " + string.Join(", ", survey.Select(Name)), survey.Length,
+                        CommissionSemantic.Cumulative, ports: survey)),
+                    G("open_routes", "Open the Routes", "Visit up to three towns and retain positive net sales of a good at a town other than your initial dock. Buybacks reverse credit.", C("visits", CommissionRule.VisitedPorts, "Distinct towns visited", Math.Min(3, g.Ports.Count), CommissionSemantic.Cumulative), C("remote_sale", CommissionRule.RemoteNetSale, "Positive net sale away from initial town", 1, unit: CommissionUnit.Goods)) };
                 case CommissionCategory.Industry: return new[] {
                     G("new_industry", "A New Industry", "Operate a private Mill and Bakery in different towns, each completing its own funded batch.",
                         C("mill", CommissionRule.NewIndustryMill, "Operational Mill in the selected pair", recipe: "mill_flour"),

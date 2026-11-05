@@ -39,6 +39,8 @@ namespace SaltAndLedger.Simulation
         public RunWorldMode WorldMode { get; set; }
         public int? Seed { get; set; }
         public int GeneratorVersion { get; set; }
+        public Newtonsoft.Json.Linq.JObject GenerationConfiguration { get; set; } = null!;
+        public string GenerationConfigurationFingerprint { get; set; } = "";
         public RunDifficulty Difficulty { get; set; }
         public LivingPricingMode PricingMode { get; set; }
         public int ContentVersion { get; set; }

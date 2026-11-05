@@ -135,7 +135,7 @@ namespace SaltAndLedger.UnityHost.Tests
         public IEnumerator DeadlineFailureShowsResultsAndCanStartAnotherCompanyWithoutReloadingScene()
         {
             BeginMerchant();
-            for (var day = 0; day < 180; day++) Click("nextDayButton");
+            for (var day = 0; day < controller.Session.Snapshot.Challenge.Configuration.DeadlineDay; day++) Click("nextDayButton");
             Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Results));
             Assert.That(root.Q<Label>("resultOutcome").text, Is.EqualTo("DEFEAT"));
             Assert.That(root.Q<Label>("resultScore").text, Does.Contain("Victory 0"));

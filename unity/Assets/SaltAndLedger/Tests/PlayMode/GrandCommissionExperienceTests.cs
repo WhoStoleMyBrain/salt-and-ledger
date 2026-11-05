@@ -44,7 +44,7 @@ namespace SaltAndLedger.UnityHost.Tests
             var original = controller.Session.Snapshot;
             OpenMap(42);
             Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.CommissionMap));
-            Assert.That(root.Q<ArchipelagoMap>("commissionPreviewMap").PortMarkerCount, Is.EqualTo(4));
+            Assert.That(root.Q<ArchipelagoMap>("commissionPreviewMap").PortMarkerCount, Is.InRange(8, 12));
             Assert.That(controller.CommissionPreview.Day, Is.Zero);
             Assert.That(controller.SetupIdentity.Commission, Is.Null);
             Assert.That(root.Q<Button>("commissionBeginButton").enabledSelf, Is.False);
@@ -71,7 +71,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.CommissionReview));
             var identity = controller.SetupIdentity;
             Assert.That(identity.Commission.Signature, Is.EqualTo(draft.Resolve(chosen).Signature));
-            Assert.That(root.Q<Label>("commissionReviewDeadline").text, Does.Contain("100").And.Contain("180"));
+            Assert.That(root.Q<Label>("commissionReviewDeadline").text, Does.Contain("100").And.Contain("720"));
             Click("commissionEdit0");
             Assert.That(root.Q<VisualElement>("commissionOffer_" + chosen[0]).ClassListContains("commission-selected"), Is.True);
             foreach (var offer in draft.Rounds[0].Offers)
@@ -92,7 +92,7 @@ namespace SaltAndLedger.UnityHost.Tests
                 Assert.That(actual.MarketCash, Is.EqualTo(port.MarketCash));
             }
             Assert.That(root.Q<Label>("challengeLabel").text.Split('\n').Length, Is.EqualTo(1));
-            Assert.That(root.Q<Label>("challengeLabel").text, Does.Contain("Objectives").And.Contain("180 days left").And.Contain("100"));
+            Assert.That(root.Q<Label>("challengeLabel").text, Does.Contain("Objectives").And.Contain("720 days left").And.Contain("100"));
             yield return null;
         }
 
@@ -108,7 +108,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(controller.Screen, Is.EqualTo(ArchipelagoScreen.Objectives));
             Assert.That(controller.Session.IsPlaying, Is.False);
             Assert.That(root.Q<VisualElement>("objectiveCards").childCount, Is.EqualTo(4));
-            Assert.That(root.Q<Label>("objectivesDeadline").text, Does.Contain("Day 180").And.Contain("100"));
+            Assert.That(root.Q<Label>("objectivesDeadline").text, Does.Contain("Day 720").And.Contain("100"));
             foreach (var bar in root.Q<VisualElement>("objectiveCards").Query<ProgressBar>().ToList())
                 Assert.That(bar.value, Is.InRange(0, 100));
             Cancel();

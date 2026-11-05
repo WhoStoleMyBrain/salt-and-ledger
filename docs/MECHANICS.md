@@ -22,9 +22,9 @@ Ascension0 builds immediately. Ascension1 pays on D, completes after voyages on 
 
 ## Physical shipping
 
-Routes have positive integer distances and speeds; duration is ceiling(distance/speed). Rendering never determines travel. Departure consumes no day; each AdvanceDay decrements voyage once. Committed arrival permits immediate dockside commands. A remote quote is informational. Enabled automation blocks mixed manual ship commands; pausing preserves cargo, voyage and progress.
+Direct lanes have positive integer distances and speeds. Navigation chooses the least-time connected path, with ordinal path tie-breaking; duration is the sum of ceiling(edge distance/speed) for its individual lanes. Intermediate passage grants no dock, trade or visit. Rendering never determines travel. Departure consumes no day; each AdvanceDay decrements voyage once. Committed arrival permits immediate dockside commands. A remote quote is informational. Enabled automation blocks mixed manual ship commands; pausing preserves cargo, voyage and progress.
 
-Current player itineraries and NPC research policies use the same ordinary trade/transfer/departure paths. See [automation](AUTOMATION.md). Fleet construction consumes real local Planks and payments; pending plus completed owned ships cannot exceed three.
+Current player itineraries and NPC research policies use the same ordinary trade/transfer/departure paths. See [automation](AUTOMATION.md). Fleet construction consumes real local Planks and payments; pending plus completed owned ships cannot exceed the configured fleet limit (three by default).
 
 ## Exact inventory-edge pricing
 
@@ -140,7 +140,7 @@ Material gross margin excludes wages and service fees; reports show these actual
 
 ## Current run outcomes
 
-Grand Commission is the sole scored challenge. Four typed drafted goals and100 liquid company coins must hold together by day180. Evaluation follows each atomic operation; success takes precedence on the deadline. Success/failure/abandonment freezes mutations. Sandbox has no deadline or score. Retry recreates the complete immutable identity; [schema6 saves](SAVES.md) restore exact state without stepping.
+Grand Commission is the sole scored challenge. Four typed drafted goals and100 liquid company coins must hold together by the configured deadline (day720 by default). Evaluation follows each atomic operation; success takes precedence on the deadline. Success/failure/abandonment freezes mutations. Sandbox has no deadline or score. Retry recreates the complete immutable identity; [schema7 saves](SAVES.md) restore exact state without stepping.
 
 One solvency point per10 coins is capped at100; victory adds1000; remaining-day points are10 per day capped at600. Grand Commission objective points are specified below. Starting grants are real endowments with zero paid basis, not fictitious purchases or earned profit.
 
@@ -168,13 +168,13 @@ Victory requires all four selected cards currently met, company cash at least 1,
 
 Private production comes from successful funded batches and existing output/payroll totals. A New Industry requires the same selected operational Mill and Bakery in distinct towns to each have a funded batch; a same-town starter Bakery cannot substitute. Welfare uses the recovery town's latest six actual need observations with the greater current/initial demand denominator. Current cash, value, welfare and net supply remain reversible; historical output, visits and public deliveries are cumulative. A conjunction card's percentage is its lowest condition percentage, each clamped to 0–100 after integer floor. New objective score is `floor(500 * sum(four card percentages) / 400)`; victory/time/solvency components are separate.
 
-The authored thresholds and stream algorithm are in [Grand Commission](GRAND_COMMISSION.md). Current schema6 restores the resolved plan and bounded history without reevaluation. Retry reconstructs the same complete identity from day zero.
+The authored thresholds and stream algorithm are in [Grand Commission](GRAND_COMMISSION.md). Current schema7 restores the resolved plan and bounded history without reevaluation. Retry reconstructs the same complete identity from day zero.
 
 ## Ordered cargo itinerary contract
 
 `CargoItineraryPolicy` version 1 applies only to player ships with explicit v3, pooled storage and `RunIdentity.ItineraryVersion == 1`. It contains 2–4 unique connected port stops, 1–8 commands per stop and at most 24 total. Each immutable command chooses BuyFromMarket, SellToMarket, LoadFromCompanyTownStock or UnloadToCompanyTownStock, a known good, positive whole-cargo maximum/minimum, and Skip or Wait below minimum. Buy/sell use the ordinary exact quote and finite accounts; transfers use the ordinary matching dock/owner/store path and move original FIFO slices without payment. The full user-facing limits and example are in [Automation](AUTOMATION.md#ordered-cargo-itineraries).
 
-Policy validation is structural: an owned company warehouse need not exist at a planned stop. Assignment, preview, execution and schema6 restoration accept such future logistics. Missing company storage is a normal `MissingCompanyStock` Skip/Wait blocker, never an exception or permission to create assets. Existing cargo/space constraints can take precedence. Once ordinary construction creates the real owned store, the unchanged instruction uses it. Structural route and actual-store accounting validation remain strict.
+Policy validation is structural: an owned company warehouse need not exist at a planned stop. Assignment, preview, execution and schema7 restoration accept such future logistics. Missing company storage is a normal `MissingCompanyStock` Skip/Wait blocker, never an exception or permission to create assets. Existing cargo/space constraints can take precedence. Once ordinary construction creates the real owned store, the unchanged instruction uses it. Structural route and actual-store accounting validation remain strict.
 
 An instruction selects the largest qualifying whole quantity, executes once per visit and advances, including a partial quantity above minimum. It is not a hold target or a retry-until-maximum order. Skip advances with no transaction; Wait retains the exact action and stops the chain. Unmentioned mixed cargo remains aboard. Each staged action reevaluates current stock, capacity, market/company cash, marginal threshold, purchase reserve/cap and warehouse reserve. No action executes remotely or grants public/private inventory interchangeably.
 
@@ -186,8 +186,8 @@ Current RunIdentity defaults to itinerary version1 and includes it in comparison
 
 ## Economic circulation revision 1
 
-New modern v3 identity selects economic rules1 (generator/content3, storage2, itinerary1). Explicit revision0 research controls are diagnostic only. The [complete circulation contract](ECONOMIC_CIRCULATION_REVIEW.md#revision-1-contracts) defines the only new transfers: a 2% ordinary company sale handling fee with cumulative per-company/town floor rounding and market/household split; and mutually exclusive bounded payroll levy or available-food relief every four days. Gross market affordability, exact prices and material FIFO remain authoritative. Fees are separate company expenses and household service receipts, never production wages.
+New modern v3 identity selects economic rules1 (generator4/content3, storage2, itinerary1). Explicit revision0 research controls are diagnostic only. The [complete circulation contract](ECONOMIC_CIRCULATION_REVIEW.md#revision-1-contracts) defines the only new transfers: a 2% ordinary company sale handling fee with cumulative per-company/town floor rounding and market/household split; and mutually exclusive bounded payroll levy or available-food relief every four days. Gross market affordability, exact prices and material FIFO remain authoritative. Fees are separate company expenses and household service receipts, never production wages.
 
 The daily phase inserts municipal review after actors/private procurement and before public production. Shadow production reserves one feasible upcoming public batch per enabled facility in normal order. The levy protects twice the next essential budget; relief protects ready payroll and requires real stock. Shortfall,12coins and10%unreserved payer cash bound each transfer. Next review dates and totals are part of the atomic state, including no-transfer reviews. Loading cannot repeat them. Existing Mint/external boundaries remain the only monetary expansion/inflow paths.
 
-Revision1 Coverage floors luxury targets at half the authored target, at least one whole good (Furniture2); it does not change eligibility or consumption. Initial public imports are finite: at least four initial Bread opportunities plus bounded role inputs. Historical pricing/generation is unchanged. `OperatingSurplusAfterExpenses = RealizedGrossMargin - WagesPaid - FeesPaid`; it excludes capital and Mint/public transactions. Fee prefixes and complete fiscal state are saved in schema6.
+Revision1 Coverage floors luxury targets at half the authored target, at least one whole good (Furniture2); it does not change eligibility or consumption. Initial public imports are finite: at least four initial Bread opportunities plus bounded role inputs. Historical pricing/generation is unchanged. `OperatingSurplusAfterExpenses = RealizedGrossMargin - WagesPaid - FeesPaid`; it excludes capital and Mint/public transactions. Fee prefixes and complete fiscal state are saved in schema7.

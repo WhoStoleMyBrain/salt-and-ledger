@@ -8,7 +8,7 @@ title: "Challenges and run outcomes"
 
 A challenge ends in victory, deadline defeat, or confirmed voluntary abandonment\.
 
-Grand Commission offers one choice from three cards in each of four deterministic category rounds, after exploring the full seeded map\. All four selected goals must be currently met by day180 alongside100 liquid company coins\. Sandbox has no objective deadline\.
+Grand Commission offers one choice from up to three feasible cards in each of four deterministic category rounds, after exploring the full seeded map\. All four selected goals must be currently met by the configured deadline \(day720 by default\) alongside100 liquid company coins\. Sandbox has no objective deadline\.
 
 The Journal distinguishes cumulative visits, actual funded production and public receipts from reversible net sales, welfare, ownership and value conditions\. Buying back a target\-market good reverses signed delivery credit\. Transfers and previews do not count as sales\.
 

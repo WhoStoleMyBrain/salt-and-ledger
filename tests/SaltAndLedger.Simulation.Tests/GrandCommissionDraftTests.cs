@@ -20,7 +20,7 @@ public sealed class GrandCommissionDraftTests
     [InlineData(int.MaxValue, "regional_survey,all_harbors,second_command|breadworks,timber_chain,new_industry|royal_exporter,flour_for_bakers,bread_for_coast|public_works,city_back_in_trade,prosperous_enterprise")]
     public void GoldenOffersHaveVersionedIndependentCategoryStreams(int seed, string expected)
     {
-        Assert.Equal(expected, Vector(GrandCommissionDraft.Generate(seed, 1)));
+        Assert.Equal(expected, Vector(GrandCommissionDraft.Generate(seed, GrandCommissionDraft.CurrentVersion)));
         var before = CultureInfo.CurrentCulture;
         try
         {
@@ -47,15 +47,15 @@ public sealed class GrandCommissionDraftTests
         var ids = draft.Rounds.Select(r => r.Offers[0].TemplateId).ToArray();
         var plan = draft.Resolve(ids);
         Assert.Equal(ids, plan.Goals.Select(g => g.TemplateId));
-        Assert.Equal(plan.Signature, GrandCommissionPlan.Restore(42, 1, ids, plan.Signature).Signature);
-        Assert.Throws<ArgumentOutOfRangeException>(() => GrandCommissionDraft.Generate(42, 2));
+        Assert.Equal(plan.Signature, GrandCommissionPlan.Restore(42, GrandCommissionDraft.CurrentVersion, ids, plan.Signature).Signature);
+        Assert.Throws<ArgumentOutOfRangeException>(() => GrandCommissionDraft.Generate(42, GrandCommissionDraft.CurrentVersion + 1));
         Assert.Throws<ArgumentException>(() => draft.Resolve(ids.Take(3)));
         Assert.Throws<ArgumentException>(() => draft.Resolve(ids.Concat(new[] { ids[0] })));
         Assert.Throws<ArgumentException>(() => draft.Resolve(Enumerable.Repeat(ids[0], 4)));
         Assert.Throws<ArgumentException>(() => draft.Resolve(new[] { "unknown", ids[1], ids[2], ids[3] }));
         Assert.Throws<ArgumentException>(() => draft.Resolve(new[] { draft.Rounds[0].Catalog.Single(c => !draft.Rounds[0].Offers.Contains(c)).TemplateId, ids[1], ids[2], ids[3] }));
-        Assert.Throws<ArgumentException>(() => GrandCommissionPlan.Restore(42, 1, ids, "forged"));
-        Assert.Throws<ArgumentException>(() => GrandCommissionPlan.Restore(99, 1, ids, plan.Signature));
+        Assert.Throws<ArgumentException>(() => GrandCommissionPlan.Restore(42, GrandCommissionDraft.CurrentVersion, ids, "forged"));
+        Assert.Throws<ArgumentException>(() => GrandCommissionPlan.Restore(99, GrandCommissionDraft.CurrentVersion, ids, plan.Signature));
     }
 
     [Fact]
@@ -100,7 +100,8 @@ public sealed class GrandCommissionDraftTests
         {
             var draft = GrandCommissionDraft.Generate(seed); var generation = ExpandingEconomyGeneration.Generate(seed);
             slates.Add(Vector(draft));
-            Assert.Equal(6, generation.Geography.Routes.Count);
+            Assert.InRange(generation.Ports.Count, 8, 12);
+            Assert.InRange(generation.Geography.Routes.Count, generation.Ports.Count - 1, generation.Ports.Count * (generation.Ports.Count - 1) / 2 - 1);
             foreach (var condition in draft.Rounds.SelectMany(r => r.Catalog).SelectMany(g => g.Conditions))
             {
                 if (condition.PortId != null) Assert.Contains(generation.Ports, p => p.Id == condition.PortId);

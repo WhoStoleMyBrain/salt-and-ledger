@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "townCount": {
+    "min": 10,
+    "max": 10
+  },
+  "geography": {
+    "width": 1000,
+    "height": 700,
+    "margin": 60,
+    "minimumTownSpacing": 110,
+    "minimumLaneDistance": 110,
+    "maximumLaneDistance": 330,
+    "extraLaneCount": 3,
+    "candidateCount": 12,
+    "placementAttempts": 1500
+  },
+  "enabledGoods": [
+    "bread",
+    "flour",
+    "furniture",
+    "grain",
+    "logs",
+    "planks",
+    "silver"
+  ],
+  "industries": [
+    {
+      "industryId": "bakery",
+      "publicTowns": {
+        "min": 1,
+        "max": 1
+      },
+      "privateTowns": {
+        "min": 1,
+        "max": 1
+      }
+    },
+    {
+      "industryId": "farm",
+      "publicTowns": {
+        "min": 1,
+        "max": 1
+      },
+      "privateTowns": {
+        "min": 1,
+        "max": 1
+      }
+    },
+    {
+      "industryId": "furniture_workshop",
+      "publicTowns": {
+        "min": 1,
+        "max": 1
+      },
+      "privateTowns": {
+        "min": 1,
+        "max": 1
+      }
+    },
+    {
+      "industryId": "lumber_camp",
+      "publicTowns": {
+        "min": 1,
+        "max": 1
+      },
+      "privateTowns": {
+        "min": 1,
+        "max": 1
+      }
+    },
+    {
+      "industryId": "mill",
+      "publicTowns": {
+        "min": 1,
+        "max": 1
+      },
+      "privateTowns": {
+        "min": 1,
+        "max": 1
+      }
+    },
+    {
+      "industryId": "sawmill",
+      "publicTowns": {
+        "min": 1,
+        "max": 1
+      },
+      "privateTowns": {
+        "min": 1,
+        "max": 1
+      }
+    },
+    {
+      "industryId": "silver_mine",
+      "publicTowns": {
+        "min": 1,
+        "max": 1
+      },
+      "privateTowns": {
+        "min": 1,
+        "max": 1
+      }
+    }
+  ],
+  "enforceProductionSeparation": true,
+  "requireSupplyChains": true,
+  "population": {
+    "min": 20,
+    "max": 60
+  },
+  "prosperity": {
+    "min": 40,
+    "max": 80
+  },
+  "marketCash": {
+    "min": 400,
+    "max": 700
+  },
+  "householdCashPerResident": {
+    "min": 20,
+    "max": 42
+  },
+  "startingInventories": {
+    "bread": {
+      "min": 8,
+      "max": 16
+    },
+    "flour": {
+      "min": 2,
+      "max": 8
+    },
+    "furniture": {
+      "min": 0,
+      "max": 2
+    },
+    "grain": {
+      "min": 4,
+      "max": 16
+    },
+    "logs": {
+      "min": 4,
+      "max": 18
+    },
+    "planks": {
+      "min": 2,
+      "max": 8
+    },
+    "silver": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  "npc": {
+    "tradersPerTownPermille": 500,
+    "minimumCount": 2,
+    "maximumCount": 24,
+    "startingCash": {
+      "min": 300,
+      "max": 500
+    },
+    "cargoCapacity": {
+      "min": 3,
+      "max": 6
+    },
+    "speed": 100
+  },
+  "institutions": {
+    "startingPortIndex": null,
+    "mintPortIndex": null,
+    "silverPortIndex": null,
+    "shipyardPortIndex": null
+  },
+  "fleetLimit": 3,
+  "deadlineDays": 720,
+  "economicCandidateCount": 16
+}

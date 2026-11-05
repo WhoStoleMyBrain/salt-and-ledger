@@ -554,9 +554,15 @@ public sealed class IndustryTests
         var reversed = RunScenario.Create(reversedContent, new RunIdentity(null, RunScenario.MerchantCharter, seed: 99));
         foreach (var world in new[] { forward, reversed })
         {
-            world.ConstructFacility(WorldIds.PlayerOwnerId, WorldIds.West,
+            var bakeryPort = world.Snapshot().IndustryBlueprints[WorldIds.BakeryBlueprint].EligiblePortIds.First();
+            world.ConstructFacility(WorldIds.PlayerOwnerId, bakeryPort,
                 WorldIds.BakeryBlueprint, Facility);
-            world.ConfigureWarehouse(WorldIds.PlayerOwnerId, WorldIds.West, ExpandingEconomyScenario.BakeryWarehousePolicy(true), world.Snapshot());
+            // This accounting witness accepts current generated prices; it tests finite paid flows,
+            // not the profitability of the old role-specific price thresholds.
+            world.ConfigureWarehouse(WorldIds.PlayerOwnerId, bakeryPort, new WarehousePolicy(800000,
+                new[] { new WarehouseCommodityRule("flour", true, 40000, 0, false, 0, 0),
+                    new WarehouseCommodityRule("logs", true, 40000, 0, false, 0, 0),
+                    new WarehouseCommodityRule("bread", false, 0, 0, true, 0, 0) }), world.Snapshot());
         }
         var expectedIds = forwardContent.ForExpandingEconomy().Goods.Select(g => g.Id).OrderBy(id => id, StringComparer.Ordinal).ToArray();
         for (var day = 0; day <= 12; day++)

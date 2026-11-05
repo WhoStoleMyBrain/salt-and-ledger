@@ -6,7 +6,7 @@ Salt & Ledger has one supported player world: Expanding Economy v3 with circulat
 
 `SaltAndLedger.Simulation` targets C#8 / netstandard2.1 and depends only on Newtonsoft.Json. It owns content validation, pure world generation, exact calculations, regional state and portable save serialization. It knows nothing about Unity, paths, screens or documentation generation. The demo and xUnit project target .NET10. Unity consumes its staged DLL and canonical content; Unity's pinned UPM Newtonsoft package is the sole JSON assembly.
 
-Canonical stable IDs live in `data/content.json`; structural validation uses `data/content.schema.json`. Python and C# semantic checks agree. `WorldIds` centralizes unchanged runtime town/actor/blueprint IDs. `ExpandingEconomyScenario` owns the current endowments and configurations. The base content scope and `ForExpandingEconomy()` extension remain explicit to keep validation and small recipe fixtures simple; player worlds always select the seven-good scope.
+Canonical stable IDs live in `data/content.json`; structural validation uses `data/content.schema.json`. Python and C# semantic checks agree. Generated towns use ordinal stable IDs. `WorldIds` retains actor/blueprint IDs and low-level fixture constants. `ExpandingEconomyScenario` owns the current endowments and configurations. The base content scope and `ForExpandingEconomy()` extension remain explicit to keep validation and small recipe fixtures simple; player worlds always select the seven-good scope.
 
 ## One atomic owner
 
@@ -18,7 +18,7 @@ Daily order is stable actor priority/ID; town warehouse buying; due fiscal revie
 
 ## Reused algorithms and bounded state
 
-`SeededArchipelago` is the pure integer geography stream; `LivingCityGeneration` supplies domain-separated role draws. Their names describe algorithm versions, not alternative player modes. V3 composes them without changing positions, distances or role signatures.
+`SeededArchipelago` creates bounded integer rejection-sampled geography and a minimum spanning tree with configured extra lanes. `ExpandingEconomyGeneration` assigns recipe-derived compatible public/private capabilities and finite economic endowments. `LivingCityGeneration` exposes the same modern configuration for shared callers; there is no separate four-town generator. Canonical JSON configuration and its fingerprint belong to run identity. See [world generation](WORLD_GENERATION.md).
 
 NPCs still use immutable two-port `TradeRoutePolicy` and stateless `RoutePolicyEvaluator`, via a detached `MaritimeWorldSnapshot`. There is no second mutable maritime world. `IndustrialRoutePolicy` remains for controlled current economic research. These algorithms use ordinary regional trades/transfers/voyages and are not exposed as alternate player route editors. Player automation uses bounded ordered `CargoItineraryPolicy` instructions, with authoritative progress and an eight-operation daily limit.
 
@@ -26,9 +26,9 @@ Small custom test worlds retain unscaled quantities, fixed prices and separate-s
 
 ## Identity, objectives and saves
 
-Identity includes seed, generator/content3, valuation1, pricing, charter, Ascension, commission draft/signature, storage2, itinerary1 and economic rules1. Retry recreates that identity; loading restores exact state. The typed Grand Commission evaluator derives current conditions and bounded cumulative visits/net-sale history from committed state. All four goals plus solvency are required; terminal runs freeze.
+Identity includes seed, generator4/content3, canonical generation configuration, valuation1, pricing, charter, Ascension, commission draft/signature, storage2, itinerary1 and economic rules1. Retry recreates that identity; loading restores exact state. The typed Grand Commission evaluator derives current conditions and bounded cumulative visits/net-sale history from committed state. All four goals plus solvency are required; terminal runs freeze.
 
-`WorldSaveCodec` accepts only schema6 and current rules. Strict bounded JSON, checksums, configuration/content fingerprints, ownership, lots, quantities, accounts, routes and history are validated before returning a reconstructed owner. The host installs it only after success. A few zero-valued fixed-challenge fields remain in the explicit save shape; they do not enable retired challenges. See [save policy](SAVES.md).
+`WorldSaveCodec` accepts only schema7 and current rules. Strict bounded JSON, checksums, configuration/content fingerprints, ownership, lots, quantities, accounts, routes and history are validated before returning a reconstructed owner. The host installs it only after success. A few zero-valued fixed-challenge fields remain in the explicit save shape; they do not enable retired challenges. See [save policy](SAVES.md).
 
 ## Unity and documentation
 

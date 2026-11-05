@@ -31,7 +31,12 @@ namespace SaltAndLedger.UnityHost
                 var canonical = Resources.Load<TextAsset>("CanonicalContent");
                 if (canonical == null)
                     throw new InvalidOperationException("Canonical content is missing. Run python tools/prepare_unity.py.");
-                Session = new ArchipelagoLabSession(ContentLoader.Load(canonical.text));
+                var generationAsset = Resources.Load<TextAsset>("WorldGeneration");
+                if (generationAsset == null)
+                    throw new InvalidOperationException("World generation configuration is missing. Run python tools/prepare_unity.py.");
+                defaultGenerationConfiguration = WorldGenerationConfiguration.Parse(generationAsset.text);
+                setupConfiguration = defaultGenerationConfiguration;
+                Session = new ArchipelagoLabSession(ContentLoader.Load(canonical.text), defaultGenerationConfiguration);
                 Map = new ArchipelagoMap();
                 Element<VisualElement>("mapContainer").Add(Map);
                 Map.PortSelected += SelectCommandPort;
@@ -68,7 +73,8 @@ namespace SaltAndLedger.UnityHost
 
         private void Bind()
         {
-            var goods = Session.Content.Goods.OrderBy(good => good.Id, StringComparer.Ordinal).ToArray();
+            var goods = Session.Content.Goods.Where(good => Session.Snapshot.Ports.Values.First().Quotes.ContainsKey(good.Id))
+                .OrderBy(good => good.Id, StringComparer.Ordinal).ToArray();
             goodIds.AddRange(goods.Select(good => good.Id));
             portIds.AddRange(Session.Snapshot.Ports.Keys.OrderBy(id => id, StringComparer.Ordinal));
             shipIds.AddRange(Session.Snapshot.Ships.Keys.OrderBy(id => id, StringComparer.Ordinal));
@@ -201,9 +207,10 @@ namespace SaltAndLedger.UnityHost
                 ship.RemainingTravelDays + "/" + ship.VoyageDurationDays + " days remain";
             if (destination != null && ship.DockedPortId != null)
             {
-                var route = Session.Snapshot.GetRoute(ship.DockedPortId, destination);
+                var route = Session.Snapshot.GetPath(ship.DockedPortId, destination, ship.Configuration.Speed);
                 text += "\nProposed: " + PortName(destination) + " · " + route.Distance + " distance units · " +
-                    Session.Snapshot.TravelDays(ship.Id, destination) + " days at speed " + ship.Configuration.Speed + ".";
+                    route.DurationDays + " days at speed " + ship.Configuration.Speed +
+                    (route.Legs.Count > 1 ? ". Via " + string.Join(" → ", route.PortIds.Skip(1).Take(route.PortIds.Count - 2).Select(PortName)) + ". Transit does not dock." : ".");
             }
             SetText("voyageLabel", text);
             var sail = Element<Button>("sailButton");

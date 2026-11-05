@@ -8,14 +8,23 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from tools.content import ContentError, DEFAULT_SOURCE, load_content
+from tools.world_generation import DEFAULT_WORLD, load_world_generation
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, default=DEFAULT_SOURCE)
+    parser.add_argument("--world-config", type=Path, help="Validate a custom generation configuration as well.")
     args = parser.parse_args()
     try:
         content = load_content(args.source)
+        # Alternate minimal content fixtures need not implement the complete player economy.
+        if args.world_config is not None:
+            load_world_generation(args.world_config, content)
+        elif args.source == DEFAULT_SOURCE:
+            load_world_generation(DEFAULT_WORLD, content)
+            for example in sorted((DEFAULT_WORLD.parent / "world-generation-examples").glob("*.json")):
+                load_world_generation(example, content)
     except (ContentError, OSError, UnicodeError) as error:
         print(f"Content validation failed: {error}", file=sys.stderr)
         return 1

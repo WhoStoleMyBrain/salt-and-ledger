@@ -48,7 +48,9 @@ public sealed class GrandCommissionAtomicTests
     public void LateDailyOverflowRollsBackStagedArrivalVisitAndEveryEarlierDailyPhase()
     {
         var world = OverflowFixture(long.MaxValue - 1, oneDayRoutes: true);
-        var destination = world.Snapshot().Ports.Keys.First(p => p != world.Snapshot().Ships[Ship].DockedPortId);
+        var origin = world.Snapshot().Ships[Ship].DockedPortId!;
+        var route = world.Snapshot().Routes.First(r => r.OriginPortId == origin || r.DestinationPortId == origin);
+        var destination = route.OriginPortId == origin ? route.DestinationPortId : route.OriginPortId;
         world.Depart(Ship, destination);
         var before = world.Snapshot();
         Assert.Equal(1, before.Ships[Ship].RemainingTravelDays);
@@ -60,56 +62,18 @@ public sealed class GrandCommissionAtomicTests
     }
 
     [Fact]
-    public void GenuineFinalHarborArrivalOnDay180WinsBeforeDeadlineFailureAndRestoresFrozen()
+    public void GenuineFinalHarborArrivalOnConfiguredDeadlineWinsBeforeFailureAndRestoresFrozen()
     {
-        var world = World();
-        var generation = ExpandingEconomyGeneration.Generate(42);
-        world.ConstructFacility(Owner, generation.RecoveryPortId, ExpandingEconomyGeneration.LumberBlueprint, "deadline_camp");
-        world.ConstructFacility(Owner, generation.ProcessingPortId, WorldIds.SawmillBlueprint, "deadline_sawmill");
-        world.ExecuteWarehouseTrade(Owner, "deadline_sawmill", new TradeCommand(TradeDirection.Buy, "logs", 80000));
-        world.ConstructFacility(Owner, generation.FurniturePortId, ExpandingEconomyGeneration.SilverMineBlueprint, "deadline_mine");
-        world.CommissionMint(Owner);
-        void Step()
-        {
-            world.AdvanceDay();
-            if (world.Snapshot().Challenge!.Status != ChallengeStatus.Active) return;
-            foreach (var facility in world.Snapshot().PrivateFacilities.Values.ToArray())
-                if (facility.Enabled && facility.BatchesProduced >= (facility.Id == "deadline_sawmill" ? 4 : 1))
-                    world.SetFacilityEnabled(Owner, facility.Id, false);
-        }
-        void Sail(string port)
-        {
-            world.Depart(Ship, port);
-            while (world.Snapshot().Ships[Ship].DockedPortId == null) Step();
-        }
-        Sail(generation.FurniturePortId);
-        while (world.Snapshot().PrivateFacilities["deadline_mine"].BatchesProduced == 0) Step();
-        world.TransferGoods(Owner, Ship, "deadline_mine", TransferDirection.WarehouseToShip, "silver", 10000);
-        Assert.Equal(TradeOutcome.Traded, world.ExecuteTrade(Ship, generation.FurniturePortId,
-            new TradeCommand(TradeDirection.Buy, "furniture", 10000)).Trades.Single().Trade.Outcome);
-        Sail(generation.ProcessingPortId);
-        world.FulfillExternalContract(Ship, "royal_furniture", 10000);
-        world.MintSilver(Ship);
-        while (world.Snapshot().PrivateFacilities["deadline_sawmill"].BatchesProduced < 4) Step();
-        Assert.Equal(3, GrandCommission.Progress(world.Snapshot()).CurrentlyMetCount);
-        Assert.Equal(3, world.Snapshot().CommissionHistory!.Ships.Single().Visits.Count);
-        var duration = world.Snapshot().GetRoute(generation.ProcessingPortId, generation.RecoveryPortId)
-            .DurationDays(world.Snapshot().Ships[Ship].Configuration.Speed);
-        while (world.Snapshot().Day < GrandCommission.DeadlineDay - duration) Step();
-        world.Depart(Ship, generation.RecoveryPortId);
-        while (world.Snapshot().Day < GrandCommission.DeadlineDay - 1) Step();
-        var pending = WorldSaveCodec.Save(world);
-        var resumed = WorldSaveCodec.Load(Content(), pending);
-        Assert.Equal(pending, WorldSaveCodec.Save(resumed));
-        Step(); resumed.AdvanceDay();
-        Assert.Equal(180, world.Snapshot().Day);
+        var world = GrandCommissionWitness.Victory(Content(), 42, finalArrivalDay: GrandCommission.DeadlineDay);
+        Assert.Equal(GrandCommission.DeadlineDay, world.Snapshot().Day);
+        Assert.Equal(GrandCommission.DeadlineDay, world.Snapshot().CommissionHistory!.Ships.Single().Visits.Values.Max());
         Assert.Equal(ChallengeStatus.Succeeded, world.Snapshot().Challenge!.Status);
         Assert.Equal(4, GrandCommission.Progress(world.Snapshot()).CurrentlyMetCount);
         Assert.True(world.Snapshot().Companies[Owner].Cash >= GrandCommission.MinimumCash);
         var terminal = WorldSaveCodec.Save(world);
+        var resumed = WorldSaveCodec.Load(Content(), terminal);
         Assert.Equal(terminal, WorldSaveCodec.Save(resumed));
-        Assert.Equal(terminal, WorldSaveCodec.Save(WorldSaveCodec.Load(Content(), terminal)));
-        Assert.Throws<InvalidOperationException>(() => resumed.Depart(Ship, generation.FoodSourcePortId));
+        Assert.Throws<InvalidOperationException>(() => resumed.Depart(Ship, resumed.Snapshot().Ports.Keys.First()));
         Assert.Throws<InvalidOperationException>(() => resumed.AdvanceDay());
         Assert.Throws<InvalidOperationException>(() => resumed.AbandonChallenge());
         Assert.Equal(terminal, WorldSaveCodec.Save(resumed));

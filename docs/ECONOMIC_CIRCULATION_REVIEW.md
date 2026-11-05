@@ -1,12 +1,14 @@
 # Measured economic circulation
 
+**Generator4 interpretation:** the current linked JSON is compact report format4, regenerated over configurable8–12-town worlds. Fiscal rules below remain authoritative, but the Task2.4/2.8 numerical tables and four-town role analysis are historical measurements of the previous generator. They are retained here to explain those interventions, not to predict the new world distribution. See [current experiments](EXPANDING_ECONOMY_EXPERIMENTS.md) and [Task3.1 verification](TASK-3.1-VERIFICATION.md) for current reproduction and evidence.
+
 Task 2.4 adds **economic rules revision 1** to newly started modern v3 runs. This is a measured circulation change, not a promise of permanent prosperity. The current supported game uses this revision. Older playable modes and save schemas are retired; explicit revision0 experiment controls remain diagnostic only. The baseline was `de3a80041404dca373e1ec77c5b5edf93c442f4c`, with Tasks 2.2 and 2.3 integrated.
 
 ## Supplied terminal fixture: observed facts
 
 The [sanitized source diagnostic](experiments/circulation-day140-diagnostic.json) records the supplied Grand Commission at day **140**, revision **535**, seed **−734282136**, Industrial charter, Ascension 1, Coverage. Its status is **Succeeded**. At the time of that study, the then-current codec loaded it, matched the report's full snapshot fingerprint and reproduced the original save bytes without running a simulation command. Original save/report hashes remained unchanged. The raw local save stays private and is not committed.
 
-This was a schema2 historical run with separate factory storage. The current schema6-only codec intentionally rejects that old raw save; the sanitized observations below remain useful economic rationale. Its cumulative accounts and six retained food observations do not constitute a complete time series. Quotes below are read-only proposals; terminal mutation remains prohibited.
+This was a schema2 historical run with separate factory storage. The current schema7-only codec intentionally rejects that old raw save; the sanitized observations below remain useful economic rationale. Its cumulative accounts and six retained food observations do not constitute a complete time series. Quotes below are read-only proposals; terminal mutation remains prohibited.
 
 | Town / role | Market coins | Household coins | Public Bread | Population / prosperity |
 | --- | ---: | ---: | ---: | ---: |
@@ -120,4 +122,4 @@ All initial, checkpoint and final snapshots independently reconcile unique compa
 
 ## Verification boundary
 
-The matched report and sanitized historical diagnosis preserve the rationale and measured economic outcomes; the pre-Task2.8 numerical baseline is labelled separately from the current report. See [Task2.8 verification](TASK-2.8-VERIFICATION.md) for current checks, Editor/player evidence and limitations. The old raw day140 save is unsupported by the schema6-only codec and was not mutated or converted.
+The matched report and sanitized historical diagnosis preserve the rationale and measured economic outcomes; the pre-Task2.8 numerical baseline is labelled separately from the current report. See [Task2.8 verification](TASK-2.8-VERIFICATION.md) for current checks, Editor/player evidence and limitations. The old raw day140 save is unsupported by the schema7-only codec and was not mutated or converted.

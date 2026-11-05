@@ -98,12 +98,12 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(session.Player.Id, Is.EqualTo("player_ship_2"));
             Assert.That(session.Snapshot.Ships[WorldIds.PlayerShipId].Policy, Is.SameAs(starter.Policy));
             Assert.That(session.Snapshot.Ships[WorldIds.PlayerShipId].AutomationEnabled, Is.False);
-            session.SelectShip(WorldIds.TimberShipId);
+            session.SelectShip(GeneratedWorldFixture.Npc(session.Snapshot));
             Assert.That(session.Player.Id, Is.EqualTo("player_ship_2"));
             session.SelectPort(economy.Configuration.ShipwrightPortId);
             session.SetAutomationEnabled(false);
             Assert.That(session.Snapshot.Ships["player_ship_2"].AutomationEnabled, Is.False);
-            Assert.That(session.Snapshot.Ships[WorldIds.TimberShipId].AutomationEnabled, Is.True);
+            Assert.That(session.Snapshot.Ships[GeneratedWorldFixture.Npc(session.Snapshot)].AutomationEnabled, Is.True);
             var saved = session.SaveText();
             session.LoadSaveText(saved);
             Assert.That(session.OwnedShips.Count, Is.EqualTo(2));

@@ -10,7 +10,7 @@ Finite outside purchases import cash; bounded Silver\-backed issuance creates it
 
 The external authority has one visible finite account\. A contract specifies goods, whole\-unit quantity, harbor, payment and deadline\. You must own and physically deliver its cargo there\. Delivered goods leave the region; payment moves existing authority cash into the company\. Completed quantities and spent funds never refill on expiry\.
 
-Exactly one processing\-role harbor hosts the public Royal Mint\. Commissioning pays the treasury once and starts its explicit construction delay\. The institution belongs to the region and never counts as Company Value\. The Silver Mine is in a different role, requiring real shipping\.
+A generated harbor hosts the public Royal Mint, separated from Silver\-producing towns\. Commissioning pays the treasury once and starts its explicit construction delay\. The institution belongs to the region and never counts as Company Value\. Silver must arrive through real shipping\.
 
 An active ready Mint accepts one physically delivered Silver from the selected docked owned ship\. That metal enters the public reserve and cannot be used twice\. The authored batch creates 80 coins, paying 60 to the supplier and 20 to the treasury, with four days between batches and at most 24 batches\. Silver material basis and Mint receipts remain separate from ordinary sale margin\.
 

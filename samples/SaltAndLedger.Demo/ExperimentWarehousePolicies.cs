@@ -27,6 +27,7 @@ internal static class ExperimentWarehousePolicies
         new WarehousePolicy(cashReserve, new[] { new WarehouseCommodityRule(good, false, 0, 0, enabled, 0, 1) });
 
     internal static WarehousePolicy RecoveryBakery(long cashReserve) => new WarehousePolicy(cashReserve,
-        new[] { new WarehouseCommodityRule("logs", true, EconomicUnits.FromWhole(3), 18, false, 0, 0),
+        new[] { new WarehouseCommodityRule("flour", true, EconomicUnits.FromWhole(2), 30, false, 0, 0),
+            new WarehouseCommodityRule("logs", true, EconomicUnits.FromWhole(3), 18, false, 0, 0),
             new WarehouseCommodityRule("bread", false, 0, 0, true, 0, 1) });
 }

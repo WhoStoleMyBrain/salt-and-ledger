@@ -52,7 +52,7 @@ namespace SaltAndLedger.Simulation
     {
         internal static void ValidateCounts(RegionalSaveData data)
         {
-            Count(data.Ports, 4, 4); Count(data.Ships, 1, 64); Count(data.Companies, 1, 64);
+            Count(data.Ports, 2, 256); Count(data.Ships, 1, 256); Count(data.Companies, 1, 256);
             Count(data.Facilities, 0, WorldSaveCodec.MaximumFacilities);
             if (data.CompanyStockpiles != null)
             {
@@ -63,11 +63,11 @@ namespace SaltAndLedger.Simulation
                     Count(stockpile.Policy.Rules, 0, 64);
                 }
             }
-            Count(data.Stores, 1, WorldSaveCodec.MaximumFacilities + 64);
+            Count(data.Stores, 1, WorldSaveCodec.MaximumFacilities + 256);
             if (data.Circulation != null)
             {
-                Count(data.Circulation.Commercial, 1, 256);
-                Count(data.Circulation.Towns, 4, 4);
+                Count(data.Circulation.Commercial, 1, 65536);
+                Count(data.Circulation.Towns, data.Ports.Length, data.Ports.Length);
             }
             foreach (var ship in data.Ships) ValidateItineraryCounts(ship);
             var total = 0;
@@ -84,10 +84,10 @@ namespace SaltAndLedger.Simulation
             if (data.Identity?.Commission != null) Count(data.Identity.Commission.Goals, 4, 4);
             if (data.CommissionHistory != null)
             {
-                Count(data.CommissionHistory.Ships, 1, 3);
-                Count(data.CommissionHistory.Markets, 0, 28);
+                Count(data.CommissionHistory.Ships, 1, 256);
+                Count(data.CommissionHistory.Markets, 0, checked(data.Ports.Length * 64));
                 foreach (var ship in data.CommissionHistory.Ships)
-                    Require(ship.Visits != null && ship.Visits.Count >= 1 && ship.Visits.Count <= 4,
+                    Require(ship.Visits != null && ship.Visits.Count >= 1 && ship.Visits.Count <= data.Ports.Length,
                         "Invalid bounded ship visit count.");
             }
         }
@@ -253,17 +253,26 @@ namespace SaltAndLedger.Simulation
                 (s.Itinerary == null ? 0 : 1) <= 1, "Ship has conflicting automation policies.");
             Require(!s.AutomationEnabled || s.Policy != null || s.IndustrialPolicy != null || s.Itinerary != null,
                 "Enabled ship has no policy.");
+            var earliestAcquisitionDay = initial.Ships.ContainsKey(s.Id) ? 0L :
+                initial.Economy!.Configuration.ShipConstructionDays;
+            long EarliestArrival(string port) => earliestAcquisitionDay +
+                (port == config.Ship.InitialPortId ? 0 : initial.GetPath(config.Ship.InitialPortId, port, config.Speed).DurationDays);
             if (s.Dock != null)
             {
                 Require(initial.Ports.ContainsKey(s.Dock) && s.Origin == null && s.Destination == null &&
-                    s.RemainingDays == 0 && (s.VoyageDays == 0 || initial.Routes.Any(r =>
-                        r.DurationDays(config.Speed) == s.VoyageDays)), "Invalid docked ship state.");
+                    s.RemainingDays == 0 && (s.VoyageDays == 0 ? s.Dock == config.Ship.InitialPortId : initial.Ports.Keys.Where(p => p != s.Dock).Any(p =>
+                        initial.GetPath(p, s.Dock!, config.Speed).DurationDays == s.VoyageDays)), "Invalid docked ship state.");
+                Require(day >= EarliestArrival(s.Dock) && s.VoyageDays <= day - earliestAcquisitionDay,
+                    "Ship cannot reach its saved dock before a physical voyage from its initial dock.");
             }
             else
             {
                 Require(s.Origin != null && s.Destination != null, "Voyage endpoints are missing.");
-                var duration = initial.GetRoute(s.Origin!, s.Destination!).DurationDays(config.Speed);
+                var duration = initial.GetPath(s.Origin!, s.Destination!, config.Speed).DurationDays;
                 Require(s.VoyageDays == duration && s.RemainingDays > 0 && s.RemainingDays <= duration, "Impossible voyage duration.");
+                var departureDay = day - (duration - s.RemainingDays);
+                Require(departureDay >= EarliestArrival(s.Origin!),
+                    "Ship voyage begins before it can physically reach its departure port.");
             }
             var cargo = Inventory(content, s.Cargo);
             Require(cargo.Values.All(q => q % initial.QuantityScale == 0), "Ship cargo must contain whole cargo units.");

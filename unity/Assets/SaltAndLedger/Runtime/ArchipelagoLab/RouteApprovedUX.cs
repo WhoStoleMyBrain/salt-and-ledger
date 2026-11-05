@@ -227,8 +227,8 @@ namespace SaltAndLedger.UnityHost
                 for (var i = 0; i < draft.Stops.Count; i++)
                 {
                     var a = draft.Stops[i].PortId; var b = draft.Stops[(i + 1) % draft.Stops.Count].PortId;
-                    var leg = Session.Snapshot.Routes.FirstOrDefault(route => route.OriginPortId == a && route.DestinationPortId == b || route.OriginPortId == b && route.DestinationPortId == a);
-                    if (leg == null) connected = false; else days += leg.DurationDays(ship.Configuration.Speed);
+                    if (!Session.HasRoute(a, b)) connected = false;
+                    else days += Session.Snapshot.GetPath(a, b, ship.Configuration.Speed).DurationDays;
                 }
             SetText("routePassageEstimate", draft.Stops.Count < 2 ? "Select towns on the chart · 2–4 unique ports" : connected
                 ? days + " sailing days per loop · port waits excluded" : "A required sea connection is missing");

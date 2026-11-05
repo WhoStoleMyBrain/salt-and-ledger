@@ -7,7 +7,7 @@ namespace SaltAndLedger.Simulation
 {
     internal static partial class RegionalSaveRestore
     {
-        internal static GrandCommissionPlan? RestoreCommissionPlan(RegionalSaveData data)
+        internal static GrandCommissionPlan? RestoreCommissionPlan(RegionalSaveData data, WorldGenerationConfiguration configuration)
         {
             var saved = data.Identity.Commission;
             if (saved == null)
@@ -20,7 +20,7 @@ namespace SaltAndLedger.Simulation
             Require(data.Identity.WorldMode == RunWorldMode.ExpandingEconomy &&
                 data.Identity.Seed == saved!.Seed, "Commission belongs to a different world.");
             Count(saved!.Goals, 4, 4);
-            var plan = GrandCommissionDraft.Generate(saved.Seed, saved.Version)
+            var plan = GrandCommissionDraft.Generate(saved.Seed, saved.Version, configuration)
                 .Resolve(saved.Goals.Select(g => g.TemplateId));
             Require(saved.Signature == plan.Signature, "Commission signature does not match the known draft.");
             for (var index = 0; index < plan.Goals.Count; index++)
@@ -43,8 +43,8 @@ namespace SaltAndLedger.Simulation
             if (history == null) return null;
             Require(economy != null && initial.RunIdentity?.Commission != null,
                 "Commission history requires an expanding run and its plan.");
-            Count(history.Ships, 1, 3);
-            Count(history.Markets, 0, 28);
+            Count(history.Ships, 1, initial.RunIdentity!.GenerationConfiguration.FleetLimit);
+            Count(history.Markets, 0, checked(initial.Ports.Count * content.Goods.Count));
             var owner = initial.Challenge!.Configuration.OwnerId;
             var owned = ships.Where(s => s.IsPlayer && s.OwnerId == owner).ToArray();
             SameIds(history.Ships.Select(s => s.ShipId), owned.Select(s => s.Id), "commission ships");
@@ -124,21 +124,10 @@ namespace SaltAndLedger.Simulation
             return new CommissionHistory(restoredShips, balances);
         }
 
-        // Four nodes only: use shortest travel time, rather than assuming authored direct distances
-        // obey triangle inequalities. First visits are ordered observations, not a complete voyage log.
+        // First visits are bounded observations, not a complete voyage log. Intermediate transit
+        // does not create visits; validate the fastest physically traversable path between observations.
         private static long MinimumTravelDays(RegionalWorldSnapshot world, RegionalShipSnapshot ship,
-            string origin, string destination)
-        {
-            var ports = world.Ports.Keys.OrderBy(id => id, StringComparer.Ordinal).ToArray();
-            var distances = new long[ports.Length, ports.Length];
-            for (var from = 0; from < ports.Length; from++)
-                for (var to = 0; to < ports.Length; to++)
-                    distances[from, to] = from == to ? 0 : world.GetRoute(ports[from], ports[to]).DurationDays(ship.Configuration.Speed);
-            for (var via = 0; via < ports.Length; via++)
-                for (var from = 0; from < ports.Length; from++)
-                    for (var to = 0; to < ports.Length; to++)
-                        distances[from, to] = Math.Min(distances[from, to], distances[from, via] + distances[via, to]);
-            return distances[Array.IndexOf(ports, origin), Array.IndexOf(ports, destination)];
-        }
+            string origin, string destination) => origin == destination ? 0 :
+            world.GetPath(origin, destination, ship.Configuration.Speed).DurationDays;
     }
 }

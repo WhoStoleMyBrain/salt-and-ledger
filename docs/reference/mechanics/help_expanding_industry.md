@@ -8,7 +8,7 @@ title: "Expanding production chains"
 
 Invest in real capacity and inspect the next finite bottleneck\.
 
-Every v3 world permits all six original production building types somewhere\. Eligibility follows economic roles, not displayed city names\. The food source can host Farms; the processing town can host Mills and Sawmills\. The forest\-furniture town can host a Silver Mine but cannot build a Sawmill, preserving a real Plank import dependency\.
+Every default world enables all current production industries\. Town eligibility is generated from canonical recipe inputs and outputs\. Farms cannot share a town with Mills; Mills cannot share with Bakeries; Lumber Camps cannot share with Sawmills or Bakeries; Sawmills cannot share with Furniture Workshops\. These direct restrictions cover public production, allowed private construction and starter grants\. Only direct dependencies are excluded\.
 
 Each owned facility has a separate schedule, enabled state, operating rate, priority, scheduling credit and production/payroll counters\. Each company shares one owned stockpile and one local trading policy per town\. Multiple Mills may coexist\. Public and private extraction create only declared complete batch outputs; successful batches pay their full wage from the real employer\.
 

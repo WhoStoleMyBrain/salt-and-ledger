@@ -41,7 +41,8 @@ public sealed class FactoryWarehouseAutomationTests
             industryBlueprints: new[] { Plan("bakery", "bakery", "bake_bread"), Plan("camp", "lumber_camp", "harvest_logs") },
             initialFacilities: sites, difficulty: difficulty,
             runIdentity: new RunIdentity(null, RunScenario.MerchantCharter, RunWorldMode.ExpandingEconomy, 42,
-                difficulty, companyStorageRules: CompanyStorageRules.Pooled, economicRulesVersion: 0),
+                difficulty, companyStorageRules: CompanyStorageRules.Pooled, economicRulesVersion: 0,
+                generationConfiguration: DiagnosticGenerationSettings.AllowLocalSupplyChains),
             economy: ExpandingEconomyConfiguration.CreateDefault(Town, "other"));
     }
 

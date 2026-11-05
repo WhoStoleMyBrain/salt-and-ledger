@@ -15,6 +15,7 @@ namespace SaltAndLedger.UnityHost
         private readonly Dictionary<string, Button> ships = new Dictionary<string, Button>(StringComparer.Ordinal);
         private readonly Dictionary<string, Vector2> fromPositions = new Dictionary<string, Vector2>(StringComparer.Ordinal);
         private readonly Dictionary<string, Vector2> toPositions = new Dictionary<string, Vector2>(StringComparer.Ordinal);
+        private readonly Dictionary<string, VoyageVisualInterval> voyageIntervals = new Dictionary<string, VoyageVisualInterval>(StringComparer.Ordinal);
         private readonly Dictionary<string, Vector2> displayedPositions = new Dictionary<string, Vector2>(StringComparer.Ordinal);
         private readonly Dictionary<string, Rect> portLabelBounds = new Dictionary<string, Rect>(StringComparer.Ordinal);
         private readonly Dictionary<string, Rect> shipMarkerBounds = new Dictionary<string, Rect>(StringComparer.Ordinal);
@@ -22,6 +23,8 @@ namespace SaltAndLedger.UnityHost
         private readonly List<Vector2> captionCenters = new List<Vector2>();
         private readonly Dictionary<string, RegionalDecision> decisions = new Dictionary<string, RegionalDecision>(StringComparer.Ordinal);
         private readonly List<string> highlightedRoute = new List<string>();
+        private readonly HashSet<string> highlightedSeaLanes = new HashSet<string>(StringComparer.Ordinal);
+        private readonly List<(string From, string To)> highlightedSegments = new List<(string From, string To)>();
         private RegionalWorldSnapshot snapshot;
         private string selectedPortId;
         private string selectedShipId;
@@ -86,13 +89,24 @@ namespace SaltAndLedger.UnityHost
             {
                 var previous = snapshot;
                 snapshot = next;
-                if (ports.Count == 0) CreateMarkers();
+                if (previous == null || !ports.Keys.OrderBy(id => id, StringComparer.Ordinal).SequenceEqual(
+                    next.Ports.Keys.OrderBy(id => id, StringComparer.Ordinal)) ||
+                    !previous.Routes.Select(route => route.Key).SequenceEqual(next.Routes.Select(route => route.Key)))
+                {
+                    foreach (var marker in ports.Values) marker.RemoveFromHierarchy();
+                    foreach (var caption in distanceLabels) caption.RemoveFromHierarchy();
+                    ports.Clear(); distanceLabels.Clear(); captionCenters.Clear(); portLabelBounds.Clear();
+                    fromPositions.Clear(); toPositions.Clear(); displayedPositions.Clear();
+                    CreateMarkers();
+                }
                 SynchronizeShipMarkers();
                 RefreshViewport();
                 decisions.Clear();
                 foreach (var ship in snapshot.Ships.Values) decisions.Add(ship.Id, RegionalAutomation.Evaluate(snapshot, ship.Id));
+                voyageIntervals.Clear();
                 foreach (var ship in snapshot.Ships.Values)
                 {
+                    voyageIntervals[ship.Id] = VoyageVisualInterval.Between(previous, next, ship.Id, animate);
                     var point = ShipPosition(ship);
                     fromPositions[ship.Id] = displayedPositions.TryGetValue(ship.Id, out var old) ? old : point;
                     toPositions[ship.Id] = point;
@@ -101,6 +115,7 @@ namespace SaltAndLedger.UnityHost
                 interval = Mathf.Max(0.02f, (float)seconds);
             }
             RefreshHighlightedRoute();
+            RefreshHighlightedSeaLanes();
             foreach (var port in snapshot.Ports.Values)
             {
                 var stop = draftRoute != null || selectedShipId != null && snapshot.Ships[selectedShipId].Itinerary != null
@@ -135,7 +150,7 @@ namespace SaltAndLedger.UnityHost
                 distanceLabels[index].text = route.Distance + " units · " + route.DurationDays(player.Configuration.Speed) + "d";
                 distanceLabels[index].tooltip = snapshot.Ports[route.OriginPortId].Name + " — " +
                     snapshot.Ports[route.DestinationPortId].Name + ": " + route.Distance + " abstract distance units; " +
-                    route.DurationDays(player.Configuration.Speed) + " days in " + player.Name + ". Direct sea connection; no coastline pathfinding.";
+                    route.DurationDays(player.Configuration.Speed) + " days in " + player.Name + ". Direct sea lane. Longer voyages follow connected lanes through transit towns.";
             }
             RefreshRouteVisibility();
             ArrangeMarkers();
@@ -177,20 +192,40 @@ namespace SaltAndLedger.UnityHost
             { highlightedRoute.Add(ship.OriginPortId); highlightedRoute.Add(ship.DestinationPortId); }
         }
 
-        private bool RouteIsHighlighted(SeaRoute route)
+        private void RefreshHighlightedSeaLanes()
         {
-            for (var index = 0; index < highlightedRoute.Count; index++)
-                if (Joins(route, highlightedRoute[index], highlightedRoute[(index + 1) % highlightedRoute.Count])) return true;
-            return false;
+            highlightedSeaLanes.Clear();
+            highlightedSegments.Clear();
+            if (highlightedRoute.Count < 2) return;
+            var ship = selectedShipId != null && snapshot.Ships.TryGetValue(selectedShipId, out var selected) ? selected : null;
+            var speed = ship?.Configuration.Speed ?? RunScenario.StartingShipSpeed;
+            var loop = draftRoute != null || ship?.Itinerary != null ||
+                ship != null && (!ship.IsPlayer || snapshot.RunIdentity?.ItineraryVersion != 1) &&
+                (ship.Policy != null || ship.IndustrialPolicy != null);
+            for (var index = 0; index < highlightedRoute.Count - (loop ? 0 : 1); index++)
+            {
+                var from = highlightedRoute[index];
+                var to = highlightedRoute[(index + 1) % highlightedRoute.Count];
+                if (from == to) continue;
+                try
+                {
+                    var path = snapshot.GetPath(from, to, speed);
+                    for (var leg = 0; leg < path.Legs.Count; leg++)
+                    {
+                        highlightedSeaLanes.Add(path.Legs[leg].Key);
+                        var segment = (path.PortIds[leg], path.PortIds[leg + 1]);
+                        if (!highlightedSegments.Contains(segment)) highlightedSegments.Add(segment);
+                    }
+                }
+                catch (ArgumentException) { /* Incomplete drafts do not draw invalid legs. */ }
+            }
         }
+
+        private bool RouteIsHighlighted(SeaRoute route) => highlightedSeaLanes.Contains(route.Key);
 
         private bool RouteIsVisible(SeaRoute route) => ShowAllRoutes ||
             (draftRoute != null || selectedShipId != null ? RouteIsHighlighted(route) :
                 selectedPortId != null && (route.OriginPortId == selectedPortId || route.DestinationPortId == selectedPortId));
-
-        private static bool Joins(SeaRoute route, string first, string second) =>
-            route.OriginPortId == first && route.DestinationPortId == second ||
-            route.OriginPortId == second && route.DestinationPortId == first;
 
         private void RefreshRouteVisibility()
         {
@@ -318,10 +353,27 @@ namespace SaltAndLedger.UnityHost
                 return Viewport.ViewportToWorld(portPoint + offset +
                     new Vector2((slot - (docked.Length - 1) / 2f) * (markerWidth + 6), 0));
             }
-            var origin = snapshot.Ports[ship.OriginPortId];
-            var destination = snapshot.Ports[ship.DestinationPortId];
-            var progress = (ship.VoyageDurationDays - ship.RemainingTravelDays) / (float)ship.VoyageDurationDays;
-            return Vector2.Lerp(new Vector2(origin.X, origin.Y), new Vector2(destination.X, destination.Y), progress);
+            return VoyagePosition(ship.OriginPortId, ship.DestinationPortId, ship.Configuration.Speed,
+                ship.VoyageDurationDays - ship.RemainingTravelDays);
+        }
+
+        private Vector2 VoyagePosition(string originPortId, string destinationPortId, int speed, float elapsedDays)
+        {
+            var path = snapshot.GetPath(originPortId, destinationPortId, speed);
+            for (var index = 0; index < path.Legs.Count; index++)
+            {
+                var duration = path.Legs[index].DurationDays(speed);
+                if (elapsedDays <= duration || index == path.Legs.Count - 1)
+                {
+                    var from = snapshot.Ports[path.PortIds[index]];
+                    var to = snapshot.Ports[path.PortIds[index + 1]];
+                    return Vector2.Lerp(new Vector2(from.X, from.Y), new Vector2(to.X, to.Y),
+                        Mathf.Clamp01(elapsedDays / duration));
+                }
+                elapsedDays -= duration;
+            }
+            var destination = snapshot.Ports[destinationPortId];
+            return new Vector2(destination.X, destination.Y);
         }
 
         private void RefreshViewport()
@@ -359,7 +411,11 @@ namespace SaltAndLedger.UnityHost
             foreach (var ship in snapshot.Ships.Values)
             {
                 if (ship.DockedPortId != null) toPositions[ship.Id] = ShipPosition(ship);
-                var chartPosition = Vector2.Lerp(fromPositions[ship.Id], toPositions[ship.Id], interpolation);
+                var voyage = voyageIntervals[ship.Id];
+                var chartPosition = voyage != null && interpolation < 1
+                    ? VoyagePosition(voyage.OriginPortId, voyage.DestinationPortId, voyage.Speed,
+                        Mathf.Lerp(voyage.StartDays, voyage.EndDays, interpolation))
+                    : Vector2.Lerp(fromPositions[ship.Id], toPositions[ship.Id], interpolation);
                 displayedPositions[ship.Id] = chartPosition;
             }
             portLabelBounds.Clear();
@@ -526,14 +582,14 @@ namespace SaltAndLedger.UnityHost
                     painter.Stroke();
                 }
             }
-            if (highlightedRoute.Count > 2)
+            if (highlightedRoute.Count > 1)
             {
                 painter.strokeColor = new Color(0.96f, 0.82f, 0.54f, 0.95f);
                 painter.lineWidth = 2.5f;
-                for (var index = 0; index < highlightedRoute.Count; index++)
+                foreach (var segment in highlightedSegments)
                 {
-                    var from = PortPoint(highlightedRoute[index]);
-                    var to = PortPoint(highlightedRoute[(index + 1) % highlightedRoute.Count]);
+                    var from = PortPoint(segment.From);
+                    var to = PortPoint(segment.To);
                     var direction = (to - from).normalized;
                     var normal = new Vector2(-direction.y, direction.x);
                     var tip = Vector2.Lerp(from, to, 0.66f);

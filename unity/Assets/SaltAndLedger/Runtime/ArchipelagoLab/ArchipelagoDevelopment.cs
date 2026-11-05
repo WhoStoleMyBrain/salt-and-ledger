@@ -17,14 +17,18 @@ namespace SaltAndLedger.UnityHost
 
         private void RefreshRunChoices()
         {
-            var goods = Session.Content.Goods.OrderBy(g => g.Id, StringComparer.Ordinal).ToArray();
+            var currentPorts = Session.Snapshot.Ports.Keys.OrderBy(id => id, StringComparer.Ordinal).ToArray();
+            if (!portIds.SequenceEqual(currentPorts)) { portIds.Clear(); portIds.AddRange(currentPorts); }
+            var availableGoods = Session.Snapshot.Ports.Values.First().Quotes.Keys;
+            var goods = Session.Content.Goods.Where(g => availableGoods.Contains(g.Id)).OrderBy(g => g.Id, StringComparer.Ordinal).ToArray();
             if (!goodIds.SequenceEqual(goods.Select(g => g.Id)))
             {
                 goodIds.Clear(); goodIds.AddRange(goods.Select(g => g.Id));
                 foreach (var name in new[] { "goodDropdown", "outGoodDropdown", "storageGoodDropdown", "logisticsGood", "logisticsReturnGood" })
                     if (Root.Q<DropdownField>(name) != null) SetChoices(name, goods.Select(g => g.Name).ToList());
-                SetChoices("returnGoodDropdown", new[] { "None" }.Concat(goods.Select(g => g.Name)).ToList());
-                Element<VisualElement>("tradeGoodsRows").Clear();
+                if (Root.Q<DropdownField>("returnGoodDropdown") != null)
+                    SetChoices("returnGoodDropdown", new[] { "None" }.Concat(goods.Select(g => g.Name)).ToList());
+                Root.Q<VisualElement>("tradeGoodsRows")?.Clear();
             }
             var ships = Session.Snapshot.Ships.Keys.OrderBy(id => id, StringComparer.Ordinal).ToArray();
             if (!shipIds.SequenceEqual(ships))
@@ -129,7 +133,7 @@ namespace SaltAndLedger.UnityHost
             var shipQuote = world.PreviewShipCommission(Session.Player.OwnerId, config.ShipwrightPortId);
             SetText("shipwrightQuote", "Shipwright: " + PortName(config.ShipwrightPortId) + " · " + Money(shipQuote.Payment) +
                 " coins · " + Q(shipQuote.Quantity) + " market Planks · household labor " + Money(shipQuote.HouseholdAmount) +
-                "\nEmpty ship due day " + shipQuote.CompletionDay + " · capacity " + Q(config.ShipCapacity) + " · cap 3 including orders.\n" + shipQuote.Reason);
+                "\nEmpty ship due day " + shipQuote.CompletionDay + " · capacity " + Q(config.ShipCapacity) + " · cap " + config.MaximumPlayerShips + " including orders.\n" + shipQuote.Reason);
             Element<Button>("commissionShipButton").SetEnabled(!Session.IsChallengeEnded && shipQuote.Outcome == DevelopmentOutcome.Started);
             SetText("shipOrders", economy.ShipOrders.Count == 0 ? "No pending ships." : string.Join("\n", economy.ShipOrders.Select(o =>
                 o.ShipId + " · paid " + Money(o.PaidCapital) + " · completes day " + o.CompletionDay)));
@@ -150,14 +154,24 @@ namespace SaltAndLedger.UnityHost
             if (!royalContractIds.SequenceEqual(ids))
             {
                 royalContractIds.Clear(); royalContractIds.AddRange(ids);
-                SetChoices("royalContractPicker", economy.Contracts.Select(c => Session.Content.GetGood(c.Configuration.GoodId).Name + " · " + c.Configuration.Id).ToList());
+                SetChoices("royalContractPicker", ids.Length == 0 ? new List<string> { "No contracts in this world" } :
+                    economy.Contracts.Select(c => Session.Content.GetGood(c.Configuration.GoodId).Name + " · " + c.Configuration.Id).ToList());
             }
-            var chosen = economy.Contracts[Element<DropdownField>("royalContractPicker").index];
+            if (economy.Contracts.Count == 0)
+            {
+                SetText("externalSummary", "No finite external contracts are available for the enabled goods.");
+                SetText("exportQuote", "No contract selected.");
+                Element<Button>("fulfillContractButton").SetEnabled(false);
+            }
+            else
+            {
+            var chosen = economy.Contracts[Math.Max(0, Element<DropdownField>("royalContractPicker").index)];
             SetText("externalSummary", "External funds remaining " + Money(economy.ExternalCash) + " · transferred into region " + Money(economy.ExternalNetInflow) +
                 "\nDeliver at " + PortName(chosen.Configuration.PortId) + " · " + Q(chosen.RemainingQuantity) + " units remaining at " + chosen.Configuration.UnitPrice +
                 " coins/unit · days " + chosen.Configuration.OpensDay + "–" + chosen.Configuration.DeadlineDay +
                 "\nExported goods leave the region. Existing external money is transferred, never minted or automatically refilled.");
             PreviewRoyal("exportQuote", "fulfillContractButton", () => world.PreviewExternalContract(Session.Player.Id, chosen.Configuration.Id, RoyalQuantity("exportQuantity")));
+            }
             SetText("treasurySummary", "Treasury " + Money(economy.TreasuryCash) + " coins · public works spending " + Money(economy.TreasuryExpenditure) +
                 "\nDelivered " + Q(economy.TreasuryPlanks) + "/" + Q(config.TreasuryPlankRequirement) + " Planks · " + config.TreasuryPlankPrice +
                 " coins/unit at " + PortName(config.MintPortId) + ". Only actual delivered cargo is paid and consumed.");

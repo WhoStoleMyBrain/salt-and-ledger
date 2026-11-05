@@ -11,7 +11,7 @@ namespace SaltAndLedger.Simulation
             ExpandingEconomyConfiguration config, string ownerId, string shipId) =>
             new RegionalShipConfiguration(new ShipConfiguration(shipId, config.ShipCapacity, config.ShipwrightPortId),
                 ownerId, "Company ship " + shipId.Substring(shipId.LastIndexOf('_') + 1),
-                0, config.ShipSpeed, isPlayer: true);
+                0, config.ShipSpeed, priority: 1000, isPlayer: true);
     }
 
     internal static partial class RegionalSaveRestore

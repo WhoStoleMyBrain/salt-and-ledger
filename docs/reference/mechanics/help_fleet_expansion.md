@@ -6,11 +6,11 @@ title: "Commission and direct a fleet"
 
 # Commission and direct a fleet
 
-Up to three owned ships share cash but keep separate cargo and routes\.
+A configurable fleet of owned ships share cash but keep separate cargo and routes\.
 
-V3 permits the starting ship and two additional ships\. The processing harbor shipwright charges 500 coins and consumes four real market Planks\. Of that payment, 460 goes to the market and 40 to local households for labor\. Construction takes four economic days; completion creates an empty ten\-unit ship at that harbor\.
+The configured fleet limit defaults to three ships including the starting vessel\. The generated shipyard charges 500 coins and consumes four real local\-market Planks\. Of that payment, 460 goes to the market and 40 to local households for labor\. Construction takes four economic days and creates an empty ten\-unit ship at that harbor\. With default specialization, the shipyard cannot share a town with hull\-material production; it uses imported Planks\.
 
-Pending orders count toward the three\-ship limit and retain paid capital in Company Value\. Missing company cash or actual market Planks prevents the order without partial payment or a phantom ship\. Private\-factory Ascension timing is separate from this shipbuilding schedule\.
+Pending orders count toward the configured fleet limit \(three by default\) and retain paid capital in Company Value\. Missing company cash or actual market Planks prevents the order without partial payment or a phantom ship\. Private\-factory Ascension timing is separate from this shipbuilding schedule\.
 
 Select the intended owned ship before trading, sailing, transfer or route editing\. All ships share one company account, but each has its own cargo, position, policy and enabled state\. Player itineraries retain an exact stop/action/pass and daily budget\. Ships act in stable priority and ID order through one atomic day; one ship cannot load another ship's cargo\.
 

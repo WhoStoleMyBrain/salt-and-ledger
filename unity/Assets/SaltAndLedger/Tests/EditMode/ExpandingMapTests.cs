@@ -28,11 +28,11 @@ namespace SaltAndLedger.UnityHost.Tests
             var session = CreateSession();
             var map = new ArchipelagoMap();
             map.Present(session.Snapshot, session.SelectedPortId, null, false, 1);
-            Assert.That(map.ShipMarkerCount, Is.EqualTo(4));
+            Assert.That(map.ShipMarkerCount, Is.EqualTo(session.Snapshot.Ships.Count));
             CompleteShip(session);
             var snapshot = session.Snapshot;
             map.Present(snapshot, session.SelectedPortId, "player_ship_2", true, 1);
-            Assert.That(map.ShipMarkerCount, Is.EqualTo(5));
+            Assert.That(map.ShipMarkerCount, Is.EqualTo(snapshot.Ships.Count));
             var marker = map.Q<Button>("ship_player_ship_2");
             Assert.That(marker, Is.Not.Null);
             Assert.That(marker.ClassListContains("selected-marker"), Is.True);
@@ -42,7 +42,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(session.Snapshot, Is.SameAs(snapshot), "Presentation must not mutate a newly completed ship.");
             session.Reset();
             map.Present(session.Snapshot, session.SelectedPortId, null, false, 1);
-            Assert.That(map.ShipMarkerCount, Is.EqualTo(4));
+            Assert.That(map.ShipMarkerCount, Is.EqualTo(session.Snapshot.Ships.Count));
             Assert.That(map.Q<Button>("ship_player_ship_2"), Is.Null);
         }
 
@@ -57,8 +57,8 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(map.ShipMarkerCount, Is.EqualTo(session.Snapshot.Ships.Count));
             Assert.That(map.Query<Label>(className: "route-distance").ToList().All(label =>
                 label.tooltip.Contains(session.Snapshot.Ships["player_ship_2"].Name)), Is.True);
-            map.Present(session.Snapshot, session.SelectedPortId, WorldIds.TimberShipId, false, 1);
-            Assert.That(map.Q<Button>("ship_" + WorldIds.TimberShipId).ClassListContains("selected-marker"), Is.True);
+            map.Present(session.Snapshot, session.SelectedPortId, GeneratedWorldFixture.Npc(session.Snapshot), false, 1);
+            Assert.That(map.Q<Button>("ship_" + GeneratedWorldFixture.Npc(session.Snapshot)).ClassListContains("selected-marker"), Is.True);
             Assert.That(map.Query<Label>(className: "route-distance").ToList().All(label => label.text.Contains(" units")), Is.True);
         }
     }

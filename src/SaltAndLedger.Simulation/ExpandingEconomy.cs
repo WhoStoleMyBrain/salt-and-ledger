@@ -37,9 +37,11 @@ namespace SaltAndLedger.Simulation
         public const int RulesetVersion = 3;
         public const int ContentVersion = 3;
         public const int ValuationVersion = 1;
+        public const string ShipMaterialGoodId = "planks";
+        public const string MintInputGoodId = "silver";
         public string MintPortId { get; }
         public string SilverPortId { get; }
-        public string ShipwrightPortId => MintPortId;
+        public string ShipwrightPortId { get; }
         public long InitialTreasuryCash { get; }
         public long InitialExternalCash { get; }
         public long MintCommissionCost => 4000000;
@@ -56,7 +58,7 @@ namespace SaltAndLedger.Simulation
         public int ShipConstructionDays => 4;
         public int ShipCapacity => 100000;
         public int ShipSpeed => 100;
-        public int MaximumPlayerShips => 3;
+        public int MaximumPlayerShips { get; }
         public int TreasuryPlankRequirement => 200000;
         public long TreasuryPlankPrice => 25;
         public IReadOnlyDictionary<string, long> GoodsReferencePrices { get; }
@@ -64,10 +66,14 @@ namespace SaltAndLedger.Simulation
 
         public ExpandingEconomyConfiguration(string mintPortId, string silverPortId,
             IEnumerable<ExternalContractConfiguration> contracts, IReadOnlyDictionary<string, long> goodsReferencePrices,
-            long initialExternalCash = 12000000, long initialTreasuryCash = 0)
+            long initialExternalCash = 12000000, long initialTreasuryCash = 0,
+            string? shipwrightPortId = null, int maximumPlayerShips = 3)
         {
             RuntimeIdentifier.Validate(mintPortId, nameof(mintPortId)); RuntimeIdentifier.Validate(silverPortId, nameof(silverPortId));
             if (mintPortId == silverPortId) throw new ArgumentException("Silver and the Mint require separate ports.");
+            RuntimeIdentifier.Validate(shipwrightPortId ?? mintPortId, nameof(shipwrightPortId));
+            if (maximumPlayerShips < 1 || maximumPlayerShips > 32)
+                throw new ArgumentOutOfRangeException(nameof(maximumPlayerShips), "Fleet limit must be between 1 and 32 ships.");
             if (initialExternalCash < 0 || initialTreasuryCash < 0) throw new ArgumentOutOfRangeException(nameof(initialExternalCash));
             var values = contracts?.OrderBy(c => c.Id, StringComparer.Ordinal).ToArray() ?? throw new ArgumentNullException(nameof(contracts));
             if (values.Length > 16 || values.Select(c => c.Id).Distinct(StringComparer.Ordinal).Count() != values.Length)
@@ -75,19 +81,23 @@ namespace SaltAndLedger.Simulation
             if (goodsReferencePrices == null || goodsReferencePrices.Count == 0 || goodsReferencePrices.Any(p => p.Value <= 0))
                 throw new ArgumentException("Positive reference values are required.", nameof(goodsReferencePrices));
             MintPortId = mintPortId; SilverPortId = silverPortId;
+            ShipwrightPortId = shipwrightPortId ?? mintPortId; MaximumPlayerShips = maximumPlayerShips;
             InitialExternalCash = initialExternalCash; InitialTreasuryCash = initialTreasuryCash;
             Contracts = Array.AsReadOnly(values);
             GoodsReferencePrices = AccountingCollections.Dictionary(goodsReferencePrices.ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal));
         }
 
-        public static ExpandingEconomyConfiguration CreateDefault(string mintPortId, string silverPortId) =>
+        public static ExpandingEconomyConfiguration CreateDefault(string mintPortId, string silverPortId,
+            string? shipwrightPortId = null, int maximumPlayerShips = 3, long deadlineDays = 720,
+            IEnumerable<string>? enabledGoods = null) =>
             new ExpandingEconomyConfiguration(mintPortId, silverPortId, new[]
             {
-                new ExternalContractConfiguration("royal_planks", mintPortId, "planks", 100000, 25, 0, 120),
-                new ExternalContractConfiguration("royal_furniture", mintPortId, "furniture", 40000, 100, 0, 180),
-                new ExternalContractConfiguration("royal_flour", mintPortId, "flour", 120000, 20, 0, 240)
-            }, new Dictionary<string, long>(StringComparer.Ordinal)
-            { ["grain"] = 6, ["logs"] = 10, ["flour"] = 15, ["planks"] = 20, ["bread"] = 30, ["furniture"] = 80, ["silver"] = 40 });
+                new ExternalContractConfiguration("royal_planks", mintPortId, "planks", 100000, 25, 0, Math.Min(120, deadlineDays)),
+                new ExternalContractConfiguration("royal_furniture", mintPortId, "furniture", 40000, 100, 0, Math.Min(180, deadlineDays)),
+                new ExternalContractConfiguration("royal_flour", mintPortId, "flour", 120000, 20, 0, Math.Min(240, deadlineDays))
+            }.Where(contract => enabledGoods == null || enabledGoods.Contains(contract.GoodId, StringComparer.Ordinal)), new Dictionary<string, long>(StringComparer.Ordinal)
+            { ["grain"] = 6, ["logs"] = 10, ["flour"] = 15, ["planks"] = 20, ["bread"] = 30, ["furniture"] = 80, ["silver"] = 40 },
+                shipwrightPortId: shipwrightPortId, maximumPlayerShips: maximumPlayerShips);
     }
 
     public sealed class ExternalContractSnapshot

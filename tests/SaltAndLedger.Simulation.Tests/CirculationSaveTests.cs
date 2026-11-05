@@ -18,13 +18,13 @@ public sealed class CirculationSaveTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void NewIdentitySelectsSchemaFiveAndRetryRetainsExactInitialRevision(bool commission)
+    public void NewIdentitySelectsCurrentSchemaAndRetryRetainsExactInitialRevision(bool commission)
     {
         var identity = CirculationGenerationTests.Identity(commission: commission);
         var world = RunScenario.Create(Content(), identity);
         var initial = WorldSaveCodec.Save(world);
         var tree = JObject.Parse(initial);
-        Assert.Equal(6, (int)tree["SchemaVersion"]!);
+        Assert.Equal(WorldSaveCodec.SchemaVersion, (int)tree["SchemaVersion"]!);
         Assert.Equal(1, (int)tree["Identity"]!["EconomicRulesVersion"]!);
         Assert.NotNull(tree["Circulation"]);
         Assert.Equal(initial, WorldSaveCodec.Save(WorldSaveCodec.Load(Content(), initial)));
@@ -77,11 +77,17 @@ public sealed class CirculationSaveTests
     [Fact]
     public void ActualNamedPayrollLevyRestoresWithoutRepeatedPaymentOrScheduleReset()
     {
+        var json = JObject.Parse(WorldGenerationConfiguration.Default.ToJson());
+        json["marketCash"]!["min"] = 0;
+        json["marketCash"]!["max"] = 0;
+        json["householdCashPerResident"]!["min"] = 42;
+        json["householdCashPerResident"]!["max"] = 42;
+        var configuration = WorldGenerationConfiguration.Parse(json.ToString());
         var identity = new RunIdentity(null, RunScenario.MerchantCharter, RunWorldMode.ExpandingEconomy, -42,
             livingPricingMode: LivingPricingMode.StockOnly, companyStorageRules: CompanyStorageRules.Pooled,
-            itineraryVersion: 1, economicRulesVersion: 1);
+            itineraryVersion: 1, economicRulesVersion: 1, generationConfiguration: configuration);
         var world = RunScenario.Create(Content(), identity);
-        // A measured ordinary idle case, without changing public cash, schedules or inventory.
+        // A declared custom opening has wealthy households and unfunded employers; only actual fiscal transfers can fund payroll.
         for (var day = 0; day < 90; day++) world.AdvanceDay();
         Assert.True(world.Snapshot().Circulation!.Towns.Values.Sum(t => t.TotalLevy) > 0);
         var saved = WorldSaveCodec.Save(world);

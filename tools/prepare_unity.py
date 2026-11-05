@@ -17,16 +17,20 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from tools.content import ContentError, ROOT, parse_json, validate_content
+from jsonschema import Draft202012Validator
 from tools.generate_docs import ENCYCLOPEDIA_PATH, render_outputs
 from tools.player_help import load_player_help
 
 PROJECT = Path("src/SaltAndLedger.Simulation/SaltAndLedger.Simulation.csproj")
 BUILT_DLL = PROJECT.parent / "bin/Release/netstandard2.1/SaltAndLedger.Simulation.dll"
 SOURCE_CONTENT = Path("data/content.json")
+SOURCE_GENERATION = Path("data/world-generation.default.json")
+GENERATION_SCHEMA = Path("data/world-generation.schema.json")
 GENERATED = Path("unity/Assets/Generated")
 SIMULATION_DLL = GENERATED / "Simulation/SaltAndLedger.Simulation.dll"
 UNITY_CONTENT = GENERATED / "Resources/CanonicalContent.json"
 UNITY_ENCYCLOPEDIA = GENERATED / "Resources/Encyclopedia.json"
+UNITY_GENERATION = GENERATED / "Resources/WorldGeneration.json"
 MANIFEST = Path("unity/.simulation-staging.json")
 
 
@@ -38,7 +42,7 @@ def metadata_outputs() -> dict[Path, bytes]:
     """Stable GUIDs let generated assets survive a clean checkout or rebuild."""
     outputs = {}
     folders = (GENERATED, SIMULATION_DLL.parent, UNITY_CONTENT.parent)
-    for path in (*folders, SIMULATION_DLL, UNITY_CONTENT, UNITY_ENCYCLOPEDIA):
+    for path in (*folders, SIMULATION_DLL, UNITY_CONTENT, UNITY_ENCYCLOPEDIA, UNITY_GENERATION):
         guid = uuid.uuid5(uuid.NAMESPACE_URL, "salt-and-ledger/" + path.as_posix()).hex
         text = f"fileFormatVersion: 2\nguid: {guid}\n"
         if path in folders:
@@ -63,7 +67,7 @@ def metadata_outputs() -> dict[Path, bytes]:
                 "      settings: {}\n"
             )
         else:
-            importer = "TextScriptImporter" if path in (UNITY_CONTENT, UNITY_ENCYCLOPEDIA) else "DefaultImporter"
+            importer = "TextScriptImporter" if path in (UNITY_CONTENT, UNITY_ENCYCLOPEDIA, UNITY_GENERATION) else "DefaultImporter"
             text += f"{importer}:\n  externalObjects: {{}}\n"
         text += "  userData: \n  assetBundleName: \n  assetBundleVariant: \n"
         outputs[Path(str(path) + ".meta")] = text.encode("utf-8")
@@ -72,7 +76,7 @@ def metadata_outputs() -> dict[Path, bytes]:
 
 def source_hashes(root: Path) -> dict[str, str]:
     """Fingerprint compilation inputs and staging policy, never cached bin/obj/."""
-    paths = {PROJECT, SOURCE_CONTENT, Path("data/content.schema.json"), Path("global.json"),
+    paths = {PROJECT, SOURCE_CONTENT, SOURCE_GENERATION, GENERATION_SCHEMA, Path("data/content.schema.json"), Path("global.json"),
              Path("tools/prepare_unity.py"), Path("tools/content.py"), Path("tools/generate_docs.py"),
              Path("tools/player_help.py"), Path("data/player-help.json"),
              Path("data/player-help.schema.json"), ENCYCLOPEDIA_PATH}
@@ -95,6 +99,18 @@ def _canonical_bytes(root: Path) -> bytes:
     return content
 
 
+def _generation_bytes(root: Path) -> bytes:
+    content = (root / SOURCE_GENERATION).read_bytes()
+    schema = parse_json((root / GENERATION_SCHEMA).read_text(encoding="utf-8"))
+    Draft202012Validator.check_schema(schema)
+    errors = sorted(Draft202012Validator(schema).iter_errors(parse_json(content.decode("utf-8"))),
+                    key=lambda error: str(error.json_path))
+    if errors:
+        raise ContentError("Invalid world generation configuration: " + "\n".join(
+            f"{error.json_path}: {error.message}" for error in errors))
+    return content
+
+
 def _encyclopedia_bytes(root: Path, content: bytes) -> bytes:
     """Require the checked-in reference to match both authoritative sources."""
     source = root / ENCYCLOPEDIA_PATH
@@ -111,7 +127,7 @@ def _encyclopedia_bytes(root: Path, content: bytes) -> bytes:
 
 
 def _unexpected_files(root: Path) -> list[str]:
-    allowed = set(metadata_outputs()) | {SIMULATION_DLL, UNITY_CONTENT, UNITY_ENCYCLOPEDIA}
+    allowed = set(metadata_outputs()) | {SIMULATION_DLL, UNITY_CONTENT, UNITY_ENCYCLOPEDIA, UNITY_GENERATION}
     return [f"Unexpected generated file: {path.relative_to(root).as_posix()}"
             for path in sorted((root / GENERATED).rglob("*"))
             if path.is_file() and path.relative_to(root) not in allowed]
@@ -121,6 +137,7 @@ def check_prepared(root: Path) -> list[str]:
     """Check the last successful staging operation without building or writing."""
     content = _canonical_bytes(root)
     encyclopedia = _encyclopedia_bytes(root, content)
+    generation = _generation_bytes(root)
     errors = _unexpected_files(root)
     if not (root / MANIFEST).is_file():
         return errors + ["Missing staging manifest; run python tools/prepare_unity.py."]
@@ -135,7 +152,7 @@ def check_prepared(root: Path) -> list[str]:
     if not str(manifest.get("sdkVersion", "")).startswith("10."):
         errors.append("Staging manifest does not record a .NET 10 build.")
     expected_metadata = metadata_outputs()
-    expected_paths = set(expected_metadata) | {SIMULATION_DLL, UNITY_CONTENT, UNITY_ENCYCLOPEDIA}
+    expected_paths = set(expected_metadata) | {SIMULATION_DLL, UNITY_CONTENT, UNITY_ENCYCLOPEDIA, UNITY_GENERATION}
     hashes = manifest.get("outputs")
     if not isinstance(hashes, dict) or set(hashes) != {path.as_posix() for path in expected_paths}:
         return errors + ["Invalid staging manifest output list."]
@@ -150,15 +167,18 @@ def check_prepared(root: Path) -> list[str]:
             errors.append(f"Stale generated metadata: {path.as_posix()}")
         if path == UNITY_CONTENT and value != content:
             errors.append("Staged content differs from data/content.json.")
+        if path == UNITY_GENERATION and value != generation:
+            errors.append("Staged generation configuration differs from data/world-generation.default.json.")
         if path == UNITY_ENCYCLOPEDIA and value != encyclopedia:
             errors.append("Staged encyclopedia differs from generated/encyclopedia.json.")
     return errors
 
 
 def prepare(root: Path, dotnet: str = "dotnet") -> None:
-    """Validate current references, rebuild, then stage the three runtime assets."""
+    """Validate current references, rebuild, then stage the four runtime assets."""
     content = _canonical_bytes(root)
     encyclopedia = _encyclopedia_bytes(root, content)
+    generation = _generation_bytes(root)
     unexpected = _unexpected_files(root)
     if unexpected:
         raise ValueError("\n".join(unexpected) + "\nRemove unexpected files before staging.")
@@ -176,6 +196,7 @@ def prepare(root: Path, dotnet: str = "dotnet") -> None:
     outputs[SIMULATION_DLL] = (root / BUILT_DLL).read_bytes()
     outputs[UNITY_CONTENT] = content
     outputs[UNITY_ENCYCLOPEDIA] = encyclopedia
+    outputs[UNITY_GENERATION] = generation
     manifest = {
         "formatVersion": 2,
         "sdkVersion": version,
@@ -203,10 +224,10 @@ def main() -> int:
                 print("\n".join(errors), file=sys.stderr)
                 print("Run python tools/prepare_unity.py to rebuild and stage.", file=sys.stderr)
                 return 1
-            print("Unity simulation, canonical content and encyclopedia are up to date.")
+            print("Unity simulation, canonical content, generation configuration and encyclopedia are up to date.")
         else:
             prepare(ROOT, args.dotnet)
-            print(f"Prepared {SIMULATION_DLL.as_posix()}, {UNITY_CONTENT.as_posix()} and {UNITY_ENCYCLOPEDIA.as_posix()}.")
+            print(f"Prepared {SIMULATION_DLL.as_posix()}, {UNITY_CONTENT.as_posix()}, {UNITY_GENERATION.as_posix()} and {UNITY_ENCYCLOPEDIA.as_posix()}.")
         return 0
     except (ContentError, OSError, ValueError, subprocess.CalledProcessError) as error:
         print(f"Unity preparation failed: {error}", file=sys.stderr)

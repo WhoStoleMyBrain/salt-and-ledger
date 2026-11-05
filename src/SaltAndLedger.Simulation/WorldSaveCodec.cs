@@ -22,7 +22,7 @@ namespace SaltAndLedger.Simulation
     /// <summary>Portable state codec. The host alone chooses slots, paths and atomic file replacement.</summary>
     public static class WorldSaveCodec
     {
-        public const int SchemaVersion = 6;
+        public const int SchemaVersion = 7;
         public const int MaximumJsonCharacters = 8 * 1024 * 1024;
         internal const int MaximumFacilities = 512;
         internal const int MaximumOpenLots = 16384;
@@ -79,7 +79,7 @@ namespace SaltAndLedger.Simulation
                 ValidateTree(root);
                 if (root["SchemaVersion"]?.Type != JTokenType.Integer ||
                     (long)root["SchemaVersion"]! != SchemaVersion)
-                    throw new WorldSaveException("Unsupported save format. Only current v3 schema 6 saves can be loaded.");
+                    throw new WorldSaveException("Unsupported save format. Only current generator 4 schema 7 saves can be loaded.");
                 var data = root.ToObject<RegionalSaveData>(Serializer()) ?? throw new WorldSaveException("Save is empty.");
                 var checksum = data.StateFingerprint;
                 data.StateFingerprint = "";
@@ -87,10 +87,14 @@ namespace SaltAndLedger.Simulation
                 data.StateFingerprint = checksum;
                 RegionalSaveRestore.ValidateCounts(data);
                 var id = data.Identity ?? throw new WorldSaveException("Save identity is missing.");
-                var commission = RegionalSaveRestore.RestoreCommissionPlan(data);
+                var configuration = WorldGenerationConfiguration.Parse(id.GenerationConfiguration?.ToString(Formatting.None)
+                    ?? throw new WorldSaveException("Save generation configuration is missing."));
+                if (id.GenerationConfigurationFingerprint != configuration.Fingerprint)
+                    throw new WorldSaveException("Save generation configuration fingerprint does not match its settings.");
+                var commission = RegionalSaveRestore.RestoreCommissionPlan(data, configuration);
                 var identity = new RunIdentity(id.ChallengeId, id.CharterId, id.WorldMode, id.Seed,
                     id.Difficulty, id.GeneratorVersion, id.PricingMode, id.ContentVersion, id.ValuationVersion, commission,
-                    id.CompanyStorageRules, id.ItineraryVersion, id.EconomicRulesVersion);
+                    id.CompanyStorageRules, id.ItineraryVersion, id.EconomicRulesVersion, configuration);
                 RequireSupportedIdentity(identity);
                 var world = RunScenario.Create(content, identity);
                 if (data.ContentFingerprint != Fingerprint(ContentShape(world.SaveContent)))
@@ -109,7 +113,7 @@ namespace SaltAndLedger.Simulation
         {
             if (identity.WorldMode != RunWorldMode.ExpandingEconomy || identity.EconomicRulesVersion != 1 ||
                 identity.CompanyStorageRules != CompanyStorageRules.Pooled || identity.ItineraryVersion != 1)
-                throw new WorldSaveException("Only current v3 circulation, shared storage and itinerary runs support saves.");
+                throw new WorldSaveException("Only current generator 4 circulation, shared storage and itinerary runs support saves.");
         }
 
         internal static string Fingerprint(object value)

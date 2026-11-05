@@ -36,25 +36,27 @@ Food histories retain at most six exact observations. Welfare combines exact ful
 
 ## Geography, roles and actual productive capacity
 
-The v3 generator calls unchanged v1 geography and unchanged v2 role generation. A seed therefore has identical integer positions and six route distances, and the same separate eleven-draw role/population/liquidity permutation. V3 applies a deterministic scaled configuration and new eligibility matrix. It never evaluates strategies, rejects a seed, repairs stock or rerolls to obtain a desirable outcome.
+Generator4 distributes the existing economic content over 8–12 towns by default. Integer placement, sparse connected sea lanes and constrained public/private availability are configured in `data/world-generation.default.json`. See [configuration and algorithms](WORLD_GENERATION.md).
 
-| Private industry | Eligible roles | Construction coins | Batch interval | Wage coins/batch | Warehouse / output ceiling, whole goods |
-| --- | --- | ---: | ---: | ---: | ---: |
-| Farm | Food source | 240 | 2 | 8 | 60 / 48 |
-| Lumber Camp | Food source, forest furniture, vulnerable coast | 220 | 2 | 6 | 40 / 36 |
-| Mill | Processing | 260 | 2 | 6 | 40 / 24 |
-| Sawmill | Processing | 280 | 2 | 6 | 40 / 20 |
-| Bakery | Food source, processing, vulnerable coast | 300 | 2 | 6 | 40 / 30 |
-| Furniture Workshop | Forest furniture, vulnerable coast | 360 | 3 | 8 | 40 / 15 |
-| Silver Mine | Forest furniture | 320 | 4 | 12 | 20 / 8 |
+Canonical economic specifications remain separate from distribution settings:
 
-Every role appears once in every generated world and all towns are connected, so all six old production types and the new Silver Mine are legally available somewhere. Forest furniture deliberately has no Sawmill capability and imports Planks. Processing imports Grain/Logs; food-source industry needs Flour. Eligibility is enforced by construction, not inferred from displayed names.
+| Private industry | Construction coins | Batch interval | Wage coins/batch | Warehouse / output ceiling, whole goods |
+| --- | ---: | ---: | ---: | ---: |
+| Farm | 240 | 2 | 8 | 60 / 48 |
+| Lumber Camp | 220 | 2 | 6 | 40 / 36 |
+| Mill | 260 | 2 | 6 | 40 / 24 |
+| Sawmill | 280 | 2 | 6 | 40 / 20 |
+| Bakery | 300 | 2 | 6 | 40 / 30 |
+| Furniture Workshop | 360 | 3 | 8 | 40 / 15 |
+| Silver Mine | 320 | 4 | 12 | 20 / 8 |
+
+Eligibility follows actual generated capabilities. With default specialization, public industries, permitted private industries and starter grants cannot contain a direct producer/consumer pair in the same town. This is derived from canonical recipes, including all direct dependencies on Grain, Flour, Logs and Planks. Inputs may still be imported, stored and traded. Structural supply checks require potential reachable production; they do not guarantee profitable or timely operation.
 
 Multiple facilities of the same kind may coexist in v3. Their IDs, enabled/rate/priority controls, production deadlines and counters remain distinct; one company store and Buy/Sell policy serves each town under the [storage rules](HARBOR.md#shared-stock-rules-version-2). There is no one-Mill-per-town rule. Ascension0 is instant; Ascension1 new private sites complete at the end of D+2 and first produce one full interval later. Pending factories skip production, including their completion day, while their paid warehouse capacity can trade. Starter grants are already operational.
 
 An additional Mill adds a real potential Flour batch every two days, requiring two actual Grain and a funded wage. A complete food chain still needs extraction, processing, Logs for fuel, bakery capacity, storage, customers and transport. Missing inputs, payroll, output ceiling and warehouse capacity prevent the complete batch and its wage. A blocked due site does not accumulate catch-up batches. Wages for private extraction are actual company expenditure, never free starter income.
 
-V3 charters start with Merchant **1,800**, Industrial **1,200**, or Independent **1,500 coins**. Whole hold sizes and physical starter grants remain 10/8/12 units, an operational bakery with two Flour/two Logs for Industrial, or four Grain/two Logs aboard for Independent. Merchant/Independent start at food source; Industrial starts at processing. These explicitly authored investment budgets replace the v3 opening only; they never replenish later balances.
+V3 charters start with Merchant **1,800**, Industrial **1,200**, or Independent **1,500 coins**. Whole hold sizes and physical starter grants remain 10/8/12 units, an operational bakery with two Flour/two Logs for Industrial, or four Grain/two Logs aboard for Independent. Merchant/Independent use the generated starting location; Industrial starts at a valid Bakery location. These explicitly authored investment budgets replace the v3 opening only; they never replenish later balances.
 
 ## Money boundaries and finite outside commerce
 
@@ -67,7 +69,7 @@ all-account cash = initial all-account cash + minted currency
 
 There is no currency retirement in this milestone. Every commit checks both identities, including instantaneous development commands. Ordinary trade, payroll, retail, construction and treasury expenditure are zero-sum transfers. Population and day advancement cannot create cash. Mint issuance is the sole modeled increase to all-account money.
 
-The external authority begins with **1,200 coins**, with no periodic reset. The processing harbor offers these player-company cargo contracts:
+The external authority begins with **1,200 coins**, with no periodic reset. The generated royal harbor offers these player-company cargo contracts when their goods are enabled. Their deadlines are capped to the configured run horizon, without increasing quantities:
 
 | Contract | Total whole quantity | Coins per good | Window, inclusive | Maximum payment |
 | --- | ---: | ---: | --- | ---: |
@@ -79,7 +81,7 @@ The maximum combined commitment is 890 coins; the remaining initial authority fu
 
 ## Public Royal Mint and Silver
 
-Silver is the single new canonical good. The forest-role private Silver Mine extracts one complete Silver per funded successful batch, every four days with the listed storage/wage constraints. It begins with no free Silver. The sole authorized Royal Mint is in the different processing role, so mining and monetary use require an actual voyage.
+Silver is the single new canonical good. The generated private Silver Mine extracts one complete Silver per funded successful batch, every four days with the listed storage/wage constraints. It begins with no free Silver. The sole authorized Royal Mint is in a town with no local Silver capability, so mining and monetary use require an actual voyage.
 
 Commissioning the Mint pays **400 coins company→treasury**, once, and takes **four days**. It is public property, has no private factory warehouse and never appears in Company Value. Its delay is explicit and independent of private-facility Ascension timing. A pending Mint cannot issue currency.
 
@@ -91,13 +93,13 @@ Public works may buy up to **20 delivered Planks at 25 coins each**, consuming t
 
 ## Fleet construction and per-ship execution
 
-The processing harbor shipwright can expand the player fleet to **three completed or pending ships in total**. Each new order costs **500 coins** and consumes **four actual local-market Planks** for the hull. Of the payment, 460 goes to the market and 40 to local households for labor. Insufficient cash/materials or the fleet cap rejects the order without any partial payment, stock removal or ship creation.
+The generated shipyard can expand the player fleet to the configured limit, **three completed or pending ships by default**. Each new order costs **500 coins** and consumes **four actual local-market Planks** for the hull. Of the payment, 460 goes to the market and 40 to local households for labor. Insufficient cash/materials or the fleet cap rejects the order without any partial payment, stock removal or ship creation.
 
 An order placed on D completes after daily voyages on **D+4**. The completed ship is empty, docked at the shipwright, has capacity ten whole goods and speed 100, and receives a deterministic unique ID. Pending capital is replaced by the completed asset exactly once. Private-facility Ascensions do not change this schedule.
 
 All owned ships share company cash; each keeps separate cargo, dock/voyage, policy, enablement and priority. Historical routes retain their industrial stage and at most four dockside actions per chain. New v3 pooled runs expose [ordered cargo itineraries](AUTOMATION.md#ordered-cargo-itineraries): exact stop/action/pass state and at most eight operations per ship per day, including skips and departure. Manual and automated commands target the selected `shipId`, validate actual dock/ownership and share the ordinary trade/transfer/departure operations. Stable priority/ordinal-ID execution still runs through one staged world operation. Switching selection or editing a draft is passive. Saving a blocked itinerary retains its next action, budget and all unsold mixed cargo.
 
-The player explicitly chooses ordered market and company-stock actions through two to four towns; NPC merchants keep their complementary two-port policies. Neither system optimizes a strategy. Returning with a local export can fund the importing town, but still needs actual output, destination demand, company liquidity and a viable margin. An empty-return import route can drain local accounts even when food arrives. The [seed-99 witness](AUTOMATION.md#bounded-ordinary-world-witness) measures four real loops and funded Bakery output over 60 days without retuning this economy.
+The player explicitly chooses ordered market and company-stock actions through two to four towns; NPC merchants keep their complementary two-port policies. Neither system optimizes a strategy. Returning with a local export can fund the importing town, but still needs actual output, destination demand, company liquidity and a viable margin. An empty-return import route can drain local accounts even when food arrives. The [headless route evidence](AUTOMATION.md#headless-evidence) checks repeated physical loops and funded Bakery output without introducing grants or subsidies.
 
 ## Reference Company Value and honest finance
 
@@ -119,9 +121,9 @@ Material FIFO retains original interval slices: `floor(C*end/Q)-floor(C*start/Q)
 
 ## Run identity, local saves and objectives
 
-The current identity is v3 generator/content3, valuation1, current pricing, seed, charter, Ascension, Grand Commission draft or Sandbox, storage2, itinerary1 and circulation1. Retry recreates exactly that initial identity. Current schema6 saves restore the complete world without advancing it; historical modes and schemas are intentionally retired. See [save policy](SAVES.md).
+The current identity is generator4/content3 plus the complete canonical generation configuration, valuation1, current pricing, seed, charter, Ascension, Grand Commission draft or Sandbox, storage2, itinerary1 and circulation1. Retry recreates exactly that initial identity. Current schema7 saves restore the complete world without advancing it; historical modes and schemas are intentionally retired. See [save policy](SAVES.md).
 
-Grand Commission is the sole scored challenge, with four mandatory drafted goals and100 liquid coins by day180. The [Journal](GRAND_COMMISSION.md) distinguishes cumulative accomplishments and reversible conditions. Sandbox has no deadline. Current charters retain their real endowments; public Mint assets never count as company property.
+Grand Commission is the sole scored challenge, with four mandatory drafted goals and100 liquid coins by the configured deadline, day720 by default. The [Journal](GRAND_COMMISSION.md) distinguishes cumulative accomplishments and reversible conditions. Sandbox has no deadline. Current charters retain their real endowments; public Mint assets never count as company property.
 
 ## Evidence and unresolved tuning
 
@@ -133,4 +135,4 @@ GitHub Pages remains manual-only. This task neither publishes nor reconfigures i
 
 ## New modern circulation revision
 
-Task2.4 adds [economic rules revision1](ECONOMIC_CIRCULATION_REVIEW.md), independently of unchanged generator/content3 and valuation1. Fresh v3 host setup uses storage2/itinerary1/economy1 and schema6; historical versions are no longer supported. Retry preserves the current identity. This revision adds actual port handling expenses, one bounded municipal review, a Coverage luxury-target floor and finite role-specific starting imports. No recipes, goods, ships or automatic currency sources are added. Harbor displays exact gross and net settlement; Ledger separates wages, fees, FIFO, capital and Mint receipts. The separate `--economic-circulation --check` verifies matched experiments alongside the current productive-economy report.
+Task2.4 adds [economic rules revision1](ECONOMIC_CIRCULATION_REVIEW.md), independently of generator4/content3 and valuation1. Fresh v3 host setup uses storage2/itinerary1/economy1 and schema7; historical versions are no longer supported. Retry preserves the current identity. This revision adds actual port handling expenses, one bounded municipal review, a Coverage luxury-target floor and finite role-specific starting imports. No recipes, goods, ships or automatic currency sources are added. Harbor displays exact gross and net settlement; Ledger separates wages, fees, FIFO, capital and Mint receipts. The separate `--economic-circulation --check` verifies matched experiments alongside the current productive-economy report.

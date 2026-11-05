@@ -12,66 +12,50 @@ namespace SaltAndLedger.Simulation.Tests;
 public sealed class SeededArchipelagoTests
 {
     [Theory]
-    [InlineData(0, "eastport@717,173;northport@789,473;southhaven@286,202;westhaven@269,534", "309,432,576,572,524,333")]
-    [InlineData(1, "eastport@265,517;northport@225,211;southhaven@784,188;westhaven@730,528", "309,615,466,560,597,345")]
-    [InlineData(-1, "eastport@239,476;northport@785,168;southhaven@247,229;westhaven@781,478", "627,248,543,542,311,590")]
-    [InlineData(int.MinValue, "eastport@733,512;northport@242,232;southhaven@743,232;westhaven@267,533", "566,281,467,501,303,564")]
-    [InlineData(int.MaxValue, "eastport@217,520;northport@258,185;southhaven@780,531;westhaven@776,213", "338,564,638,627,519,319")]
-    [InlineData(42, "eastport@715,475;northport@246,502;southhaven@787,160;westhaven@222,200", "470,324,565,641,303,567")]
-    public void VersionOneGoldenVectorsPreserveCoordinatesAndDistances(int seed, string positions, string distances)
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(-1)]
+    [InlineData(int.MinValue)]
+    [InlineData(int.MaxValue)]
+    [InlineData(42)]
+    public void VersionFourUsesStableIdentifiersAndExactReplay(int seed)
     {
         var map = SeededArchipelago.Generate(seed);
-        Assert.Equal(1, map.GeneratorVersion);
-        Assert.Equal(positions, map.Signature.Split('|')[1]);
-        Assert.Equal(distances, string.Join(",", map.Routes.Select(route => route.Distance)));
+        Assert.Equal(4, map.GeneratorVersion);
+        Assert.InRange(map.Positions.Count, 8, 12);
+        Assert.Equal(Enumerable.Range(1, map.Positions.Count).Select(index => $"town_{index:D3}"), map.Positions.Keys);
         Assert.Equal(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(map)),
             Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(SeededArchipelago.Generate(seed))));
+        Assert.InRange(map.SelectedCandidate, 0, map.CandidateCount - 1);
+        Assert.Equal(map.RejectionReasons.Count, map.RejectedCandidateCount);
     }
 
     [Fact]
-    public void BoundedSlotsGuaranteeNavigableSeparatedGeographyAcrossAStableWideSample()
+    public void BoundedCandidatesEnforceEveryDistanceAndConnectivityAcrossManySeeds()
     {
-        // The slots prove the bounds for every int32 seed; this sample catches implementation drift.
-        var seeds = Enumerable.Range(0, 4096).Select(index => unchecked(index * 104729))
+        var seeds = Enumerable.Range(0, 512).Select(index => unchecked(index * 104729))
             .Concat(new[] { int.MinValue, int.MaxValue });
+        var counts = new HashSet<int>();
         foreach (var seed in seeds)
         {
             var map = SeededArchipelago.Generate(seed);
-            Assert.Equal(new[] { "eastport", "northport", "southhaven", "westhaven" }, map.Positions.Keys);
-            Assert.Equal(6, map.Routes.Count);
-            Assert.Equal(6, map.Routes.Select(route => route.OriginPortId + "/" + route.DestinationPortId).Distinct().Count());
-            foreach (var position in map.Positions.Values)
-            {
-                Assert.InRange(position.X, SeededArchipelago.MinimumX, SeededArchipelago.MaximumX);
-                Assert.InRange(position.Y, SeededArchipelago.MinimumY, SeededArchipelago.MaximumY);
-            }
-            foreach (var route in map.Routes)
-            {
-                Assert.True(string.CompareOrdinal(route.OriginPortId, route.DestinationPortId) < 0);
-                var first = map.Positions[route.OriginPortId];
-                var second = map.Positions[route.DestinationPortId];
-                var square = (first.X - second.X) * (first.X - second.X) + (first.Y - second.Y) * (first.Y - second.Y);
-                Assert.True(square >= SeededArchipelago.MinimumSeparation * SeededArchipelago.MinimumSeparation);
-                Assert.True((route.Distance - 1) * (route.Distance - 1) < square);
-                Assert.True(route.Distance * route.Distance >= square);
-                Assert.InRange(route.Distance, SeededArchipelago.MinimumSeparation, SeededArchipelago.MaximumDistance);
-                Assert.InRange(route.DurationDays(100), 3, 7);
-                Assert.Equal(route.Distance, route.DurationDays(1));
-                Assert.Equal(1, route.DurationDays(int.MaxValue));
-            }
+            counts.Add(map.Positions.Count);
+            Assert.Equal(map.Positions.Count + 2, map.Routes.Count);
+            Assert.True(map.Routes.Count < map.Positions.Count * (map.Positions.Count - 1) / 2);
+            AssertGeometry(map, WorldGenerationConfiguration.Default);
         }
+        Assert.Equal(new[] { 8, 9, 10, 11, 12 }, counts.OrderBy(count => count));
     }
 
     [Fact]
-    public void ChangingSeedsChangesEconomicTravelRelationshipsAndCollectionsAreImmutable()
+    public void ChangingSeedsChangesGeographyAndCollectionsAreImmutable()
     {
-        var times = Enumerable.Range(0, 100).Select(seed => SeededArchipelago.Generate(seed).Routes
-            .Single(route => route.OriginPortId == WorldIds.East && route.DestinationPortId == WorldIds.North)
-            .DurationDays(100)).Distinct().ToArray();
-        Assert.Equal(new[] { 3, 4, 5, 6, 7 }, times.OrderBy(value => value));
+        var signatures = Enumerable.Range(0, 100).Select(seed => SeededArchipelago.Generate(seed).Signature).ToArray();
+        Assert.Equal(signatures.Length, signatures.Distinct(StringComparer.Ordinal).Count());
         var map = SeededArchipelago.Generate(0);
-        Assert.Throws<NotSupportedException>(() => ((IDictionary<string, PortPosition>)map.Positions).Remove(WorldIds.North));
+        Assert.Throws<NotSupportedException>(() => ((IDictionary<string, PortPosition>)map.Positions).Remove("town_001"));
         Assert.Throws<NotSupportedException>(() => ((IList<SeaRoute>)map.Routes).Clear());
+        Assert.Throws<NotSupportedException>(() => ((IList<string>)map.RejectionReasons).Clear());
     }
 
     [Fact]
@@ -85,6 +69,95 @@ public sealed class SeededArchipelagoTests
             Assert.Equal(before, JsonConvert.SerializeObject(SeededArchipelago.Generate(int.MinValue)));
         }
         finally { CultureInfo.CurrentCulture = original; }
+    }
+
+    [Theory]
+    [InlineData(8, 900, 600, 135, 175, 325, 1)]
+    [InlineData(12, 1000, 700, 110, 110, 300, 0)]
+    [InlineData(64, 2000, 2000, 110, 110, 1000, 5)]
+    public void CustomCountsSpacingAndNarrowLanesAreHonored(int towns, int width, int height,
+        int spacing, int minimumLane, int maximumLane, int extraLanes)
+    {
+        var json = Newtonsoft.Json.Linq.JObject.Parse(WorldGenerationConfiguration.Default.ToJson());
+        json["townCount"]!["min"] = towns;
+        json["townCount"]!["max"] = towns;
+        var geography = json["geography"]!;
+        geography["width"] = width;
+        geography["height"] = height;
+        geography["minimumTownSpacing"] = spacing;
+        geography["minimumLaneDistance"] = minimumLane;
+        geography["maximumLaneDistance"] = maximumLane;
+        geography["extraLaneCount"] = extraLanes;
+        geography["candidateCount"] = 32;
+        var configuration = WorldGenerationConfiguration.Parse(json.ToString());
+        foreach (var seed in new[] { 0, 42, 99, -734282136 })
+        {
+            var map = SeededArchipelago.Generate(seed, configuration: configuration);
+            Assert.Equal(towns, map.Positions.Count);
+            Assert.Equal(towns - 1 + extraLanes, map.Routes.Count);
+            AssertGeometry(map, configuration);
+        }
+    }
+
+    [Fact]
+    public void UnsatisfiedPlacementFailsClearlyWithoutChangingUserBounds()
+    {
+        var json = Newtonsoft.Json.Linq.JObject.Parse(WorldGenerationConfiguration.Default.ToJson());
+        json["townCount"]!["min"] = 12;
+        json["townCount"]!["max"] = 12;
+        json["geography"]!["placementAttempts"] = 1;
+        json["geography"]!["candidateCount"] = 1;
+        var configuration = WorldGenerationConfiguration.Parse(json.ToString());
+        var failure = Assert.Throws<WorldGenerationException>(() => SeededArchipelago.Generate(42, configuration: configuration));
+        Assert.Contains("12 towns", failure.Message);
+        Assert.Contains("bounded candidates", failure.Message);
+        Assert.Contains("placed 1/12", failure.Message);
+        Assert.Equal(1, configuration.Geography.PlacementAttempts);
+    }
+
+    private static void AssertGeometry(ArchipelagoGeography map, WorldGenerationConfiguration configuration)
+    {
+        var settings = configuration.Geography;
+        var positions = map.Positions.Values.ToArray();
+        foreach (var position in positions)
+        {
+            Assert.InRange(position.X, settings.Margin, settings.Width - settings.Margin);
+            Assert.InRange(position.Y, settings.Margin, settings.Height - settings.Margin);
+            foreach (var other in positions.Where(other => other.PortId != position.PortId))
+            {
+                var dx = (long)position.X - other.X;
+                var dy = (long)position.Y - other.Y;
+                Assert.True(dx * dx + dy * dy >= (long)settings.MinimumTownSpacing * settings.MinimumTownSpacing);
+            }
+        }
+        Assert.Equal(map.Routes.Count, map.Routes.Select(route => route.OriginPortId + "/" + route.DestinationPortId)
+            .Distinct(StringComparer.Ordinal).Count());
+        foreach (var route in map.Routes)
+        {
+            Assert.True(string.CompareOrdinal(route.OriginPortId, route.DestinationPortId) < 0);
+            var first = map.Positions[route.OriginPortId];
+            var second = map.Positions[route.DestinationPortId];
+            var dx = (long)first.X - second.X;
+            var dy = (long)first.Y - second.Y;
+            var square = dx * dx + dy * dy;
+            Assert.True((long)(route.Distance - 1) * (route.Distance - 1) < square);
+            Assert.True((long)route.Distance * route.Distance >= square);
+            Assert.InRange(route.Distance, settings.MinimumLaneDistance, settings.MaximumLaneDistance);
+            Assert.Equal(route.Distance, route.DurationDays(1));
+            Assert.Equal(1, route.DurationDays(int.MaxValue));
+        }
+        var visited = new HashSet<string>(StringComparer.Ordinal) { positions[0].PortId };
+        var frontier = new Queue<string>(visited);
+        while (frontier.Count != 0)
+        {
+            var current = frontier.Dequeue();
+            foreach (var route in map.Routes.Where(route => route.OriginPortId == current || route.DestinationPortId == current))
+            {
+                var next = route.OriginPortId == current ? route.DestinationPortId : route.OriginPortId;
+                if (visited.Add(next)) frontier.Enqueue(next);
+            }
+        }
+        Assert.Equal(map.Positions.Count, visited.Count);
     }
 
     [Theory]
@@ -120,7 +193,9 @@ public sealed class SeededArchipelagoTests
     [Theory]
     [InlineData(-1)]
     [InlineData(0)]
+    [InlineData(1)]
     [InlineData(2)]
+    [InlineData(3)]
     [InlineData(int.MaxValue)]
     public void UnknownGeneratorVersionsAreRejected(int version) =>
         Assert.Throws<ArgumentOutOfRangeException>(() => SeededArchipelago.Generate(0, version));

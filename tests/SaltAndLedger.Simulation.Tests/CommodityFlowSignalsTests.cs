@@ -331,7 +331,8 @@ public sealed class CommodityFlowSignalsTests
                 new CompanyConfiguration("rival", 1000 * Unit) }, industryBlueprints: new[] { plan },
             initialFacilities: sites, difficulty: difficulty,
             runIdentity: new RunIdentity(null, RunScenario.MerchantCharter, RunWorldMode.ExpandingEconomy, 99,
-                difficulty, companyStorageRules: CompanyStorageRules.Pooled, economicRulesVersion: 0),
+                difficulty, companyStorageRules: CompanyStorageRules.Pooled, economicRulesVersion: 0,
+                generationConfiguration: DiagnosticGenerationSettings.AllowLocalSupplyChains),
             economy: ExpandingEconomyConfiguration.CreateDefault("town", "other"));
     }
 }

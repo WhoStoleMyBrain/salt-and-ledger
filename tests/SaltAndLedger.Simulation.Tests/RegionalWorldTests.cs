@@ -69,16 +69,20 @@ public sealed class RegionalWorldTests
     {
         var world = RunScenario.Create(Content(), new RunIdentity(null, RunScenario.MerchantCharter));
         var initial = world.Snapshot();
-        var quote = initial.GetMarketQuote(initial.Ships[WorldIds.PlayerShipId].DockedPortId!, "logs");
-        var preview = initial.PreviewTrade(WorldIds.PlayerShipId, initial.Ships[WorldIds.PlayerShipId].DockedPortId!, Buy(EconomicUnits.FromWhole(6)));
-        var result = world.ExecuteTrade(WorldIds.PlayerShipId, initial.Ships[WorldIds.PlayerShipId].DockedPortId!, Buy(EconomicUnits.FromWhole(6)));
+        var dock = initial.Ships[WorldIds.PlayerShipId].DockedPortId!;
+        var quantity = EconomicUnits.FromWhole(Math.Min(6, initial.Ports[dock].Inventory["logs"] / EconomicUnits.QuantityScale - 1));
+        var quote = initial.GetMarketQuote(dock, "logs");
+        var preview = initial.PreviewTrade(WorldIds.PlayerShipId, dock, Buy(quantity));
+        var result = world.ExecuteTrade(WorldIds.PlayerShipId, dock, Buy(quantity));
+        Assert.Equal(TradeOutcome.Traded, result.Trades.Single().Trade.Outcome);
         Assert.Equal(preview.ExecutedAmount, result.Trades.Single().Trade.ExecutedAmount);
         Assert.Equal(0L, result.After.Day);
-        Assert.True(result.After.GetMarketQuote(initial.Ships[WorldIds.PlayerShipId].DockedPortId!, "logs").Ask > quote.Ask);
-        Assert.Equal(quote.Ask, initial.GetMarketQuote(initial.Ships[WorldIds.PlayerShipId].DockedPortId!, "logs").Ask);
+        Assert.True(result.After.GetMarketQuote(dock, "logs").Ask > quote.Ask);
+        Assert.Equal(quote.Ask, initial.GetMarketQuote(dock, "logs").Ask);
         var current = world.Snapshot();
-        current.PreviewTrade(WorldIds.PlayerShipId, WorldIds.East, Sell(EconomicUnits.FromWhole(6)));
-        current.GetMarketQuote(WorldIds.East, "planks");
+        var remote = current.Ports.Keys.First(id => id != dock);
+        current.PreviewTrade(WorldIds.PlayerShipId, remote, Sell(quantity));
+        current.GetMarketQuote(remote, "planks");
         world.EvaluateAutomation(WorldIds.PlayerShipId);
         Assert.Same(current, world.Snapshot());
     }
@@ -409,8 +413,8 @@ public sealed class RegionalWorldTests
             foreach (var trade in result.Trades.Where(t => t.Trade.Direction == TradeDirection.Sell))
                 deliveries[trade.ShipId] = deliveries.GetValueOrDefault(trade.ShipId) + 1;
         }
-        Assert.True(deliveries[WorldIds.TimberShipId] >= 2);
-        Assert.True(deliveries[WorldIds.PlankShipId] >= 2);
+        Assert.True(world.Snapshot().Ships.Values.Count(ship => !ship.IsPlayer && deliveries.GetValueOrDefault(ship.Id) >= 2) >= 2,
+            "At least two generated merchants must make repeated real deliveries.");
     }
 
     [Fact]
@@ -432,15 +436,18 @@ public sealed class RegionalWorldTests
     [Fact]
     public void PolicyOutsideCurrentRoutePausesAndInvalidConfigurationIsAtomic()
     {
-        var world = World(ports: new[] { Port("north"), Port("south"), Port("east") },
+        var world = World(ports: new[] { Port("north"), Port("south"), Port("east"), Port("isolated") },
             routes: new[] { new SeaRoute("north", "south", 100), new SeaRoute("south", "east", 100) });
         var policy = new TradeRoutePolicy("south", "east", new RouteLeg("planks", 3, 1, 20, 1), allowEmptyReturn: true);
         world.ConfigureAutomation("player_ship", policy, true);
         Assert.Equal(AutomationAction.Pause, world.EvaluateAutomation("player_ship").Action);
         var before = world.Snapshot();
         Assert.Throws<InvalidOperationException>(() => world.ConfigureAutomation("player_ship",
-            new TradeRoutePolicy("north", "east", new RouteLeg("logs", 2, 1, 5, 1), allowEmptyReturn: true), true));
+            new TradeRoutePolicy("north", "isolated", new RouteLeg("logs", 2, 1, 5, 1), allowEmptyReturn: true), true));
         Assert.Same(before, world.Snapshot());
+        world.ConfigureAutomation("player_ship", new TradeRoutePolicy("north", "east",
+            new RouteLeg("logs", 2, 1, 5, 1), allowEmptyReturn: true), true);
+        Assert.Equal(AutomationAction.BuyAndDepart, world.EvaluateAutomation("player_ship").Action);
     }
 
     [Fact]

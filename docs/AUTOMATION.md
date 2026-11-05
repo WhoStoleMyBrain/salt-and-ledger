@@ -16,7 +16,7 @@ The warehouse shows conditional private output/input needs over12 days, current 
 
 ## Ordered cargo itineraries
 
-Immutable `CargoItineraryPolicy` version 1 applies to player ships in v3 pooled-stock runs. It has **2–4 unique port stops**, **1–8 ordered commands per stop**, and **at most 24 commands total**. The last stop connects back to the first through a real sea route. Every port, connection, commodity and ship ownership is validated before application. Company storage need not exist yet: a future Load/Unload is a valid plan, with a missing-warehouse warning. Existing NPC merchants keep their original two-port policies and finite budgets.
+Immutable `CargoItineraryPolicy` version 1 applies to player ships in v3 pooled-stock runs. It has **2–4 unique port stops**, **1–8 ordered commands per stop**, and **at most 24 commands total**. The last stop connects back to the first through a traversable sea path. Each leg may cross intermediate towns; transit neither executes their orders nor grants dock visits. Every port, connection, commodity and ship ownership is validated before application. Company storage need not exist yet: a future Load/Unload is a valid plan, with a missing-warehouse warning. Existing NPC merchants keep their original two-port policies and finite budgets.
 
 | Instruction | Physical and financial effect | Applicable limits |
 | --- | --- | --- |
@@ -45,7 +45,7 @@ Opening the planner pauses playback. Drafting, selecting ships and inspecting fi
 
 From **Fleet**, choose the owned ship and open **Route planner**; the ship inspector, Harbor and Industry also link to that ship's planner. Route V2 separates plotting the Course, editing stop Orders, Review and the Applied route. The live status shows actual dock/voyage, next stop/action, cargo capacity and the authoritative current reason. **Route tools & details → Cargo, last outcome & daily budget** expands the held commodities and used daily budget.
 
-Plot two to four unique towns on the route chart, using the actual available connections. Reorder or remove stop cards before **Set stop orders**. Select a stop, then a commodity/action cell in its **Sell / Buy / Unload / Load** grid. The cell opens an inline quantity editor; **Save order** changes the draft, while Cancel retains the previous instruction. For example, save Flour 2 and Logs 2 under Unload, then Bread 4 under Load: three goods at one stop. Each instruction still counts toward the eight-command stop and 24-command route limits. Explicit Remove deletes an instruction rather than treating invalid text as a command.
+Plot two to four unique towns on the route chart, using deterministic paths through the actual available connections. Reorder or remove stop cards before **Set stop orders**. Select a stop, then a commodity/action cell in its **Sell / Buy / Unload / Load** grid. The cell opens an inline quantity editor; **Save order** changes the draft, while Cancel retains the previous instruction. For example, save Flour 2 and Logs 2 under Unload, then Bread 4 under Load: three goods at one stop. Each instruction still counts toward the eight-command stop and 24-command route limits. Explicit Remove deletes an instruction rather than treating invalid text as a command.
 
 New stops use **Unload → Sell → Load → Buy**, then stable commodity-ID order, freeing cargo space before acquiring goods. This execution order is separate from the visual column order. Applied routes and presets retain their exact order. The inline editor exposes minimum shipments, Skip/Wait, marginal prices, cash/warehouse reserves and spending caps through advanced settings. The ordered-instruction list exposes the actual sequence; moving an instruction fixes that stop's custom order and later new grid instructions append. Repeated instructions for the same good/action remain separate and individually editable rather than being silently merged into one cell.
 
@@ -53,40 +53,12 @@ Maximum/minimum fields accept whole units; coin and warehouse reserves accept up
 
 Missing company storage is an ordinary **Skip/Wait** blocker when the instruction reaches execution. A Skip advances without moving goods; a Wait retains the instruction. Build eligible industry through Industry to create real local company storage; the already assigned route can then use it without being recreated. The planner never creates storage, buildings or cargo. Other current blockers, such as absent cargo or a full hold, may take precedence. Pending paid facilities already provide storage under the existing construction rules; production still waits for completion.
 
-**Draft Grain–Flour–Bread loop** resolves the current world's economic roles and creates this unapplied example:
-
-| Stop | Ordered instructions |
-| --- | --- |
-| A — vulnerable coast, planned Bakery | Unload up to 2 Flour; unload up to 2 Logs; load up to 4 Bread |
-| B — agricultural food source | Sell up to 4 Bread; buy up to 4 Grain; buy up to 2 Logs |
-| C — processing town | Sell up to 4 Grain; buy up to 2 Flour; sail back to A |
-
-All example orders have minimum one and Skip on shortage. Purchases keep 100 company coins and cap each order at 200 coins. You may apply before construction, but must actually build the eligible Bakery and fund inputs and wages to produce Bread; the preset creates nothing. Starting empty at A is valid: its first absent-input/output orders skip, and later arrivals deliver real inputs. The ordinary ship phase precedes factory production, so newly supplied inputs can fund a batch later that day, while newly produced Bread becomes available for a subsequent visit or explicit dockside action.
+**Draft Grain–Flour–Bread loop** resolves actual eligible Bakery, Grain and Flour locations in the generated world. It drafts only an unapplied itinerary; inspect its resolved stop orders and import dependencies before applying it. It creates no facilities, cargo or wages. Default specialization requires Flour and fuel producers to remain outside Bakery towns. Public markets can hold imported goods even where those goods cannot be produced locally.
 
 ### Exact continuation
 
 Schema6 saves preserve complete typed plans, exact stop/action/cycle, last reason and daily budget. Loading never resets completed work. Retry recreates the original initial world. Historical player route editors and old save schemas are retired.
 
-### Bounded ordinary-world witness
+### Headless evidence
 
-The focused headless test uses **seed 99, Merchant Company, StockOnly, Ascension 0, Sandbox, pooled storage and itinerary version 1**. It pays 300 coins for a Westhaven Bakery, sails from Southhaven to Westhaven and enables the unmodified example on day 3. After that, it submits only whole-day advances through day 60. The public processing industry and all three ordinary NPC routes remain active; there are no supplied test goods, subsidies or manual cargo moves.
-
-The ship physically returns through Westhaven → Southhaven → Northport → Westhaven on days **17, 31, 45 and 59**. Seven funded Bakery batches produce **14 Bread** and pay **42 coins in wages**. The route buys/sells 16 Grain, buys 8 Flour and 8 Logs, unloads 8 of each input, loads 12 Bread and sells 8 Bread. Final owned stock is 6 Bread, 1 Flour and 1 Log.
-
-| Day-60 measure | Coins |
-| --- | ---: |
-| Company cash | 1,534.6896 |
-| Reference Company Value | 2,539.6896 |
-| Inventory purchases / gross sale revenue | 209.6664 / 292.2 |
-| Released material basis / held basis | 128.3332 / 81.3332 |
-| Realized material gross margin | 163.8668 |
-| Operating surplus after wages | 121.8668 |
-| Commercial service fees (separate expense) | 5.844 |
-
-Construction is separate capital expenditure. Reference Company Value is not realized income. All-account money remains **11,730 coins**, with zero Mint issuance and zero external inflow. Each operation reconciles physical production/consumption and all owners' cash, FIFO basis and quantities. Reversing equivalent configuration order reproduces identical output and final state. This is a bounded operational witness, not a claim of permanent profitability or an actual Unity interaction check.
-
-```text
-dotnet test tests/SaltAndLedger.Simulation.Tests/SaltAndLedger.Simulation.Tests.csproj -c Release --filter FullyQualifiedName~CargoItineraryTests --logger "console;verbosity=detailed"
-```
-
-The focused suite covers scarce stock/cash, finite market liquidity, mixed/full holds, reserves, exact marginal caps, skip/wait, partial-order completion, repeated-call daily limits, three independent ships, manual economic equivalence, stale decisions and exceptional rollback. The current results above were recorded in the full consolidation test run with circulation rules1. Actual Editor/player interaction and full integration checks are recorded in [current verification](REPOSITORY-CLEANUP.md).
+The procedural journey and navigation tests run ordinary paid trades, construction, production, transfers and multi-lane voyages, including exact save continuation and accounting audits. Run `dotnet test SaltAndLedger.sln -c Release`, and use `--world-generation --check` for representative world reports. Earlier seed-99 four-town numerical observations remain in Git history; they are not current generator4 predictions. See [Task3.1 verification](TASK-3.1-VERIFICATION.md) for checks actually performed and remaining Unity interaction checks.

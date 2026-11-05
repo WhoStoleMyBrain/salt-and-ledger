@@ -144,7 +144,7 @@ namespace SaltAndLedger.UnityHost.Tests
                 foreach (var name in new[] { "goodDropdown", "quantityMaxBuy", "quantityMaxSell", "buyButton", "sellButton", "tradeAvailabilityLabel" })
                     yield return Reachable(name);
                 Assert.That(root.Q<Button>("nextDayButton").enabledInHierarchy, Is.False);
-                var town = root.Q<Button>("port_" + WorldIds.West);
+                var town = root.Q<Button>("port_" + GeneratedWorldFixture.Destination(controller.Session.Snapshot));
                 Assert.That(root.panel.Pick(town.worldBound.center), Is.Not.SameAs(town), "Trade backdrop blocks the town marker.");
                 Cancel();
                 Click("openIndustryButton");

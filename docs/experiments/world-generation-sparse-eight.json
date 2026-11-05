@@ -1,0 +1,547 @@
+{
+  "ReportVersion": 1,
+  "GeneratorVersion": 4,
+  "Configuration": {
+    "schemaVersion": 1,
+    "townCount": {
+      "min": 8,
+      "max": 8
+    },
+    "geography": {
+      "width": 1000,
+      "height": 700,
+      "margin": 60,
+      "minimumTownSpacing": 110,
+      "minimumLaneDistance": 110,
+      "maximumLaneDistance": 450,
+      "extraLaneCount": 0,
+      "candidateCount": 12,
+      "placementAttempts": 1500
+    },
+    "enabledGoods": [
+      "bread",
+      "flour",
+      "furniture",
+      "grain",
+      "logs",
+      "planks",
+      "silver"
+    ],
+    "industries": [
+      {
+        "industryId": "bakery",
+        "publicTowns": {
+          "min": 1,
+          "max": 2
+        },
+        "privateTowns": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      {
+        "industryId": "farm",
+        "publicTowns": {
+          "min": 1,
+          "max": 2
+        },
+        "privateTowns": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      {
+        "industryId": "furniture_workshop",
+        "publicTowns": {
+          "min": 1,
+          "max": 2
+        },
+        "privateTowns": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      {
+        "industryId": "lumber_camp",
+        "publicTowns": {
+          "min": 1,
+          "max": 2
+        },
+        "privateTowns": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      {
+        "industryId": "mill",
+        "publicTowns": {
+          "min": 1,
+          "max": 2
+        },
+        "privateTowns": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      {
+        "industryId": "sawmill",
+        "publicTowns": {
+          "min": 1,
+          "max": 2
+        },
+        "privateTowns": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      {
+        "industryId": "silver_mine",
+        "publicTowns": {
+          "min": 1,
+          "max": 2
+        },
+        "privateTowns": {
+          "min": 2,
+          "max": 4
+        }
+      }
+    ],
+    "enforceProductionSeparation": true,
+    "requireSupplyChains": true,
+    "population": {
+      "min": 20,
+      "max": 60
+    },
+    "prosperity": {
+      "min": 40,
+      "max": 80
+    },
+    "marketCash": {
+      "min": 500,
+      "max": 1600
+    },
+    "householdCashPerResident": {
+      "min": 20,
+      "max": 42
+    },
+    "startingInventories": {
+      "bread": {
+        "min": 8,
+        "max": 16
+      },
+      "flour": {
+        "min": 2,
+        "max": 8
+      },
+      "furniture": {
+        "min": 0,
+        "max": 2
+      },
+      "grain": {
+        "min": 4,
+        "max": 16
+      },
+      "logs": {
+        "min": 4,
+        "max": 18
+      },
+      "planks": {
+        "min": 2,
+        "max": 8
+      },
+      "silver": {
+        "min": 0,
+        "max": 0
+      }
+    },
+    "npc": {
+      "tradersPerTownPermille": 500,
+      "minimumCount": 2,
+      "maximumCount": 24,
+      "startingCash": {
+        "min": 300,
+        "max": 500
+      },
+      "cargoCapacity": {
+        "min": 3,
+        "max": 6
+      },
+      "speed": 100
+    },
+    "institutions": {
+      "startingPortIndex": null,
+      "mintPortIndex": null,
+      "silverPortIndex": null,
+      "shipyardPortIndex": null
+    },
+    "fleetLimit": 5,
+    "deadlineDays": 540,
+    "economicCandidateCount": 16
+  },
+  "SimulatedDays": 365,
+  "ConstraintFailures": [],
+  "Worlds": [
+    {
+      "Seed": 42,
+      "GeneratorVersion": 4,
+      "ConfigurationFingerprint": "4c1851be89963a8fc97bc729a5361a3396031bf0abe686b147c8b015b5cb0898",
+      "Quality": {
+        "TownCount": 8,
+        "LaneCount": 7,
+        "Connected": true,
+        "TotalLaneDistance": 1797,
+        "MaximumShortestTravelDistance": 1053,
+        "MaximumTravelDaysAtSpeed100": 13,
+        "MeanNearestTownSquaredDistance": 62807,
+        "TransportDependencies": 14,
+        "DirectDependencyPairs": 5,
+        "LocalDependencyViolations": 0,
+        "InstitutionDependencyViolations": 0,
+        "AllEnabledInputsObtainable": true,
+        "TotalPopulation": 373,
+        "TotalMarketCash": 92940000,
+        "TotalHouseholdCash": 109050000,
+        "MostCentralPortId": "town_005",
+        "LeafPortIds": [
+          "town_001",
+          "town_003",
+          "town_004",
+          "town_006",
+          "town_007"
+        ],
+        "Industries": [
+          {
+            "IndustryId": "bakery",
+            "PublicTowns": 1,
+            "PrivateTowns": 2,
+            "CapabilityTowns": 2
+          },
+          {
+            "IndustryId": "farm",
+            "PublicTowns": 2,
+            "PrivateTowns": 3,
+            "CapabilityTowns": 3
+          },
+          {
+            "IndustryId": "furniture_workshop",
+            "PublicTowns": 1,
+            "PrivateTowns": 4,
+            "CapabilityTowns": 4
+          },
+          {
+            "IndustryId": "lumber_camp",
+            "PublicTowns": 1,
+            "PrivateTowns": 3,
+            "CapabilityTowns": 3
+          },
+          {
+            "IndustryId": "mill",
+            "PublicTowns": 1,
+            "PrivateTowns": 2,
+            "CapabilityTowns": 2
+          },
+          {
+            "IndustryId": "sawmill",
+            "PublicTowns": 2,
+            "PrivateTowns": 4,
+            "CapabilityTowns": 4
+          },
+          {
+            "IndustryId": "silver_mine",
+            "PublicTowns": 1,
+            "PrivateTowns": 2,
+            "CapabilityTowns": 2
+          }
+        ],
+        "Towns": [
+          {
+            "PortId": "town_001",
+            "LaneDegree": 1,
+            "TotalTravelDistance": 4893,
+            "Population": 55,
+            "Prosperity": 41,
+            "MarketCash": 11930000,
+            "HouseholdCash": 11000000,
+            "ProductionCapabilities": 2
+          },
+          {
+            "PortId": "town_002",
+            "LaneDegree": 3,
+            "TotalTravelDistance": 2739,
+            "Population": 24,
+            "Prosperity": 53,
+            "MarketCash": 11020000,
+            "HouseholdCash": 8400000,
+            "ProductionCapabilities": 3
+          },
+          {
+            "PortId": "town_003",
+            "LaneDegree": 1,
+            "TotalTravelDistance": 4017,
+            "Population": 50,
+            "Prosperity": 70,
+            "MarketCash": 15890000,
+            "HouseholdCash": 19000000,
+            "ProductionCapabilities": 3
+          },
+          {
+            "PortId": "town_004",
+            "LaneDegree": 1,
+            "TotalTravelDistance": 5019,
+            "Population": 58,
+            "Prosperity": 59,
+            "MarketCash": 12160000,
+            "HouseholdCash": 15660000,
+            "ProductionCapabilities": 2
+          },
+          {
+            "PortId": "town_005",
+            "LaneDegree": 3,
+            "TotalTravelDistance": 2495,
+            "Population": 56,
+            "Prosperity": 80,
+            "MarketCash": 12460000,
+            "HouseholdCash": 12320000,
+            "ProductionCapabilities": 4
+          },
+          {
+            "PortId": "town_006",
+            "LaneDegree": 1,
+            "TotalTravelDistance": 4623,
+            "Population": 39,
+            "Prosperity": 64,
+            "MarketCash": 9200000,
+            "HouseholdCash": 12870000,
+            "ProductionCapabilities": 1
+          },
+          {
+            "PortId": "town_007",
+            "LaneDegree": 1,
+            "TotalTravelDistance": 4007,
+            "Population": 33,
+            "Prosperity": 54,
+            "MarketCash": 10790000,
+            "HouseholdCash": 6600000,
+            "ProductionCapabilities": 2
+          },
+          {
+            "PortId": "town_008",
+            "LaneDegree": 3,
+            "TotalTravelDistance": 2949,
+            "Population": 58,
+            "Prosperity": 54,
+            "MarketCash": 9490000,
+            "HouseholdCash": 23200000,
+            "ProductionCapabilities": 3
+          }
+        ],
+        "GeographyCandidates": 12,
+        "SelectedGeographyCandidate": 7,
+        "EconomicCandidates": 1,
+        "RejectedConstraints": []
+      },
+      "Towns": [
+        {
+          "Id": "town_001",
+          "Name": "Alderhaven",
+          "X": 67,
+          "Y": 79,
+          "Role": "Production: Furniture Workshop, Lumber Camp; public Royal Mint; shipyard",
+          "Population": 55,
+          "Prosperity": 41,
+          "MarketCash": 11930000,
+          "HouseholdCash": 11000000,
+          "PublicRecipes": [
+            "harvest_logs",
+            "make_furniture"
+          ],
+          "PrivateBlueprints": [
+            "private_lumber_camp",
+            "private_workshop"
+          ]
+        },
+        {
+          "Id": "town_002",
+          "Name": "Brinehaven",
+          "X": 261,
+          "Y": 381,
+          "Role": "Production: Furniture Workshop, Lumber Camp, Mill",
+          "Population": 24,
+          "Prosperity": 53,
+          "MarketCash": 11020000,
+          "HouseholdCash": 8400000,
+          "PublicRecipes": [
+            "mill_flour"
+          ],
+          "PrivateBlueprints": [
+            "private_lumber_camp",
+            "private_mill",
+            "private_workshop"
+          ]
+        },
+        {
+          "Id": "town_003",
+          "Name": "Cedarhaven",
+          "X": 383,
+          "Y": 605,
+          "Role": "Production: Furniture Workshop, Lumber Camp, Silver Mine",
+          "Population": 50,
+          "Prosperity": 70,
+          "MarketCash": 15890000,
+          "HouseholdCash": 19000000,
+          "PublicRecipes": [],
+          "PrivateBlueprints": [
+            "private_lumber_camp",
+            "private_silver_mine",
+            "private_workshop"
+          ]
+        },
+        {
+          "Id": "town_004",
+          "Name": "Dunhaven",
+          "X": 878,
+          "Y": 604,
+          "Role": "Production: Farm, Sawmill",
+          "Population": 58,
+          "Prosperity": 59,
+          "MarketCash": 12160000,
+          "HouseholdCash": 15660000,
+          "PublicRecipes": [
+            "harvest_grain",
+            "saw_planks"
+          ],
+          "PrivateBlueprints": [
+            "private_farm",
+            "private_sawmill"
+          ]
+        },
+        {
+          "Id": "town_005",
+          "Name": "Elmhaven",
+          "X": 382,
+          "Y": 366,
+          "Role": "Production: Bakery, Farm, Sawmill, Silver Mine",
+          "Population": 56,
+          "Prosperity": 80,
+          "MarketCash": 12460000,
+          "HouseholdCash": 12320000,
+          "PublicRecipes": [
+            "bake_bread",
+            "mine_silver",
+            "saw_planks"
+          ],
+          "PrivateBlueprints": [
+            "private_bakery",
+            "private_farm",
+            "private_sawmill",
+            "private_silver_mine"
+          ]
+        },
+        {
+          "Id": "town_006",
+          "Name": "Fairhaven",
+          "X": 70,
+          "Y": 630,
+          "Role": "Production: Furniture Workshop",
+          "Population": 39,
+          "Prosperity": 64,
+          "MarketCash": 9200000,
+          "HouseholdCash": 12870000,
+          "PublicRecipes": [],
+          "PrivateBlueprints": [
+            "private_workshop"
+          ]
+        },
+        {
+          "Id": "town_007",
+          "Name": "Glenhaven",
+          "X": 444,
+          "Y": 122,
+          "Role": "Production: Mill, Sawmill",
+          "Population": 33,
+          "Prosperity": 54,
+          "MarketCash": 10790000,
+          "HouseholdCash": 6600000,
+          "PublicRecipes": [],
+          "PrivateBlueprints": [
+            "private_mill",
+            "private_sawmill"
+          ]
+        },
+        {
+          "Id": "town_008",
+          "Name": "Highhaven",
+          "X": 542,
+          "Y": 526,
+          "Role": "Production: Bakery, Farm, Sawmill",
+          "Population": 58,
+          "Prosperity": 54,
+          "MarketCash": 9490000,
+          "HouseholdCash": 23200000,
+          "PublicRecipes": [
+            "harvest_grain"
+          ],
+          "PrivateBlueprints": [
+            "private_bakery",
+            "private_farm",
+            "private_sawmill"
+          ]
+        }
+      ],
+      "Routes": [
+        {
+          "OriginPortId": "town_001",
+          "DestinationPortId": "town_002",
+          "Distance": 359
+        },
+        {
+          "OriginPortId": "town_002",
+          "DestinationPortId": "town_005",
+          "Distance": 122
+        },
+        {
+          "OriginPortId": "town_002",
+          "DestinationPortId": "town_006",
+          "Distance": 314
+        },
+        {
+          "OriginPortId": "town_003",
+          "DestinationPortId": "town_008",
+          "Distance": 178
+        },
+        {
+          "OriginPortId": "town_004",
+          "DestinationPortId": "town_008",
+          "Distance": 345
+        },
+        {
+          "OriginPortId": "town_005",
+          "DestinationPortId": "town_007",
+          "Distance": 252
+        },
+        {
+          "OriginPortId": "town_005",
+          "DestinationPortId": "town_008",
+          "Distance": 227
+        }
+      ],
+      "Institutions": {
+        "StartPortId": "town_005",
+        "MintPortId": "town_001",
+        "SilverPortId": "town_003",
+        "ShipyardPortId": "town_001"
+      },
+      "NpcMerchants": 4,
+      "InitialAllAccountCash": "246830000",
+      "Checkpoint": {
+        "Day": 365,
+        "Revision": 365,
+        "AllAccountCash": "246830000",
+        "Population": 199,
+        "PlayerCash": 18000000,
+        "StateChecksum": "0987425942759a61a299078fb9e95f79be71917e1c62b0f1836882d0d2ee534d"
+      },
+      "DeterministicContinuationChecked": true
+    }
+  ]
+}

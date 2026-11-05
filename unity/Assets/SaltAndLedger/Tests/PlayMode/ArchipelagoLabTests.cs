@@ -72,12 +72,12 @@ namespace SaltAndLedger.UnityHost.Tests
             Arrow("logs", true);
             if (controller.TradeIsOpen) Click("closeTradeButton");
             Click("ship_" + controller.Session.Player.Id);
-            Click("port_" + WorldIds.South);
+            Click("port_" + GeneratedWorldFixture.Destination(controller.Session.Snapshot));
             Click("sailButton");
             Click("nextDayButton");
             var snapshot = controller.Session.Snapshot;
             Assert.That(controller.Map.DisplayedShipPosition(WorldIds.PlayerShipId),
-                Is.EqualTo(controller.Map.DisplayedShipPosition(WorldIds.TimberShipId)));
+                Is.EqualTo(controller.Map.DisplayedShipPosition(GeneratedWorldFixture.Npc(controller.Session.Snapshot))));
             Click("deckInspectButton");
             var picker = root.Q<DropdownField>("shipPicker");
             foreach (var ship in snapshot.Ships.Values)
@@ -93,13 +93,13 @@ namespace SaltAndLedger.UnityHost.Tests
         [UnityTest]
         public IEnumerator MapSelectionShowsPortsAndReadOnlyNpcOwnershipWithoutSpendingTime()
         {
-            Assert.That(controller.Map.PortMarkerCount, Is.EqualTo(4));
-            Assert.That(controller.Map.ShipMarkerCount, Is.EqualTo(4));
+            Assert.That(controller.Map.PortMarkerCount, Is.EqualTo(controller.Session.Snapshot.Ports.Count));
+            Assert.That(controller.Map.ShipMarkerCount, Is.EqualTo(controller.Session.Snapshot.Ships.Count));
             var before = controller.Session.Snapshot;
-            Click("port_" + WorldIds.West);
+            Click("port_" + GeneratedWorldFixture.Destination(controller.Session.Snapshot));
             Assert.That(root.Q<Label>("selectionTitle").text, Is.EqualTo("Westhaven"));
             Assert.That(root.Q<Label>("productionLabel").text, Does.Contain("Lumber Camp"));
-            Click("ship_" + WorldIds.TimberShipId);
+            Click("ship_" + GeneratedWorldFixture.Npc(controller.Session.Snapshot));
             Assert.That(root.Q<Label>("selectionSubtitle").text, Does.Contain("NPC"));
             Assert.That(root.Q<Label>("shipCargoLabel").text, Does.Contain("Shared company cash"));
             Click("openTradeButton");
@@ -138,10 +138,10 @@ namespace SaltAndLedger.UnityHost.Tests
         {
             Click("openTradeButton");
             Arrow("logs", true);
-            var days = controller.Session.Snapshot.TravelDays(WorldIds.PlayerShipId, WorldIds.South);
+            var days = controller.Session.Snapshot.TravelDays(WorldIds.PlayerShipId, GeneratedWorldFixture.Destination(controller.Session.Snapshot));
             if (controller.TradeIsOpen) Click("closeTradeButton");
             Click("ship_" + controller.Session.Player.Id);
-            Click("port_" + WorldIds.South);
+            Click("port_" + GeneratedWorldFixture.Destination(controller.Session.Snapshot));
             Assert.That(controller.Session.Player.DockedPortId, Is.EqualTo(ExpandingEconomyGeneration.Generate(42).FoodSourcePortId));
             Assert.That(root.Q<Label>("voyageLabel").text, Does.Contain(days + " days"));
             Click("sailButton");
@@ -151,7 +151,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("nextDayButton");
             Assert.That(controller.Map.DisplayedShipPosition(WorldIds.PlayerShipId), Is.Not.EqualTo(start));
             for (var day = 1; day < days; day++) Click("nextDayButton");
-            Assert.That(controller.Session.Player.DockedPortId, Is.EqualTo(WorldIds.South));
+            Assert.That(controller.Session.Player.DockedPortId, Is.EqualTo(GeneratedWorldFixture.Destination(controller.Session.Snapshot)));
             Click("openTradeButton");
             Arrow("logs", false);
             Assert.That(controller.Session.Player.CargoUnits, Is.Zero);
@@ -191,15 +191,15 @@ namespace SaltAndLedger.UnityHost.Tests
         [UnityTest]
         public IEnumerator ScheduledEconomyAndNpcMarkersAreVisible()
         {
-            var initial = controller.Map.DisplayedShipPosition(WorldIds.TimberShipId);
+            var initial = controller.Map.DisplayedShipPosition(GeneratedWorldFixture.Npc(controller.Session.Snapshot));
             Click("nextDayButton");
-            Assert.That(controller.Map.DisplayedShipPosition(WorldIds.TimberShipId), Is.Not.EqualTo(initial));
-            var north = controller.Session.Snapshot.Ports[WorldIds.North];
+            Assert.That(controller.Map.DisplayedShipPosition(GeneratedWorldFixture.Npc(controller.Session.Snapshot)), Is.Not.EqualTo(initial));
+            var north = controller.Session.Snapshot.Ports[GeneratedWorldFixture.Port(controller.Session.Snapshot, 0)];
             Assert.That(root.Q<Button>("port_" + north.Id).text, Is.EqualTo(north.Name + "\n" + ArchipelagoMap.ShortRole(north.Role)));
             Assert.That(root.Q<Button>("ship_" + controller.Session.Player.Id).tooltip, Does.Contain("Docked at " + controller.Session.Snapshot.Ports[controller.Session.Player.DockedPortId].Name));
-            Assert.That(root.Q<Button>("ship_" + WorldIds.TimberShipId).ClassListContains("npc-marker"), Is.True);
+            Assert.That(root.Q<Button>("ship_" + GeneratedWorldFixture.Npc(controller.Session.Snapshot)).ClassListContains("npc-marker"), Is.True);
             for (var day = 1; day < 6; day++) Click("nextDayButton");
-            Click("port_" + WorldIds.North);
+            Click("port_" + GeneratedWorldFixture.Port(controller.Session.Snapshot, 0));
             Assert.That(root.Q<Label>("consumptionLabel").text, Does.Contain("cumulative unmet"));
             Assert.That(controller.Session.Activity.Any(item => item.Message.Contains("Harvest") || item.Message.Contains("consumed") ||
                 item.Message.Contains("unmet demand")), Is.True);
@@ -220,7 +220,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Escape();
             Assert.That(controller.TradeIsOpen, Is.False);
             Assert.That(root.focusController.focusedElement, Is.SameAs(focus));
-            RightClick("port_" + WorldIds.East);
+            RightClick("port_" + GeneratedWorldFixture.Port(controller.Session.Snapshot, 2));
             Assert.That(root.Q<Label>("tradeHeader").text, Does.Contain("Cargo remote"));
             Assert.That(Row("logs").Q<Button>("rightArrow").enabledInHierarchy, Is.False);
             Assert.That(root.Q<Button>("tradeSailButton").enabledInHierarchy, Is.True);
@@ -308,7 +308,7 @@ namespace SaltAndLedger.UnityHost.Tests
                     var bounds = root.Q(name).worldBound;
                     Assert.That(dialog.Contains(bounds.min) && dialog.Contains(bounds.max), Is.True, name + " at " + size);
                 }
-                var town = root.Q<Button>("port_" + WorldIds.North);
+                var town = root.Q<Button>("port_" + GeneratedWorldFixture.Port(controller.Session.Snapshot, 0));
                 Assert.That(town.enabledInHierarchy, Is.False);
                 Assert.That(root.panel.Pick(town.worldBound.center), Is.Not.SameAs(town));
             }

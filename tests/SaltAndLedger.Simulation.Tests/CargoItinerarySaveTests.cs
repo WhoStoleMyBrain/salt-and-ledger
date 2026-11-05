@@ -30,7 +30,7 @@ public sealed class CargoItinerarySaveTests
         var snapshot = world.Snapshot();
         var port = snapshot.Ships[Ship].DockedPortId!;
         var other = snapshot.Ports.Keys.Where(p => p != port)
-            .OrderByDescending(p => snapshot.GetRoute(port, p).DurationDays(snapshot.Ships[Ship].Configuration.Speed)).First();
+            .OrderByDescending(p => snapshot.GetPath(port, p, snapshot.Ships[Ship].Configuration.Speed).DurationDays).First();
         return new CargoItineraryPolicy("save_itinerary", new[]
         {
             new CargoItineraryStop(port, new[]
@@ -58,7 +58,7 @@ public sealed class CargoItinerarySaveTests
         var world = World(commission);
         var saved = WorldSaveCodec.Save(world);
         var data = JObject.Parse(saved);
-        Assert.Equal(6, (int)data["SchemaVersion"]!);
+        Assert.Equal(WorldSaveCodec.SchemaVersion, (int)data["SchemaVersion"]!);
         Assert.Equal(1, (int)data["Identity"]!["ItineraryVersion"]!);
         Assert.Contains("/itinerary-v1", world.Snapshot().RunIdentity!.ComparisonGroup);
         var restored = WorldSaveCodec.Load(Content(), saved);
@@ -251,7 +251,9 @@ public sealed class CargoItinerarySaveTests
         Assert.Equal(CargoItineraryDecisionKind.Paused, CargoItineraryEvaluator.Evaluate(restored.Snapshot(), Ship).Kind);
         foreach (var instance in new[] { world, restored })
         {
-            instance.ConstructFacility(WorldIds.PlayerOwnerId, dock, ExpandingEconomyGeneration.FarmBlueprint, "planned_farm");
+            var blueprint = instance.Snapshot().IndustryBlueprints.Values.Where(b => b.EligiblePortIds.Contains(dock))
+                .OrderBy(b => b.ConstructionCost).ThenBy(b => b.Id, StringComparer.Ordinal).First();
+            instance.ConstructFacility(WorldIds.PlayerOwnerId, dock, blueprint.Id, "planned_farm");
             if (kind == CargoItineraryCommandKind.LoadFromCompanyTownStock)
                 instance.ExecuteWarehouseTrade(WorldIds.PlayerOwnerId, "planned_farm",
                     new TradeCommand(TradeDirection.Buy, "grain", 10000));
@@ -327,7 +329,10 @@ public sealed class CargoItinerarySaveTests
     public void ResealedMalformedItineraryIsRejectedWithoutReplacingTheActiveWorld(string corruption)
     {
         var world = World();
-        var legacy = JObject.Parse(WorldSaveCodec.Save(world))["Ships"]!.Single(s => (string)s["Id"]! == Ship)["Policy"]!.DeepClone();
+        var initialDock = world.Snapshot().Ships[Ship].DockedPortId!;
+        var legacy = JObject.FromObject(new TradeRoutePolicy(initialDock,
+            world.Snapshot().Ports.Keys.First(id => id != initialDock),
+            new RouteLeg("logs", 10000, 10000, 100, 1), allowEmptyReturn: true));
         world.ConfigureItinerary(Ship, Policy(world), true);
         var before = world.Snapshot();
         var saved = WorldSaveCodec.Save(world);

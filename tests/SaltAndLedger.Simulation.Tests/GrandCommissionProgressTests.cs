@@ -12,18 +12,19 @@ public sealed class GrandCommissionProgressTests
     private static ContentCatalog Content() => ContentLoader.Load(ContentLoaderTests.CanonicalJson());
     private static RegionalWorldState World(int seed = -42, string charter = RunScenario.MerchantCharter,
         string? navigation = null, string? industry = null, string? commerce = null, string? civic = null,
-        RunDifficulty difficulty = RunDifficulty.Normal)
+        RunDifficulty difficulty = RunDifficulty.Normal, WorldGenerationConfiguration? configuration = null)
     {
-        var draft = GrandCommissionDraft.Generate(seed);
+        var draft = GrandCommissionDraft.Generate(seed, configuration: configuration);
         var choices = new[] { navigation, industry, commerce, civic };
         var plan = draft.Resolve(draft.Rounds.Select((round, i) => choices[i] ?? round.Offers[0].TemplateId));
         return RunScenario.Create(Content(), new RunIdentity(GrandCommission.ChallengeId, charter,
-            RunWorldMode.ExpandingEconomy, seed, difficulty, commission: plan));
+            RunWorldMode.ExpandingEconomy, seed, difficulty, commission: plan, generationConfiguration: configuration));
     }
     private static CommissionGoalProgress Goal(RegionalWorldState world, string id) => GrandCommission.Progress(world.Snapshot()).Goals.Single(g => g.Id == id);
     private static void Days(RegionalWorldState world, int count) { for (var i = 0; i < count; i++) world.AdvanceDay(); }
     private static void Sail(RegionalWorldState world, string port, string ship = Ship)
     {
+        if (world.Snapshot().Ships[ship].DockedPortId == port) return;
         world.Depart(ship, port);
         while (world.Snapshot().Ships[ship].DockedPortId == null) world.AdvanceDay();
     }
@@ -36,24 +37,21 @@ public sealed class GrandCommissionProgressTests
         var world = World(charter: RunScenario.IndustrialCharter, industry: "new_industry");
         var g = ExpandingEconomyGeneration.Generate(-42);
         world.ConstructFacility(Owner, g.ProcessingPortId, ExpandingEconomyGeneration.MillBlueprint, "new_mill");
-        world.ExecuteWarehouseTrade(Owner, "new_mill", Buy("grain", 2));
+        Assert.NotEqual(world.Snapshot().PrivateFacilities[RunScenario.StarterBakery].PortId,
+            world.Snapshot().PrivateFacilities["new_mill"].PortId);
         Days(world, 2);
         Assert.True(world.Snapshot().PrivateFacilities[RunScenario.StarterBakery].BatchesProduced > 0);
-        Assert.True(world.Snapshot().PrivateFacilities["new_mill"].BatchesProduced > 0);
+        Assert.Equal(0, world.Snapshot().PrivateFacilities["new_mill"].BatchesProduced);
         Assert.False(Goal(world, "new_industry").IsMet);
-        Assert.Equal(0, Goal(world, "new_industry").Conditions.Single(c => c.Id == "bakery").Current);
-        world.ConstructFacility(Owner, g.FoodSourcePortId, WorldIds.BakeryBlueprint, "other_bakery");
-        Assert.Equal(0, Goal(world, "new_industry").Conditions.Single(c => c.Id == "bakery_batch").Current);
-        world.ExecuteWarehouseTrade(Owner, "other_bakery", Buy("flour", 2));
-        world.ExecuteWarehouseTrade(Owner, "other_bakery", Buy("logs", 2));
+        world.ExecuteWarehouseTrade(Owner, "new_mill", Buy("grain", 2));
         Days(world, 2);
         var progress = Goal(world, "new_industry");
         Assert.True(progress.IsMet);
         Assert.False(progress.IsPermanent);
         Assert.All(progress.Conditions.Where(c => c.Id.EndsWith("batch", StringComparison.Ordinal)), c =>
         { Assert.True(c.IsPermanent); Assert.True(c.Current >= 1); });
-        Assert.Contains("other_bakery", progress.Conditions.Single(c => c.Id == "bakery_batch").Label);
-        Assert.True(world.Snapshot().PrivateFacilities["other_bakery"].WagesPaid > 0);
+        Assert.Contains(RunScenario.StarterBakery, progress.Conditions.Single(c => c.Id == "bakery_batch").Label);
+        Assert.True(world.Snapshot().PrivateFacilities["new_mill"].WagesPaid > 0);
     }
 
     [Fact]
@@ -79,15 +77,17 @@ public sealed class GrandCommissionProgressTests
     {
         var world = World(commerce: "flour_for_bakers"); var g = ExpandingEconomyGeneration.Generate(-42);
         var initial = world.Snapshot();
-        initial.PreviewTrade(Ship, g.FoodSourcePortId, Buy("flour", 4));
+        initial.PreviewTrade(Ship, g.FoodSourcePortId, Buy("flour", 1));
         Assert.Same(initial, world.Snapshot()); Assert.Empty(initial.CommissionHistory!.Markets);
-        world.ExecuteTrade(Ship, g.FoodSourcePortId, Buy("flour", 4));
+        world.ExecuteTrade(Ship, g.FoodSourcePortId, Buy("flour", 1));
         var negative = Goal(world, "flour_for_bakers").Conditions.Single();
-        Assert.Equal(-40000, negative.Current); Assert.Equal(0, negative.Percent); Assert.Equal("-4", negative.CurrentText);
-        world.ExecuteTrade(Ship, g.FoodSourcePortId, Sell("flour", 4));
+        Assert.Equal(-10000, negative.Current); Assert.Equal(0, negative.Percent); Assert.Equal("-1", negative.CurrentText);
+        world.ExecuteTrade(Ship, g.FoodSourcePortId, Sell("flour", 1));
         Assert.Equal(0, Goal(world, "flour_for_bakers").Conditions.Single().Current);
-        Sail(world, g.ProcessingPortId);
-        world.ExecuteTrade(Ship, g.ProcessingPortId, Buy("flour", 4));
+        var source = world.Snapshot().Ports.Keys.First(p => p != g.FoodSourcePortId &&
+            world.Snapshot().MaximumTradeQuantity(Ship, p, TradeDirection.Buy, "flour") >= 40000);
+        Sail(world, source);
+        Assert.Equal(TradeOutcome.Traded, world.ExecuteTrade(Ship, source, Buy("flour", 4)).Trades.Single().Trade.Outcome);
         Assert.Equal(0, Goal(world, "flour_for_bakers").Conditions.Single().Current);
         Sail(world, g.FoodSourcePortId);
         world.ExecuteTrade(Ship, g.FoodSourcePortId, Sell("flour", 4));
@@ -120,13 +120,13 @@ public sealed class GrandCommissionProgressTests
         var world = World(42, navigation: "second_command"); var g = ExpandingEconomyGeneration.Generate(42);
         Assert.Single(world.Snapshot().CommissionHistory!.Ships.Single().Visits);
         var initial = world.Snapshot();
-        Assert.Throws<InvalidOperationException>(() => world.Depart(Ship, g.FoodSourcePortId));
+        Assert.Throws<InvalidOperationException>(() => world.Depart(Ship, initial.Ships[Ship].DockedPortId!));
         Assert.Same(initial, world.Snapshot());
         world.Depart(Ship, g.ProcessingPortId);
         Assert.Single(world.Snapshot().CommissionHistory!.Ships.Single().Visits);
         while (world.Snapshot().Ships[Ship].DockedPortId == null) world.AdvanceDay();
         Assert.Equal(2, world.Snapshot().CommissionHistory!.Ships.Single().Visits.Count);
-        world.CommissionShip(Owner, g.MintPortId); Days(world, 4);
+        world.CommissionShip(Owner, g.ShipyardPortId); Days(world, 4);
         Assert.Equal(2, world.Snapshot().CommissionHistory!.Ships.Count);
         var second = world.Snapshot().CommissionHistory!.Ships[1];
         Assert.Equal(1, second.AcquisitionOrder); Assert.Single(second.Visits);
@@ -141,8 +141,8 @@ public sealed class GrandCommissionProgressTests
     {
         var world = World(42, navigation: "all_harbors", industry: "timber_chain", civic: "prosperous_enterprise");
         var g = ExpandingEconomyGeneration.Generate(42);
-        world.ConstructFacility(Owner, g.FoodSourcePortId, ExpandingEconomyGeneration.LumberBlueprint, "lumber");
-        foreach (var port in world.Snapshot().Ports.Keys.Where(p => p != g.FoodSourcePortId).ToArray()) Sail(world, port);
+        world.ConstructFacility(Owner, g.EligiblePorts("harvest_logs")[0], ExpandingEconomyGeneration.LumberBlueprint, "lumber");
+        foreach (var port in world.Snapshot().Ports.Keys.ToArray()) Sail(world, port);
         while (!Goal(world, "prosperous_enterprise").IsMet && world.Snapshot().Day < 18) world.AdvanceDay();
         Assert.True(Goal(world, "all_harbors").IsPermanent);
         Assert.True(Goal(world, "prosperous_enterprise").IsMet);
@@ -155,7 +155,7 @@ public sealed class GrandCommissionProgressTests
     [Fact]
     public void PaidFoodWindowCanRecoverThenFallAfterRealDeliveredStockRunsOut()
     {
-        var world = World(commerce: "flour_for_bakers", civic: "city_back_in_trade");
+        var world = World(commerce: "flour_for_bakers", civic: "city_back_in_trade", configuration: CommissionTestSettings.FiniteFood());
         var generation = ExpandingEconomyGeneration.Generate(-42);
         world.ExecuteTrade(Ship, generation.FoodSourcePortId, Buy("bread", 10));
         Sail(world, generation.RecoveryPortId);
@@ -181,7 +181,7 @@ public sealed class GrandCommissionProgressTests
     [Fact]
     public void IdleDeadlineAndAbandonmentPreserveTruePartialProgressAndFreeze()
     {
-        var world = World(); Days(world, 180);
+        var world = World(); Days(world, (int)world.Snapshot().Challenge!.Configuration.DeadlineDay);
         Assert.Equal(ChallengeStatus.Failed, world.Snapshot().Challenge!.Status);
         Assert.False(GrandCommission.Progress(world.Snapshot()).Qualified);
         var terminal = world.Snapshot();

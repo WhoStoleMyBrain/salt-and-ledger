@@ -52,7 +52,7 @@ Facilities retain separate IDs, construction states, controls, deadlines, rate c
 
 ## Identity and saves
 
-Current runs use storage2, itinerary1 and economic rules1 with schema6. The codec validates one owned pool per company/town, derived capacity, zero duplicate facility inventory, FIFO agreement and itinerary progress before replacing a session. Retry preserves the original identity. See [save policy](SAVES.md).
+Current runs use storage2, itinerary1 and economic rules1 with schema7. The codec validates one owned pool per company/town, derived capacity, zero duplicate facility inventory, FIFO agreement and itinerary progress before replacing a session. Retry preserves the original identity. See [save policy](SAVES.md).
 
 ## Completion and diagnostic export
 

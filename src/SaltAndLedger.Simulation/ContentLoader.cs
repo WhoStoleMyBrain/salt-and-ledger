@@ -117,7 +117,7 @@ namespace SaltAndLedger.Simulation
             return new ContentCatalog(goods, buildings, recipes, isExpandingEconomy: baseline != null);
         }
 
-        private static void ValidateJsonSyntax(string json)
+        internal static void ValidateJsonSyntax(string json)
         {
             var offset = 0;
             var previous = "";

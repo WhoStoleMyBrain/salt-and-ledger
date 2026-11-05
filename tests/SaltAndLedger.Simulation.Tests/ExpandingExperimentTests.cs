@@ -33,10 +33,10 @@ public sealed class ExpandingExperimentTests
     {
         var row = ExpandingEconomyExperiments.RunCase(ContentLoader.Load(ContentLoaderTests.CanonicalJson()), 42,
             LivingPricingMode.StockOnly, RunDifficulty.Normal, "monetary", 60);
-        Assert.True(row.Final.PrivateProduced!["silver"] > 0);
-        Assert.True(row.Final.SilverReserve > 0);
-        Assert.True(row.Final.ExternalInflow > 0);
-        Assert.True(row.Final.PublicWorksPlanks > 0);
+        Assert.True(row.Final.PrivateProduced!["silver"] > 0, "private Silver production");
+        Assert.True(row.Final.SilverReserve > 0, "physical Silver delivery");
+        Assert.True(row.Final.ExternalInflow > 0, "finite contract payment");
+        Assert.True(row.Final.PublicWorksPlanks > 0, "physical public works Planks");
         Assert.Equal(row.Final.Minted, row.Final.SupplierIssuance + row.Final.TreasuryIssuance);
         Assert.Equal(2, row.Final.PlayerShips);
         Assert.Equal(2, row.SaveChecks.Count);
@@ -47,7 +47,7 @@ public sealed class ExpandingExperimentTests
     {
         var row = ExpandingEconomyExperiments.RunCase(ContentLoader.Load(ContentLoaderTests.CanonicalJson()), 42,
             LivingPricingMode.StockOnly, RunDifficulty.Normal, "monetary_control", 60);
-        Assert.True(row.Final.PrivateProduced!["silver"] > 0);
+        Assert.True(row.Final.PrivateProduced!["silver"] > 0, "private Silver production");
         Assert.Equal(0, row.Final.Minted);
         Assert.Equal(0, row.Final.SilverReserve);
         Assert.Equal(0, row.Final.TreasurySpent);
@@ -55,21 +55,28 @@ public sealed class ExpandingExperimentTests
 
 
     [Fact]
-    public void LocalEmploymentAndPhysicalInputsSustainMeasuredPaidRecoveryWithoutCurrencyCreation()
+    public void SeparatedLocalEmploymentRecordsRealFoodAndInputShortagesWithoutCurrencyCreation()
     {
         var row = ExpandingEconomyExperiments.RunCase(ContentLoader.Load(ContentLoaderTests.CanonicalJson()), 42,
             LivingPricingMode.StockOnly, RunDifficulty.Normal, "circulation", 90);
-        var target = ExpandingEconomyGeneration.Generate(42).RecoveryPortId;
+        var generation = ExpandingEconomyGeneration.Generate(42);
+        var target = generation.FirstEligiblePort("bake_bread");
         var town = JsonSerializer.SerializeToElement(row.Final.Towns).EnumerateArray().Single(t => t.GetProperty("Id").GetString() == target);
-        Assert.Equal(100, town.GetProperty("RecoveryFulfillmentPercent").GetInt32());
-        Assert.True(town.GetProperty("Population").GetInt32() >= town.GetProperty("InitialPopulation").GetInt32());
-        Assert.True(town.GetProperty("HouseholdCash").GetInt64() > 0);
-        Assert.True(row.Final.ValueChange > 0);
+        Assert.InRange(town.GetProperty("RecoveryFulfillmentPercent").GetInt32(), 0, 100);
+        Assert.True(town.GetProperty("TotalWagesReceived").GetInt64() > 0);
+        Assert.True(town.GetProperty("TotalRetailSpend").GetInt64() > 0);
         Assert.True(row.Final.PrivateProduced!["flour"] > 0);
-        Assert.True(row.Final.PrivateProduced["bread"] > 0);
+        Assert.True(row.Attempts["private/experiment_bakery/bake_bread/InputShortage"] > 0);
         Assert.Equal(0, row.Final.Minted);
         Assert.Equal(0, row.Final.ExternalInflow);
-        Assert.DoesNotContain("food_funds/" + target, row.FirstProblems.Keys);
+        Assert.Equal(row.Initial.GlobalCash, row.Final.GlobalCash);
+        Assert.Equal(row.Initial.RegionalCash, row.Final.RegionalCash);
+        var facilities = JsonSerializer.SerializeToElement(row.Final.Facilities).EnumerateArray().ToArray();
+        string Port(string building) => facilities.Single(f => f.GetProperty("BuildingId").GetString() == building).GetProperty("PortId").GetString()!;
+        Assert.NotEqual(Port("bakery"), Port("mill"));
+        Assert.NotEqual(Port("bakery"), Port("lumber_camp"));
+        Assert.NotEqual(Port("farm"), Port("mill"));
+        Assert.Contains(Port("bakery"), generation.EligiblePorts("bake_bread"));
     }
 
     [Fact]
@@ -86,33 +93,33 @@ public sealed class ExpandingExperimentTests
     }
 
     [Theory]
-    [InlineData(42, 125, 260, 11104645, 26, 850000, 174617)]
-    [InlineData(99, 158, 326, 8117116, 34, 1142860, 352644)]
-    public void TownWarehouseReinvestmentImprovesPaidFoodButRetainsAffordabilityShortfall(
-        int seed, int flour, int bread, long cash, int population, long paidFood, long unaffordableFood)
+    [InlineData(42)]
+    [InlineData(99)]
+    public void YearLongReinvestmentRetainsFiniteIssuanceRealGoodsAndExactContinuation(int seed)
     {
         var row = ExpandingEconomyExperiments.RunCase(ContentLoader.Load(ContentLoaderTests.CanonicalJson()), seed,
             LivingPricingMode.StockOnly, RunDifficulty.Normal, "reinvestment", 365);
         var generation = ExpandingEconomyGeneration.Generate(seed);
-        var target = generation.ProcessingPortId;
-        var town = JsonSerializer.SerializeToElement(row.Final.Towns).EnumerateArray().Single(t => t.GetProperty("Id").GetString() == target);
-        // Shared warehouse rules retain inputs before selling surplus and remain active while
-        // factories are disabled. The measured gain is partial recovery, not unlimited food/funds.
-        Assert.Equal(57, town.GetProperty("RecoveryFulfillmentPercent").GetInt32());
-        Assert.Equal(population, town.GetProperty("Population").GetInt32());
-        Assert.True(population > town.GetProperty("InitialPopulation").GetInt32());
-        Assert.True(town.GetProperty("HouseholdCash").GetInt64() > 0);
-        var food = town.GetProperty("Needs").EnumerateArray().Single(n => n.GetProperty("Id").GetString() == target + "_food");
-        Assert.Equal(paidFood, food.GetProperty("TotalConsumedQuantity").GetInt64());
-        Assert.Equal(unaffordableFood, food.GetProperty("TotalUnmetAffordability").GetInt64());
-        Assert.True(food.GetProperty("LastConsumedQuantity").GetInt32() < food.GetProperty("LastDesiredQuantity").GetInt32());
-        Assert.Equal(3, row.Final.PlayerShips);
-        Assert.Equal(EconomicUnits.Coins(1920), row.Final.Minted);
-        Assert.Equal(EconomicUnits.FromWhole(24), row.Final.SilverReserve);
-        Assert.Equal(EconomicUnits.FromWhole(flour), row.Final.PrivateProduced!["flour"]);
-        Assert.Equal(EconomicUnits.FromWhole(bread), row.Final.PrivateProduced["bread"]);
-        Assert.Equal(cash, row.Final.Cash);
-        Assert.True(row.Final.ValueChange > 0);
+        Assert.Equal(365, row.Final.Day);
+        Assert.InRange(row.Final.Towns.Length, 8, 12);
+        Assert.InRange(row.Final.PlayerShips, 1, generation.Configuration.FleetLimit);
+        Assert.InRange(row.Final.Minted, 0, EconomicUnits.Coins(1920));
+        Assert.Equal(row.Final.Minted, row.Final.SupplierIssuance + row.Final.TreasuryIssuance);
+        Assert.Equal(row.Final.Minted, row.Final.SilverReserve * 80);
+        Assert.True(row.Final.PrivateProduced!["silver"] >= row.Final.SilverReserve);
+        Assert.True(row.Final.Wages > 0);
+        Assert.True(row.Final.Cash >= 0);
         Assert.Equal(4, row.SaveChecks.Count);
+        Assert.Contains(row.Flows, pair => pair.Key.StartsWith("voyages/") && pair.Value > 0);
+        var towns = JsonSerializer.SerializeToElement(row.Final.Towns).EnumerateArray().ToArray();
+        Assert.All(towns, town =>
+        {
+            Assert.True(town.GetProperty("MarketCash").GetInt64() >= 0);
+            Assert.True(town.GetProperty("HouseholdCash").GetInt64() >= 0);
+            Assert.InRange(town.GetProperty("RecoveryFulfillmentPercent").GetInt32(), 0, 100);
+            foreach (var need in town.GetProperty("Needs").EnumerateArray())
+                Assert.True(need.GetProperty("TotalConsumedQuantity").GetInt64() <= need.GetProperty("TotalDesiredQuantity").GetInt64());
+        });
+        Assert.True(towns.Sum(town => town.GetProperty("TotalRetailSpend").GetInt64()) > 0);
     }
 }

@@ -94,8 +94,8 @@ namespace SaltAndLedger.UnityHost
 
         private void EnsureCommissionDraft(int seed)
         {
-            if (commissionDraft != null && commissionDraft.Seed == seed) return;
-            commissionDraft = GrandCommissionDraft.Generate(seed);
+            if (commissionDraft != null && commissionDraft.Seed == seed && commissionDraft.GenerationConfiguration.Fingerprint == setupConfiguration.Fingerprint) return;
+            commissionDraft = GrandCommissionDraft.Generate(seed, configuration: setupConfiguration);
             Array.Clear(commissionSelections, 0, commissionSelections.Length);
             commissionRound = 0;
             Element<Button>("commissionBeginButton")?.SetEnabled(false);
@@ -121,12 +121,12 @@ namespace SaltAndLedger.UnityHost
             var previewIdentity = new RunIdentity(null, setupIdentity.CharterId, setupIdentity.WorldMode, setupIdentity.Seed,
                 setupIdentity.Difficulty, livingPricingMode: setupIdentity.LivingPricingMode,
                 companyStorageRules: setupIdentity.CompanyStorageRules, itineraryVersion: setupIdentity.ItineraryVersion,
-                economicRulesVersion: setupIdentity.EconomicRulesVersion);
+                economicRulesVersion: setupIdentity.EconomicRulesVersion, generationConfiguration: setupIdentity.GenerationConfiguration);
             commissionPreview = RunScenario.Create(Session.CanonicalContent, previewIdentity).Snapshot();
             SetText("commissionMapIdentity", WorldIdentityText(setupIdentity) + " · " + RunScenario.GetCharter(setupIdentity).Name);
             var host = Element<VisualElement>("commissionMapHost");
             host.Clear();
-            var map = new ArchipelagoMap { name = "commissionPreviewMap" };
+            var map = new ArchipelagoMap { name = "commissionPreviewMap", ShowAllRoutes = true };
             host.Add(map);
             map.PortSelected += ShowCommissionPort;
             map.PortTradeRequested += ShowCommissionPort;
@@ -161,7 +161,9 @@ namespace SaltAndLedger.UnityHost
                 "\n\nLOCAL NEEDS\n" + string.Join("\n", port.Consumption.Select(rule =>
                     Quantity(rule.Configuration.PreviewDemand(port.City?.Population ?? 0, rule.DemandRemainder).Quantity) + " " + content.GetGood(rule.Configuration.GoodId).Name +
                     " / " + rule.Configuration.IntervalDays + " days · " + NeedKind(rule.Configuration.Kind))) +
-                (commissionPreview.Economy?.Configuration.MintPortId == portId ? "\n\nRoyal Mint, shipwright and finite external contracts." : ""));
+                (commissionPreview.Economy?.Configuration.MintPortId == portId ? "\n\nPublic Royal Mint." : "") +
+                (commissionPreview.Economy?.Configuration.ShipwrightPortId == portId ? "\nShipwright." : "") +
+                (commissionPreview.Economy?.Contracts.Any(contract => contract.Configuration.PortId == portId) == true ? "\nFinite external contracts." : ""));
             var map = Element<ArchipelagoMap>("commissionPreviewMap");
             map.Present(commissionPreview, portId, null, false, 1);
             foreach (var town in commissionPreview.Ports.Values)
@@ -233,7 +235,7 @@ namespace SaltAndLedger.UnityHost
                 " · Mission draft v" + plan.Version + " · " + plan.Signature);
             SetText("commissionReviewDeadline", "All 4 objectives + at least " +
                 CommissionConditionProgress.Format(GrandCommission.MinimumCash, CommissionUnit.Coins) +
-                " company cash · deadline Day " + GrandCommission.DeadlineDay);
+                " company cash · deadline Day " + plan.GenerationConfiguration.DeadlineDays);
             var goals = Element<VisualElement>("commissionReviewGoals"); goals.Clear();
             for (var index = 0; index < plan.Goals.Count; index++)
             {
@@ -277,8 +279,8 @@ namespace SaltAndLedger.UnityHost
             var progress = GrandCommission.Progress(snapshot);
             SetText("objectivesOverview", progress.CurrentlyMetCount + "/4 goals currently met · " +
                 progress.PermanentlyFinishedCount + " permanently finished · " + snapshot.Challenge.Status);
-            SetText("objectivesDeadline", "Day " + snapshot.Day + " · deadline Day " + GrandCommission.DeadlineDay +
-                " · " + Math.Max(0, GrandCommission.DeadlineDay - snapshot.Day) + " days remaining" +
+            SetText("objectivesDeadline", "Day " + snapshot.Day + " · deadline Day " + snapshot.Challenge.Configuration.DeadlineDay +
+                " · " + Math.Max(0, snapshot.Challenge.Configuration.DeadlineDay - snapshot.Day) + " days remaining" +
                 "\nCompany cash " + Money(Session.Player.Cash) + " / " + Money(GrandCommission.MinimumCash) + " coins required at victory");
             RenderCommissionProgress(Element<VisualElement>("objectiveCards"), progress);
         }

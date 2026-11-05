@@ -14,14 +14,14 @@ public sealed class GrandCommissionSaveTests
     private const string Owner = WorldIds.PlayerOwnerId;
     private const string Ship = WorldIds.PlayerShipId;
     private static ContentCatalog Content() => ContentLoader.Load(ContentLoaderTests.CanonicalJson());
-    private static RegionalWorldState World(int seed = 42, RunDifficulty difficulty = RunDifficulty.Normal)
+    private static RegionalWorldState World(int seed = 42, RunDifficulty difficulty = RunDifficulty.Normal, WorldGenerationConfiguration? configuration = null)
     {
-        var draft = GrandCommissionDraft.Generate(seed);
+        var draft = GrandCommissionDraft.Generate(seed, configuration: configuration);
         var ids = draft.Rounds.Select(r => r.Offers[0].TemplateId).ToArray();
         ids[2] = draft.Rounds[2].Offers.First(g => g.Conditions.Any(c => c.Rule == CommissionRule.NetMarketSales)).TemplateId;
         return RunScenario.Create(Content(), new RunIdentity(GrandCommission.ChallengeId,
             RunScenario.MerchantCharter, RunWorldMode.ExpandingEconomy, seed, difficulty,
-            commission: draft.Resolve(ids)));
+            commission: draft.Resolve(ids), generationConfiguration: configuration));
     }
 
 
@@ -42,7 +42,7 @@ public sealed class GrandCommissionSaveTests
         var visitedEarlier = world.Snapshot().CommissionHistory!.Ships.Single(s => s.ShipId == Ship)
             .Visits.TryGetValue(target, out var originalVisitDay);
         var saved = WorldSaveCodec.Save(world);
-        Assert.Equal(6, (int)JObject.Parse(saved)["SchemaVersion"]!);
+        Assert.Equal(WorldSaveCodec.SchemaVersion, (int)JObject.Parse(saved)["SchemaVersion"]!);
         var restored = WorldSaveCodec.Load(Content(), saved);
         Assert.Equal(saved, WorldSaveCodec.Save(restored));
         Assert.Null(restored.Snapshot().Ships[Ship].DockedPortId);
@@ -89,22 +89,19 @@ public sealed class GrandCommissionSaveTests
     [Fact]
     public void RealExternalAndPublicSalesAreReconciledSeparatelyFromLocalMarketCredit()
     {
-        var world = World();
+        var world = World(configuration: CommissionTestSettings.FiniteFood());
         var config = world.Snapshot().Economy!.Configuration;
         world.CommissionMint(Owner);
+        var source = world.Snapshot().Ports.Keys.First(p => world.Snapshot().MaximumTradeQuantity(Ship, p, TradeDirection.Buy, "planks") >= 30000);
+        Sail(world, source);
+        Assert.Equal(TradeOutcome.Traded, world.ExecuteTrade(Ship, source, new TradeCommand(TradeDirection.Buy, "planks", 30000)).Trades.Single().Trade.Outcome);
         Sail(world, config.MintPortId);
         var contract = config.Contracts.Single(c => c.GoodId == "planks");
-        while (world.Snapshot().Day < contract.OpensDay ||
-            world.Snapshot().MaximumTradeQuantity(Ship, config.MintPortId, TradeDirection.Buy, "planks") < 30000)
-        {
-            Assert.True(world.Snapshot().Day < 40, "The real public delivery fixture must obtain finite Planks.");
-            world.AdvanceDay();
-        }
-        world.ExecuteTrade(Ship, config.MintPortId, new TradeCommand(TradeDirection.Buy, "planks", 30000));
+        while (world.Snapshot().Day < contract.OpensDay || world.Snapshot().Economy!.MintStatus != MintStatus.Active) world.AdvanceDay();
         world.FulfillExternalContract(Ship, contract.Id, 10000);
         world.SupplyPublicWorks(Ship, 20000);
         Assert.Equal(30000, world.Snapshot().Accounting.Companies[Owner].SoldQuantities["planks"]);
-        Assert.Equal(-30000, Balance(world, config.MintPortId, "planks"));
+        Assert.Equal(-30000, Balance(world, source, "planks"));
         var saved = WorldSaveCodec.Save(world);
         Assert.Equal(saved, WorldSaveCodec.Save(WorldSaveCodec.Load(Content(), saved)));
     }
@@ -114,7 +111,7 @@ public sealed class GrandCommissionSaveTests
     {
         var world = World();
         var generation = ExpandingEconomyGeneration.Generate(42);
-        world.ConstructFacility(Owner, generation.RecoveryPortId, ExpandingEconomyGeneration.LumberBlueprint, "saved_camp");
+        world.ConstructFacility(Owner, generation.EligiblePorts("harvest_logs")[0], ExpandingEconomyGeneration.LumberBlueprint, "saved_camp");
         while (world.Snapshot().PrivateFacilities["saved_camp"].BatchesProduced == 0) world.AdvanceDay();
         world.SetFacilityEnabled(Owner, "saved_camp", false);
         while (world.Snapshot().Day < 10) world.AdvanceDay();
@@ -162,6 +159,7 @@ public sealed class GrandCommissionSaveTests
     [InlineData("goal")]
     [InlineData("template")]
     [InlineData("parameters")]
+    [InlineData("generation_configuration")]
     [InlineData("ship_owner")]
     [InlineData("ship_order")]
     [InlineData("ghost_visit")]
@@ -188,6 +186,7 @@ public sealed class GrandCommissionSaveTests
             case "goal": plan["Goals"]![0]!["Id"] = "unknown_goal"; break;
             case "template": plan["Goals"]![0]!["TemplateId"] = "unknown_goal"; break;
             case "parameters": plan["Goals"]![2]!["CanonicalParameters"] = "forged_target"; break;
+            case "generation_configuration": root["Identity"]!["GenerationConfiguration"]!["deadlineDays"] = 721; break;
             case "ship_owner": history["Ships"]![0]!["ShipId"] = snapshot.Ships.Values.First(s => !s.IsPlayer).Id; break;
             case "ship_order": history["Ships"]![0]!["AcquisitionOrder"] = 1; break;
             case "ghost_visit": history["Ships"]![0]!["Visits"]![remote] = 0; break;
