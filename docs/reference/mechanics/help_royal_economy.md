@@ -21,6 +21,7 @@ Bread and Furniture purchases move existing household cash to markets and consum
 ## Related entries
 
 - [Living city accounts and wages](../mechanics/help_city_accounts.md)
+- [Contracts and development projects](../mechanics/help_contracts_projects.md)
 - [Financial reports and the ledger](../mechanics/help_finances.md)
 - [Mine Silver](../recipes/mine_silver.md)
 - [Royal Mint](../buildings/royal_mint.md)

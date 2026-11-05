@@ -41,6 +41,29 @@ public sealed class WorldGenerationConfigurationTests
     }
 
     [Fact]
+    public void OpportunityLimitsAreCanonicalBoundedAndStrictlyTyped()
+    {
+        Assert.Equal(3, WorldGenerationConfiguration.Default.Opportunities.ActiveContractLimit);
+        Assert.Equal(8, WorldGenerationConfiguration.Default.Opportunities.MaximumAvailableContracts);
+        var omitted = Change(root => root.Remove("opportunities"));
+        Assert.Equal(WorldGenerationConfiguration.Default.ToJson(), omitted.ToJson());
+        var empty = Change(root => root["opportunities"] = new JObject());
+        Assert.Equal(omitted.ToJson(), empty.ToJson());
+        var partial = Change(root => root["opportunities"] = new JObject { ["activeContractLimit"] = 1 });
+        var customized = Change(root => root["opportunities"]!["activeContractLimit"] = 1);
+        Assert.Equal(customized.ToJson(), partial.ToJson());
+        Assert.Equal(customized.Fingerprint, partial.Fingerprint);
+        Assert.NotEqual(omitted.Fingerprint, customized.Fingerprint);
+        Assert.Equal(1, WorldGenerationConfiguration.Parse(customized.ToJson()).Opportunities.ActiveContractLimit);
+        foreach (var pair in new[] { ("activeContractLimit", 0), ("activeContractLimit", 9),
+            ("maximumAvailableContracts", 17), ("generationIntervalDays", 0),
+            ("offerLifetimeDays", 366), ("historyLimit", 129), ("unknown", 1) })
+            Assert.Throws<WorldGenerationException>(() => Change(root => root["opportunities"]![pair.Item1] = pair.Item2));
+        Assert.Throws<WorldGenerationException>(() => Change(root => root["opportunities"]!["activeContractLimit"] = 3.0));
+        Assert.Throws<WorldGenerationException>(() => Change(root => root["opportunities"] = JValue.CreateNull()));
+    }
+
+    [Fact]
     public void UnknownDuplicateNullAndCoercedFieldsAreRejected()
     {
         Assert.Throws<WorldGenerationException>(() => Change(root => root["surprise"] = true));

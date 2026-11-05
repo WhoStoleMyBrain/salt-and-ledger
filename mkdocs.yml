@@ -18,6 +18,7 @@ nav:
       - Grand Commission: GRAND_COMMISSION.md
       - Harbor and stock: HARBOR.md
       - Cargo itineraries: AUTOMATION.md
+      - Contracts and projects: CONTRACTS_PROJECTS.md
       - Production and money: EXPANDING_ECONOMY.md
       - Households and welfare: LIVING_CITIES.md
       - Local saves: SAVES.md
@@ -31,6 +32,7 @@ nav:
   - Development:
       - World generation: WORLD_GENERATION.md
       - Task 3.1 verification: TASK-3.1-VERIFICATION.md
+      - Task 3.2 verification: TASK-3.2-VERIFICATION.md
       - Architecture: ARCHITECTURE.md
       - Exact mechanics: MECHANICS.md
       - Game design: GAME_DESIGN.md

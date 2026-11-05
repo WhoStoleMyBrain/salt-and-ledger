@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 
 namespace SaltAndLedger.UnityHost
 {
-    public enum ArchipelagoScreen { Gameplay, MainMenu, Setup, Pause, Results, Encyclopedia, Settings, Ledger, CityEconomy, Development, Saves, CommissionMap, CommissionDraft, CommissionReview, Objectives, Completion, RoutePlanner, Inspector }
+    public enum ArchipelagoScreen { Gameplay, MainMenu, Setup, Pause, Results, Encyclopedia, Settings, Ledger, CityEconomy, Development, Saves, CommissionMap, CommissionDraft, CommissionReview, Objectives, Completion, RoutePlanner, Inspector, Opportunities }
 
     public static class ArchipelagoApplicationExit
     {
@@ -45,6 +45,7 @@ namespace SaltAndLedger.UnityHost
             BuildEncyclopedia();
             BuildLedger();
             BuildDevelopment();
+            BuildOpportunities();
             BuildRoutePlanner();
             Text(navigationRoot, "navigationStatus", "", "run-copy error");
             var confirmation = Panel(Root.Q("archipelagoLab"), "confirmationBackdrop", "run-confirmation hidden");
@@ -379,6 +380,7 @@ namespace SaltAndLedger.UnityHost
             if (screen == ArchipelagoScreen.Ledger) RefreshLedger();
             if (screen == ArchipelagoScreen.CityEconomy) RefreshCityEconomy();
             if (screen == ArchipelagoScreen.Development) RefreshDevelopment();
+            if (screen == ArchipelagoScreen.Opportunities) RefreshOpportunities();
             if (screen == ArchipelagoScreen.Objectives) RefreshObjectives();
         }
 
@@ -396,7 +398,7 @@ namespace SaltAndLedger.UnityHost
             if (Screen == ArchipelagoScreen.RoutePlanner) { CloseRoutePlanner(); return; }
             if (Screen == ArchipelagoScreen.Inspector) { ShowScreen(secondaryParent); Refresh(); return; }
             if (Screen == ArchipelagoScreen.Settings || Screen == ArchipelagoScreen.Ledger ||
-                Screen == ArchipelagoScreen.Development || Screen == ArchipelagoScreen.Saves)
+                Screen == ArchipelagoScreen.Development || Screen == ArchipelagoScreen.Saves || Screen == ArchipelagoScreen.Opportunities)
             { ShowScreen(secondaryParent); return; }
             if (Screen == ArchipelagoScreen.Setup) { ShowScreen(ArchipelagoScreen.MainMenu); return; }
             if (Screen == ArchipelagoScreen.Pause) { ResumeGame(); return; }

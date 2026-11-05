@@ -4,14 +4,14 @@ using System.Linq;
 
 namespace SaltAndLedger.Simulation
 {
-    public enum CargoItineraryCommandKind { BuyFromMarket, SellToMarket, LoadFromCompanyTownStock, UnloadToCompanyTownStock }
+    public enum CargoItineraryCommandKind { BuyFromMarket, SellToMarket, LoadFromCompanyTownStock, UnloadToCompanyTownStock, DeliverContract }
     public enum CargoItineraryShortagePolicy { Skip, Wait }
     public enum CargoItineraryDecisionKind { Execute, Skip, Wait, Depart, ContinueSailing, Paused }
     public enum CargoItineraryBlockReason
     {
         None, Disabled, WrongPort, Sailing, DailyLimit, SourceStock, CargoFull, WarehouseFull,
         WarehouseReserve, CompanyFunds, CashReserve, ExpenditureLimit, MarketFunds, PriceLimit,
-        MarketCapacity, AccountCapacity, MissingCompanyStock
+        MarketCapacity, AccountCapacity, MissingCompanyStock, ContractUnavailable
     }
 
     /// <summary>One bounded order per visit. Quantities are whole-cargo multiples in physical subunits.</summary>
@@ -26,16 +26,21 @@ namespace SaltAndLedger.Simulation
         public long CashReserve { get; }
         public long MaximumExpenditure { get; }
         public int WarehouseReserve { get; }
+        public string? ContractId { get; }
 
         public CargoItineraryCommand(CargoItineraryCommandKind kind, string goodId, int maximumQuantity,
             int minimumQuantity = EconomicUnits.QuantityScale,
             CargoItineraryShortagePolicy shortagePolicy = CargoItineraryShortagePolicy.Skip,
             long marginalPriceLimit = 0, long cashReserve = 0, long maximumExpenditure = long.MaxValue,
-            int warehouseReserve = 0)
+            int warehouseReserve = 0, string? contractId = null)
         {
             if (!Enum.IsDefined(typeof(CargoItineraryCommandKind), kind)) throw new ArgumentOutOfRangeException(nameof(kind));
             if (!Enum.IsDefined(typeof(CargoItineraryShortagePolicy), shortagePolicy)) throw new ArgumentOutOfRangeException(nameof(shortagePolicy));
             RuntimeIdentifier.Validate(goodId, nameof(goodId));
+            if (kind == CargoItineraryCommandKind.DeliverContract)
+                RuntimeIdentifier.Validate(contractId!, nameof(contractId));
+            else if (contractId != null)
+                throw new ArgumentException("Only a contract delivery may select a contract.", nameof(contractId));
             if (maximumQuantity <= 0 || minimumQuantity <= 0 || minimumQuantity > maximumQuantity ||
                 maximumQuantity % EconomicUnits.QuantityScale != 0 || minimumQuantity % EconomicUnits.QuantityScale != 0)
                 throw new ArgumentOutOfRangeException(nameof(maximumQuantity), "Use positive whole cargo quantities; minimum cannot exceed maximum.");
@@ -49,12 +54,14 @@ namespace SaltAndLedger.Simulation
             Kind = kind; GoodId = goodId; MaximumQuantity = maximumQuantity; MinimumQuantity = minimumQuantity;
             ShortagePolicy = shortagePolicy; MarginalPriceLimit = marginalPriceLimit; CashReserve = cashReserve;
             MaximumExpenditure = maximumExpenditure; WarehouseReserve = warehouseReserve;
+            ContractId = contractId;
         }
 
         internal bool EquivalentTo(CargoItineraryCommand other) => Kind == other.Kind && GoodId == other.GoodId &&
             MaximumQuantity == other.MaximumQuantity && MinimumQuantity == other.MinimumQuantity &&
             ShortagePolicy == other.ShortagePolicy && MarginalPriceLimit == other.MarginalPriceLimit &&
-            CashReserve == other.CashReserve && MaximumExpenditure == other.MaximumExpenditure && WarehouseReserve == other.WarehouseReserve;
+            CashReserve == other.CashReserve && MaximumExpenditure == other.MaximumExpenditure && WarehouseReserve == other.WarehouseReserve &&
+            ContractId == other.ContractId;
     }
 
     public sealed class CargoItineraryStop
@@ -147,15 +154,19 @@ namespace SaltAndLedger.Simulation
         public IndustrialTransferCommand? Transfer { get; }
         public SailCommand? Departure { get; }
         public TradeAttempt? Preview { get; }
-        public int SelectedQuantity => Trade?.Trade.Quantity ?? Transfer?.Quantity ?? 0;
+        public string? ContractId { get; }
+        public int ContractQuantity { get; }
+        public int SelectedQuantity => Trade?.Trade.Quantity ?? Transfer?.Quantity ?? ContractQuantity;
         internal CargoItineraryDecision(RegionalWorldSnapshot before, string shipId, CargoItineraryDecisionKind kind,
             CargoItineraryBlockReason blockReason, string reason, int stopIndex, int actionIndex,
             CargoItineraryCommand? command = null, PortTradeCommand? trade = null,
-            IndustrialTransferCommand? transfer = null, SailCommand? departure = null, TradeAttempt? preview = null)
+            IndustrialTransferCommand? transfer = null, SailCommand? departure = null, TradeAttempt? preview = null,
+            string? contractId = null, int contractQuantity = 0)
         {
             Before = before; ShipId = shipId; Kind = kind; BlockReason = blockReason; Reason = reason;
             StopIndex = stopIndex; ActionIndex = actionIndex; Command = command;
             Trade = trade; Transfer = transfer; Departure = departure; Preview = preview;
+            ContractId = contractId; ContractQuantity = contractQuantity;
         }
     }
 }

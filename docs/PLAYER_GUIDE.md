@@ -53,3 +53,5 @@ For a quick inspection: **Map → town → Harbor → select a good → breakdow
 Save explicitly before leaving; [Continue](SAVES.md) restores the exact saved state. Retry starts fresh with the same complete identity. Victory, deadline failure or confirmed abandonment freezes economic commands. The acknowledgment offers results or frozen inspection. Scores compare only matching identities, not unrelated seeds or starting packages.
 
 See [mechanics](MECHANICS.md), [expanding economy](EXPANDING_ECONOMY.md), [town finances](LIVING_CITIES.md) and the shared in-game encyclopedia for exact rules. The current economy has measured long-horizon shortages; a successful commission is not proof of sustainable welfare everywhere.
+
+Open **Contracts & Projects** from Company, Economy or a town to compare delivery commitments and permanent investments. Accepted contracts reserve finite funding and use actual docked cargo; the route planner can automate repeated deliveries. Trading Depots provide storage without a factory, while Public Industry Commissions add real public production. Read [the board guide](CONTRACTS_PROJECTS.md) before investing.

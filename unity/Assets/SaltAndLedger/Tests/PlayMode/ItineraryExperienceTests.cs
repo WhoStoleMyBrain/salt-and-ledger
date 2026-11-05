@@ -55,6 +55,41 @@ namespace SaltAndLedger.UnityHost.Tests
         }
 
         [UnityTest]
+        public IEnumerator ContractDeliveryEditorBindsTheTownAndGoodWithoutAcceptingOrMovingCargo()
+        {
+            var session = controller.Session;
+            var offer = session.Snapshot.Opportunities.Entries.Single(item => item.Id == "royal_planks");
+            var before = session.Snapshot;
+            controller.OpenRoutePlanner(session.Player.Id);
+            var contractStop = offer.PortId == session.Player.DockedPortId ? 0 : 1;
+            var second = contractStop == 1 ? offer.PortId : before.Ports.Keys.First(id => id != offer.PortId);
+            Click(root.Q<ArchipelagoMap>("routeCourseMap").Q<Button>("port_" + second));
+            Click("routeOrdersButton");
+            AddOrder(1 - contractStop, "grain", CargoItineraryCommandKind.BuyFromMarket, "1");
+            Select(contractStop);
+            Click("itineraryAddContract" + contractStop);
+            var picker = root.Q<DropdownField>("itineraryContract" + contractStop + "_-1");
+            picker.value = picker.choices.Single(choice => choice.Contains(offer.Id));
+            Assert.That(root.Q<DropdownField>("itineraryGood" + contractStop + "_-1").enabledSelf, Is.False);
+            Inline("itineraryMax").value = "2";
+            root.Q<Toggle>("routeWaitIfShort").value = true;
+            Click("routeSaveOrder");
+            Assert.That(session.Snapshot, Is.SameAs(before));
+            Apply();
+            var order = session.Player.Itinerary.Stops[contractStop].Commands.Single();
+            Assert.That(order.Kind, Is.EqualTo(CargoItineraryCommandKind.DeliverContract));
+            Assert.That(order.ContractId, Is.EqualTo(offer.Id));
+            Assert.That(order.GoodId, Is.EqualTo(offer.GoodId));
+            Assert.That(order.MaximumQuantity, Is.EqualTo(20000));
+            Assert.That(order.ShortagePolicy, Is.EqualTo(CargoItineraryShortagePolicy.Wait));
+            Assert.That(session.Snapshot.Opportunities.Entries.Single(item => item.Id == offer.Id).Status,
+                Is.EqualTo(OpportunityStatus.Available), "Planning does not accept a financial commitment.");
+            Assert.That(session.Player.Cargo, Is.EqualTo(before.Ships[session.Player.Id].Cargo));
+            Assert.That(session.Snapshot.Day, Is.EqualTo(before.Day));
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator CommodityCellsCreateDisposalFirstOrdersAndReviewSavesPaused()
         {
             OpenTwoStopDraft(); var before = controller.Session.Snapshot;

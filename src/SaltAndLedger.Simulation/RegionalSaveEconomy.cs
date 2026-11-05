@@ -16,7 +16,7 @@ namespace SaltAndLedger.Simulation
 
     internal static partial class RegionalSaveRestore
     {
-        private static ExpandingEconomySnapshot? RestoreEconomy(RegionalWorldSnapshot initial, RegionalSaveData data)
+        private static ExpandingEconomySnapshot? RestoreEconomy(RegionalWorldSnapshot initial, RegionalSaveData data, OpportunityBoardSnapshot? opportunities)
         {
             var e = data.Economy;
             Require((e == null) == (initial.Economy == null), "Public monetary sector presence changed.");
@@ -61,8 +61,9 @@ namespace SaltAndLedger.Simulation
                 Require(c.Delivered == 0 || data.Day >= definition.OpensDay, "Contract was fulfilled before it opened.");
                 return new ExternalContractSnapshot(definition, c.Delivered, c.Paid);
             }).ToArray();
-            Require(contracts.Aggregate(BigInteger.Zero, (sum, c) => sum + c.AmountPaid) == e.ExternalNetInflow &&
-                (BigInteger)e.ExternalCash + e.ExternalNetInflow == config.InitialExternalCash, "External authority funding does not reconcile.");
+            Require((opportunities?.CumulativePayments ?? contracts.Aggregate(0L, (sum, c) => checked(sum + c.AmountPaid))) == e.ExternalNetInflow &&
+                (BigInteger)e.ExternalCash + (opportunities?.ReservedCash ?? 0) + e.ExternalNetInflow == config.InitialExternalCash,
+                "External authority funding and escrow do not reconcile.");
             Count(e.ShipOrders, 0, config.MaximumPlayerShips - 1);
             Unique(e.ShipOrders.Select(o => o.ShipId), "ship orders");
             Require(e.NextShipNumber >= 2 && e.NextShipNumber <= config.MaximumPlayerShips + 1, "Invalid ship sequence.");
@@ -116,8 +117,7 @@ namespace SaltAndLedger.Simulation
             Require((BigInteger)finance.Construction == facilityCapital +
                 (BigInteger)(economy.NextShipNumber - 2) * economy.Configuration.ShipCost, "Paid private capital does not reconcile with sites and ships.");
             Require(finance.PublicCommissionExpenditure == (economy.MintStatus == MintStatus.Uncommissioned ? 0 : economy.Configuration.MintCommissionCost) &&
-                finance.MintReceipts == economy.SupplierIssuance &&
-                Get(finance.SurrenderedQuantities, "silver") == economy.SilverReserve, "Company monetary accounting does not reconcile with public institutions.");
+                finance.MintReceipts == economy.SupplierIssuance, "Company monetary accounting does not reconcile with public institutions.");
             return configs;
         }
     }

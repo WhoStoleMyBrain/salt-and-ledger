@@ -82,7 +82,7 @@ namespace SaltAndLedger.UnityHost
                 loadedWarehousePortId = null;
                 warehouseDraftErrors.Clear(); warehouseReserveError = null;
                 Element<VisualElement>("warehouseCashReservePopup").AddToClassList("hidden");
-                SetText("warehousePolicyDraftLabel", "Construct an eligible facility to create real company storage.");
+                SetText("warehousePolicyDraftLabel", "Complete a Trading Depot project or construct an eligible facility for company storage.");
                 SetText("warehouseSavedBadge", "Storage required"); SetText("warehouseRuleCounts", "0 buy · 0 sell");
                 Element<Button>("editWarehouseCashReserve").text = "—";
                 SetText("warehouseAutomationAccounting", "Warehouse rules never create storage or goods.");

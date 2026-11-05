@@ -39,16 +39,17 @@ namespace SaltAndLedger.Simulation
         public string OwnerId { get; }
         public string PortId { get; }
         public long GrossLocalSales { get; }
-        public long FeesPaid => GrossLocalSales / CirculationConfiguration.FeeDenominator;
+        public long DiscountedGrossSales { get; }
+        public long FeesPaid => checked((long)(((BigInteger)GrossLocalSales * 2 - DiscountedGrossSales) / 100));
         public long MarketFees => FeesPaid / 2;
         public long HouseholdFees => FeesPaid - MarketFees;
         public static string Key(string ownerId, string portId) => "company:" + ownerId + ":" + portId;
-        internal CommercialCirculationSnapshot(string ownerId, string portId, long grossLocalSales = 0)
+        internal CommercialCirculationSnapshot(string ownerId, string portId, long grossLocalSales = 0, long discountedGrossSales = 0)
         {
             RuntimeIdentifier.Validate(ownerId, nameof(ownerId));
             RuntimeIdentifier.Validate(portId, nameof(portId));
-            if (grossLocalSales < 0) throw new ArgumentOutOfRangeException(nameof(grossLocalSales));
-            OwnerId = ownerId; PortId = portId; GrossLocalSales = grossLocalSales;
+            if (grossLocalSales < 0 || discountedGrossSales < 0 || discountedGrossSales > grossLocalSales) throw new ArgumentOutOfRangeException(nameof(grossLocalSales));
+            OwnerId = ownerId; PortId = portId; GrossLocalSales = grossLocalSales; DiscountedGrossSales = discountedGrossSales;
         }
     }
 
@@ -109,12 +110,12 @@ namespace SaltAndLedger.Simulation
                 new MunicipalCirculationSnapshot(port, checked(day + CirculationConfiguration.ReviewIntervalDays))));
         }
 
-        internal TradeAttempt Preview(string ownerId, string portId, long householdCash, TradeAttempt gross)
+        internal TradeAttempt Preview(string ownerId, string portId, long householdCash, TradeAttempt gross, bool commercialPrivilege = false)
         {
             if (!Configuration.FeesEnabled || gross.Outcome != TradeOutcome.Traded || gross.Direction != TradeDirection.Sell)
                 return gross;
             var previous = Commercial[CommercialCirculationSnapshot.Key(ownerId, portId)];
-            var next = new CommercialCirculationSnapshot(ownerId, portId, checked(previous.GrossLocalSales + gross.ExecutedAmount));
+            var next = new CommercialCirculationSnapshot(ownerId, portId, checked(previous.GrossLocalSales + gross.ExecutedAmount), checked(previous.DiscountedGrossSales + (commercialPrivilege ? gross.ExecutedAmount : 0)));
             var fee = next.FeesPaid - previous.FeesPaid;
             var marketFee = next.MarketFees - previous.MarketFees;
             var householdFee = next.HouseholdFees - previous.HouseholdFees;

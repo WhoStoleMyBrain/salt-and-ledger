@@ -66,5 +66,24 @@ class WorldGenerationValidationTests(unittest.TestCase):
             validate_world_generation(self.config)
 
 
+    def test_opportunity_limits_are_bounded_and_require_integer_tokens(self):
+        for key, invalid in (("activeContractLimit", 0), ("activeContractLimit", 9),
+                             ("maximumAvailableContracts", 17), ("generationIntervalDays", 0),
+                             ("offerLifetimeDays", 366), ("historyLimit", 129),
+                             ("activeContractLimit", 3.0), ("historyLimit", True),
+                             ("unknown", 1)):
+            with self.subTest(key=key, invalid=invalid):
+                config = copy.deepcopy(self.config)
+                config["opportunities"][key] = invalid
+                with self.assertRaises(ContentError):
+                    validate_world_generation(config)
+        self.config.pop("opportunities")
+        validate_world_generation(self.config)
+        self.config["opportunities"] = {}
+        validate_world_generation(self.config)
+        self.config["opportunities"] = {"activeContractLimit": 1}
+        validate_world_generation(self.config)
+
+
 if __name__ == "__main__":
     unittest.main()

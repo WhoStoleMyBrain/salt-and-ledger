@@ -221,6 +221,12 @@ namespace SaltAndLedger.Simulation
             foreach (var store in CompanyStockpiles.Values.Where(s => s.OwnerId == ownerId))
                 foreach (var stock in store.Inventory) goods += (BigInteger)stock.Value * economy.Configuration.GoodsReferencePrices[stock.Key];
             foreach (var order in economy.ShipOrders.Where(o => o.OwnerId == ownerId)) pending += order.PaidCapital;
+            foreach (var project in (Opportunities?.Entries ?? Array.Empty<OpportunitySnapshot>()).Where(p => p.OwnerId == ownerId && p.Kind == OpportunityKind.TradingDepot))
+            {
+                var invested = DevelopmentProjects.DepotInvestedValue(project, economy.Configuration);
+                if (project.Status == OpportunityStatus.Succeeded) facilities += invested;
+                else if (project.Status == OpportunityStatus.Active) pending += invested;
+            }
             economy.InitialCompanyValues.TryGetValue(ownerId, out var initial);
             return new CompanyValueSnapshot(Companies[ownerId].Cash, checked((long)goods), checked((long)ships),
                 checked((long)facilities), checked((long)pending), initial);

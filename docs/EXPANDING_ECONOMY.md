@@ -121,7 +121,7 @@ Material FIFO retains original interval slices: `floor(C*end/Q)-floor(C*start/Q)
 
 ## Run identity, local saves and objectives
 
-The current identity is generator4/content3 plus the complete canonical generation configuration, valuation1, current pricing, seed, charter, Ascension, Grand Commission draft or Sandbox, storage2, itinerary1 and circulation1. Retry recreates exactly that initial identity. Current schema7 saves restore the complete world without advancing it; historical modes and schemas are intentionally retired. See [save policy](SAVES.md).
+The current identity is generator4/content3 plus the complete canonical generation configuration, valuation1, current pricing, seed, charter, Ascension, Grand Commission draft or Sandbox, storage2, itinerary1 and circulation1. Retry recreates exactly that initial identity. Current schema8 saves restore the complete world without advancing it; historical modes and schemas are intentionally retired. See [save policy](SAVES.md).
 
 Grand Commission is the sole scored challenge, with four mandatory drafted goals and100 liquid coins by the configured deadline, day720 by default. The [Journal](GRAND_COMMISSION.md) distinguishes cumulative accomplishments and reversible conditions. Sandbox has no deadline. Current charters retain their real endowments; public Mint assets never count as company property.
 
@@ -135,4 +135,4 @@ GitHub Pages remains manual-only. This task neither publishes nor reconfigures i
 
 ## New modern circulation revision
 
-Task2.4 adds [economic rules revision1](ECONOMIC_CIRCULATION_REVIEW.md), independently of generator4/content3 and valuation1. Fresh v3 host setup uses storage2/itinerary1/economy1 and schema7; historical versions are no longer supported. Retry preserves the current identity. This revision adds actual port handling expenses, one bounded municipal review, a Coverage luxury-target floor and finite role-specific starting imports. No recipes, goods, ships or automatic currency sources are added. Harbor displays exact gross and net settlement; Ledger separates wages, fees, FIFO, capital and Mint receipts. The separate `--economic-circulation --check` verifies matched experiments alongside the current productive-economy report.
+Task2.4 adds [economic rules revision1](ECONOMIC_CIRCULATION_REVIEW.md), independently of generator4/content3 and valuation1. Fresh v3 host setup uses storage2/itinerary1/economy1 and schema8; historical versions are no longer supported. Retry preserves the current identity. This revision adds actual port handling expenses, one bounded municipal review, a Coverage luxury-target floor and finite role-specific starting imports. No recipes, goods, ships or automatic currency sources are added. Harbor displays exact gross and net settlement; Ledger separates wages, fees, FIFO, capital and Mint receipts. The separate `--economic-circulation --check` verifies matched experiments alongside the current productive-economy report.

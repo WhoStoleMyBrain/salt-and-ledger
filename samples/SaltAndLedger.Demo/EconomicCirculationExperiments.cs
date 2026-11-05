@@ -338,6 +338,7 @@ internal static class EconomicCirculationExperiments
             PlayerCash = state.Companies[Owner].Cash, NpcCash = state.Companies.Values.Where(c => c.Id != Owner).Sum(c => c.Cash),
             MarketCash = state.Ports.Values.Sum(p => p.MarketCash), HouseholdCash = state.Ports.Values.Sum(p => p.City!.HouseholdCash),
             TreasuryCash = state.Economy!.TreasuryCash, ExternalCash = state.Economy.ExternalCash,
+            ExternalReservedCash = state.Opportunities?.ReservedCash ?? 0,
             Minted = state.Economy.MintedCurrency, ExternalNetInflow = state.Economy.ExternalNetInflow,
             PlayerValue = state.CompanyValue(Owner).Total, PlayerMargin = finance.RealizedGrossMargin,
             PlayerWages = finance.WagesPaid, PlayerFees = finance.FeesPaid, PlayerSurplusAfterExpenses = finance.OperatingSurplusAfterExpenses,
@@ -452,6 +453,7 @@ internal static class EconomicCirculationExperiments
         public long HouseholdCash { get; set; }
         public long TreasuryCash { get; set; }
         public long ExternalCash { get; set; }
+        public long ExternalReservedCash { get; set; }
         public long Minted { get; set; }
         public long ExternalNetInflow { get; set; }
         public long PlayerValue { get; set; }

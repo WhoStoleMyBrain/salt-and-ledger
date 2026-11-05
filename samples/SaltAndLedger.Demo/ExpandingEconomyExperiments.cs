@@ -629,7 +629,8 @@ internal static class ExpandingEconomyExperiments
             Companies = state.Companies.Values.Select(c => new { c.Id, c.Cash,
                 Accounting = state.Accounting.Companies[c.Id] }).ToArray(),
             RegionalCash = state.RegionalCash.ToString(CultureInfo.InvariantCulture), GlobalCash = state.TotalCash.ToString(CultureInfo.InvariantCulture),
-            TreasuryCash = economy.TreasuryCash, ExternalCash = economy.ExternalCash, ExternalInflow = economy.ExternalNetInflow,
+            TreasuryCash = economy.TreasuryCash, ExternalCash = economy.ExternalCash,
+            ExternalReservedCash = state.Opportunities?.ReservedCash ?? 0, ExternalInflow = economy.ExternalNetInflow,
             Minted = economy.MintedCurrency, SupplierIssuance = economy.SupplierIssuance, TreasuryIssuance = economy.TreasuryIssuance,
             SilverReserve = economy.SilverReserve, PublicWorksPlanks = economy.TreasuryPlanks, TreasurySpent = economy.TreasuryExpenditure,
             MintStatus = economy.MintStatus.ToString(), Contracts = economy.Contracts.Select(c => new {
@@ -746,6 +747,7 @@ internal static class ExpandingEconomyExperiments
         public string GlobalCash { get; set; } = "";
         public long TreasuryCash { get; set; }
         public long ExternalCash { get; set; }
+        public long ExternalReservedCash { get; set; }
         public long ExternalInflow { get; set; }
         public long Minted { get; set; }
         public long SupplierIssuance { get; set; }

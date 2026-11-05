@@ -13,6 +13,7 @@ These explanations are shared with the offline in-game encyclopedia. For exact d
 - [Food, furniture and municipal use](mechanics/help_city_needs.md) — Different consumers need different goods on explicit schedules\.
 - [Population, prosperity and recovery](mechanics/help_city_welfare.md) — Sustained paid food and purchasing power shape bounded city welfare\.
 - [Company Value and operating results](mechanics/help_company_value.md) — Reference holdings, liquidity and realized earnings are different measures\.
+- [Contracts and development projects](mechanics/help_contracts_projects.md) — Choose funded delivery commitments and invest actual materials and money in permanent infrastructure\.
 - [Historical inventory cost](mechanics/help_cost_basis.md) — Held goods carry actual acquisition or input\-material expenditure through their journey\.
 - [Fractional goods and exact coins](mechanics/help_exact_units.md) — V3 households buy proportional quantities while ships carry whole cargo units\.
 - [Expanding production chains](mechanics/help_expanding_industry.md) — Invest in real capacity and inspect the next finite bottleneck\.

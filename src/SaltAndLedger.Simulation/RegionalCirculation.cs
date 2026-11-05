@@ -12,7 +12,7 @@ namespace SaltAndLedger.Simulation
             internal CirculationSnapshot? Circulation { get; private set; }
 
             private TradeAttempt PreviewLocalTrade(string ownerId, WorkingPort port, TradeAttempt gross) =>
-                Circulation?.Preview(ownerId, port.Configuration.Id, port.City!.Cash, gross) ?? gross;
+                Circulation?.Preview(ownerId, port.Configuration.Id, port.City!.Cash, gross, Opportunities?.HasCommercialPrivilege(ownerId, port.Configuration.Id, Day) == true) ?? gross;
 
             private void ApplyServiceFee(string ownerId, string storeId, WorkingPort port, TradeAttempt attempt)
             {
@@ -22,7 +22,8 @@ namespace SaltAndLedger.Simulation
                 var key = CommercialCirculationSnapshot.Key(ownerId, portId);
                 var previous = Circulation.Commercial[key];
                 var next = new CommercialCirculationSnapshot(ownerId, portId,
-                    checked(previous.GrossLocalSales + attempt.ExecutedAmount));
+                    checked(previous.GrossLocalSales + attempt.ExecutedAmount), checked(previous.DiscountedGrossSales +
+                        (Opportunities?.HasCommercialPrivilege(ownerId, portId, Day) == true ? attempt.ExecutedAmount : 0)));
                 var rows = Circulation.Commercial.ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal);
                 rows[key] = next;
                 Circulation = new CirculationSnapshot(Circulation.Configuration, rows.Values, Circulation.Towns.Values);

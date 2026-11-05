@@ -14,13 +14,14 @@ Buying runs before private production; selling runs afterward\. Each good receiv
 
 When both directions are enabled, the Buy target must be no greater than the Sell reserve\. Buying therefore cannot immediately create sellable surplus\. Production or delivered cargo may create a real surplus\. Retain inputs or shipping stock explicitly; rules never reserve it from production or create missing resources\.
 
-Town warehouse trading is independent of factory enabled states and rates\. Real paid pending facilities already provide storage which can buy or sell; the factories themselves cannot produce until operational and due\. Without a real local facility there is no company warehouse\. New warehouses begin with every automatic rule off\.
+Town warehouse trading is independent of factory enabled states and rates\. Real paid pending facilities already provide storage which can buy or sell; the factories themselves cannot produce until operational and due\. Company storage requires a real local facility or a completed Trading Depot project\. New warehouses begin with every automatic rule off\.
 
 Valid completed field edits and switches apply automatically to the town warehouse policy\. Invalid text or a Buy target above an enabled Sell reserve stays highlighted and leaves the previous applied rule active\. Fix it or use Discard invalid drafts\. Changing tabs or commodities retains the other settings; pausing a rule retains its limits\. There is no separate warehouse Apply step\. These changes run no trade or day and do not save a local run slot: save the run separately\.
 
 ## Related entries
 
 - [Ordered cargo itineraries](../mechanics/help_cargo_itineraries.md)
+- [Contracts and development projects](../mechanics/help_contracts_projects.md)
 - [Owning a factory](../mechanics/help_factories.md)
 - [Market liquidity](../mechanics/help_liquidity.md)
 - [Marginal prices and execution averages](../mechanics/help_prices.md)

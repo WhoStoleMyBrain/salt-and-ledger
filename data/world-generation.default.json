@@ -173,5 +173,12 @@
   },
   "fleetLimit": 3,
   "deadlineDays": 720,
-  "economicCandidateCount": 16
+  "economicCandidateCount": 16,
+  "opportunities": {
+    "activeContractLimit": 3,
+    "maximumAvailableContracts": 8,
+    "generationIntervalDays": 16,
+    "offerLifetimeDays": 24,
+    "historyLimit": 64
+  }
 }

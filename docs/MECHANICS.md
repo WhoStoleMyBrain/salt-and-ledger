@@ -121,16 +121,16 @@ Construction transfers cash to the town and increments `ConstructionExpenditure`
 For each company, every committed regional snapshot preserves:
 
 ```text
-Cash = InitialCash + SalesRevenue + MintReceipts - InventoryPurchases
-     - ConstructionExpenditure - WagesPaid - FeesPaid - PublicCommissionExpenditure
-InventoryPurchases = CostOfGoodsSold + HeldInventoryCost + MintMaterialCost
+Cash = InitialCash + SalesRevenue + MintReceipts + RewardReceipts - InventoryPurchases
+     - ConstructionExpenditure - WagesPaid - FeesPaid - PublicCommissionExpenditure - ProjectExpenditure
+InventoryPurchases = CostOfGoodsSold + HeldInventoryCost + MintMaterialCost + ProjectMaterialCost
 RealizedGrossMargin = SalesRevenue - CostOfGoodsSold
 OperatingSurplusAfterWages = RealizedGrossMargin - WagesPaid
 OperatingSurplusAfterExpenses = OperatingSurplusAfterWages - FeesPaid
 HeldGoods = Granted + Purchased + Produced - Consumed - Sold - Surrendered
 ```
 
-The physical formula applies independently to each commodity. Transfers cancel within the company. The material-cost equality includes transformation reallocations and excludes capital, wages and fees. Wages are expensed immediately, including those for goods still held; operating surplus after wages is not matched full-cost profit. The implementation checks the basis identity when constructing company financial snapshots; experiments additionally reconcile actual cash and physical stores. Regional money includes markets, households, companies and treasury, and equals initial regional money plus minted currency and net external inflow. All-account money also includes the finite external authority and equals its initial total plus minted currency. Ship cash projections must not be counted again.
+The physical formula applies independently to each commodity. Transfers cancel within the company. The material-cost equality includes transformation reallocations and excludes capital, wages and fees. Wages are expensed immediately, including those for goods still held; operating surplus after wages is not matched full-cost profit. The implementation checks the basis identity when constructing company financial snapshots; experiments additionally reconcile actual cash and physical stores. Regional money includes markets, households, companies and treasury, and equals initial regional money plus minted currency and net external inflow. All-account money also includes the finite external authority and its accepted-contract reservations and equals its initial total plus minted currency. Ship cash projections must not be counted again.
 
 `RegionalResult.EconomicEvents` returns the current operation's committed purchases, sales, physical transfers, private production, construction payments and delayed construction completions. A completion event has zero cash, quantity and allocated cost; only the order contributes capital expenditure. Events carry committed day/revision, company, source/destination owner/store, port, relevant good and quantity, actual cash total and signed company change, allocated cost, recipe/facility, and gross consumed/produced cost slices as appropriate. Initial grant provenance is retained in initial lots and facility configuration. A host can retain a bounded journal without becoming an authority.
 
@@ -140,7 +140,7 @@ Material gross margin excludes wages and service fees; reports show these actual
 
 ## Current run outcomes
 
-Grand Commission is the sole scored challenge. Four typed drafted goals and100 liquid company coins must hold together by the configured deadline (day720 by default). Evaluation follows each atomic operation; success takes precedence on the deadline. Success/failure/abandonment freezes mutations. Sandbox has no deadline or score. Retry recreates the complete immutable identity; [schema7 saves](SAVES.md) restore exact state without stepping.
+Grand Commission is the sole scored challenge. Four typed drafted goals and100 liquid company coins must hold together by the configured deadline (day720 by default). Evaluation follows each atomic operation; success takes precedence on the deadline. Success/failure/abandonment freezes mutations. Sandbox has no deadline or score. Retry recreates the complete immutable identity; [schema8 saves](SAVES.md) restore exact state without stepping.
 
 One solvency point per10 coins is capped at100; victory adds1000; remaining-day points are10 per day capped at600. Grand Commission objective points are specified below. Starting grants are real endowments with zero paid basis, not fictitious purchases or earned profit.
 
@@ -168,13 +168,13 @@ Victory requires all four selected cards currently met, company cash at least 1,
 
 Private production comes from successful funded batches and existing output/payroll totals. A New Industry requires the same selected operational Mill and Bakery in distinct towns to each have a funded batch; a same-town starter Bakery cannot substitute. Welfare uses the recovery town's latest six actual need observations with the greater current/initial demand denominator. Current cash, value, welfare and net supply remain reversible; historical output, visits and public deliveries are cumulative. A conjunction card's percentage is its lowest condition percentage, each clamped to 0–100 after integer floor. New objective score is `floor(500 * sum(four card percentages) / 400)`; victory/time/solvency components are separate.
 
-The authored thresholds and stream algorithm are in [Grand Commission](GRAND_COMMISSION.md). Current schema7 restores the resolved plan and bounded history without reevaluation. Retry reconstructs the same complete identity from day zero.
+The authored thresholds and stream algorithm are in [Grand Commission](GRAND_COMMISSION.md). Current schema8 restores the resolved plan and bounded history without reevaluation. Retry reconstructs the same complete identity from day zero.
 
 ## Ordered cargo itinerary contract
 
-`CargoItineraryPolicy` version 1 applies only to player ships with explicit v3, pooled storage and `RunIdentity.ItineraryVersion == 1`. It contains 2–4 unique connected port stops, 1–8 commands per stop and at most 24 total. Each immutable command chooses BuyFromMarket, SellToMarket, LoadFromCompanyTownStock or UnloadToCompanyTownStock, a known good, positive whole-cargo maximum/minimum, and Skip or Wait below minimum. Buy/sell use the ordinary exact quote and finite accounts; transfers use the ordinary matching dock/owner/store path and move original FIFO slices without payment. The full user-facing limits and example are in [Automation](AUTOMATION.md#ordered-cargo-itineraries).
+`CargoItineraryPolicy` version 1 applies only to player ships with explicit v3, pooled storage and `RunIdentity.ItineraryVersion == 1`. It contains 2–4 unique connected port stops, 1–8 commands per stop and at most 24 total. Each immutable command chooses BuyFromMarket, SellToMarket, LoadFromCompanyTownStock, UnloadToCompanyTownStock or DeliverContract, a known good, positive whole-cargo maximum/minimum, and Skip or Wait below minimum. Buy/sell use the ordinary exact quote and finite accounts; transfers use the ordinary matching dock/owner/store path and move original FIFO slices without payment. The full user-facing limits and example are in [Automation](AUTOMATION.md#ordered-cargo-itineraries).
 
-Policy validation is structural: an owned company warehouse need not exist at a planned stop. Assignment, preview, execution and schema7 restoration accept such future logistics. Missing company storage is a normal `MissingCompanyStock` Skip/Wait blocker, never an exception or permission to create assets. Existing cargo/space constraints can take precedence. Once ordinary construction creates the real owned store, the unchanged instruction uses it. Structural route and actual-store accounting validation remain strict.
+Policy validation is structural: an owned company warehouse need not exist at a planned stop. Assignment, preview, execution and schema8 restoration accept such future logistics. Missing company storage is a normal `MissingCompanyStock` Skip/Wait blocker, never an exception or permission to create assets. Existing cargo/space constraints can take precedence. Once ordinary construction creates the real owned store, the unchanged instruction uses it. Structural route and actual-store accounting validation remain strict.
 
 An instruction selects the largest qualifying whole quantity, executes once per visit and advances, including a partial quantity above minimum. It is not a hold target or a retry-until-maximum order. Skip advances with no transaction; Wait retains the exact action and stops the chain. Unmentioned mixed cargo remains aboard. Each staged action reevaluates current stock, capacity, market/company cash, marginal threshold, purchase reserve/cap and warehouse reserve. No action executes remotely or grants public/private inventory interchangeably.
 
@@ -182,7 +182,7 @@ The authoritative `CargoItineraryProgress` retains stop/action, cycle, last deci
 
 `ConfigureItinerary` is snapshot-bound and passive. Replacement requires disabled automation, an actual dock in the proposed plan, and an old cursor at zero or after every stop command. Any already-consumed current-day itinerary budget also prevents replacement until the next day. Equivalent policy content retains cursor and budget. Pausing preserves the ship's voyage/cargo; enabling requires its next stop or the corresponding incoming route. Manual relocation remains paused and cannot forge itinerary arrival. The active market, industrial and itinerary policies are mutually exclusive. All progress, accounting and last-decision changes share the existing atomic world commit; a later exception restores the entire old state.
 
-Current RunIdentity defaults to itinerary version1 and includes it in comparisons. Schema6 restores bounded typed policy/cursor/budget alongside exact cargo and FIFO, rejecting inconsistent indices, goods, stores, modes or enabled locations before returning a world. Retry recreates the initial identity and terminal saves remain frozen.
+Current RunIdentity defaults to itinerary version1 and includes it in comparisons. Schema8 restores bounded typed policy/cursor/budget alongside exact cargo and FIFO, rejecting inconsistent indices, goods, stores, modes or enabled locations before returning a world. Retry recreates the initial identity and terminal saves remain frozen.
 
 ## Economic circulation revision 1
 
@@ -190,4 +190,12 @@ New modern v3 identity selects economic rules1 (generator4/content3, storage2, i
 
 The daily phase inserts municipal review after actors/private procurement and before public production. Shadow production reserves one feasible upcoming public batch per enabled facility in normal order. The levy protects twice the next essential budget; relief protects ready payroll and requires real stock. Shortfall,12coins and10%unreserved payer cash bound each transfer. Next review dates and totals are part of the atomic state, including no-transfer reviews. Loading cannot repeat them. Existing Mint/external boundaries remain the only monetary expansion/inflow paths.
 
-Revision1 Coverage floors luxury targets at half the authored target, at least one whole good (Furniture2); it does not change eligibility or consumption. Initial public imports are finite: at least four initial Bread opportunities plus bounded role inputs. Historical pricing/generation is unchanged. `OperatingSurplusAfterExpenses = RealizedGrossMargin - WagesPaid - FeesPaid`; it excludes capital and Mint/public transactions. Fee prefixes and complete fiscal state are saved in schema7.
+Revision1 Coverage floors luxury targets at half the authored target, at least one whole good (Furniture2); it does not change eligibility or consumption. Initial public imports are finite: at least four initial Bread opportunities plus bounded role inputs. Historical pricing/generation is unchanged. `OperatingSurplusAfterExpenses = RealizedGrossMargin - WagesPaid - FeesPaid`; it excludes capital and Mint/public transactions. Fee prefixes and complete fiscal state are saved in schema8.
+
+## Contract and project lifecycle
+
+The [opportunity board](CONTRACTS_PROJECTS.md) belongs to the same atomic regional owner. Acceptance reserves the full finite external payment, with reservation cash counted outside the regional boundary and inside all-account cash. Contract delivery transfers actual docked whole cargo to the named town (royal exports are a physical sink), releases exact FIFO sale basis and transfers reserved cash once. Only paid contract execution updates its obligation; ordinary sales and previews do not. Completion rewards have separate RewardReceipts, and project cash/materials have separate ProjectExpenditure/ProjectMaterialCost.
+
+Daily evidence follows actual public production and paid consumption. Industrial progress requires the named successful facility batch and sufficient unused delivered-input credit. Relief requires sufficiently fulfilled paid essential food observations and sufficient unused player-contribution credit. Individual recurring windows are inclusive and cannot be supplied early. Missed windows/deadlines fail the remaining commitment, return unspent reservation to its account and retain valid past delivery receipts.
+
+Project contributions consume real cargo or local company stock and pay the town. Completion installs only its funded permanent asset. Public industries retain canonical recipes, intervals, input consumption, wage payer and structural production constraints; first production waits a full interval. Depots add finite capacity to the one company/town FIFO store without producing goods. Exact save continuation retains all progress, reservations, infrastructure and bounded ordinary history. Privileges affect actual fee calculation; active permits never bypass structural constraints.

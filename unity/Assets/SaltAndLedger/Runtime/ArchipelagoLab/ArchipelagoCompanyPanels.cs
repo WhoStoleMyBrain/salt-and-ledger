@@ -50,6 +50,10 @@ namespace SaltAndLedger.UnityHost
                     "   |   Surrendered Silver material basis  " + Money(finance.MintMaterialCost) +
                     "\nPublic Mint commissioning paid  " + Money(finance.PublicCommissionExpenditure) +
                     ". Issuance receipts are separate from trading margin and operating surplus.") +
+                (snapshot.Opportunities == null ? "" : "\nContract completion rewards  " + Money(finance.RewardReceipts) +
+                    "\nProject cash invested  " + Money(finance.ProjectExpenditure) +
+                    "   |   Contributed material basis  " + Money(finance.ProjectMaterialCost) +
+                    "\nDelivery receipts are included in sale revenue; completion rewards and infrastructure investments are separate from operating surplus.") +
                 "\nStarting cash  " + Money(finance.InitialCash) + "   |   Cash change  " + SignedMoney(Session.CashChange);
         }
         private string ValueText()
@@ -57,7 +61,7 @@ namespace SaltAndLedger.UnityHost
             if (Session.Snapshot.Economy == null) return "";
             var value = Session.Snapshot.CompanyValue(Session.Player.OwnerId);
             return "REFERENCE COMPANY VALUE\nCash " + Money(value.Cash) + " + owned goods " + Money(value.Goods) +
-                " + completed ships " + Money(value.Ships) + " + operational factories " + Money(value.Facilities) +
+                " + completed ships " + Money(value.Ships) + " + factories and depots " + Money(value.Facilities) +
                 " + paid construction in progress " + Money(value.PendingCapital) + " = " + Money(value.Total) +
                 "\nStarting value " + Money(value.InitialValue) + " | change " + SignedMoney(value.Change) +
                 "\nStable reference prices; buyers and liquidation proceeds are not guaranteed. Starter gifts count at reference value with zero paid basis. Public Mint, treasury, markets, households and other companies are excluded. FIFO paid basis is not added again.\n\n";

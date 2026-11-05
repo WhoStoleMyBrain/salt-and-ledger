@@ -31,6 +31,11 @@ Canonical recipes, building identities and goods remain in `data/content.json`. 
 | `fleetLimit` | 3 | Completed plus pending player ships; configurable 1–32 |
 | `deadlineDays` | 720 | Grand Commission horizon; existing finite contract windows are capped to it |
 | `economicCandidateCount` | 16 | Bounded capability-count/assignment attempts |
+| `opportunities.activeContractLimit` | 3 | Accepted contracts at once; 1–8 |
+| `opportunities.maximumAvailableContracts` | 8 | Bounded ordinary offer pool; 2–16 |
+| `opportunities.generationIntervalDays` | 16 | Days between deterministic offer reviews; 1–365 |
+| `opportunities.offerLifetimeDays` | 24 | Ordinary offer acceptance window; 1–365 |
+| `opportunities.historyLimit` | 64 | Retained resolved ordinary entries; 8–128 |
 
 The public and private ranges are separate; neither implies that every public site permits private construction. The combined capability is checked before either subset is installed. Enabled industries have at least one potential site. Arrays of goods and industries and inventory keys are normalized ordinally before fingerprinting; culture and input enumeration order do not affect identity.
 
@@ -87,6 +92,8 @@ Unity stages the same default JSON with `prepare_unity.py`. An optional `world-g
 
 ## Identity and verification
 
-Run identity retains generator4, content3, valuation1, full configuration/fingerprint, seed, charter, pricing, Ascension, draft2, storage2, itinerary1 and economic rules1. Save schema7 rejects old saves safely and reconstructs the exact configured world before restoring mutable state. Retry starts its original configuration; Load resumes exact stocks, accounts, voyages and schedules.
+Run identity retains generator4, content3, valuation1, full configuration/fingerprint, seed, charter, pricing, Ascension, draft2, storage2, itinerary1 and economic rules1. Save schema8 rejects old saves safely and reconstructs the exact configured world before restoring mutable state. Retry starts its original configuration; Load resumes exact stocks, accounts, voyages and schedules.
 
 See [Task3.1 verification](TASK-3.1-VERIFICATION.md) for actual results, test scope and the remaining Unity Editor/player checks. Bounded generation and simulation evidence do not establish long-run balance or universal profitability.
+
+Task3.2 uses these same configured capabilities, real market stocks, consumption and production schedules to generate [contracts and projects](CONTRACTS_PROJECTS.md). The optional `opportunities` object defaults identically when omitted; its complete canonical values participate in the configuration fingerprint. It cannot add disabled goods, unavailable recipes or structurally incompatible production.

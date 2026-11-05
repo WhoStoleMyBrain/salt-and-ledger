@@ -146,7 +146,7 @@ namespace SaltAndLedger.UnityHost
                         (quote.Ask.HasValue ? Number(quote.Ask.Value) : "—") + " →" : "← " + (quote.Bid.HasValue ? Number(quote.Bid.Value) : "—");
                     if (Session.IsChallengeEnded) reason = "Run concluded · stocks frozen.";
                     else if (TradingPair != HarborPair.MarketWarehouse && (!ship.IsPlayer || ship.Id != Session.Player.Id)) reason = "NPC inspection only. Select your ship.";
-                    else if (TradingPair != HarborPair.MarketShip && stock == null) reason = "Construct a local facility for company storage.";
+                    else if (TradingPair != HarborPair.MarketShip && stock == null) reason = "Complete a depot project or construct local industry for company storage.";
                     else if (TradingPair != HarborPair.MarketWarehouse && !local) reason = "Dock at this town to move cargo.";
                     else if (TradingPair != HarborPair.MarketWarehouse && ship.AutomationEnabled) reason = "Pause ship automation for manual orders.";
                     else if (valid && TradingPair != HarborPair.MarketWarehouse && !whole) reason = "Ship cargo uses whole goods. Warehouse trades allow fractions.";

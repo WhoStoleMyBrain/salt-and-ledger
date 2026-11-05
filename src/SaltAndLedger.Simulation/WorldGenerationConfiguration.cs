@@ -120,6 +120,7 @@ namespace SaltAndLedger.Simulation
         public int FleetLimit { get; }
         public int DeadlineDays { get; }
         public int EconomicCandidateCount { get; }
+        public OpportunityConfiguration Opportunities { get; }
         [JsonIgnore] public string Fingerprint
         {
             get
@@ -134,7 +135,8 @@ namespace SaltAndLedger.Simulation
             bool enforceProductionSeparation, bool requireSupplyChains, GenerationRange population, GenerationRange prosperity,
             GenerationRange marketCash, GenerationRange householdCashPerResident,
             IDictionary<string, GenerationRange> startingInventories, NpcGenerationSettings npc,
-            InstitutionGenerationSettings institutions, int fleetLimit = 3, int deadlineDays = 720, int economicCandidateCount = 16)
+            InstitutionGenerationSettings institutions, int fleetLimit = 3, int deadlineDays = 720, int economicCandidateCount = 16,
+            OpportunityConfiguration? opportunities = null)
         {
             SchemaVersion = schemaVersion; TownCount = townCount; Geography = geography;
             var goodValues = (enabledGoods ?? throw new WorldGenerationException("enabledGoods is required.")).ToArray();
@@ -148,6 +150,7 @@ namespace SaltAndLedger.Simulation
             StartingInventories = new ReadOnlyDictionary<string, GenerationRange>(new SortedDictionary<string, GenerationRange>(
                 startingInventories ?? throw new WorldGenerationException("startingInventories is required."), StringComparer.Ordinal));
             Npc = npc; Institutions = institutions; FleetLimit = fleetLimit; DeadlineDays = deadlineDays; EconomicCandidateCount = economicCandidateCount;
+            Opportunities = opportunities ?? new OpportunityConfiguration();
         }
         public string ToJson() => canonicalJson ?? (canonicalJson = JsonConvert.SerializeObject(this, Formatting.None, JsonSettings));
         public static WorldGenerationConfiguration Parse(string json, ContentCatalog? content = null)
@@ -160,6 +163,14 @@ namespace SaltAndLedger.Simulation
                 var root = JObject.Load(reader, new JsonLoadSettings { DuplicatePropertyNameHandling = DuplicatePropertyNameHandling.Error });
                 if (reader.Read()) throw new WorldGenerationException("World generation configuration must contain one JSON object.");
                 ValidateJsonShape(root);
+                // Json.NET passes zero for an omitted value-type constructor argument.
+                // Apply the authored optional defaults after strict token validation instead.
+                if (root["opportunities"] is JObject opportunities)
+                {
+                    var defaults = JObject.FromObject(new OpportunityConfiguration(), JsonSerializer.Create(JsonSettings));
+                    foreach (var property in defaults.Properties())
+                        if (opportunities[property.Name] == null) opportunities.Add(property.Name, property.Value.DeepClone());
+                }
                 var result = root.ToObject<WorldGenerationConfiguration>(JsonSerializer.Create(JsonSettings))
                     ?? throw new WorldGenerationException("World generation configuration is required.");
                 result.Validate(content);
@@ -167,6 +178,7 @@ namespace SaltAndLedger.Simulation
             }
             catch (JsonException exception) { throw new WorldGenerationException("Invalid world generation JSON: " + exception.Message); }
             catch (ContentValidationException exception) { throw new WorldGenerationException("Invalid world generation JSON: " + exception.Message); }
+            catch (ArgumentOutOfRangeException exception) { throw new WorldGenerationException("Invalid world generation configuration: " + exception.Message); }
         }
         private static void ValidateJsonShape(JObject root)
         {
@@ -177,7 +189,7 @@ namespace SaltAndLedger.Simulation
                         throw new WorldGenerationException(property.Path + " is an unknown configuration property (names are case sensitive).");
             }
             Keys(root, "schemaVersion", "townCount", "geography", "enabledGoods", "industries", "enforceProductionSeparation", "requireSupplyChains",
-                "population", "prosperity", "marketCash", "householdCashPerResident", "startingInventories", "npc", "institutions", "fleetLimit", "deadlineDays", "economicCandidateCount");
+                "population", "prosperity", "marketCash", "householdCashPerResident", "startingInventories", "npc", "institutions", "fleetLimit", "deadlineDays", "economicCandidateCount", "opportunities");
             void Require(JObject item, string name, JTokenType kind)
             {
                 var value = item[name];
@@ -189,6 +201,15 @@ namespace SaltAndLedger.Simulation
             foreach (var name in new[] { "enabledGoods", "industries" }) Require(root, name, JTokenType.Array);
             foreach (var name in new[] { "fleetLimit", "deadlineDays", "economicCandidateCount" })
                 if (root[name] != null) Require(root, name, JTokenType.Integer);
+            if (root["opportunities"] != null)
+            {
+                Require(root, "opportunities", JTokenType.Object);
+                var opportunities = (JObject)root["opportunities"]!;
+                Keys(opportunities, "activeContractLimit", "maximumAvailableContracts", "generationIntervalDays", "offerLifetimeDays", "historyLimit");
+                foreach (var property in opportunities.Properties())
+                    if (property.Value.Type != JTokenType.Integer)
+                        throw new WorldGenerationException(property.Path + " must be an integer.");
+            }
             foreach (var token in (JArray)root["enabledGoods"]!)
                 if (token.Type != JTokenType.String) throw new WorldGenerationException("enabledGoods entries must be canonical string IDs.");
             void Range(JToken token)
@@ -229,6 +250,12 @@ namespace SaltAndLedger.Simulation
             MarketCash.Validate("marketCash", 0, 1000000); HouseholdCashPerResident.Validate("householdCashPerResident", 0, 10000);
             if (FleetLimit < 1 || FleetLimit > 32 || DeadlineDays < 1 || DeadlineDays > 36500 || EconomicCandidateCount < 1 || EconomicCandidateCount > 64)
                 throw new WorldGenerationException("fleetLimit must be 1..32; deadlineDays 1..36500; economicCandidateCount 1..64.");
+            if (Opportunities.ActiveContractLimit < 1 || Opportunities.ActiveContractLimit > 8 ||
+                Opportunities.MaximumAvailableContracts < 2 || Opportunities.MaximumAvailableContracts > 16 ||
+                Opportunities.GenerationIntervalDays < 1 || Opportunities.GenerationIntervalDays > 365 ||
+                Opportunities.OfferLifetimeDays < 1 || Opportunities.OfferLifetimeDays > 365 ||
+                Opportunities.HistoryLimit < 8 || Opportunities.HistoryLimit > 128)
+                throw new WorldGenerationException("opportunities requires activeContractLimit 1..8, maximumAvailableContracts 2..16, generationIntervalDays/offerLifetimeDays 1..365 and historyLimit 8..128.");
             var g = Geography;
             if (g.Width < 100 || g.Width > 10000 || g.Height < 100 || g.Height > 10000 || g.Margin < 0 ||
                 2L * g.Margin >= Math.Min(g.Width, g.Height) || g.MinimumTownSpacing < 1 || g.MinimumTownSpacing > 14000 ||
