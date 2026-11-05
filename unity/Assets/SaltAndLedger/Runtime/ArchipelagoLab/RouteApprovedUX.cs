@@ -297,7 +297,7 @@ namespace SaltAndLedger.UnityHost
 
         private static ItineraryActionDraft CopyApprovedAction(ItineraryActionDraft source) => new ItineraryActionDraft
         {
-            Kind = source.Kind, GoodId = source.GoodId, Maximum = source.Maximum, Minimum = source.Minimum,
+            Kind = source.Kind, GoodId = source.GoodId, ContractId = source.ContractId, Maximum = source.Maximum, Minimum = source.Minimum,
             Price = source.Price, CashReserve = source.CashReserve, Budget = source.Budget,
             WarehouseReserve = source.WarehouseReserve, Shortage = source.Shortage
         };
@@ -308,6 +308,12 @@ namespace SaltAndLedger.UnityHost
             var stop = ActiveItineraryDraft.Stops[selectedItineraryStop];
             routeEditingIndex = index;
             routeEditingAction = index < 0 ? new ItineraryActionDraft { GoodId = goodId ?? goodIds[0], Kind = kind, Maximum = "1" } : CopyApprovedAction(stop.Actions[index]);
+            if (routeEditingAction.Kind == CargoItineraryCommandKind.DeliverContract && routeEditingAction.ContractId == null)
+            {
+                var contract = Session.Snapshot.Opportunities?.Entries.FirstOrDefault(item => !item.IsProject && item.PortId == stop.PortId &&
+                    (item.Status == OpportunityStatus.Available || item.Status == OpportunityStatus.Active));
+                if (contract != null) { routeEditingAction.ContractId = contract.Id; routeEditingAction.GoodId = contract.GoodId; }
+            }
             routeEditingReturnCell = ItineraryCellName(selectedItineraryStop, routeEditingAction.GoodId, routeEditingAction.Kind);
             routeRequiresMinimum = routeEditingAction.Minimum != "1";
             stop.AdvancedOpen = true;
@@ -325,7 +331,7 @@ namespace SaltAndLedger.UnityHost
                 () => BeginApprovedRouteAction(actionIndex), "route-v3-order-title");
             expand.SetEnabled(routeEditingAction == null);
             var details = Text(title, null, "Up to " + action.Maximum + " · minimum " + action.Minimum + " · " + action.Shortage, "route-v3-muted route-v3-order-summary");
-            details.tooltip = ItineraryFlowDescription(action.Kind);
+            details.tooltip = ItineraryFlowDescription(action.Kind) + (action.ContractId == null ? "" : " · " + action.ContractId);
             var tools = Panel(title, null, "route-v3-stop-tools");
             Button(tools, "itineraryActionUp" + key, "↑", () =>
             { stop.Actions.RemoveAt(actionIndex); stop.Actions.Insert(actionIndex - 1, action); stop.PreserveOrder = true; RebuildChangedItinerary(); }).SetEnabled(actionIndex > 0 && routeEditingAction == null);
@@ -342,11 +348,28 @@ namespace SaltAndLedger.UnityHost
             var form = Panel(parent, "routeInlineEditor", "route-v3-inline-editor");
             Text(form, null, routeEditingIndex < 0 ? "NEW INSTRUCTION" : "EDIT INSTRUCTION", "route-v3-eyebrow");
             var primary = Panel(form, null, "route-v3-inline-fields");
-            Dropdown(primary, "itineraryKind" + key, "Action", new List<string> { "Buy", "Sell", "Load", "Unload" });
+            Dropdown(primary, "itineraryKind" + key, "Action", new List<string> { "Buy", "Sell", "Load", "Unload", "Deliver contract" });
             var kind = Element<DropdownField>("itineraryKind" + key); kind.SetValueWithoutNotify(kind.choices[(int)action.Kind]);
             Dropdown(primary, "itineraryGood" + key, "Good", goodIds.Select(id => Session.Content.GetGood(id).Name).ToList());
             var good = Element<DropdownField>("itineraryGood" + key); good.SetValueWithoutNotify(Session.Content.GetGood(action.GoodId).Name);
             good.RegisterValueChangedCallback(change => { if (change.target != good || good.index < 0) return; action.GoodId = goodIds[good.index]; ValidateApprovedInlineEditor(); });
+            var contracts = Session.Snapshot.Opportunities?.Entries.Where(item => !item.IsProject && item.PortId == ActiveItineraryDraft.Stops[selectedItineraryStop].PortId &&
+                (item.Status == OpportunityStatus.Available || item.Status == OpportunityStatus.Active || item.Id == action.ContractId)).ToList()
+                ?? new List<OpportunitySnapshot>();
+            var contractChoices = contracts.Select(item => Session.Content.GetGood(item.GoodId).Name + " · " + item.Kind + " · " + item.Id).ToList();
+            if (contractChoices.Count == 0) contractChoices.Add("No current contracts at this town");
+            Dropdown(form, "itineraryContract" + key, "Contract at this stop", contractChoices);
+            var contractPicker = Element<DropdownField>("itineraryContract" + key);
+            void SelectContract(int index)
+            {
+                if (index < 0 || index >= contracts.Count) return;
+                action.ContractId = contracts[index].Id; action.GoodId = contracts[index].GoodId;
+                good.SetValueWithoutNotify(Session.Content.GetGood(action.GoodId).Name);
+                ValidateApprovedInlineEditor();
+            }
+            var contractIndex = contracts.FindIndex(item => item.Id == action.ContractId);
+            contractPicker.SetValueWithoutNotify(contractChoices[Math.Max(0, contractIndex)]);
+            contractPicker.RegisterValueChangedCallback(change => { if (change.target == contractPicker) SelectContract(contractPicker.index); });
             var maximum = ApprovedRouteField(primary, "itineraryMax" + key, "Up to / visit", action.Maximum, value => action.Maximum = value);
             var limits = Panel(form, null, "route-v3-inline-fields");
             var minimum = new Toggle("Require minimum") { name = "routeRequireMinimum", value = routeRequiresMinimum }; limits.Add(minimum);
@@ -367,7 +390,13 @@ namespace SaltAndLedger.UnityHost
             ApprovedRouteField(advanced, "itineraryBudget" + key, "Spend at most · blank unrestricted", action.Budget, value => action.Budget = value);
             ApprovedRouteField(advanced, "itineraryWarehouseReserve" + key, "Keep warehouse units", action.WarehouseReserve, value => action.WarehouseReserve = value);
             kind.RegisterValueChangedCallback(change =>
-            { if (change.target != kind || kind.index < 0) return; action.Kind = (CargoItineraryCommandKind)kind.index; RefreshItineraryFieldVisibility(key, action.Kind); ValidateApprovedInlineEditor(); });
+            {
+                if (change.target != kind || kind.index < 0) return;
+                action.Kind = (CargoItineraryCommandKind)kind.index;
+                if (action.Kind == CargoItineraryCommandKind.DeliverContract)
+                    SelectContract(Math.Max(0, contracts.FindIndex(item => item.Id == action.ContractId)));
+                RefreshItineraryFieldVisibility(key, action.Kind); ValidateApprovedInlineEditor();
+            });
             RefreshItineraryFieldVisibility(key, action.Kind);
             Text(advanced, "routeCurrentQuote", "", "route-v3-copy");
             Text(form, "routeInlineValidation", "", "route-v3-validation");

@@ -24,6 +24,7 @@ Immutable `CargoItineraryPolicy` version 1 applies to player ships in v3 pooled-
 | Sell to public market | Named cargo moves into the local market; finite market cash pays the company | Minimum marginal bid |
 | Load from company town stock | Local owned stock moves into the docked hold; no payment | Quantity retained in that town's company stock |
 | Unload to company town stock | Named cargo moves into the local owned store; no payment | Actual remaining company storage capacity |
+| Deliver contract | Named cargo goes to the accepted contract recipient; reserved funds pay once | Actual destination, remaining current-window obligation and cargo |
 
 Every instruction has a positive **maximum whole units per visit**, a positive **minimum whole quantity** (default one), and **Skip for this visit** or **Wait at this stop**. The maximum is an order cap, not a cargo target. Execution chooses the largest quantity satisfying current stock, space, exact prices, real funds and applicable limits. It executes that quantity once and advances even if less than the maximum. If less than the minimum is possible, Skip advances without a transaction; Wait retains that exact instruction without spending. Earlier completed orders are never repeated because a later one waits.
 
@@ -51,14 +52,16 @@ New stops use **Unload → Sell → Load → Buy**, then stable commodity-ID ord
 
 Maximum/minimum fields accept whole units; coin and warehouse reserves accept up to four decimal places. Invalid fields remain in the inline editor and prevent saving that edit. **Review route** checks the whole draft before **Apply route** assigns it. **Start route** and **Pause route** control execution separately. **Reload saved route** discards draft edits in favor of the ship's actual applied policy; it does not load a local run slot. **Route tools & details → Inspect harbor** opens ordinary trading and returns to the planner on Back. The current-hold summary shows actual cargo/free capacity, not predicted cargo after proposed orders or reserved arrival stock.
 
-Missing company storage is an ordinary **Skip/Wait** blocker when the instruction reaches execution. A Skip advances without moving goods; a Wait retains the instruction. Build eligible industry through Industry to create real local company storage; the already assigned route can then use it without being recreated. The planner never creates storage, buildings or cargo. Other current blockers, such as absent cargo or a full hold, may take precedence. Pending paid facilities already provide storage under the existing construction rules; production still waits for completion.
+Missing company storage is an ordinary **Skip/Wait** blocker when the instruction reaches execution. A Skip advances without moving goods; a Wait retains the instruction. Build eligible industry through Industry or complete a Trading Depot project to create real local company storage; the already assigned route can then use it without being recreated. The planner never creates storage, buildings or cargo. Other current blockers, such as absent cargo or a full hold, may take precedence. Pending paid facilities already provide storage under the existing construction rules; production still waits for completion.
 
 **Draft Grain–Flour–Bread loop** resolves actual eligible Bakery, Grain and Flour locations in the generated world. It drafts only an unapplied itinerary; inspect its resolved stop orders and import dependencies before applying it. It creates no facilities, cargo or wages. Default specialization requires Flour and fuel producers to remain outside Bakery towns. Public markets can hold imported goods even where those goods cannot be produced locally.
 
 ### Exact continuation
 
-Schema6 saves preserve complete typed plans, exact stop/action/cycle, last reason and daily budget. Loading never resets completed work. Retry recreates the original initial world. Historical player route editors and old save schemas are retired.
+Schema8 saves preserve complete typed plans, exact stop/action/cycle, last reason and daily budget. Loading never resets completed work. Retry recreates the original initial world. Historical player route editors and old save schemas are retired.
 
 ### Headless evidence
 
 The procedural journey and navigation tests run ordinary paid trades, construction, production, transfers and multi-lane voyages, including exact save continuation and accounting audits. Run `dotnet test SaltAndLedger.sln -c Release`, and use `--world-generation --check` for representative world reports. Earlier seed-99 four-town numerical observations remain in Git history; they are not current generator4 predictions. See [Task3.1 verification](TASK-3.1-VERIFICATION.md) for checks actually performed and remaining Unity interaction checks.
+
+Contract orders retain their explicit contract ID and commodity. Resolved or pruned contracts automatically skip so a completed commitment cannot trap a partially executed stop. Unaccepted offers and active shortages/window closures use the chosen Skip/Wait behavior; editing a route cannot accept an offer, reset a recurring window or duplicate delivery payment. See [Contracts and projects](CONTRACTS_PROJECTS.md).

@@ -73,6 +73,7 @@ namespace SaltAndLedger.UnityHost
             Button(actions, "deckRouteButton", "Route planner", OpenSelectedShipRoute);
             Button(actions, "deckFleetButton", "Fleet", () => SwitchCommandMode(CommandMode.Fleet));
             Button(actions, "deckInspectButton", "Details", () => OpenSecondary(ArchipelagoScreen.Inspector));
+            Button(actions, "deckOpportunitiesButton", "Opportunities", () => OpenOpportunities(Session.SelectedPortId));
             Text(deck, "deckReason", "", "sl-problem command-deck-reason");
             deck.Add(Element<VisualElement>("voyageBar"));
             var footer = Root.Q(className: "map-footer");

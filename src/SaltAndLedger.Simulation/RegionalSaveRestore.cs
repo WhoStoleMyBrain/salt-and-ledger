@@ -69,6 +69,7 @@ namespace SaltAndLedger.Simulation
                 Count(data.Circulation.Commercial, 1, 65536);
                 Count(data.Circulation.Towns, data.Ports.Length, data.Ports.Length);
             }
+            ValidateOpportunityCounts(data);
             foreach (var ship in data.Ships) ValidateItineraryCounts(ship);
             var total = 0;
             foreach (var store in data.Stores)
@@ -98,14 +99,15 @@ namespace SaltAndLedger.Simulation
             Require(data.NextLotId >= 1, "Invalid FIFO sequence.");
             SameIds(data.Ports.Select(p => p.Id), initial.Ports.Keys, "ports");
             SameIds(data.Companies.Select(c => c.Id), initial.Companies.Keys, "companies");
-            var economy = RestoreEconomy(initial, data);
-            var circulation = RestoreCirculation(initial, data);
+            var opportunities = RestoreOpportunities(content, initial, data);
+            var economy = RestoreEconomy(initial, data, opportunities);
+            var circulation = RestoreCirculation(initial, data, opportunities);
             var shipConfigurations = RestoreShipConfigurations(initial, data, economy);
             var companies = data.Companies.Select(c => new CompanySnapshot(c.Id, Nonnegative(c.Cash))).ToArray();
             var ports = data.Ports.Select(p => RestorePort(content, initial.Ports[p.Id], p, data.Day,
-                circulation)).ToArray();
+                circulation, ProjectFacilities(initial, opportunities, p.Id))).ToArray();
             var facilities = data.Facilities.Select(f => RestoreFacility(content, initial, f, data.Day)).ToArray();
-            var stockpiles = RestoreCompanyStockpiles(content, initial, data, facilities);
+            var stockpiles = RestoreCompanyStockpiles(content, initial, data, facilities, opportunities);
             var facilityIds = ports.SelectMany(p => p.Facilities).Select(f => f.Configuration.Instance.Id)
                 .Concat(facilities.Select(f => f.Id)).ToArray();
             Unique(facilityIds, "facilities");
@@ -125,11 +127,11 @@ namespace SaltAndLedger.Simulation
             var commissionHistory = RestoreCommissionHistory(content, initial, data, ships, economy);
             return new RegionalWorldSnapshot(data.Day, data.Revision, ports, ships, initial.Routes, companies,
                 initial.IndustryBlueprints.Values, facilities, challenge, accounting, initial.Difficulty, initial.RunIdentity, economy,
-                commissionHistory, stockpiles, circulation);
+                commissionHistory, stockpiles, circulation, opportunities);
         }
 
         private static RegionalPortSnapshot RestorePort(ContentCatalog content, RegionalPortSnapshot initial, RegionalSavePort data,
-            long day, CirculationSnapshot? circulation)
+            long day, CirculationSnapshot? circulation, ScheduledFacilityConfiguration[] projectFacilities)
         {
             var inventory = Inventory(content, data.Inventory);
             Count(data.Quotes, 1, content.Goods.Count);
@@ -168,11 +170,12 @@ namespace SaltAndLedger.Simulation
                 return new MarketQuote(q.GoodId, p);
             }, StringComparer.Ordinal);
             Count(data.Facilities, 0, 64); Count(data.Consumption, 0, 64);
-            SameIds(data.Facilities.Select(f => f.Id), initial.Facilities.Select(f => f.Configuration.Instance.Id), "public facilities");
+            var publicFacilities = initial.Facilities.Select(f => f.Configuration).Concat(projectFacilities).ToArray();
+            SameIds(data.Facilities.Select(f => f.Id), publicFacilities.Select(f => f.Instance.Id), "public facilities");
             SameIds(data.Consumption.Select(c => c.Id), initial.Consumption.Select(c => c.Configuration.Id), "needs");
             var schedules = data.Facilities.Select(f =>
             {
-                var original = initial.Facilities.Single(p => p.Configuration.Instance.Id == f.Id).Configuration;
+                var original = publicFacilities.Single(p => p.Instance.Id == f.Id);
                 Require(f.NextDueDay >= original.FirstDueDay && f.NextDueDay <= checked(day + original.IntervalDays), "Invalid production deadline.");
                 Defined(f.LastOutcome);
                 Require(f.LastOutcome != ScheduledProductionOutcome.RateLimited,
@@ -330,12 +333,16 @@ namespace SaltAndLedger.Simulation
         }
 
         private static CompanyStockpileSnapshot[] RestoreCompanyStockpiles(ContentCatalog content,
-            RegionalWorldSnapshot initial, RegionalSaveData data, PrivateFacilitySnapshot[] facilities)
+            RegionalWorldSnapshot initial, RegionalSaveData data, PrivateFacilitySnapshot[] facilities, OpportunityBoardSnapshot? opportunities)
         {
             Require(data.CompanyStockpiles != null, "Company stockpiles are missing.");
-            var capacities = facilities.GroupBy(f => "company:" + f.OwnerId + ":" + f.PortId, StringComparer.Ordinal)
-                .ToDictionary(g => g.Key, g => new { Owner = g.First().OwnerId, Port = g.First().PortId,
-                    Capacity = g.Aggregate(0, (sum, f) => checked(sum + f.Blueprint.WarehouseCapacity)) }, StringComparer.Ordinal);
+            var installations = facilities.Select(f => (Owner: f.OwnerId, Port: f.PortId, Capacity: f.Blueprint.WarehouseCapacity))
+                .Concat((opportunities?.Entries ?? Array.Empty<OpportunitySnapshot>())
+                    .Where(e => e.Kind == OpportunityKind.TradingDepot && e.Status == OpportunityStatus.Succeeded)
+                    .Select(e => (Owner: e.OwnerId!, Port: e.PortId, Capacity: e.StorageCapacity)));
+            var capacities = installations.GroupBy(s => CompanyStockpileSnapshot.StoreId(s.Owner, s.Port), StringComparer.Ordinal)
+                .ToDictionary(g => g.Key, g => new { Owner = g.First().Owner, Port = g.First().Port,
+                    Capacity = g.Aggregate(0, (sum, s) => checked(sum + s.Capacity)) }, StringComparer.Ordinal);
             SameIds(data.CompanyStockpiles!.Select(s => s.Id), capacities.Keys, "company stockpiles");
             var stockpiles = data.CompanyStockpiles!.Select(s =>
             {
@@ -444,10 +451,11 @@ namespace SaltAndLedger.Simulation
             RegionalSaveCompany c, InventoryCostSnapshot[] stores)
         {
             Nonnegative(c.InitialCash, c.Purchases, c.Revenue, c.CostOfGoodsSold, c.Construction, c.Wages,
-                c.MintReceipts, c.MintMaterialCost, c.PublicCommissionExpenditure, c.FeesPaid);
+                c.MintReceipts, c.MintMaterialCost, c.PublicCommissionExpenditure, c.FeesPaid,
+                c.RewardReceipts, c.ProjectExpenditure, c.ProjectMaterialCost);
             Require(c.InitialCash == initial.Companies[c.Id].Cash, "Initial company cash changed.");
             Require((BigInteger)c.Cash == (BigInteger)c.InitialCash + c.Revenue - c.Purchases - c.Construction - c.Wages +
-                c.MintReceipts - c.PublicCommissionExpenditure - c.FeesPaid,
+                c.MintReceipts - c.PublicCommissionExpenditure - c.FeesPaid + c.RewardReceipts - c.ProjectExpenditure,
                 "Company cash does not reconcile with accounting.");
             foreach (var values in new[] { c.Granted, c.Purchased, c.Sold, c.Produced, c.Consumed, c.SurrenderedQuantities }) Totals(content, values);
             var owned = stores.Where(s => s.OwnerId == c.Id).ToArray();
@@ -463,7 +471,8 @@ namespace SaltAndLedger.Simulation
             var result = new CompanyFinancialSnapshot(c.Id, c.InitialCash, c.Purchases, c.Revenue, c.CostOfGoodsSold,
                 c.Construction, owned.Aggregate(0L, (sum, s) => checked(sum + s.TotalCostBasis)), c.Granted,
                 c.Purchased, c.Sold, c.Produced, c.Consumed, held, c.Wages, c.MintReceipts, c.MintMaterialCost,
-                c.PublicCommissionExpenditure, c.SurrenderedQuantities, c.FeesPaid);
+                c.PublicCommissionExpenditure, c.SurrenderedQuantities, c.FeesPaid,
+                c.RewardReceipts, c.ProjectExpenditure, c.ProjectMaterialCost);
             _ = result.OperatingSurplusAfterWages;
             _ = result.OperatingSurplusAfterExpenses;
             return result;

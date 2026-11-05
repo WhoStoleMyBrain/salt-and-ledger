@@ -85,6 +85,12 @@ namespace SaltAndLedger.Simulation
                     if (Transfers[Transfers.Count - 1].Outcome != TransferOutcome.Transferred)
                         throw new InvalidOperationException("A validated itinerary transfer must execute.");
                 }
+                if (decision.ContractId != null)
+                {
+                    var attempt = DeliverOpportunity(decision.ShipId, decision.ContractId, decision.ContractQuantity);
+                    if (!attempt.Success)
+                        throw new InvalidOperationException("A validated itinerary contract delivery must execute.");
+                }
                 var stop = progress.StopIndex;
                 var action = progress.ActionIndex;
                 var cycle = progress.Cycle;

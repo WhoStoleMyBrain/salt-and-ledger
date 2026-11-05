@@ -38,14 +38,21 @@ namespace SaltAndLedger.UnityHost
             var owned = snapshot.PrivateFacilities.Values.Where(f => f.OwnerId == Session.Player.OwnerId && f.PortId == Session.SelectedPortId)
                 .OrderBy(f => f.Id, StringComparer.Ordinal).ToArray();
             harborFacilityIds.Clear(); harborFacilityIds.AddRange(owned.Select(f => f.Id));
+            if (harborFacilityIds.Count == 0)
+            {
+                var depot = snapshot.CompanyStockpiles.Values.FirstOrDefault(pool =>
+                    pool.OwnerId == Session.Player.OwnerId && pool.PortId == Session.SelectedPortId);
+                if (depot != null) harborFacilityIds.Add(depot.Id);
+            }
             if (!harborFacilityIds.Contains(harborFacilityId)) harborFacilityId = harborFacilityIds.FirstOrDefault();
         }
 
         private void OpenIndustryFromHarbor(bool warehouse = false)
         {
-            if (!warehouse && harborFacilityId != null) { OpenApprovedFactory(harborFacilityId); return; }
+            if (!warehouse && harborFacilityId != null && Session.Snapshot.PrivateFacilities.ContainsKey(harborFacilityId))
+            { OpenApprovedFactory(harborFacilityId); return; }
             if (selectedFacilityId != harborFacilityId) loadedPolicyFacilityId = null;
-            selectedFacilityId = harborFacilityId;
+            selectedFacilityId = harborFacilityId != null && Session.Snapshot.PrivateFacilities.ContainsKey(harborFacilityId) ? harborFacilityId : null;
             SelectIndustryPane(warehouse);
             if (!warehouse) Element<ScrollView>("industryPolicyScroll").scrollOffset = UnityEngine.Vector2.zero;
             ShowModal("industryBackdrop", "closeIndustryButton"); RefreshIndustry();
@@ -84,8 +91,8 @@ namespace SaltAndLedger.UnityHost
             SetText("harborSelectedHoldings", "Ship " + (local ? Q(ship.Cargo[SelectedGoodId()]) : "remote") + " · Warehouse " +
                 (stock == null ? "none" : Q(stock.Inventory[SelectedGoodId()])));
             SetText("tradeGoodDescription", Session.Content.GetGood(SelectedGoodId()).Description);
-            SetText("harborStockExplanation", stock == null ? "Construct an eligible local facility to gain finite company storage." :
-                "One town stockpile. All your local facilities draw inputs and deposit output here; capacity includes paid pending sites.");
+            SetText("harborStockExplanation", stock == null ? "Complete a Trading Depot project or construct an eligible facility to gain finite company storage." :
+                "One town stockpile. Facilities and completed depots provide finite capacity; warehouse trading also works without a factory.");
             SetText("harborProductionLabel", string.Join("\n", tradeSnapshot.PrivateFacilities.Values.Where(f => f.OwnerId == Session.Player.OwnerId && f.PortId == port.Id)
                 .OrderBy(f => f.Id, StringComparer.Ordinal).Select(f => Session.Content.GetBuilding(f.Blueprint.BuildingId).Name + " [" + f.Id + "] · " +
                     (f.IsOperational ? f.Enabled ? ProductionRemedy(tradeSnapshot.PreviewFacilityProduction(f.Id, Session.Content)) : "Disabled — enable its operating policy." :
@@ -136,7 +143,7 @@ namespace SaltAndLedger.UnityHost
             {
                 var unloading = direction == TransferDirection.ShipToWarehouse;
                 var executable = false;
-                var reason = !hasStore ? "Construct a local facility for storage." : !local ? "Dock at this town to move cargo." :
+                var reason = !hasStore ? "Complete a depot project or construct local industry for storage." : !local ? "Dock at this town to move cargo." :
                     !manual ? ship.AutomationEnabled ? "Pause ship automation for manual loading." : "This ship/run is read-only." :
                     !valid || !whole ? "Enter a positive whole cargo quantity." : null;
                 if (reason == null)

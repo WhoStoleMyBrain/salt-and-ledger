@@ -34,7 +34,7 @@ namespace SaltAndLedger.Simulation
                     (CargoItineraryCommandKind)command.Kind, command.GoodId, command.MaximumQuantity,
                     command.MinimumQuantity, (CargoItineraryShortagePolicy)command.ShortagePolicy,
                     command.MarginalPriceLimit, command.CashReserve, command.MaximumExpenditure,
-                    command.WarehouseReserve)))), policy.Version);
+                    command.WarehouseReserve, command.ContractId)))), policy.Version);
         }
 
         private static CargoItineraryProgress? RestoreItineraryProgress(RegionalWorldSnapshot initial,

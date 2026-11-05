@@ -195,6 +195,7 @@ namespace SaltAndLedger.UnityHost
             RefreshCityEconomy();
             RefreshContextLayout();
             RefreshDevelopment();
+            RefreshOpportunities();
             RefreshCommandDeck();
         }
 

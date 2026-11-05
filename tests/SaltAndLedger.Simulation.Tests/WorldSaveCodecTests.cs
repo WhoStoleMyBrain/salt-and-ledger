@@ -304,7 +304,7 @@ public sealed class WorldSaveCodecTests
         obsolete["SchemaVersion"] = 5;
         obsolete["Facilities"]![0]!["Policy"] = new JObject();
         var failure = Assert.Throws<WorldSaveException>(() => WorldSaveCodec.Load(Content(), obsolete.ToString(Formatting.None)));
-        Assert.Contains("schema 7", failure.Message);
+        Assert.Contains("schema 8", failure.Message);
         Assert.Same(snapshot, world.Snapshot());
     }
     private static void AdvanceBoth(RegionalWorldState first, RegionalWorldState second) =>
@@ -317,7 +317,7 @@ public sealed class WorldSaveCodecTests
         var before = world.Snapshot();
         var saved = WorldSaveCodec.Save(world);
         foreach (var damaged in new[] { "", saved[..^1], saved + " {}", saved.Replace("\"Day\":0", "\"Day\":1"),
-            saved.Replace("\"SchemaVersion\":7", "\"SchemaVersion\":99"),
+            saved.Replace("\"SchemaVersion\":8", "\"SchemaVersion\":99"),
             saved.Replace("\"Day\":0", "\"Day\":0,\"Day\":0"),
             saved.Replace("\"Day\":0", "\"Day\":0.0"),
             saved.Insert(1, "\"$type\":\"System.IO.FileInfo\","), saved.Insert(1, "\"unexpected\":0,") })

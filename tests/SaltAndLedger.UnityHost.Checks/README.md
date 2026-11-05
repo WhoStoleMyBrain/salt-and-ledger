@@ -16,6 +16,8 @@ An optional sole argument supplies the repository path when running elsewhere.
 The check parses every Unity C# file using the selected .NET SDK's Roslyn compiler,
 then exercises real 8-, 10-, and 12-town JSON configurations, multi-lane voyages,
 exact mid-voyage save/load and continuation, Retry, and invalid-file isolation.
+It exercises the actual session's contract acceptance and decline commands, paused
+playback, unchanged economic day, finite-money conservation and stale board-term rejection.
 It also checks that departure and same-day construction never invent visual travel,
 and that catch-up and arrival animation remain between committed voyage progress.
 Temporary configuration files are removed afterward. Any failure exits nonzero.

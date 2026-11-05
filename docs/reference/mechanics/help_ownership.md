@@ -14,7 +14,7 @@ Transfers between your ship and your warehouse preserve ownership and historical
 
 Remote management may buy or sell against a factory's local market\. It cannot move goods to another port\. Company cash shown beside a ship is the same account, not another balance\.
 
-Storage rules 2 give each company one town stockpile and one FIFO account shared by its local industries\. Ships, public markets, other owners and other towns remain separate\. Facility reports keep separate labor and production counters, never duplicate copies of the shared goods\. Current schema7 saves require storage rules 2; older save schemas are unsupported\.
+Storage rules 2 give each company one town stockpile and one FIFO account shared by its local industries\. Ships, public markets, other owners and other towns remain separate\. Facility reports keep separate labor and production counters, never duplicate copies of the shared goods\. Current schema8 saves require storage rules 2; older save schemas are unsupported\.
 
 ## Related entries
 

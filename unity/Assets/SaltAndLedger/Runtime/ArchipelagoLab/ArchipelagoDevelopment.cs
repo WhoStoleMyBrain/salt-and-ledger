@@ -44,6 +44,7 @@ namespace SaltAndLedger.UnityHost
             var screen = CreateScreen(ArchipelagoScreen.Development, "Company & royal services",
                 "Choose a ship explicitly. Public services use finite accounts and real deliveries; the Mint belongs to the region.");
             Text(screen, "companyHeadline", "", "run-objective");
+            Button(screen, "companyOpportunitiesButton", "Contracts & Projects", () => OpenOpportunities(), "primary");
             var tabs = Panel(screen, null, "row run-actions");
             var names = new[] { "Fleet", "Royal Mint", "External contracts", "Public works" };
             for (var i = 0; i < names.Length; i++)
@@ -166,7 +167,9 @@ namespace SaltAndLedger.UnityHost
             else
             {
             var chosen = economy.Contracts[Math.Max(0, Element<DropdownField>("royalContractPicker").index)];
-            SetText("externalSummary", "External funds remaining " + Money(economy.ExternalCash) + " · transferred into region " + Money(economy.ExternalNetInflow) +
+            SetText("externalSummary", "External funds available " + Money(economy.ExternalCash) +
+                " · reserved for accepted contracts " + Money(world.Opportunities?.ReservedCash ?? 0) +
+                " · transferred into region " + Money(economy.ExternalNetInflow) +
                 "\nDeliver at " + PortName(chosen.Configuration.PortId) + " · " + Q(chosen.RemainingQuantity) + " units remaining at " + chosen.Configuration.UnitPrice +
                 " coins/unit · days " + chosen.Configuration.OpensDay + "–" + chosen.Configuration.DeadlineDay +
                 "\nExported goods leave the region. Existing external money is transferred, never minted or automatically refilled.");

@@ -64,6 +64,7 @@ namespace SaltAndLedger.Simulation
         /// <summary>The authoritative material store used by a facility. Legacy stores remain separate.</summary>
         public CompanyStockpileSnapshot GetFacilityStorage(string facilityId)
         {
+            if (UsesPooledCompanyStorage && CompanyStockpiles.TryGetValue(facilityId, out var stockpile)) return stockpile;
             var facility = PrivateFacilities[facilityId];
             return UsesPooledCompanyStorage ? CompanyStockpiles[CompanyStockpileSnapshot.StoreId(facility.OwnerId, facility.PortId)] :
                 new CompanyStockpileSnapshot("facility:" + facility.Id, facility.OwnerId, facility.PortId,
@@ -119,12 +120,13 @@ namespace SaltAndLedger.Simulation
         private CompanyStockpileSnapshot TransferStorage(string ownerId, string shipId, string facilityId, TransferDirection direction)
         {
             if (!Enum.IsDefined(typeof(TransferDirection), direction)) throw new ArgumentOutOfRangeException(nameof(direction));
-            var facility = OwnedFacility(ownerId, facilityId);
+            var storage = GetFacilityStorage(facilityId);
+            if (storage.OwnerId != ownerId) throw new InvalidOperationException("The warehouse belongs to another company.");
             var ship = Ships[shipId];
             if (ship.OwnerId != ownerId) throw new InvalidOperationException("The ship belongs to another company.");
             if (ship.AutomationEnabled) throw new InvalidOperationException("Disable ship automation before a manual transfer.");
-            if (ship.DockedPortId != facility.PortId) throw new InvalidOperationException("Dock this ship at the company's warehouse port first.");
-            return GetFacilityStorage(facilityId);
+            if (ship.DockedPortId != storage.PortId) throw new InvalidOperationException("Dock this ship at the company's warehouse port first.");
+            return storage;
         }
 
         internal static TransferOutcome TransferOutcomeFor(int source, int free, int quantity) =>

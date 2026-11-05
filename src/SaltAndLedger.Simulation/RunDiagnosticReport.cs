@@ -66,6 +66,7 @@ namespace SaltAndLedger.Simulation
                     Towns = snapshot.Ports.Values.Select(p => new { p.Id, p.Name, p.MarketCash, HouseholdCash = p.City?.HouseholdCash }).ToArray(),
                     PublicTreasury = snapshot.Economy?.TreasuryCash,
                     ExternalAuthority = snapshot.Economy?.ExternalCash,
+                    ExternalContractReservations = snapshot.Opportunities?.ReservedCash,
                     MintedCurrency = snapshot.Economy?.MintedCurrency,
                     ExternalNetInflow = snapshot.Economy?.ExternalNetInflow
                 },
@@ -126,6 +127,7 @@ namespace SaltAndLedger.Simulation
                     };
                 }).ToArray(),
                 PublicDevelopment = snapshot.Economy,
+                Opportunities = snapshot.Opportunities,
                 SeaRoutes = snapshot.Routes,
                 RecentHistory = new
                 {

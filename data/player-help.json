@@ -111,7 +111,7 @@
         "A public market owns its stock. Buying from it changes ownership and moves cash. A factory's private stock belongs to its company and is separate from the town market, even when they occupy the same port.",
         "Transfers between your ship and your warehouse preserve ownership and historical cost. They are not sales and move no cash or time. Both stores must have the same owner and the ship must be docked at the warehouse's town.",
         "Remote management may buy or sell against a factory's local market. It cannot move goods to another port. Company cash shown beside a ship is the same account, not another balance.",
-        "Storage rules 2 give each company one town stockpile and one FIFO account shared by its local industries. Ships, public markets, other owners and other towns remain separate. Facility reports keep separate labor and production counters, never duplicate copies of the shared goods. Current schema7 saves require storage rules 2; older save schemas are unsupported."
+        "Storage rules 2 give each company one town stockpile and one FIFO account shared by its local industries. Ships, public markets, other owners and other towns remain separate. Facility reports keep separate labor and production counters, never duplicate copies of the shared goods. Current schema8 saves require storage rules 2; older save schemas are unsupported."
       ],
       "relatedIds": [
         "help_factories",
@@ -166,14 +166,15 @@
         "Open Warehouse from Industry or Warehouse automation from Harbor. Buy and Sell tabs list all seven commodities, including logistics goods unrelated to local recipes. Each direction has an ON/OFF switch, stock target or retained reserve, and a marginal price limit. Zero price means unrestricted. The Buy cash reserve popup is available from either tab and edits the same purchase reserve; it does not reserve cash for sales, production wages or ship orders.",
         "Buying runs before private production; selling runs afterward. Each good receives at most one ordinary paid transaction in each phase. Exact marginal pricing, finite market cash and stock, actual warehouse capacity, FIFO material basis and sale fees are the same as manual trades. A proposal explains the current limiting constraint and is not a guarantee about the next day.",
         "When both directions are enabled, the Buy target must be no greater than the Sell reserve. Buying therefore cannot immediately create sellable surplus. Production or delivered cargo may create a real surplus. Retain inputs or shipping stock explicitly; rules never reserve it from production or create missing resources.",
-        "Town warehouse trading is independent of factory enabled states and rates. Real paid pending facilities already provide storage which can buy or sell; the factories themselves cannot produce until operational and due. Without a real local facility there is no company warehouse. New warehouses begin with every automatic rule off.",
+        "Town warehouse trading is independent of factory enabled states and rates. Real paid pending facilities already provide storage which can buy or sell; the factories themselves cannot produce until operational and due. Company storage requires a real local facility or a completed Trading Depot project. New warehouses begin with every automatic rule off.",
         "Valid completed field edits and switches apply automatically to the town warehouse policy. Invalid text or a Buy target above an enabled Sell reserve stays highlighted and leaves the previous applied rule active. Fix it or use Discard invalid drafts. Changing tabs or commodities retains the other settings; pausing a rule retains its limits. There is no separate warehouse Apply step. These changes run no trade or day and do not save a local run slot: save the run separately."
       ],
       "relatedIds": [
         "help_prices",
         "help_factories",
         "help_cargo_itineraries",
-        "help_liquidity"
+        "help_liquidity",
+        "help_contracts_projects"
       ]
     },
     {
@@ -444,7 +445,8 @@
         "royal_mint",
         "mine_silver",
         "help_city_accounts",
-        "help_finances"
+        "help_finances",
+        "help_contracts_projects"
       ]
     },
     {
@@ -487,7 +489,7 @@
       "description": "Local explicit saves preserve an economic run; retry starts its identity fresh.",
       "paragraphs": [
         "Save explicitly to one of three local slots. Continue or Load restores a current Expanding Economy v3 Grand Commission or Sandbox run without advancing time. Saves are local; there is no cloud recovery.",
-        "Only current schema7, circulation1, storage2 and itinerary1 are supported. Schema6 and older saves are intentionally unsupported after generalized world generation. No migration or command replay is performed; failed loads preserve the active run.",
+        "Only current schema8, circulation1, storage2 and itinerary1 are supported. Schemas1–7 are intentionally unsupported after the contracts and projects milestone. No migration or command replay is performed; failed loads preserve the active run.",
         "Saves retain exact identity and drafted goals, accounts, fractional stock and demand residuals, FIFO lots, every voyage and route cursor/budget, pending construction, household history, fees, contracts, Mint and public treasury. Terminal outcomes remain frozen. Factory rate/priority and admitted scheduling phase, plus town warehouse Buy/Sell rules and counters, resume exactly.",
         "Complete validation precedes session replacement. Unsupported versions, damage or inconsistent state show an error and preserve the active world, selection and playback. Retry starts the original identity fresh. Text size remains an independent preference."
       ],
@@ -497,7 +499,8 @@
         "help_challenges",
         "help_exact_units",
         "help_grand_commission",
-        "help_cargo_itineraries"
+        "help_cargo_itineraries",
+        "help_contracts_projects"
       ]
     },
     {
@@ -529,14 +532,14 @@
       "description": "Plan mixed cargo and ordered market or company-stock work through two to four towns.",
       "paragraphs": [
         "Open Route planner from Fleet, the selected owned ship's inspector or Harbor. Plot two to four unique towns on the route chart, reorder or remove stops, then choose Set stop orders. A stop's Sell / Buy / Unload / Load grid opens an inline editor for each commodity/action. Save order edits only the draft; Cancel keeps the previous instruction. Review route and Apply route assign the whole validated plan. Each stop still permits one to eight ordered actions, at most 24 total. Drafting and inspection spend no stock, cash or time.",
-        "Buy and Sell exchange the named good with the public market for its exact bulk price. Load and Unload transfer owned stock between the actual docked ship and its company town stock without payment. No owned facility means no town warehouse, but you can apply the plan before building. Missing storage skips or waits as configured; later ordinary construction lets the unchanged route use the real store. A route never creates goods, storage or buildings. Different goods can remain aboard together within the combined hold capacity; unmentioned goods are never discarded.",
+        "Buy and Sell exchange the named good with the public market for its exact bulk price. Load and Unload transfer owned stock between the actual docked ship and its company town stock without payment. Company storage requires an owned facility or a completed Trading Depot, but you can apply the plan before building. Missing storage skips or waits as configured; later facility or depot construction lets the unchanged route use the real store. A route never creates goods, storage or buildings. Different goods can remain aboard together within the combined hold capacity; unmentioned goods are never discarded.",
         "Every action executes once per visit, choosing the largest whole quantity between its minimum and maximum that current stock, capacity and real funds permit. Maximum is an order cap, not a hold target. A partial qualifying order advances once. Below minimum, Skip continues with no transaction; Wait keeps that exact action and stops. Earlier completed buys or transfers never repeat because another instruction waits.",
         "Buy limits include maximum marginal ask, company cash reserve and a per-order spending cap; Sell uses a minimum marginal bid. Price zero means unrestricted and a blank spending cap means unrestricted within actual funds. Loading can preserve a fractional town-stock reserve. Maximum and minimum cargo quantities are whole units; coin and warehouse reserves support four decimal places. Remote quotes describe current conditions, not reserved future prices or permission to move goods.",
         "Each ship can use eight itinerary operations per economic day, counting successful orders, intentional skips and departure. Eight commands can leave departure for tomorrow. Repeated Run dockside actions, pause and save/load cannot reset this budget. Ships keep the ordinary priority and ID order, real voyages and shared company cash; a blocked ship does not prevent the other ships from acting.",
         "Apply route assigns the reviewed draft and leaves actions paused; Start route enables execution separately. Replacement requires a paused route, an actual dock included in the new plan, no partially completed old stop and no itinerary operations performed today. Advance a day after completed work before replacement. Viewing never requires empty cargo, applying preserves it, and equivalent reapplication keeps progress. New stops retain Unload → Sell → Load → Buy execution defaults, separate from the visual grid order. The ordered list preserves custom ordering and separate duplicate instructions.",
         "Draft Grain–Flour–Bread loop resolves the actual role towns: A unloads two Flour and two Logs and loads up to four Bread; B sells up to four Bread and buys four Grain plus two Logs; C sells four Grain and buys two Flour before returning. All orders use minimum one and Skip. Purchases retain 100 company coins and cap each order at 200. You may apply before building, but must construct the eligible Bakery and fund wages yourself for production; the example creates no stock, facilities or money.",
         "The planner shows actual dock or voyage, next stop/action, current hold and authoritative blockers; it does not predict or reserve arrival cargo. Route tools & details contains Cargo, last outcome & daily budget, the example draft, Reload saved route and Inspect harbor. Reload saved route restores the applied policy, not a run slot. The inline editor exposes price, cash and technical limits. Pass count advances when leaving the last listed stop, so an initial middle-stop pass is not a completed circuit. Harbor and Back preserve the originating context.",
-        "Schema6 retains itinerary format1 plans, exact stop/action/cycle, last outcome and daily budget across mid-stop and mid-voyage saves. Load continues the exact next work; Retry starts fresh with the same identity."
+        "Schema8 retains itinerary format1 plans, exact stop/action/cycle, last outcome and daily budget across mid-stop and mid-voyage saves. Load continues the exact next work; Retry starts fresh with the same identity."
       ],
       "relatedIds": [
         "help_shipping",
@@ -544,6 +547,26 @@
         "help_capacity",
         "help_prices",
         "help_procurement",
+        "help_saves",
+        "help_contracts_projects"
+      ]
+    },
+    {
+      "id": "help_contracts_projects",
+      "name": "Contracts and development projects",
+      "description": "Choose funded delivery commitments and invest actual materials and money in permanent infrastructure.",
+      "paragraphs": [
+        "Open Contracts & Projects from Company, Economy or a town. Available contracts, active commitments, projects and resolved history share one board. Read the issuing town, actual cargo and local stocks, travel time, deadline, funding and rewards before accepting. Ordinary overlapping offers compete for goods and shipping time; an explicitly exclusive tender withdraws its named alternative when accepted.",
+        "Bulk procurement transfers actual docked cargo to its named recipient. Recurring supply tracks separate delivery windows: each delivery earns its payment; missing a window fails the remaining agreement and its completion reward. Industrial supply credits successful production at the named public facility after your delivered inputs. Emergency relief requires your material contribution and actual paid household food fulfillment; stock on a shelf or unrelated NPC activity alone cannot complete it.",
+        "Accept at most the configured active-contract limit, three by default. Accepted cash rewards reserve existing finite external funds. Ordinary market sales never complete a contract. Use the board delivery action or a Deliver contract order in an existing ship itinerary. Cargo must be aboard the actual ship at the named town; normal route capacity, Skip/Wait and daily action limits still apply. Resolved or pruned contracts automatically skip so they cannot trap a partially completed route stop.",
+        "Cash, a time-limited local handling-fee privilege and infrastructure access are different rewards. Privileges affect real transactions and expire on their displayed terms. Access cannot bypass a town’s structural production constraints. Completed or failed commitments remain inspectable in bounded history; failure forfeits the remaining opportunity, not an undisclosed penalty.",
+        "Public Industry Commissions consume contributed money and construction materials, then add a real public facility with the canonical recipe, production interval, input requirements and market-funded wages. Trading Depots create finite company storage without a factory. Both accept partial contributions; the contribution is a real irreversible investment, and completion creates no free goods or cash. Choose Start project, then select Selected ship cargo or Local company warehouse, enter material units and coins, review the exact contribution, and choose Contribute. Money can be invested with material units set to zero.",
+        "A completed depot uses ordinary warehouse buying/selling, FIFO, ship loading/unloading and automation. Save preserves accepted funding, current recurring windows, evidence, partial investments, completed infrastructure and privileges exactly; loading never repeats a payment or contribution."
+      ],
+      "relatedIds": [
+        "help_cargo_itineraries",
+        "help_procurement",
+        "help_finances",
         "help_saves"
       ]
     }

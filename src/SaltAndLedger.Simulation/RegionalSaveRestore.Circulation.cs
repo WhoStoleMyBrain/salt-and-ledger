@@ -6,7 +6,7 @@ namespace SaltAndLedger.Simulation
 {
     internal static partial class RegionalSaveRestore
     {
-        private static CirculationSnapshot? RestoreCirculation(RegionalWorldSnapshot initial, RegionalSaveData data)
+        private static CirculationSnapshot? RestoreCirculation(RegionalWorldSnapshot initial, RegionalSaveData data, OpportunityBoardSnapshot? opportunities)
         {
             var saved = data.Circulation;
             Require((saved == null) == (initial.Circulation == null), "Economic circulation state presence changed.");
@@ -24,8 +24,9 @@ namespace SaltAndLedger.Simulation
             SameIds(saved.Towns.Select(t => t.PortId), initial.Ports.Keys, "municipal accounts");
             var commercial = saved.Commercial.Select(c =>
             {
-                Nonnegative(c.GrossLocalSales, c.FeesPaid, c.MarketFees, c.HouseholdFees);
-                var row = new CommercialCirculationSnapshot(c.OwnerId, c.PortId, c.GrossLocalSales);
+                Nonnegative(c.GrossLocalSales, c.DiscountedGrossSales, c.FeesPaid, c.MarketFees, c.HouseholdFees);
+                Require(c.DiscountedGrossSales <= c.GrossLocalSales, "Discounted sales exceed actual gross sales.");
+                var row = new CommercialCirculationSnapshot(c.OwnerId, c.PortId, c.GrossLocalSales, c.DiscountedGrossSales);
                 Require(c.FeesPaid == row.FeesPaid && c.MarketFees == row.MarketFees && c.HouseholdFees == row.HouseholdFees,
                     "Service totals disagree with exact cumulative gross proceeds.");
                 return row;
@@ -36,8 +37,8 @@ namespace SaltAndLedger.Simulation
                 Require(rows.Aggregate(BigInteger.Zero, (sum, c) => sum + c.FeesPaid) == company.FeesPaid,
                     "Company service expenses differ from local recipients.");
                 var publicRevenue = company.Id == WorldIds.PlayerOwnerId ?
-                    data.Economy!.Contracts.Aggregate(BigInteger.Zero, (sum, c) => sum + c.Paid) +
-                        data.Economy.TreasuryExpenditure : BigInteger.Zero;
+                    (BigInteger)(opportunities?.CumulativeDeliveryPayments ?? data.Economy!.Contracts.Aggregate(0L, (sum, c) => checked(sum + c.Paid))) +
+                        data.Economy!.TreasuryExpenditure : BigInteger.Zero;
                 Require(rows.Aggregate(BigInteger.Zero, (sum, c) => sum + c.GrossLocalSales) + publicRevenue == company.Revenue,
                     "Local service proceeds differ from company gross sales and public transactions.");
             }
@@ -62,8 +63,9 @@ namespace SaltAndLedger.Simulation
                     "Municipal last transfer and reason disagree.");
                 Require(t.DuePayroll <= t.PayrollReserve && t.LastLevy <= t.DuePayroll && t.LastRelief <= t.FoodReserve,
                     "Municipal transfers exceed their recorded productive payroll or food need.");
-                var maximumPayroll = initial.Ports[t.PortId].Facilities.Aggregate(BigInteger.Zero,
-                    (sum, f) => sum + f.Configuration.WagePerBatch);
+                var maximumPayroll = initial.Ports[t.PortId].Facilities.Select(f => f.Configuration)
+                    .Concat(ProjectFacilities(initial, opportunities, t.PortId)).Aggregate(BigInteger.Zero,
+                    (sum, f) => sum + f.WagePerBatch);
                 Require(t.PayrollReserve <= maximumPayroll, "Municipal payroll reserve exceeds installed public wages.");
                 if (reviewCount == 0)
                     Require(t.LastReason == MunicipalReviewReason.AwaitingReview && t.PayrollReserve == 0 &&

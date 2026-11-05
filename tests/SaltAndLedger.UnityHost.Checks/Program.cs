@@ -36,6 +36,24 @@ try
         var session = new ArchipelagoLabSession(content, config);
         session.StartRun(new RunIdentity(null, RunScenario.MerchantCharter, seed: 42, generationConfiguration: config));
         Check(session.Snapshot.Ports.Count == townCount, "Configuration lost town count");
+        var boardBefore = session.Snapshot;
+        var firstContract = boardBefore.Opportunities.Entries.First(item => item.Id == "royal_planks");
+        session.Play();
+        session.AcceptOpportunity(firstContract.Id, boardBefore);
+        Check(!session.IsPlaying && session.Snapshot.Day == boardBefore.Day, "Accepting a contract must pause and spend no day");
+        Check(session.Snapshot.Opportunities.Entries.Single(item => item.Id == firstContract.Id).Status == OpportunityStatus.Active,
+            "Host did not accept its real contract");
+        Check(session.Snapshot.TotalCash == boardBefore.TotalCash, "Acceptance changed all-account money");
+        var acceptedBoard = session.Snapshot;
+        var decline = acceptedBoard.Opportunities.Entries.First(item => !item.IsProject && item.Status == OpportunityStatus.Available);
+        var staleRejected = false;
+        try { session.DeclineOpportunity(decline.Id, boardBefore); }
+        catch (InvalidOperationException) { staleRejected = true; }
+        Check(staleRejected && ReferenceEquals(acceptedBoard, session.Snapshot), "Stale board terms must preserve the active world");
+        session.DeclineOpportunity(decline.Id, acceptedBoard);
+        Check(session.Snapshot.Opportunities.Entries.Single(item => item.Id == decline.Id).Status == OpportunityStatus.Declined,
+            "Declined opportunities disappeared instead of remaining inspectable");
+        Check(session.Snapshot.Day == boardBefore.Day, "Declining advanced economic time");
         var origin = session.Player.DockedPortId;
         var destination = session.Snapshot.Ports.Keys.Where(id => id != origin)
             .OrderByDescending(id => session.Snapshot.GetPath(origin, id, session.Player.Configuration.Speed).Legs.Count).First();
@@ -86,7 +104,7 @@ try
         Check(session.SaveText() == beforeInvalid, "Configuration loading mutated active session");
         session.Reset();
         Check(session.Snapshot.Ports.Count == townCount && session.Snapshot.Day == 0, "Retry lost custom configuration");
-        Console.WriteLine($"Host {townCount} towns: {route.Legs.Count} physical lanes, {route.DurationDays} days; exact save/continuation/retry passed");
+        Console.WriteLine($"Host {townCount} towns: board acceptance/decline/stale terms; {route.Legs.Count} physical lanes, {route.DurationDays} days; exact save/continuation/retry passed");
     }
 }
 finally { Directory.Delete(temporary, true); }

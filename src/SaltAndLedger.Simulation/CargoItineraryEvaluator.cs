@@ -24,6 +24,12 @@ namespace SaltAndLedger.Simulation
                 {
                     _ = ship.Cargo[command.GoodId];
                     if (IsMarket(command.Kind)) _ = port.Quotes[command.GoodId];
+                    if (command.Kind == CargoItineraryCommandKind.DeliverContract)
+                    {
+                        var contract = snapshot.Opportunities?.Entries.SingleOrDefault(item => item.Id == command.ContractId);
+                        if (contract != null && (contract.IsProject || contract.PortId != stop.PortId || contract.GoodId != command.GoodId))
+                            throw new ArgumentException("A contract delivery must name its issuing town and required good.", nameof(policy));
+                    }
                 }
             }
         }
@@ -88,12 +94,36 @@ namespace SaltAndLedger.Simulation
                     stopIndex, actionIndex, command);
             if (acquiring && free < minimum)
                 return Block(CargoItineraryBlockReason.CargoFull, "Hold has " + Quantity(free) + " free; free space for " + Quantity(minimum) + " " + command.GoodId + ".");
+            var contract = command.Kind == CargoItineraryCommandKind.DeliverContract
+                ? snapshot.Opportunities?.Entries.SingleOrDefault(item => item.Id == command.ContractId) : null;
+            if (command.Kind == CargoItineraryCommandKind.DeliverContract && (contract == null || contract.IsTerminal))
+                return new CargoItineraryDecision(snapshot, shipId, CargoItineraryDecisionKind.Skip,
+                    CargoItineraryBlockReason.ContractUnavailable,
+                    "This contract has ended or left retained history. Skip its finished obligation and keep the cargo; edit this order before a future visit.",
+                    stopIndex, actionIndex, command);
             if (!acquiring && cargo < minimum)
                 return Block(CargoItineraryBlockReason.SourceStock, "Ship carries " + Quantity(cargo) + " " + command.GoodId + "; need at least " + Quantity(minimum) + ".");
+            if (command.Kind == CargoItineraryCommandKind.DeliverContract)
+            {
+                if (ship.DockedPortId != port.Id)
+                    return Block(CargoItineraryBlockReason.WrongPort, "Delivery requires actual arrival at " + port.Name + ". Current cargo is not reserved.");
+                var quantity = Whole(Math.Min(command.MaximumQuantity, snapshot.MaximumContractDelivery(shipId, contract!.Id)));
+                if (quantity < minimum)
+                {
+                    var blocked = snapshot.PreviewContractDelivery(shipId, contract.Id, minimum);
+                    return Block(CargoItineraryBlockReason.ContractUnavailable, blocked.Reason);
+                }
+                var delivery = snapshot.PreviewContractDelivery(shipId, contract.Id, quantity);
+                if (!delivery.Success) return Block(CargoItineraryBlockReason.ContractUnavailable, delivery.Reason);
+                return new CargoItineraryDecision(snapshot, shipId, CargoItineraryDecisionKind.Execute, CargoItineraryBlockReason.None,
+                    "Deliver " + Quantity(quantity) + " " + command.GoodId + " under " + contract.Id + " for " + Money(delivery.Payment) +
+                    " coins from its funded contract account; then advance.", stopIndex, actionIndex, command,
+                    contractId: contract.Id, contractQuantity: quantity);
+            }
             if (!IsMarket(command.Kind))
             {
                 if (!snapshot.CompanyStockpiles.TryGetValue(CompanyStockpileSnapshot.StoreId(ship.OwnerId, port.Id), out var store))
-                    return Block(CargoItineraryBlockReason.MissingCompanyStock, "Build owned industry here to create company town stock.");
+                    return Block(CargoItineraryBlockReason.MissingCompanyStock, "Build owned industry or complete a Trading Depot here to create company town stock.");
                 var source = loading ? Math.Max(0, store.Inventory[command.GoodId] - command.WarehouseReserve) : cargo;
                 var space = loading ? free : store.Capacity - store.StoredUnits;
                 var quantity = Whole(Math.Min(command.MaximumQuantity, Math.Min(source, space)));
@@ -104,12 +134,10 @@ namespace SaltAndLedger.Simulation
                             "Need " + Quantity(minimum) + " " + command.GoodId + " in company stock after its " + Quantity(command.WarehouseReserve) + " reserve; " + Quantity(source) + " available.");
                     return Block(CargoItineraryBlockReason.WarehouseFull, "Company stock has " + Quantity(space) + " space; sell or use stock before unloading.");
                 }
-                // A stable owned facility resolves the same town pool through the ordinary transfer path.
-                var facility = snapshot.PrivateFacilities.Values.Where(f => f.OwnerId == ship.OwnerId && f.PortId == port.Id)
-                    .OrderBy(f => f.Id, StringComparer.Ordinal).First();
+                // The real town pool is also the transfer owner for a standalone Trading Depot.
                 return new CargoItineraryDecision(snapshot, shipId, CargoItineraryDecisionKind.Execute, CargoItineraryBlockReason.None,
                     (loading ? "Load " : "Unload ") + Quantity(quantity) + " " + command.GoodId + "; no cash changes. Then advance to the next instruction.",
-                    stopIndex, actionIndex, command, transfer: new IndustrialTransferCommand(facility.Id,
+                    stopIndex, actionIndex, command, transfer: new IndustrialTransferCommand(store.Id,
                         loading ? TransferDirection.WarehouseToShip : TransferDirection.ShipToWarehouse, command.GoodId, quantity));
             }
             var stock = port.Inventory[command.GoodId];

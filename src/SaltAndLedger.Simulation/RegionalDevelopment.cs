@@ -90,10 +90,15 @@ namespace SaltAndLedger.Simulation
             var contract = economy.Contracts.Single(c => c.Configuration.Id == contractId); var config = contract.Configuration;
             if (ship.DockedPortId != config.PortId) throw new InvalidOperationException("Contract delivery requires its actual harbor.");
             var payment = checked(quantity * config.UnitPrice);
-            var outcome = Day > config.DeadlineDay ? DevelopmentOutcome.Expired : Day < config.OpensDay ? DevelopmentOutcome.NotReady :
+            var opportunity = Opportunities?.Entries.SingleOrDefault(e => e.Id == contractId);
+            var funding = opportunity?.Status == OpportunityStatus.Active ? opportunity.ReservedCash : economy.ExternalCash;
+            var outcome = opportunity?.Status == OpportunityStatus.Available && Opportunities!.Entries.Count(e => !e.IsProject && e.Status == OpportunityStatus.Active) >= Opportunities.Configuration.ActiveContractLimit
+                ? DevelopmentOutcome.NotReady : opportunity != null && opportunity.Status != OpportunityStatus.Available && opportunity.Status != OpportunityStatus.Active
+                ? (Day > config.DeadlineDay ? DevelopmentOutcome.Expired : DevelopmentOutcome.Exhausted) : Day > config.DeadlineDay ? DevelopmentOutcome.Expired : Day < config.OpensDay ? DevelopmentOutcome.NotReady :
                 quantity > contract.RemainingQuantity ? DevelopmentOutcome.Exhausted :
                 ship.Cargo[config.GoodId] < quantity ? DevelopmentOutcome.InsufficientStock :
-                economy.ExternalCash < payment ? DevelopmentOutcome.InsufficientFunds : DevelopmentOutcome.Completed;
+                funding < payment || (opportunity?.Status == OpportunityStatus.Available && economy.ExternalCash < opportunity.FundingRequired)
+                    ? DevelopmentOutcome.InsufficientFunds : DevelopmentOutcome.Completed;
             if (outcome == DevelopmentOutcome.Completed) _ = checked(ship.Cash + payment);
             return new DevelopmentAttempt(DevelopmentKind.ExternalExport, outcome, ship.OwnerId, config.PortId,
                 contractId, config.GoodId, quantity, payment, 0, 0, null,
@@ -222,6 +227,13 @@ namespace SaltAndLedger.Simulation
             {
                 var attempt = View().PreviewExternalContract(shipId, contractId, quantity); Development.Add(attempt);
                 if (attempt.Outcome != DevelopmentOutcome.Completed) return;
+                if (Opportunities != null)
+                {
+                    AcceptOpportunity(Ships[shipId].Configuration.OwnerId, contractId);
+                    var delivered = DeliverOpportunity(shipId, contractId, quantity);
+                    if (!delivered.Success) Development.RemoveAt(Development.Count - 1);
+                    return;
+                }
                 var economy = Economy!; var index = economy.Contracts.FindIndex(c => c.Configuration.Id == contractId);
                 var contract = economy.Contracts[index]; RemoveDevelopmentCargo(Ships[shipId], attempt.GoodId!, quantity);
                 economy.External = checked(economy.External - attempt.Payment); economy.Inflow = checked(economy.Inflow + attempt.Payment);

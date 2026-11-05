@@ -198,6 +198,7 @@ namespace SaltAndLedger.Simulation
                 var working = new WorkingWorld(content, state);
                 foreach (var company in state.Companies.Values)
                     working.Economy!.InitialValues.Add(company.Id, state.CompanyValue(company.Id).Total);
+                working.InitializeOpportunities();
                 if (runIdentity?.Commission != null) working.EvaluateChallenge();
                 state = working.View();
             }
@@ -306,7 +307,12 @@ namespace SaltAndLedger.Simulation
             Mutate(work =>
             {
                 EnsureCurrent(expectedSnapshot);
-                work.WarehouseTrade(work.OwnedFacility(ownerId, facilityId), command);
+                if (work.CompanyStockpiles.TryGetValue(facilityId, out var stock))
+                {
+                    if (stock.OwnerId != ownerId) throw new InvalidOperationException("The warehouse belongs to another company.");
+                    work.WarehouseTrade(stock, command);
+                }
+                else work.WarehouseTrade(work.OwnedFacility(ownerId, facilityId), command);
             });
 
         private void EnsureCurrent(RegionalWorldSnapshot? expected)
@@ -436,6 +442,7 @@ namespace SaltAndLedger.Simulation
             work.CompleteConstruction(nextDay);
             work.CompleteDevelopment(nextDay);
             work.Day = nextDay;
+            work.AdvanceOpportunities(nextDay);
             work.Changed = true;
         });
 
@@ -464,7 +471,7 @@ namespace SaltAndLedger.Simulation
                     var finance = after.Accounting.Companies[company.Id];
                     if ((BigInteger)company.Cash != (BigInteger)finance.InitialCash + finance.SalesRevenue -
                         finance.InventoryPurchases - finance.ConstructionExpenditure - finance.WagesPaid - finance.FeesPaid +
-                        finance.MintReceipts - finance.PublicCommissionExpenditure)
+                        finance.MintReceipts - finance.PublicCommissionExpenditure + finance.RewardReceipts - finance.ProjectExpenditure)
                         throw new InvalidOperationException("Company cash must reconcile with recorded actual payments.");
                     _ = finance.OperatingSurplusAfterWages;
                     _ = finance.OperatingSurplusAfterExpenses;
@@ -486,7 +493,7 @@ namespace SaltAndLedger.Simulation
             internal RegionalPortConfiguration Configuration { get; }
             internal Inventory Inventory { get; }
             internal long Cash { get; set; }
-            internal ScheduledFacilitySnapshot[] Facilities { get; }
+            internal ScheduledFacilitySnapshot[] Facilities { get; set; }
             internal ConsumptionSnapshot[] Consumption { get; }
             internal WorkingCity? City { get; }
             internal IReadOnlyDictionary<string, MarketQuote> Quotes { get; set; }
@@ -689,6 +696,7 @@ namespace SaltAndLedger.Simulation
                 Economy = before.Economy == null ? null : new WorkingEconomy(before.Economy);
                 Commission = before.CommissionHistory == null ? null : new WorkingCommissionHistory(before.CommissionHistory);
                 Circulation = before.Circulation;
+                Opportunities = before.Opportunities;
             }
             internal RegionalWorldSnapshot View(long? revision = null) => new RegionalWorldSnapshot(Day,
                 revision ?? before.Revision, Ports.Values.Select(p => p.Snapshot()),
@@ -696,7 +704,7 @@ namespace SaltAndLedger.Simulation
                 Companies.Values.Select(c => c.Snapshot()), before.IndustryBlueprints.Values,
                 PrivateFacilities.Values.Select(f => f.Snapshot(Day)), Challenge, Accounting.Snapshot(),
                 before.Difficulty, before.RunIdentity, Economy?.Snapshot(), Commission?.Snapshot(),
-                CompanyStockpiles.Values.Select(s => s.Snapshot()), Circulation);
+                CompanyStockpiles.Values.Select(s => s.Snapshot()), Circulation, Opportunities);
 
             internal void EvaluateChallenge()
             {
@@ -841,6 +849,8 @@ namespace SaltAndLedger.Simulation
                 if (direction != TransferDirection.ShipToWarehouse && direction != TransferDirection.WarehouseToShip)
                     throw new ArgumentOutOfRangeException(nameof(direction));
                 content.GetGood(goodId);
+                if (CompanyStockpiles.ContainsKey(facilityId))
+                { TransferStockpile(ownerId, shipId, facilityId, direction, goodId, quantity); return; }
                 var facility = OwnedFacility(ownerId, facilityId);
                 var ship = Ships[shipId];
                 if (ship.Configuration.OwnerId != ownerId) throw new InvalidOperationException("The ship belongs to another company.");
@@ -894,7 +904,7 @@ namespace SaltAndLedger.Simulation
                 return attempt;
             }
 
-            private TradeAttempt WarehouseTrade(WorkingStockpile store, TradeCommand command, string facilityId = "")
+            internal TradeAttempt WarehouseTrade(WorkingStockpile store, TradeCommand command, string facilityId = "")
             {
                 if (command == null) throw new ArgumentNullException(nameof(command));
                 var port = Ports[store.PortId];

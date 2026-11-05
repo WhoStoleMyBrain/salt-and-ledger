@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace SaltAndLedger.Simulation
 {
-    // Save schema 6 deliberately names every mutable field. Canonical configuration is rebuilt
+    // Save schema 8 deliberately names every mutable field. Canonical configuration is rebuilt
     // from identity and verified by fingerprint; it is never accepted as executable save data.
     [JsonObject(ItemRequired = Required.AllowNull)]
     internal sealed class RegionalSaveData
@@ -29,6 +29,7 @@ namespace SaltAndLedger.Simulation
         public bool ShouldSerializeCommissionHistory() => CommissionHistory != null;
         public RegionalSaveCompanyStockpile[]? CompanyStockpiles { get; set; }
         public RegionalSaveCirculation? Circulation { get; set; }
+        public RegionalSaveOpportunities? Opportunities { get; set; }
     }
 
     [JsonObject(ItemRequired = Required.AllowNull)]
@@ -230,6 +231,7 @@ namespace SaltAndLedger.Simulation
         public long CashReserve { get; set; }
         public long MaximumExpenditure { get; set; }
         public int WarehouseReserve { get; set; }
+        public string? ContractId { get; set; }
     }
 
     [JsonObject(ItemRequired = Required.AllowNull)]
@@ -262,6 +264,9 @@ namespace SaltAndLedger.Simulation
         public long MintReceipts { get; set; }
         public long MintMaterialCost { get; set; }
         public long PublicCommissionExpenditure { get; set; }
+        public long RewardReceipts { get; set; }
+        public long ProjectExpenditure { get; set; }
+        public long ProjectMaterialCost { get; set; }
         public Dictionary<string, long> SurrenderedQuantities { get; set; } = null!;
         public Dictionary<string, long> Granted { get; set; } = null!;
         public Dictionary<string, long> Purchased { get; set; } = null!;
@@ -427,6 +432,7 @@ namespace SaltAndLedger.Simulation
         public string OwnerId { get; set; } = "";
         public string PortId { get; set; } = "";
         public long GrossLocalSales { get; set; }
+        public long DiscountedGrossSales { get; set; }
         public long FeesPaid { get; set; }
         public long MarketFees { get; set; }
         public long HouseholdFees { get; set; }

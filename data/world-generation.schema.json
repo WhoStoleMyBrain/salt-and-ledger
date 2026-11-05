@@ -396,6 +396,42 @@
       "type": "integer",
       "minimum": 1,
       "maximum": 64
+    },
+    "opportunities": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "activeContractLimit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8,
+          "default": 3
+        },
+        "maximumAvailableContracts": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 16,
+          "default": 8
+        },
+        "generationIntervalDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365,
+          "default": 16
+        },
+        "offerLifetimeDays": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365,
+          "default": 24
+        },
+        "historyLimit": {
+          "type": "integer",
+          "minimum": 8,
+          "maximum": 128,
+          "default": 64
+        }
+      }
     }
   },
   "required": [

@@ -69,6 +69,8 @@ namespace SaltAndLedger.Simulation
                         Construction = f.ConstructionExpenditure, Wages = f.WagesPaid, FeesPaid = f.FeesPaid,
                         MintReceipts = f.MintReceipts, MintMaterialCost = f.MintMaterialCost,
                         PublicCommissionExpenditure = f.PublicCommissionExpenditure,
+                        RewardReceipts = f.RewardReceipts, ProjectExpenditure = f.ProjectExpenditure,
+                        ProjectMaterialCost = f.ProjectMaterialCost,
                         SurrenderedQuantities = Copy(f.SurrenderedQuantities),
                         Granted = Copy(f.GrantedQuantities), Purchased = Copy(f.PurchasedQuantities), Sold = Copy(f.SoldQuantities),
                         Produced = Copy(f.ProducedQuantities), Consumed = Copy(f.ConsumedQuantities)
@@ -105,6 +107,7 @@ namespace SaltAndLedger.Simulation
                 NextLotId = state.Accounting.NextLotId,
                 Economy = state.Economy == null ? null : CaptureEconomy(state.Economy),
                 Circulation = state.Circulation == null ? null : CaptureCirculation(state.Circulation),
+                Opportunities = state.Opportunities == null ? null : CaptureOpportunities(state.Opportunities),
                 CommissionHistory = state.CommissionHistory == null ? null : new RegionalSaveCommissionHistory
                 {
                     Ships = state.CommissionHistory.Ships.Select(s => new RegionalSaveCommissionShip
@@ -148,7 +151,7 @@ namespace SaltAndLedger.Simulation
                     Kind = (int)c.Kind, GoodId = c.GoodId, MaximumQuantity = c.MaximumQuantity,
                     MinimumQuantity = c.MinimumQuantity, ShortagePolicy = (int)c.ShortagePolicy,
                     MarginalPriceLimit = c.MarginalPriceLimit, CashReserve = c.CashReserve,
-                    MaximumExpenditure = c.MaximumExpenditure, WarehouseReserve = c.WarehouseReserve
+                    MaximumExpenditure = c.MaximumExpenditure, WarehouseReserve = c.WarehouseReserve, ContractId = c.ContractId
                 }).ToArray()
             }).ToArray()
         };
@@ -196,6 +199,7 @@ namespace SaltAndLedger.Simulation
             Commercial = state.Commercial.Values.Select(c => new RegionalSaveCommercialCirculation
             {
                 OwnerId = c.OwnerId, PortId = c.PortId, GrossLocalSales = c.GrossLocalSales,
+                DiscountedGrossSales = c.DiscountedGrossSales,
                 FeesPaid = c.FeesPaid, MarketFees = c.MarketFees, HouseholdFees = c.HouseholdFees
             }).ToArray(),
             Towns = state.Towns.Values.Select(t => new RegionalSaveMunicipalCirculation

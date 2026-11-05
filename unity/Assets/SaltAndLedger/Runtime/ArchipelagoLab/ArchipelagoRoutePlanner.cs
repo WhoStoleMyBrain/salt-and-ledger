@@ -14,6 +14,7 @@ namespace SaltAndLedger.UnityHost
         {
             public CargoItineraryCommandKind Kind;
             public string GoodId = "grain";
+            public string ContractId;
             public string Maximum = "2", Minimum = "1", Price = "0", CashReserve = "0", Budget = "", WarehouseReserve = "0";
             public CargoItineraryShortagePolicy Shortage;
         }
@@ -130,7 +131,7 @@ namespace SaltAndLedger.UnityHost
                 var stop = new ItineraryStopDraft { PortId = source.PortId, PreserveOrder = true };
                 foreach (var command in source.Commands) stop.Actions.Add(new ItineraryActionDraft
                 {
-                    Kind = command.Kind, GoodId = command.GoodId, Maximum = Q(command.MaximumQuantity), Minimum = Q(command.MinimumQuantity),
+                    Kind = command.Kind, GoodId = command.GoodId, ContractId = command.ContractId, Maximum = Q(command.MaximumQuantity), Minimum = Q(command.MinimumQuantity),
                     Shortage = command.ShortagePolicy, Price = Number(command.MarginalPriceLimit), CashReserve = Money(command.CashReserve),
                     Budget = command.MaximumExpenditure == long.MaxValue ? "" : Money(command.MaximumExpenditure), WarehouseReserve = Q(command.WarehouseReserve)
                 });
@@ -211,6 +212,8 @@ namespace SaltAndLedger.UnityHost
             Element<TextField>("itineraryCashReserve" + key).EnableInClassList("hidden", !buy);
             Element<TextField>("itineraryBudget" + key).EnableInClassList("hidden", !buy);
             Element<TextField>("itineraryWarehouseReserve" + key).EnableInClassList("hidden", kind != CargoItineraryCommandKind.LoadFromCompanyTownStock);
+            Root.Q<DropdownField>("itineraryContract" + key)?.EnableInClassList("hidden", kind != CargoItineraryCommandKind.DeliverContract);
+            Element<DropdownField>("itineraryGood" + key).SetEnabled(kind != CargoItineraryCommandKind.DeliverContract);
         }
 
         private void UpdateItinerarySummaries()
@@ -246,6 +249,7 @@ namespace SaltAndLedger.UnityHost
                 case CargoItineraryCommandKind.BuyFromMarket: return "Buy";
                 case CargoItineraryCommandKind.SellToMarket: return "Sell";
                 case CargoItineraryCommandKind.LoadFromCompanyTownStock: return "Load";
+                case CargoItineraryCommandKind.DeliverContract: return "Deliver contract";
                 default: return "Unload";
             }
         }
@@ -268,7 +272,8 @@ namespace SaltAndLedger.UnityHost
                 action.Shortage, market ? ItineraryInteger(action.Price, "Marginal price", true) : 0,
                 buy ? ItineraryMoney(action.CashReserve, "Company reserve", true) : 0,
                 buy && !string.IsNullOrWhiteSpace(action.Budget) ? ItineraryMoney(action.Budget, "Expenditure cap", false) : long.MaxValue,
-                action.Kind == CargoItineraryCommandKind.LoadFromCompanyTownStock ? ItineraryStockReserve(action.WarehouseReserve) : 0);
+                action.Kind == CargoItineraryCommandKind.LoadFromCompanyTownStock ? ItineraryStockReserve(action.WarehouseReserve) : 0,
+                action.Kind == CargoItineraryCommandKind.DeliverContract ? action.ContractId : null);
         }
 
         private static long ItineraryInteger(string value, string label, bool zero)

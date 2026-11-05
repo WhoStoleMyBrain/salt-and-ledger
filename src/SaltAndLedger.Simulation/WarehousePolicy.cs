@@ -121,7 +121,7 @@ namespace SaltAndLedger.Simulation
             {
                 var gross = TradeCalculator.Preview(quote, command, port.Inventory[goodId], storage.Inventory[goodId],
                     port.MarketCash, Companies[ownerId].Cash, storage.Capacity - storage.StoredUnits);
-                return Circulation?.Preview(ownerId, portId, port.City!.HouseholdCash, gross) ?? gross;
+                return Circulation?.Preview(ownerId, portId, port.City!.HouseholdCash, gross, Opportunities?.HasCommercialPrivilege(ownerId, portId, Day) == true) ?? gross;
             }
             return WarehouseTradeRules.Preview(selected, selected.Rules.FirstOrDefault(r => r.GoodId == goodId),
                 goodId, direction, quote, port.Inventory[goodId], storage.Inventory[goodId], port.MarketCash,

@@ -14,7 +14,7 @@ namespace SaltAndLedger.Simulation
             var config = economy.Configuration;
             AuditCirculationCommit(result);
             if (after.RegionalCash != initialCombinedCash - config.InitialExternalCash + economy.MintedCurrency + economy.ExternalNetInflow ||
-                (BigInteger)economy.ExternalCash + economy.ExternalNetInflow != config.InitialExternalCash ||
+                (BigInteger)economy.ExternalCash + (after.Opportunities?.ReservedCash ?? 0) + economy.ExternalNetInflow != config.InitialExternalCash ||
                 (BigInteger)economy.MintedCurrency != (BigInteger)economy.MintBatches * config.CurrencyPerBatch ||
                 (BigInteger)economy.SupplierIssuance != (BigInteger)economy.MintBatches * config.SupplierSharePerBatch ||
                 (BigInteger)economy.TreasuryIssuance != (BigInteger)economy.MintBatches * config.TreasurySharePerBatch ||
@@ -26,12 +26,22 @@ namespace SaltAndLedger.Simulation
             if ((BigInteger)economy.TreasuryCash != config.InitialTreasuryCash + commissions + economy.TreasuryIssuance - economy.TreasuryExpenditure ||
                 (BigInteger)economy.TreasuryExpenditure != (BigInteger)economy.TreasuryPlanks * config.TreasuryPlankPrice ||
                 economy.TreasuryPlanks > config.TreasuryPlankRequirement || economy.TreasuryCash < 0 || economy.ExternalCash < 0 ||
-                economy.Contracts.Aggregate(BigInteger.Zero, (sum, c) => sum + c.AmountPaid) != economy.ExternalNetInflow ||
+                (after.Opportunities == null ? economy.Contracts.Aggregate(BigInteger.Zero, (sum, c) => sum + c.AmountPaid) : after.Opportunities.CumulativePayments) != economy.ExternalNetInflow ||
                 economy.Contracts.Any(c => c.DeliveredQuantity < 0 || c.RemainingQuantity < 0 ||
                     (BigInteger)c.AmountPaid != (BigInteger)c.DeliveredQuantity * c.Configuration.UnitPrice))
                 throw new InvalidOperationException("Public and external payments must reconcile with funded physical deliveries.");
             if (after.Accounting.Companies.Values.Aggregate(BigInteger.Zero, (sum, f) => sum + f.MintReceipts) != economy.SupplierIssuance)
                 throw new InvalidOperationException("Every supplier issuance requires an owned accounting receipt.");
+            if (after.Opportunities != null)
+            {
+                var board = after.Opportunities;
+                if (board.CumulativePayments != checked(board.CumulativeDeliveryPayments + board.CumulativeRewards) ||
+                    board.CumulativeRewards != after.Accounting.Companies.Values.Sum(c => c.RewardReceipts) ||
+                    board.Entries.Where(e => e.IsProject).Sum(e => e.ContributedCash) != after.Accounting.Companies.Values.Sum(c => c.ProjectExpenditure) ||
+                    board.Entries.Any(e => e.ReservedCash < 0 || e.DeliveredQuantity < 0 || e.DeliveredQuantity > e.RequiredQuantity ||
+                        (e.Status != OpportunityStatus.Active && e.ReservedCash != 0)))
+                    throw new InvalidOperationException("Opportunity funding and project investment do not reconcile.");
+            }
             foreach (var owner in after.Companies.Keys) _ = after.CompanyValue(owner).Total;
             foreach (var good in content.Goods)
             {
@@ -44,6 +54,16 @@ namespace SaltAndLedger.Simulation
                     ((d.Outcome == DevelopmentOutcome.Completed && (d.Kind == DevelopmentKind.ExternalExport || d.Kind == DevelopmentKind.TreasuryProcurement)) ||
                      (d.Outcome == DevelopmentOutcome.Started && d.Kind == DevelopmentKind.ShipCommission)))
                     .Aggregate(BigInteger.Zero, (sum, d) => sum + d.Quantity);
+                if (after.Opportunities != null)
+                {
+                    long Exports(OpportunityBoardSnapshot? board) => board != null && board.ExportedGoods.TryGetValue(good.Id, out var value) ? value : 0;
+                    var royal = result.Development.Where(d => d.GoodId == good.Id && d.Kind == DevelopmentKind.ExternalExport && d.Outcome == DevelopmentOutcome.Completed)
+                        .Aggregate(BigInteger.Zero, (sum, d) => sum + d.Quantity);
+                    development = development - royal + Exports(after.Opportunities) - Exports(result.Before.Opportunities);
+                    var projectBefore = result.Before.Opportunities?.Entries.Where(e => e.IsProject && e.GoodId == good.Id).Sum(e => (long)e.DeliveredQuantity) ?? 0;
+                    var projectAfter = after.Opportunities.Entries.Where(e => e.IsProject && e.GoodId == good.Id).Sum(e => (long)e.DeliveredQuantity);
+                    development += projectAfter - projectBefore;
+                }
                 if (current != initial + production - consumed - development)
                     throw new InvalidOperationException("Physical flow does not reconcile for " + good.Id + ".");
                 foreach (var owner in after.Accounting.Companies.Values)

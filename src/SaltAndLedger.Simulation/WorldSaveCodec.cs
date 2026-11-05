@@ -22,7 +22,7 @@ namespace SaltAndLedger.Simulation
     /// <summary>Portable state codec. The host alone chooses slots, paths and atomic file replacement.</summary>
     public static class WorldSaveCodec
     {
-        public const int SchemaVersion = 7;
+        public const int SchemaVersion = 8;
         public const int MaximumJsonCharacters = 8 * 1024 * 1024;
         internal const int MaximumFacilities = 512;
         internal const int MaximumOpenLots = 16384;
@@ -79,7 +79,7 @@ namespace SaltAndLedger.Simulation
                 ValidateTree(root);
                 if (root["SchemaVersion"]?.Type != JTokenType.Integer ||
                     (long)root["SchemaVersion"]! != SchemaVersion)
-                    throw new WorldSaveException("Unsupported save format. Only current generator 4 schema 7 saves can be loaded.");
+                    throw new WorldSaveException("Unsupported save format. Only current generator 4 schema 8 saves can be loaded.");
                 var data = root.ToObject<RegionalSaveData>(Serializer()) ?? throw new WorldSaveException("Save is empty.");
                 var checksum = data.StateFingerprint;
                 data.StateFingerprint = "";

@@ -10,7 +10,7 @@ namespace SaltAndLedger.UnityHost
     {
         private static readonly CargoItineraryCommandKind[] ItineraryKinds =
         {
-            CargoItineraryCommandKind.UnloadToCompanyTownStock, CargoItineraryCommandKind.SellToMarket,
+            CargoItineraryCommandKind.UnloadToCompanyTownStock, CargoItineraryCommandKind.DeliverContract, CargoItineraryCommandKind.SellToMarket,
             CargoItineraryCommandKind.LoadFromCompanyTownStock, CargoItineraryCommandKind.BuyFromMarket
         };
 
@@ -58,6 +58,11 @@ namespace SaltAndLedger.UnityHost
                 }
             }
             Text(parent, "itineraryOrderNote", "", "route-v3-muted");
+            Button(parent, "itineraryAddContract" + index, "+ Contract delivery", () =>
+                BeginApprovedRouteAction(-1, kind: CargoItineraryCommandKind.DeliverContract))
+                .SetEnabled(routeEditingAction == null && stop.Actions.Count < 8 && ActiveItineraryDraft.Stops.Sum(s => s.Actions.Count) < 24 &&
+                    Session.Snapshot.Opportunities != null && Session.Snapshot.Opportunities.Entries.Any(item => !item.IsProject && item.PortId == stop.PortId &&
+                        (item.Status == OpportunityStatus.Available || item.Status == OpportunityStatus.Active)));
             var advanced = new Foldout { name = "itineraryAdvanced" + index, text = "ORDER SEQUENCE & LIMITS", value = stop.AdvancedOpen };
             advanced.AddToClassList("route-v3-sequence"); parent.Add(advanced);
             advanced.RegisterValueChangedCallback(change =>
@@ -68,7 +73,7 @@ namespace SaltAndLedger.UnityHost
             });
             Panel(advanced, "itineraryOrderedActions", "route-v3-ordered-actions");
             RenderItineraryAdvancedActions();
-            Button(advanced, "itineraryDefaultOrder" + index, "Use Unload / Sell / Load / Buy order", () =>
+            Button(advanced, "itineraryDefaultOrder" + index, "Use Unload / Deliver / Sell / Load / Buy order", () =>
             { SortItineraryActions(stop); stop.PreserveOrder = false; RebuildChangedItinerary(); }).SetEnabled(routeEditingAction == null);
             RefreshItineraryGrid();
         }
@@ -107,7 +112,7 @@ namespace SaltAndLedger.UnityHost
                     cell.tooltip = Session.Content.GetGood(goodId).Name + " · " + ItineraryFlowDescription(kind) +
                         (matches.Count > 1 ? ". Repeated instructions remain separate in Order sequence & limits." : ". Edit maximum whole units per visit and optional limits.");
                 }
-            SetText("itineraryOrderNote", stop.Actions.Count + "/8 instructions · " + (stop.PreserveOrder ? "Custom execution order" : "Default: Unload → Sell → Load → Buy"));
+            SetText("itineraryOrderNote", stop.Actions.Count + "/8 instructions · " + (stop.PreserveOrder ? "Custom execution order" : "Default: Unload → Deliver → Sell → Load → Buy"));
         }
 
         private bool MissingItineraryWarehouse(ItineraryStopDraft stop) =>
@@ -154,12 +159,14 @@ namespace SaltAndLedger.UnityHost
                 case CargoItineraryCommandKind.BuyFromMarket: return "Market → Ship";
                 case CargoItineraryCommandKind.SellToMarket: return "Ship → Market";
                 case CargoItineraryCommandKind.LoadFromCompanyTownStock: return "Warehouse → Ship";
+                case CargoItineraryCommandKind.DeliverContract: return "Ship → Contract recipient";
                 default: return "Ship → Warehouse";
             }
         }
 
         private static string ItineraryFlowDescription(CargoItineraryCommandKind kind) =>
             ItineraryVerb(kind) + ": " + ItineraryFlow(kind) +
-            (kind == CargoItineraryCommandKind.BuyFromMarket || kind == CargoItineraryCommandKind.SellToMarket ? " · paid market trade" : " · no payment");
+            (kind == CargoItineraryCommandKind.DeliverContract ? " · funded contract terms; accept on the board first" :
+                kind == CargoItineraryCommandKind.BuyFromMarket || kind == CargoItineraryCommandKind.SellToMarket ? " · paid market trade" : " · no payment");
     }
 }

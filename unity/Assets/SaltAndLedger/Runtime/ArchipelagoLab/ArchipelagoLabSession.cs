@@ -387,6 +387,38 @@ namespace SaltAndLedger.UnityHost
             Development(() => world.FulfillExternalContract(Player.Id, contractId, quantity));
         public RegionalResult SupplyPublicWorks(int quantity) => Development(() => world.SupplyPublicWorks(Player.Id, quantity));
 
+        public RegionalResult AcceptOpportunity(string opportunityId, RegionalWorldSnapshot expectedSnapshot = null) =>
+            OpportunityAction(() => world.AcceptOpportunity(Player.OwnerId, opportunityId, expectedSnapshot), opportunityId);
+
+        public RegionalResult DeclineOpportunity(string opportunityId, RegionalWorldSnapshot expectedSnapshot = null) =>
+            OpportunityAction(() => world.DeclineOpportunity(Player.OwnerId, opportunityId, expectedSnapshot), opportunityId);
+
+        public RegionalResult DeliverContract(string opportunityId, int quantity, RegionalWorldSnapshot expectedSnapshot = null) =>
+            OpportunityAction(() => world.DeliverContract(Player.Id, opportunityId, quantity, expectedSnapshot), opportunityId);
+
+        public RegionalResult ContributeProject(string projectId, string shipId, int quantity, long cash,
+            RegionalWorldSnapshot expectedSnapshot = null) => OpportunityAction(() =>
+                world.ContributeProject(Player.OwnerId, projectId, shipId, quantity, cash, expectedSnapshot), projectId);
+
+        private RegionalResult OpportunityAction(Func<RegionalResult> action, string opportunityId)
+        {
+            Pause();
+            var result = action();
+            Observe(result);
+            var opportunity = Snapshot.Opportunities.Entries.Single(entry => entry.Id == opportunityId);
+            LastStatus = ReferenceEquals(result.Before, result.After) ?
+                opportunity.Status == OpportunityStatus.Available && !opportunity.IsProject &&
+                    Snapshot.Opportunities.Entries.Count(entry => !entry.IsProject && entry.Status == OpportunityStatus.Active) >= Snapshot.Opportunities.Configuration.ActiveContractLimit
+                    ? "Active contract limit reached. Resolve a commitment before accepting another."
+                    : opportunity.Status == OpportunityStatus.Available && !opportunity.IsProject && Snapshot.Economy.ExternalCash < opportunity.FundingRequired
+                        ? "The finite external authority cannot reserve this contract's full payment. Other accepted commitments already hold their funding."
+                        : "No opportunity progress changed. Review the current terms and available resources." :
+                "Opportunity " + opportunity.Status + " at " + Snapshot.Ports[opportunity.PortId].Name +
+                ": delivered " + Quantity(opportunity.DeliveredQuantity) + "/" + Quantity(opportunity.RequiredQuantity) +
+                " " + Content.GetGood(opportunity.GoodId).Name + ". Still day " + Number(Snapshot.Day) + ".";
+            return result;
+        }
+
         private RegionalResult Development(Func<RegionalResult> action)
         {
             Pause();
@@ -409,7 +441,7 @@ namespace SaltAndLedger.UnityHost
                 (d.Detail?.Trade != null || d.Detail?.Departure != null ||
                  d.IndustrialDetail?.Transfer != null || d.IndustrialDetail?.Trade != null ||
                  d.IndustrialDetail?.Departure != null || d.ItineraryDetail?.Transfer != null ||
-                 d.ItineraryDetail?.Trade != null || d.ItineraryDetail?.Departure != null));
+                 d.ItineraryDetail?.Trade != null || d.ItineraryDetail?.Departure != null || d.ItineraryDetail?.ContractId != null));
             foreach (var entry in result.EconomicEvents.Where(e => e.CompanyId == Player.OwnerId))
                 journal.Insert(0, entry);
             if (journal.Count > MaximumJournalEntries) journal.RemoveRange(MaximumJournalEntries, journal.Count - MaximumJournalEntries);

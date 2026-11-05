@@ -10,7 +10,7 @@ Plan mixed cargo and ordered market or company\-stock work through two to four t
 
 Open Route planner from Fleet, the selected owned ship's inspector or Harbor\. Plot two to four unique towns on the route chart, reorder or remove stops, then choose Set stop orders\. A stop's Sell / Buy / Unload / Load grid opens an inline editor for each commodity/action\. Save order edits only the draft; Cancel keeps the previous instruction\. Review route and Apply route assign the whole validated plan\. Each stop still permits one to eight ordered actions, at most 24 total\. Drafting and inspection spend no stock, cash or time\.
 
-Buy and Sell exchange the named good with the public market for its exact bulk price\. Load and Unload transfer owned stock between the actual docked ship and its company town stock without payment\. No owned facility means no town warehouse, but you can apply the plan before building\. Missing storage skips or waits as configured; later ordinary construction lets the unchanged route use the real store\. A route never creates goods, storage or buildings\. Different goods can remain aboard together within the combined hold capacity; unmentioned goods are never discarded\.
+Buy and Sell exchange the named good with the public market for its exact bulk price\. Load and Unload transfer owned stock between the actual docked ship and its company town stock without payment\. Company storage requires an owned facility or a completed Trading Depot, but you can apply the plan before building\. Missing storage skips or waits as configured; later facility or depot construction lets the unchanged route use the real store\. A route never creates goods, storage or buildings\. Different goods can remain aboard together within the combined hold capacity; unmentioned goods are never discarded\.
 
 Every action executes once per visit, choosing the largest whole quantity between its minimum and maximum that current stock, capacity and real funds permit\. Maximum is an order cap, not a hold target\. A partial qualifying order advances once\. Below minimum, Skip continues with no transaction; Wait keeps that exact action and stops\. Earlier completed buys or transfers never repeat because another instruction waits\.
 
@@ -24,11 +24,12 @@ Draft Grain–Flour–Bread loop resolves the actual role towns: A unloads two F
 
 The planner shows actual dock or voyage, next stop/action, current hold and authoritative blockers; it does not predict or reserve arrival cargo\. Route tools &amp; details contains Cargo, last outcome &amp; daily budget, the example draft, Reload saved route and Inspect harbor\. Reload saved route restores the applied policy, not a run slot\. The inline editor exposes price, cash and technical limits\. Pass count advances when leaving the last listed stop, so an initial middle\-stop pass is not a completed circuit\. Harbor and Back preserve the originating context\.
 
-Schema6 retains itinerary format1 plans, exact stop/action/cycle, last outcome and daily budget across mid\-stop and mid\-voyage saves\. Load continues the exact next work; Retry starts fresh with the same identity\.
+Schema8 retains itinerary format1 plans, exact stop/action/cycle, last outcome and daily budget across mid\-stop and mid\-voyage saves\. Load continues the exact next work; Retry starts fresh with the same identity\.
 
 ## Related entries
 
 - [Cargo and storage capacity](../mechanics/help_capacity.md)
+- [Contracts and development projects](../mechanics/help_contracts_projects.md)
 - [Company, market, and private ownership](../mechanics/help_ownership.md)
 - [Marginal prices and execution averages](../mechanics/help_prices.md)
 - [Warehouse buying and selling](../mechanics/help_procurement.md)

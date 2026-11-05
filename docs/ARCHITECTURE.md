@@ -14,7 +14,7 @@ Canonical stable IDs live in `data/content.json`; structural validation uses `da
 
 Company cash is counted once; ship cash is a compatibility projection used by the shared merchant evaluator. Each company/town pool is its sole private material/FIFO owner. Facilities reference that pool but keep individual schedules, lifecycle, enabled/rate/priority controls, production credit, batches and wages. The pool owns its one local Buy/Sell policy and trading counters. Cargo, public markets, other companies and other towns never alias the pool.
 
-Daily order is stable actor priority/ID; town warehouse buying; due fiscal review; public production by port/priority/ID; private production by port/priority/ordinal ID; town warehouse selling; consumption by port/kind/rule; welfare/population and next-day quotes; voyages; construction completion; objective evaluation. All-account cash equals initial cash plus explicit Mint issuance. Regional cash additionally includes net inflow from the finite outside authority.
+Daily order is stable actor priority/ID; town warehouse buying; due fiscal review; public production by port/priority/ID; private production by port/priority/ordinal ID; town warehouse selling; consumption by port/kind/rule; welfare/population and next-day quotes; voyages; construction completion; objective evaluation. All-account cash includes the finite external authority and accepted-contract reservations and equals initial cash plus explicit Mint issuance. Regional cash additionally includes net inflow from the finite outside authority.
 
 ## Reused algorithms and bounded state
 
@@ -28,10 +28,12 @@ Small custom test worlds retain unscaled quantities, fixed prices and separate-s
 
 Identity includes seed, generator4/content3, canonical generation configuration, valuation1, pricing, charter, Ascension, commission draft/signature, storage2, itinerary1 and economic rules1. Retry recreates that identity; loading restores exact state. The typed Grand Commission evaluator derives current conditions and bounded cumulative visits/net-sale history from committed state. All four goals plus solvency are required; terminal runs freeze.
 
-`WorldSaveCodec` accepts only schema7 and current rules. Strict bounded JSON, checksums, configuration/content fingerprints, ownership, lots, quantities, accounts, routes and history are validated before returning a reconstructed owner. The host installs it only after success. A few zero-valued fixed-challenge fields remain in the explicit save shape; they do not enable retired challenges. See [save policy](SAVES.md).
+`WorldSaveCodec` accepts only schema8 and current rules. Strict bounded JSON, checksums, configuration/content fingerprints, ownership, lots, quantities, accounts, routes and history are validated before returning a reconstructed owner. The host installs it only after success. A few zero-valued fixed-challenge fields remain in the explicit save shape; they do not enable retired challenges. See [save policy](SAVES.md).
 
 ## Unity and documentation
 
 `ArchipelagoLabSession` owns presentation selection, playback pacing, bounded observation and safe local slots. `ArchipelagoLabController` and its focused UI partials consume snapshots, previews and command results. The map transform, text scales, navigation, drafts and economic signals are read-only presentation. Opening transactional/reference screens pauses playback; explicit commands alone mutate the economy. There is no UI-side pricing, production or travel model.
 
 `tools/generate_docs.py` validates and generates `docs/reference/` and `generated/encyclopedia.json` from canonical content and shared player help. Unity uses that same format2 encyclopedia offline. CI checks freshness, links and the strict MkDocs build. Current experiment reports contain deterministic values, no machine paths or timestamps. Pages remains manual-only.
+
+The opportunity board is an immutable part of the same snapshot. Its typed contract/project entries share acceptance, delivery, evidence, funding, completion and bounded history; projects install real public schedules or company storage. Ordinary finite Royal export callers delegate to this shared fulfillment path. Save restoration derives project infrastructure from canonical completed-project records, validates reservations and accounting, and never runs lifecycle transitions while loading.

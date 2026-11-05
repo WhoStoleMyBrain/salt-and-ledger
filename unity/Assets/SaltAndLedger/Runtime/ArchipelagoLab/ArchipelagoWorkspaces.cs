@@ -62,6 +62,7 @@ namespace SaltAndLedger.UnityHost
             var actions = Panel(economy, null, "row run-actions");
             Button(actions, "economyDetailsButton", "Accounts & pricing", () => OpenSecondary(ArchipelagoScreen.CityEconomy));
             Button(actions, "economyLedgerButton", "Company ledger", () => OpenSecondary(ArchipelagoScreen.Ledger));
+            Button(actions, "economyOpportunitiesButton", "Town contracts & projects", () => OpenOpportunities(Session.SelectedPortId));
             Button(actions, "economyHarborButton", "Harbor", () => OpenTrade(Session.SelectedPortId), "primary");
             Button(actions, "economyBackButton", "Back to map", () => SwitchCommandMode(CommandMode.Map));
         }

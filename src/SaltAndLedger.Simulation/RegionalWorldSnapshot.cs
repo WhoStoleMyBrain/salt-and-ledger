@@ -174,12 +174,12 @@ namespace SaltAndLedger.Simulation
         [JsonIgnore]
         public int MoneyScale => Economy == null ? 1 : 10000;
         [JsonIgnore]
-        public BigInteger RegionalCash => TotalCash - (Economy?.ExternalCash ?? 0);
+        public BigInteger RegionalCash => TotalCash - (Economy?.ExternalCash ?? 0) - (Opportunities?.ReservedCash ?? 0);
         [JsonIgnore]
         public BigInteger TotalCash => Ports.Values.Aggregate(BigInteger.Zero,
             (sum, port) => sum + port.MarketCash + (port.City?.HouseholdCash ?? 0)) +
             Companies.Values.Aggregate(BigInteger.Zero, (sum, company) => sum + company.Cash) +
-            (Economy?.TreasuryCash ?? 0) + (BigInteger)(Economy?.ExternalCash ?? 0);
+            (Economy?.TreasuryCash ?? 0) + (BigInteger)(Economy?.ExternalCash ?? 0) + (Opportunities?.ReservedCash ?? 0);
         internal RegionalWorldSnapshot(long day, long revision, IEnumerable<RegionalPortSnapshot> ports,
             IEnumerable<RegionalShipSnapshot> ships, IEnumerable<SeaRoute> routes,
             IEnumerable<CompanySnapshot> companies, IEnumerable<IndustryBlueprint> industryBlueprints,
@@ -187,7 +187,7 @@ namespace SaltAndLedger.Simulation
             AccountingSnapshot accounting, RunDifficulty difficulty = RunDifficulty.Normal,
             RunIdentity? runIdentity = null, ExpandingEconomySnapshot? economy = null,
             CommissionHistory? commissionHistory = null, IEnumerable<CompanyStockpileSnapshot>? companyStockpiles = null,
-            CirculationSnapshot? circulation = null)
+            CirculationSnapshot? circulation = null, OpportunityBoardSnapshot? opportunities = null)
         {
             Day = day;
             Revision = revision;
@@ -211,6 +211,7 @@ namespace SaltAndLedger.Simulation
             Accounting = accounting;
             Economy = economy;
             Circulation = circulation;
+            Opportunities = opportunities;
             CommissionHistory = commissionHistory;
         }
 
@@ -272,7 +273,7 @@ namespace SaltAndLedger.Simulation
             var ship = Ships[shipId];
             var gross = TradeCalculator.Preview(port.Quotes[command.GoodId], command, port.Inventory[command.GoodId],
                 ship.Cargo[command.GoodId], port.MarketCash, ship.Cash, ship.CargoCapacity - ship.CargoUnits);
-            return Circulation?.Preview(ship.OwnerId, portId, port.City!.HouseholdCash, gross) ?? gross;
+            return Circulation?.Preview(ship.OwnerId, portId, port.City!.HouseholdCash, gross, Opportunities?.HasCommercialPrivilege(ship.OwnerId, portId, Day) == true) ?? gross;
         }
 
         public IReadOnlyList<RegionalShipSnapshot> DockedShips(string portId)
@@ -284,13 +285,13 @@ namespace SaltAndLedger.Simulation
         public TradeAttempt PreviewWarehouseTrade(string ownerId, string facilityId, TradeCommand command)
         {
             if (command == null) throw new ArgumentNullException(nameof(command));
-            var facility = OwnedFacility(ownerId, facilityId);
             var storage = GetFacilityStorage(facilityId);
-            var port = Ports[facility.PortId];
+            if (storage.OwnerId != ownerId) throw new InvalidOperationException("The warehouse belongs to another company.");
+            var port = Ports[storage.PortId];
             var gross = TradeCalculator.Preview(port.Quotes[command.GoodId], command, port.Inventory[command.GoodId],
                 storage.Inventory[command.GoodId], port.MarketCash, Companies[ownerId].Cash,
                 storage.Capacity - storage.StoredUnits);
-            return Circulation?.Preview(ownerId, port.Id, port.City!.HouseholdCash, gross) ?? gross;
+            return Circulation?.Preview(ownerId, port.Id, port.City!.HouseholdCash, gross, Opportunities?.HasCommercialPrivilege(ownerId, port.Id, Day) == true) ?? gross;
         }
 
         public int MaximumTradeQuantity(string shipId, string portId, TradeDirection direction, string goodId)
@@ -304,9 +305,9 @@ namespace SaltAndLedger.Simulation
 
         public int MaximumWarehouseTradeQuantity(string ownerId, string facilityId, TradeDirection direction, string goodId)
         {
-            var facility = OwnedFacility(ownerId, facilityId);
             var storage = GetFacilityStorage(facilityId);
-            var port = Ports[facility.PortId];
+            if (storage.OwnerId != ownerId) throw new InvalidOperationException("The warehouse belongs to another company.");
+            var port = Ports[storage.PortId];
             return TradeQuantityCalculator.Maximum(port.Quotes[goodId], direction, port.Inventory[goodId],
                 storage.Inventory[goodId], port.MarketCash, Companies[ownerId].Cash,
                 storage.Capacity - storage.StoredUnits);

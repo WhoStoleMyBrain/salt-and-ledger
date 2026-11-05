@@ -38,9 +38,9 @@ An ask/bid spread is only an opportunity to investigate. Bulk order totals chang
 
 ## Shared stock rules, version 2
 
-One company owns one physical store and one FIFO account at each town where it has a private facility. Public market stock, other companies' stocks, other towns and ship holds remain separate. A warehouse adapter validates the named facility's owner and port before resolving this store; industrial shipping uses the same adapter and real voyages.
+One company owns one physical store and one FIFO account at each town where it has a private facility or completed Trading Depot. Public market stock, other companies' stocks, other towns and ship holds remain separate. A warehouse adapter validates the named facility's owner and port before resolving this store; industrial shipping uses the same adapter and real voyages.
 
-Capacity is the checked sum of local owned facilities' authored warehouse capacities. Granted and paid pending sites contribute storage immediately. Their warehouse may buy/sell independently, while pending factories skip production including on their completion day. They first become production-eligible one full interval after completion. No facility means no free company warehouse.
+Capacity is the checked sum of local owned facilities' authored warehouse capacities and completed Trading Depot capacity. Granted and paid pending sites contribute storage immediately. Their warehouse may buy/sell independently, while pending factories skip production including on their completion day. They first become production-eligible one full interval after completion. A completed Trading Depot provides independent company storage without a facility; both require real investment.
 
 The shared output ceiling for a recipe is the sum of the output limits of operational local facilities with that exact recipe. Installed but disabled facilities still contribute capacity; pending facilities do not contribute output ceilings. Multiple Mills therefore provide additional throughput and output headroom. A recipe without an output ceiling still respects finite aggregate warehouse capacity.
 
@@ -52,7 +52,7 @@ Facilities retain separate IDs, construction states, controls, deadlines, rate c
 
 ## Identity and saves
 
-Current runs use storage2, itinerary1 and economic rules1 with schema7. The codec validates one owned pool per company/town, derived capacity, zero duplicate facility inventory, FIFO agreement and itinerary progress before replacing a session. Retry preserves the original identity. See [save policy](SAVES.md).
+Current runs use storage2, itinerary1 and economic rules1 with schema8. The codec validates one owned pool per company/town, derived capacity, zero duplicate facility inventory, FIFO agreement and itinerary progress before replacing a session. Retry preserves the original identity. See [save policy](SAVES.md).
 
 ## Completion and diagnostic export
 

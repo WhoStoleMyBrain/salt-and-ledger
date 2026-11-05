@@ -7,7 +7,7 @@ using System.Numerics;
 namespace SaltAndLedger.Simulation
 {
     public enum InventoryCostOrigin { StarterGrant, Purchased, Manufactured }
-    public enum EconomicEventKind { StarterGrant, Purchase, Sale, Transfer, Production, Construction, ConstructionCompleted, Wage, MintExchange, PublicCommission, ExternalSale, TreasurySale, ServiceFee }
+    public enum EconomicEventKind { StarterGrant, Purchase, Sale, Transfer, Production, Construction, ConstructionCompleted, Wage, MintExchange, PublicCommission, ExternalSale, TreasurySale, ServiceFee, OpportunityReward, ProjectContribution }
 
     /// <summary>
     /// An open interval of an original acquisition. Prefix-floor allocation keeps every integer
@@ -90,6 +90,9 @@ namespace SaltAndLedger.Simulation
         public long HeldInventoryCost { get; }
         public long WagesPaid { get; }
         public long FeesPaid { get; }
+        public long RewardReceipts { get; }
+        public long ProjectExpenditure { get; }
+        public long ProjectMaterialCost { get; }
         public long OperatingSurplusAfterExpenses => checked(OperatingSurplusAfterWages - FeesPaid);
         public bool ShouldSerializeFeesPaid() => FeesPaid != 0;
         public bool ShouldSerializeOperatingSurplusAfterExpenses() => FeesPaid != 0;
@@ -117,12 +120,12 @@ namespace SaltAndLedger.Simulation
             IDictionary<string, long> purchased, IDictionary<string, long> sold, IDictionary<string, long> produced,
             IDictionary<string, long> consumed, IDictionary<string, long> held, long wagesPaid = 0,
             long mintReceipts = 0, long mintMaterialCost = 0, long publicCommissionExpenditure = 0,
-            IDictionary<string, long>? surrendered = null, long feesPaid = 0)
+            IDictionary<string, long>? surrendered = null, long feesPaid = 0, long rewardReceipts = 0, long projectExpenditure = 0, long projectMaterialCost = 0)
         {
             OwnerId = ownerId; InitialCash = initialCash; InventoryPurchases = purchases; SalesRevenue = revenue;
             CostOfGoodsSold = costOfGoodsSold; ConstructionExpenditure = construction; HeldInventoryCost = heldCost;
             WagesPaid = wagesPaid;
-            FeesPaid = feesPaid;
+            FeesPaid = feesPaid; RewardReceipts = rewardReceipts; ProjectExpenditure = projectExpenditure; ProjectMaterialCost = projectMaterialCost;
             MintReceipts = mintReceipts; MintMaterialCost = mintMaterialCost;
             PublicCommissionExpenditure = publicCommissionExpenditure;
             SurrenderedQuantities = AccountingCollections.Dictionary(surrendered ?? new Dictionary<string, long>());
@@ -132,7 +135,7 @@ namespace SaltAndLedger.Simulation
             ProducedQuantities = AccountingCollections.Dictionary(produced);
             ConsumedQuantities = AccountingCollections.Dictionary(consumed);
             HeldInventoryQuantities = AccountingCollections.Dictionary(held);
-            if ((BigInteger)purchases != (BigInteger)costOfGoodsSold + heldCost + mintMaterialCost)
+            if ((BigInteger)purchases != (BigInteger)costOfGoodsSold + heldCost + mintMaterialCost + projectMaterialCost)
                 throw new InvalidOperationException("Inventory expenditure does not reconcile with released and held basis.");
         }
     }
@@ -309,6 +312,30 @@ namespace SaltAndLedger.Simulation
                 null, null, portId, null, 0, cost, -cost, 0, null, null, "public_mint_commission",
                 Array.Empty<EconomicGoodsMovement>(), Array.Empty<EconomicGoodsMovement>()));
         }
+        internal void OpportunityReward(string ownerId, string portId, string opportunityId, long amount)
+        {
+            if (amount <= 0) throw new ArgumentOutOfRangeException(nameof(amount));
+            companies[ownerId].Rewards = checked(companies[ownerId].Rewards + amount);
+            events.Add(Event(EconomicEventKind.OpportunityReward, ownerId, "external_authority", ownerId,
+                null, null, portId, null, 0, amount, amount, 0, null, null, opportunityId,
+                Array.Empty<EconomicGoodsMovement>(), Array.Empty<EconomicGoodsMovement>()));
+        }
+        internal void ProjectContribution(string ownerId, string? storeId, string portId, string projectId,
+            string goodId, int quantity, long cash)
+        {
+            if (quantity < 0 || cash < 0) throw new ArgumentOutOfRangeException(nameof(quantity));
+            var company = companies[ownerId];
+            var goods = quantity == 0 ? Array.Empty<EconomicGoodsMovement>() :
+                new[] { new EconomicGoodsMovement(goodId, stores[storeId!].Take(goodId, quantity)) };
+            if (quantity > 0 && stores[storeId!].OwnerId != ownerId) throw new InvalidOperationException("Project material belongs to another company.");
+            var basis = goods.Sum(g => g.CostBasis);
+            company.ProjectSpending = checked(company.ProjectSpending + cash);
+            company.ProjectBasis = checked(company.ProjectBasis + basis);
+            if (quantity > 0) Add(company.Surrendered, goodId, quantity);
+            events.Add(Event(EconomicEventKind.ProjectContribution, ownerId, ownerId, "market:" + portId,
+                storeId, projectId, portId, goodId, quantity, cash, -cash, basis, null, projectId, projectId,
+                goods, Array.Empty<EconomicGoodsMovement>()));
+        }
         internal void Transfer(string sourceStoreId, string destinationStoreId, string portId, string goodId, int quantity)
         {
             ValidateGoods(goodId, quantity, 0);
@@ -478,7 +505,7 @@ namespace SaltAndLedger.Simulation
         {
             internal string Id { get; }
             internal long InitialCash { get; }
-            internal long Purchases, Revenue, CostOfGoodsSold, Construction, Wages, Fees, MintReceipts, MintMaterialCost, PublicCommission;
+            internal long Purchases, Revenue, CostOfGoodsSold, Construction, Wages, Fees, MintReceipts, MintMaterialCost, PublicCommission, Rewards, ProjectSpending, ProjectBasis;
             internal readonly Dictionary<string, long> Surrendered = new Dictionary<string, long>(StringComparer.Ordinal);
             internal readonly Dictionary<string, long> Granted = new Dictionary<string, long>(StringComparer.Ordinal);
             internal readonly Dictionary<string, long> Purchased = new Dictionary<string, long>(StringComparer.Ordinal);
@@ -491,7 +518,7 @@ namespace SaltAndLedger.Simulation
                 Purchases = before.InventoryPurchases; Revenue = before.SalesRevenue;
                 CostOfGoodsSold = before.CostOfGoodsSold; Construction = before.ConstructionExpenditure;
                 Wages = before.WagesPaid;
-                Fees = before.FeesPaid;
+                Fees = before.FeesPaid; Rewards = before.RewardReceipts; ProjectSpending = before.ProjectExpenditure; ProjectBasis = before.ProjectMaterialCost;
                 MintReceipts = before.MintReceipts; MintMaterialCost = before.MintMaterialCost;
                 PublicCommission = before.PublicCommissionExpenditure;
                 foreach (var value in before.SurrenderedQuantities) Surrendered.Add(value.Key, value.Value);
@@ -512,7 +539,7 @@ namespace SaltAndLedger.Simulation
                 }
                 return new CompanyFinancialSnapshot(Id, InitialCash, Purchases, Revenue, CostOfGoodsSold,
                     Construction, basis, Granted, Purchased, Sold, Produced, Consumed, held, Wages,
-                    MintReceipts, MintMaterialCost, PublicCommission, Surrendered, Fees);
+                    MintReceipts, MintMaterialCost, PublicCommission, Surrendered, Fees, Rewards, ProjectSpending, ProjectBasis);
             }
         }
     }
