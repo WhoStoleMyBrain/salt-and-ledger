@@ -66,7 +66,7 @@ namespace SaltAndLedger.Simulation
                     {
                         Id = company.Id, Cash = company.Cash, InitialCash = f.InitialCash,
                         Purchases = f.InventoryPurchases, Revenue = f.SalesRevenue, CostOfGoodsSold = f.CostOfGoodsSold,
-                        Construction = f.ConstructionExpenditure, Wages = f.WagesPaid, FeesPaid = f.FeesPaid,
+                        Npc = company.Npc, Construction = f.ConstructionExpenditure, Wages = f.WagesPaid, FeesPaid = f.FeesPaid,
                         MintReceipts = f.MintReceipts, MintMaterialCost = f.MintMaterialCost,
                         PublicCommissionExpenditure = f.PublicCommissionExpenditure,
                         RewardReceipts = f.RewardReceipts, ProjectExpenditure = f.ProjectExpenditure,

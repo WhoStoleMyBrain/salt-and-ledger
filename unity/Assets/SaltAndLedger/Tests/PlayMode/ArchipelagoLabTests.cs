@@ -326,7 +326,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("openIndustryButton");
             var blueprint = controller.Session.Snapshot.IndustryBlueprints.Values.Single(value => value.BuildingId == "sawmill");
             Click("construct_" + blueprint.Id);
-            var facility = controller.Session.Snapshot.PrivateFacilities.Values.Single();
+            var facility = controller.Session.Snapshot.PrivateFacilities.Values.Single(f => f.OwnerId == WorldIds.PlayerOwnerId);
             Assert.That(controller.Session.Player.Cash, Is.EqualTo(cash - facility.ConstructionCost));
             Assert.That(facility.StoredUnits, Is.Zero);
             Click("facilityPriorityHigh"); Click("applyIndustryPolicy");

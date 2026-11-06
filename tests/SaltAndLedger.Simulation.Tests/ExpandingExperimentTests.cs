@@ -10,14 +10,15 @@ public sealed class ExpandingExperimentTests
     [Theory]
     [InlineData("industry")]
     [InlineData("network2")]
-    public void PrescribedExpansionPaysForRealFacilitiesAndProducesCanonicalGoods(string strategy)
+    public void PrescribedExpansionPaysForRealFacilitiesAndRecordsProductionOrCompetingInputShortage(string strategy)
     {
         var content = ContentLoader.Load(ContentLoaderTests.CanonicalJson());
         var row = ExpandingEconomyExperiments.RunCase(content, 42, LivingPricingMode.StockOnly,
             RunDifficulty.Normal, strategy, 30);
         Assert.True(row.Final.PrivateProduced!["grain"] > 0);
         Assert.True(row.Final.PrivateProduced["flour"] > 0);
-        Assert.True(row.Final.PrivateProduced["bread"] > 0);
+        Assert.True(row.Final.PrivateProduced.TryGetValue("bread", out var bread) && bread > 0 ||
+            row.Attempts.Any(a => a.Key == "private/experiment_bakery/bake_bread/InputShortage" && a.Value > 0));
         Assert.True(row.Final.Wages > 0);
         Assert.Equal(0, row.Final.Minted);
         Assert.Contains(row.Flows, f => f.Key.StartsWith("voyages/") && f.Value > 0);
@@ -72,7 +73,7 @@ public sealed class ExpandingExperimentTests
         Assert.Equal(row.Initial.GlobalCash, row.Final.GlobalCash);
         Assert.Equal(row.Initial.RegionalCash, row.Final.RegionalCash);
         var facilities = JsonSerializer.SerializeToElement(row.Final.Facilities).EnumerateArray().ToArray();
-        string Port(string building) => facilities.Single(f => f.GetProperty("BuildingId").GetString() == building).GetProperty("PortId").GetString()!;
+        string Port(string building) => facilities.Single(f => f.GetProperty("BuildingId").GetString() == building && f.GetProperty("OwnerId").GetString() == WorldIds.PlayerOwnerId).GetProperty("PortId").GetString()!;
         Assert.NotEqual(Port("bakery"), Port("mill"));
         Assert.NotEqual(Port("bakery"), Port("lumber_camp"));
         Assert.NotEqual(Port("farm"), Port("mill"));

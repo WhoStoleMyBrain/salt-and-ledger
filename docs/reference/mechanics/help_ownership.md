@@ -14,7 +14,9 @@ Transfers between your ship and your warehouse preserve ownership and historical
 
 Remote management may buy or sell against a factory's local market\. It cannot move goods to another port\. Company cash shown beside a ship is the same account, not another balance\.
 
-Storage rules 2 give each company one town stockpile and one FIFO account shared by its local industries\. Ships, public markets, other owners and other towns remain separate\. Facility reports keep separate labor and production counters, never duplicate copies of the shared goods\. Current schema8 saves require storage rules 2; older save schemas are unsupported\.
+Storage rules 2 give each company one town stockpile and one FIFO account shared by its local industries\. Ships, public markets, other owners and other towns remain separate\. Facility reports keep separate labor and production counters, never duplicate copies of the shared goods\. Current schema9 saves require storage rules 2; older save schemas are unsupported\.
+
+NPC companies have persistent Merchant, Industrial or Diversified specializations\. They pay for ships, factories, inputs, wages and market fees from finite company accounts\. Select an NPC ship to inspect its company fleet and industries; local Industry lists show competing private factories\. NPC assets are read\-only\. Companies can run short of money or materials and receive no hidden rescue\.
 
 ## Related entries
 

@@ -271,13 +271,13 @@ public sealed class ConstructionLifecycleTests
     }
 
     [Fact]
-    public void DelayOnlyAffectsPlayerOwnedPurchases()
+    public void CompanyPurchasesShareTheSameConstructionDelay()
     {
         var world = World();
         var npc = Order(world, id: "npc_bakery", owner: "npc_company");
-        Assert.Equal(ConstructionOutcome.Built, npc.Construction.Single().Outcome);
-        Assert.True(npc.After.PrivateFacilities["npc_bakery"].IsOperational);
-        Assert.Equal(2, npc.After.PrivateFacilities["npc_bakery"].NextProductionDay);
+        Assert.Equal(ConstructionOutcome.Started, npc.Construction.Single().Outcome);
+        Assert.False(npc.After.PrivateFacilities["npc_bakery"].IsOperational);
+        Assert.Equal(4, npc.After.PrivateFacilities["npc_bakery"].NextProductionDay);
     }
 
     [Fact]

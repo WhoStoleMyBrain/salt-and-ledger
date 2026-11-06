@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using SaltAndLedger.Simulation;
 
-const string usage = "Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--world-generation [--config file.json] [--seed int32] [--days 0..10000] [--check] [output.json] | --grand-commission [--check] | --economic-circulation [--check] [output.json] | --expanding-economy [--reinvestment] [--deep] [--check] [output.json]]";
+const string usage = "Usage: dotnet run --project samples/SaltAndLedger.Demo -- data/content.json [--world-generation [--config file.json] [--seed int32] [--days 0..10000] [--check] [output.json] | --npc-companies [--check] [output.json] | --grand-commission [--check] | --economic-circulation [--check] [output.json] | --expanding-economy [--reinvestment] [--deep] [--check] [output.json]]";
 if (args.Length == 0) { Console.Error.WriteLine(usage); return 1; }
 try
 {
@@ -21,6 +21,8 @@ try
     {
         case "--grand-commission" when options.Count == 0:
             return GrandCommissionWitness.Run(content);
+        case "--npc-companies":
+            return NpcCompanyWitness.Run(content, options.SingleOrDefault(), check);
         case "--economic-circulation":
             return EconomicCirculationExperiments.Run(content, options.SingleOrDefault(), check);
         case "--expanding-economy":

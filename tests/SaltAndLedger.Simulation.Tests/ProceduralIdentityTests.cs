@@ -168,7 +168,7 @@ public sealed class ProceduralIdentityTests
         var json = JObject.Parse(WorldSaveCodec.Save(world));
         json["SchemaVersion"] = 6;
         var error = Assert.Throws<WorldSaveException>(() => WorldSaveCodec.Load(Content(), json.ToString(Formatting.None)));
-        Assert.Contains("schema 8", error.Message);
+        Assert.Contains("schema 9", error.Message);
         var missing = JObject.Parse(WorldSaveCodec.Save(world));
         ((JObject)missing["Identity"]!).Remove("GenerationConfiguration");
         Assert.Throws<WorldSaveException>(() => WorldSaveCodec.Load(Content(), missing.ToString(Formatting.None)));

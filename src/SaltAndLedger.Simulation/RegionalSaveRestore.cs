@@ -103,7 +103,7 @@ namespace SaltAndLedger.Simulation
             var economy = RestoreEconomy(initial, data, opportunities);
             var circulation = RestoreCirculation(initial, data, opportunities);
             var shipConfigurations = RestoreShipConfigurations(initial, data, economy);
-            var companies = data.Companies.Select(c => new CompanySnapshot(c.Id, Nonnegative(c.Cash))).ToArray();
+            var companies = data.Companies.Select(c => new CompanySnapshot(c.Id, Nonnegative(c.Cash), RestoreNpc(initial, data, c))).ToArray();
             var ports = data.Ports.Select(p => RestorePort(content, initial.Ports[p.Id], p, data.Day,
                 circulation, ProjectFacilities(initial, opportunities, p.Id))).ToArray();
             var facilities = data.Facilities.Select(f => RestoreFacility(content, initial, f, data.Day)).ToArray();
@@ -302,8 +302,7 @@ namespace SaltAndLedger.Simulation
                 f.NextProductionDay <= checked(Math.Max(day, f.CompletionDay) + blueprint.IntervalDays), "Invalid facility schedule.");
             var starter = initial.PrivateFacilities.TryGetValue(f.Id, out var original);
             Require(f.StarterGrant == starter && (!starter || f.CreatedDay == 0), "Invalid starter endowment claim.");
-            var delay = starter ? 0 : initial.Difficulty == RunDifficulty.SlowFoundations &&
-                initial.Ships.Values.Any(s => s.IsPlayer && s.OwnerId == f.OwnerId) ? 2 : 0;
+            var delay = starter ? 0 : initial.Difficulty == RunDifficulty.SlowFoundations ? 2 : 0;
             Require(f.CompletionDay == checked(f.CreatedDay + delay) &&
                 (f.ConstructionStatus == FacilityConstructionStatus.Operational) == (f.CompletionDay <= day), "Invalid construction lifecycle.");
             Require((f.ProductionCredit == 0 || day >= checked(f.CompletionDay + blueprint.IntervalDays)) &&

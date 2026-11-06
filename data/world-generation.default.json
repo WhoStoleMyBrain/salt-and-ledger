@@ -156,14 +156,22 @@
     "minimumCount": 2,
     "maximumCount": 24,
     "startingCash": {
-      "min": 300,
-      "max": 500
+      "min": 800,
+      "max": 1200
     },
     "cargoCapacity": {
       "min": 3,
       "max": 6
     },
-    "speed": 100
+    "speed": 100,
+    "initialShips": 1,
+    "maximumShips": 3,
+    "maximumIndustries": 2,
+    "investmentIntervalDays": 16,
+    "cashReserve": 80,
+    "merchantWeight": 1,
+    "industrialWeight": 1,
+    "diversifiedWeight": 1
   },
   "institutions": {
     "startingPortIndex": null,

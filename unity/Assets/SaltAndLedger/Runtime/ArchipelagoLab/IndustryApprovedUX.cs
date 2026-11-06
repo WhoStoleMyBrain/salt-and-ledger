@@ -140,7 +140,7 @@ namespace SaltAndLedger.UnityHost
             var port = snapshot.Ports[Session.SelectedPortId];
             var own = snapshot.PrivateFacilities.Values.Where(f => f.OwnerId == Session.Player.OwnerId && f.PortId == port.Id)
                 .OrderBy(f => f.Blueprint.BuildingId, StringComparer.Ordinal).ThenBy(f => f.Id, StringComparer.Ordinal).ToArray();
-            SetText("industryCounts", (own.Length + port.Facilities.Count) + " sites · " + own.Length + " owned");
+            SetText("industryCounts", (snapshot.PrivateFacilities.Values.Count(f => f.PortId == port.Id) + port.Facilities.Count) + " sites · " + own.Length + " owned");
             var rows = Element<VisualElement>("industryOperatingRows"); rows.Clear();
             foreach (var facility in own)
             {
@@ -153,6 +153,10 @@ namespace SaltAndLedger.UnityHost
                 var signal = EconomicSignals.PublicProduction(snapshot, Session.Content, port.Id, facility.Configuration.Instance.Id);
                 AddOperatingIndustry(rows, signal, () => OpenPublicIndustry(signal.FacilityId));
             }
+            foreach (var facility in snapshot.PrivateFacilities.Values.Where(f => f.OwnerId != Session.Player.OwnerId && f.PortId == port.Id)
+                .OrderBy(f => f.OwnerId, StringComparer.Ordinal).ThenBy(f => f.Id, StringComparer.Ordinal))
+                Text(rows, null, snapshot.Companies[facility.OwnerId].Name + " · " + Session.Content.GetBuilding(facility.Blueprint.BuildingId).Name +
+                    " · " + facility.ConstructionStatus + " · " + facility.BatchesProduced + " batches · inspection only", "industry-v3-caption");
             if (rows.childCount == 0) Text(rows, null, "No industries here yet.", "industry-v3-caption");
             var buildRows = Element<VisualElement>("industryBuildRows"); buildRows.Clear();
             foreach (var blueprint in snapshot.IndustryBlueprints.Values.Where(b => b.EligiblePortIds.Contains(port.Id))

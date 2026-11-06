@@ -295,7 +295,9 @@ internal static class EconomicCirculationExperiments
             var production = result.Production.SelectMany(p => p.Changes).Concat(result.PrivateProduction.SelectMany(p => p.Changes))
                 .Where(c => c.GoodId == good).Aggregate(BigInteger.Zero, (n, c) => n + c.Delta);
             var consumed = result.Consumption.Where(c => c.GoodId == good).Aggregate(BigInteger.Zero, (n, c) => n + c.ConsumedQuantity);
-            Require(Physical(before) + production - consumed == Physical(after), "Physical flow mismatch: " + good);
+            var hullMaterials = result.Development.Where(d => d.Kind == DevelopmentKind.ShipCommission &&
+                d.Outcome == DevelopmentOutcome.Started && d.GoodId == good).Sum(d => (long)d.Quantity);
+            Require(Physical(before) + production - consumed - hullMaterials == Physical(after), "Physical flow mismatch: " + good);
         }
         foreach (var finance in after.Accounting.Companies.Values)
         {

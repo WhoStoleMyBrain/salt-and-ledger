@@ -79,7 +79,7 @@ namespace SaltAndLedger.Simulation
                 foreach (var company in companies)
                 {
                     if (company == null) throw new ArgumentException("Companies cannot contain null.");
-                    accounts.Add(company.Id, new CompanySnapshot(company.Id, company.InitialCash));
+                    accounts.Add(company.Id, new CompanySnapshot(company.Id, company.InitialCash, company.Npc));
                 }
             foreach (var ship in ships)
             {
@@ -425,6 +425,7 @@ namespace SaltAndLedger.Simulation
             // Fail before performing any work if the final public revision cannot be represented.
             _ = checked(state.Revision + 1);
             work.BeginCityDay();
+            work.PlanCompanies();
             foreach (var ship in work.Ships.Values.OrderBy(s => s.Configuration.Priority)
                 .ThenBy(s => s.Configuration.Ship.Id, StringComparer.Ordinal))
                 if (ship.AutomationEnabled) work.RunAutomation(ship.Configuration.Ship.Id,
@@ -556,8 +557,9 @@ namespace SaltAndLedger.Simulation
         {
             internal string Id { get; }
             internal long Cash { get; set; }
-            internal WorkingCompany(CompanySnapshot before) { Id = before.Id; Cash = before.Cash; }
-            internal CompanySnapshot Snapshot() => new CompanySnapshot(Id, Cash);
+            internal NpcCompanyState? Npc { get; set; }
+            internal WorkingCompany(CompanySnapshot before) { Id = before.Id; Cash = before.Cash; Npc = before.Npc; }
+            internal CompanySnapshot Snapshot() => new CompanySnapshot(Id, Cash, Npc);
         }
 
         private sealed class WorkingStockpile

@@ -31,7 +31,7 @@ namespace SaltAndLedger.UnityHost.Tests
             controller.BeginRun(null, RunScenario.IndustrialCharter);
             Click("openIndustryButton");
             var before = controller.Session.Snapshot;
-            var facility = before.PrivateFacilities.Values.Single();
+            var facility = before.PrivateFacilities.Values.Single(f => f.OwnerId == WorldIds.PlayerOwnerId);
             Click("manageFactory_" + facility.Id);
             root.Q<Toggle>("facilityEnabled").value = false;
             Click("facilityRate50"); Click("facilityPriorityHigh");
@@ -70,7 +70,7 @@ namespace SaltAndLedger.UnityHost.Tests
         public IEnumerator InvalidWarehouseTargetsAndFactoryRatesCannotApplyOrMutateState()
         {
             controller.BeginRun(null, RunScenario.IndustrialCharter);
-            Click("openIndustryButton"); Click("manageFactory_" + controller.Session.Snapshot.PrivateFacilities.Values.Single().Id);
+            Click("openIndustryButton"); Click("manageFactory_" + controller.Session.Snapshot.PrivateFacilities.Values.Single(f => f.OwnerId == WorldIds.PlayerOwnerId).Id);
             var before = controller.Session.Snapshot;
             root.Q<TextField>("facilityOperatingRate").value = "101";
             Assert.That(root.Q<Button>("applyIndustryPolicy").enabledSelf, Is.False);
@@ -101,7 +101,7 @@ namespace SaltAndLedger.UnityHost.Tests
         {
             controller.BeginRun(null, RunScenario.MerchantCharter);
             OpenBakeryInvestment();
-            var facility = controller.Session.Snapshot.PrivateFacilities.Values.Single();
+            var facility = controller.Session.Snapshot.PrivateFacilities.Values.Single(f => f.OwnerId == WorldIds.PlayerOwnerId);
             var preview = controller.Session.Snapshot.PreviewWarehouseTrade(facility.OwnerId, facility.Id,
                 new TradeCommand(TradeDirection.Buy, "flour", 10000));
             var ask = controller.Session.Snapshot.GetMarketQuote(facility.PortId, "flour").Ask.Value;
@@ -130,7 +130,7 @@ namespace SaltAndLedger.UnityHost.Tests
                 var schedule = controller.Session.Snapshot.PreviewConstructionSchedule(controller.Session.Player.OwnerId,
                     WorldIds.BakeryBlueprint);
                 Assert.That(root.Q<Label>("facilityScheduleDetail").text, Does.Contain("day " + schedule.FirstProductionDay));
-                var facility = controller.Session.Snapshot.PrivateFacilities.Values.Single();
+                var facility = controller.Session.Snapshot.PrivateFacilities.Values.Single(f => f.OwnerId == WorldIds.PlayerOwnerId);
                 Assert.That(facility.IsOperational, Is.EqualTo(difficulty == RunDifficulty.Normal));
                 var capital = controller.Session.Snapshot.Accounting.Companies[facility.OwnerId].ConstructionExpenditure;
                 foreach (var good in new[] { "Flour", "Logs" })
@@ -168,7 +168,7 @@ namespace SaltAndLedger.UnityHost.Tests
         public IEnumerator StarterGrantAndPhysicalShippingLinkAreTransparentAndOpeningIsPassive()
         {
             controller.BeginRun(new RunIdentity(null, RunScenario.IndustrialCharter, difficulty: RunDifficulty.SlowFoundations));
-            Click("openIndustryButton"); Click("manageFactory_" + controller.Session.Snapshot.PrivateFacilities.Values.Single().Id);
+            Click("openIndustryButton"); Click("manageFactory_" + controller.Session.Snapshot.PrivateFacilities.Values.Single(f => f.OwnerId == WorldIds.PlayerOwnerId).Id);
             Assert.That(root.Q<Label>("facilityScheduleDetail").text, Does.Contain("Already-built starter grant"));
             Assert.That(root.Q<Label>("facilityStatsLabel").text, Does.Contain("Capital paid 0"));
             Assert.That(root.Q<Label>("industryShippingLabel").text, Does.Contain("NO CONFIGURED TOWN-STOCK SHIPPING"));
@@ -190,7 +190,7 @@ namespace SaltAndLedger.UnityHost.Tests
         {
             controller.BeginRun(null, RunScenario.MerchantCharter);
             OpenBakeryInvestment();
-            var facility = controller.Session.Snapshot.PrivateFacilities.Values.Single();
+            var facility = controller.Session.Snapshot.PrivateFacilities.Values.Single(f => f.OwnerId == WorldIds.PlayerOwnerId);
             Click("factoryAutomationButton");
             foreach (var good in new[] { "flour", "logs" })
             {

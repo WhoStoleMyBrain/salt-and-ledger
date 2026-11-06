@@ -8,10 +8,10 @@ namespace SaltAndLedger.Simulation
     public sealed partial class RegionalWorldState
     {
         internal static RegionalShipConfiguration CreateCommissionedShipConfiguration(
-            ExpandingEconomyConfiguration config, string ownerId, string shipId) =>
+            ExpandingEconomyConfiguration config, string ownerId, string shipId, bool isPlayer = true) =>
             new RegionalShipConfiguration(new ShipConfiguration(shipId, config.ShipCapacity, config.ShipwrightPortId),
                 ownerId, "Company ship " + shipId.Substring(shipId.LastIndexOf('_') + 1),
-                0, config.ShipSpeed, priority: 1000, isPlayer: true);
+                0, config.ShipSpeed, priority: isPlayer ? 1000 : 100, isPlayer: isPlayer);
     }
 
     internal static partial class RegionalSaveRestore
@@ -64,12 +64,12 @@ namespace SaltAndLedger.Simulation
             Require((opportunities?.CumulativePayments ?? contracts.Aggregate(0L, (sum, c) => checked(sum + c.AmountPaid))) == e.ExternalNetInflow &&
                 (BigInteger)e.ExternalCash + (opportunities?.ReservedCash ?? 0) + e.ExternalNetInflow == config.InitialExternalCash,
                 "External authority funding and escrow do not reconcile.");
-            Count(e.ShipOrders, 0, config.MaximumPlayerShips - 1);
+            Count(e.ShipOrders, 0, 255);
             Unique(e.ShipOrders.Select(o => o.ShipId), "ship orders");
             Require(e.NextShipNumber >= 2 && e.NextShipNumber <= config.MaximumPlayerShips + 1, "Invalid ship sequence.");
             var orders = e.ShipOrders.Select(o =>
             {
-                Require(initial.Ships.Values.Any(s => s.IsPlayer && s.OwnerId == o.OwnerId) &&
+                Require(initial.Companies.ContainsKey(o.OwnerId) &&
                     o.PortId == config.ShipwrightPortId && o.OrderedDay >= 0 && o.OrderedDay <= data.Day &&
                     o.CompletionDay == checked(o.OrderedDay + config.ShipConstructionDays) && o.CompletionDay > data.Day &&
                     o.PaidCapital == config.ShipCost, "Invalid ship commission.");
@@ -106,10 +106,32 @@ namespace SaltAndLedger.Simulation
                     configs.Add(id, RegionalWorldState.CreateCommissionedShipConfiguration(economy.Configuration, owner, id));
                 }
             }
-            Require(economy.ShipOrders.All(o => Enumerable.Range(2, economy.NextShipNumber - 2).Any(n =>
+            foreach (var company in data.Companies.Where(c => initial.Companies[c.Id].Npc != null))
+            {
+                var plan = RestoreNpc(initial, data, company)!;
+                for (var number = 1; number <= plan.ShipsOrdered; number++)
+                {
+                    var id = company.Id + "_ship_" + number.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    var pending = economy.ShipOrders.SingleOrDefault(o => o.ShipId == id);
+                    var delivered = data.Ships.Any(s => s.Id == id);
+                    Require((pending != null) != delivered && (pending == null || pending.OwnerId == company.Id),
+                        "NPC paid hull must be pending or delivered exactly once by its owner.");
+                    if (delivered) configs.Add(id, RegionalWorldState.CreateCommissionedShipConfiguration(economy.Configuration, company.Id, id, false));
+                }
+                var capital = data.Facilities.Where(f => f.OwnerId == company.Id && !f.StarterGrant)
+                    .Aggregate(BigInteger.Zero, (sum, f) => sum + initial.IndustryBlueprints[f.BlueprintId].ConstructionCost);
+                Require((BigInteger)company.Construction == capital + (BigInteger)plan.ShipsOrdered * economy.Configuration.ShipCost,
+                    "NPC sites and ships do not reconcile with paid capital.");
+                Require(configs.Values.Count(c => c.OwnerId == company.Id) + economy.ShipOrders.Count(o => o.OwnerId == company.Id) <=
+                    initial.RunIdentity!.GenerationConfiguration.Npc.MaximumShips, "NPC fleet limit exceeded.");
+            }
+            Require(economy.ShipOrders.Where(o => o.OwnerId == owner).All(o => Enumerable.Range(2, economy.NextShipNumber - 2).Any(n =>
                 o.ShipId == "player_ship_" + n.ToString(System.Globalization.CultureInfo.InvariantCulture))), "Unknown pending ship ID.");
+            Require(economy.ShipOrders.All(o => o.OwnerId == owner || data.Companies.Any(c => c.Id == o.OwnerId && c.Npc != null &&
+                Enumerable.Range(1, c.Npc.ShipsOrdered).Any(n => o.ShipId == c.Id + "_ship_" + n.ToString(System.Globalization.CultureInfo.InvariantCulture)))),
+                "Unknown pending NPC ship ID.");
             SameIds(data.Ships.Select(s => s.Id), configs.Keys, "ships");
-            Require(configs.Values.Count(s => s.IsPlayer) + economy.ShipOrders.Count <= economy.Configuration.MaximumPlayerShips,
+            Require(configs.Values.Count(s => s.IsPlayer) + economy.ShipOrders.Count(o => o.OwnerId == owner) <= economy.Configuration.MaximumPlayerShips,
                 "Saved fleet exceeds the player ship cap.");
             var finance = data.Companies.Single(c => c.Id == owner);
             var facilityCapital = data.Facilities.Where(f => f.OwnerId == owner && !f.StarterGrant)

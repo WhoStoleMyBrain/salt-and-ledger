@@ -70,12 +70,25 @@ namespace SaltAndLedger.Simulation
         public GenerationRange StartingCash { get; }
         public GenerationRange CargoCapacity { get; }
         public int Speed { get; }
+        public int InitialShips { get; }
+        public int MaximumShips { get; }
+        public int MaximumIndustries { get; }
+        public int InvestmentIntervalDays { get; }
+        public int CashReserve { get; }
+        public int MerchantWeight { get; }
+        public int IndustrialWeight { get; }
+        public int DiversifiedWeight { get; }
         [JsonConstructor] public NpcGenerationSettings(int tradersPerTownPermille = 500, int minimumCount = 2,
-            int maximumCount = 24, GenerationRange? startingCash = null, GenerationRange? cargoCapacity = null, int speed = 100)
+            int maximumCount = 24, GenerationRange? startingCash = null, GenerationRange? cargoCapacity = null, int speed = 100,
+            int initialShips = 1, int maximumShips = 3, int maximumIndustries = 2, int investmentIntervalDays = 16,
+            int cashReserve = 80, int merchantWeight = 1, int industrialWeight = 1, int diversifiedWeight = 1)
         {
             TradersPerTownPermille = tradersPerTownPermille; MinimumCount = minimumCount; MaximumCount = maximumCount;
-            StartingCash = startingCash ?? new GenerationRange(300, 500);
+            StartingCash = startingCash ?? new GenerationRange(800, 1200);
             CargoCapacity = cargoCapacity ?? new GenerationRange(3, 6); Speed = speed;
+            InitialShips = initialShips; MaximumShips = maximumShips; MaximumIndustries = maximumIndustries;
+            InvestmentIntervalDays = investmentIntervalDays; CashReserve = cashReserve;
+            MerchantWeight = merchantWeight; IndustrialWeight = industrialWeight; DiversifiedWeight = diversifiedWeight;
         }
     }
 
@@ -171,6 +184,10 @@ namespace SaltAndLedger.Simulation
                     foreach (var property in defaults.Properties())
                         if (opportunities[property.Name] == null) opportunities.Add(property.Name, property.Value.DeepClone());
                 }
+                var npcDefaults = JObject.FromObject(new NpcGenerationSettings(), JsonSerializer.Create(JsonSettings));
+                var npcObject = (JObject)root["npc"]!;
+                foreach (var property in npcDefaults.Properties())
+                    if (npcObject[property.Name] == null) npcObject.Add(property.Name, property.Value.DeepClone());
                 var result = root.ToObject<WorldGenerationConfiguration>(JsonSerializer.Create(JsonSettings))
                     ?? throw new WorldGenerationException("World generation configuration is required.");
                 result.Validate(content);
@@ -229,7 +246,7 @@ namespace SaltAndLedger.Simulation
                 Range(industry["publicTowns"]!); Range(industry["privateTowns"]!);
             }
             Keys((JObject)root["geography"]!, "width", "height", "margin", "minimumTownSpacing", "minimumLaneDistance", "maximumLaneDistance", "extraLaneCount", "candidateCount", "placementAttempts");
-            Keys((JObject)root["npc"]!, "tradersPerTownPermille", "minimumCount", "maximumCount", "startingCash", "cargoCapacity", "speed");
+            Keys((JObject)root["npc"]!, "tradersPerTownPermille", "minimumCount", "maximumCount", "startingCash", "cargoCapacity", "speed", "initialShips", "maximumShips", "maximumIndustries", "investmentIntervalDays", "cashReserve", "merchantWeight", "industrialWeight", "diversifiedWeight");
             Keys((JObject)root["institutions"]!, "startingPortIndex", "mintPortIndex", "silverPortIndex", "shipyardPortIndex");
             foreach (var property in ((JObject)root["geography"]!).Properties())
                 if (property.Value.Type != JTokenType.Integer) throw new WorldGenerationException(property.Path + " must be an integer.");
@@ -271,6 +288,13 @@ namespace SaltAndLedger.Simulation
             if (Npc.TradersPerTownPermille < 0 || Npc.TradersPerTownPermille > 10000 || Npc.MinimumCount < 0 ||
                 Npc.MaximumCount < Npc.MinimumCount || Npc.MaximumCount > 128 || Npc.Speed < 1 || Npc.Speed > 10000)
                 throw new WorldGenerationException("npc requires density 0..10000, 0 <= minimumCount <= maximumCount <= 128 and speed 1..10000.");
+            if (Npc.InitialShips < 1 || Npc.InitialShips > 4 || Npc.MaximumShips < Npc.InitialShips || Npc.MaximumShips > 8 ||
+                (long)Npc.MaximumCount * Npc.MaximumShips + FleetLimit > 256 ||
+                Npc.MaximumIndustries < 0 || Npc.MaximumIndustries > 8 || Npc.InvestmentIntervalDays < 1 || Npc.InvestmentIntervalDays > 365 ||
+                Npc.CashReserve < 0 || Npc.CashReserve > 1000000 || Npc.MerchantWeight < 0 || Npc.MerchantWeight > 100 ||
+                Npc.IndustrialWeight < 0 || Npc.IndustrialWeight > 100 || Npc.DiversifiedWeight < 0 || Npc.DiversifiedWeight > 100 ||
+                Npc.MerchantWeight + Npc.IndustrialWeight + Npc.DiversifiedWeight == 0)
+                throw new WorldGenerationException("NPC fleet, industry, investment, reserve or strategy bounds are invalid (total fleet <= 256).");
             Npc.StartingCash.Validate("npc.startingCash", 0, 1000000); Npc.CargoCapacity.Validate("npc.cargoCapacity", 1, 1000);
             foreach (var pair in new[] { ("startingPortIndex", Institutions.StartingPortIndex), ("mintPortIndex", Institutions.MintPortIndex),
                 ("silverPortIndex", Institutions.SilverPortIndex), ("shipyardPortIndex", Institutions.ShipyardPortIndex) })
