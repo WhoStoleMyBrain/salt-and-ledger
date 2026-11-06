@@ -159,14 +159,22 @@
       "minimumCount": 2,
       "maximumCount": 24,
       "startingCash": {
-        "min": 300,
-        "max": 500
+        "min": 800,
+        "max": 1200
       },
       "cargoCapacity": {
         "min": 3,
         "max": 6
       },
-      "speed": 100
+      "speed": 100,
+      "initialShips": 1,
+      "maximumShips": 3,
+      "maximumIndustries": 2,
+      "investmentIntervalDays": 16,
+      "cashReserve": 80,
+      "merchantWeight": 1,
+      "industrialWeight": 1,
+      "diversifiedWeight": 1
     },
     "institutions": {
       "startingPortIndex": null,
@@ -176,7 +184,14 @@
     },
     "fleetLimit": 3,
     "deadlineDays": 720,
-    "economicCandidateCount": 16
+    "economicCandidateCount": 16,
+    "opportunities": {
+      "activeContractLimit": 3,
+      "maximumAvailableContracts": 8,
+      "generationIntervalDays": 16,
+      "offerLifetimeDays": 24,
+      "historyLimit": 64
+    }
   },
   "SimulatedDays": 30,
   "ConstraintFailures": [],
@@ -184,7 +199,7 @@
     {
       "Seed": -42,
       "GeneratorVersion": 4,
-      "ConfigurationFingerprint": "a8a375dce11d8ff95e6f8bcbe383f3d7b9e78f7c3ce8826aa5f8605395c331ea",
+      "ConfigurationFingerprint": "72293b6921bfdc3136295e58b3e3f0ce0cec5eee05463715f6fa347196175e3f",
       "Quality": {
         "TownCount": 8,
         "LaneCount": 10,
@@ -548,21 +563,21 @@
         "ShipyardPortId": "town_008"
       },
       "NpcMerchants": 4,
-      "InitialAllAccountCash": "217580000",
+      "InitialAllAccountCash": "238870000",
       "Checkpoint": {
         "Day": 30,
         "Revision": 30,
-        "AllAccountCash": "217580000",
+        "AllAccountCash": "238870000",
         "Population": 297,
         "PlayerCash": 18000000,
-        "StateChecksum": "b8c1c7c376cd863c967dd4e3ae6026f69a7ab3265c25d44c665392615df9a8b5"
+        "StateChecksum": "c41f642d08c9443714c856e025239212e52241be7627c535440be95f29eb00a6"
       },
       "DeterministicContinuationChecked": true
     },
     {
       "Seed": 42,
       "GeneratorVersion": 4,
-      "ConfigurationFingerprint": "a8a375dce11d8ff95e6f8bcbe383f3d7b9e78f7c3ce8826aa5f8605395c331ea",
+      "ConfigurationFingerprint": "72293b6921bfdc3136295e58b3e3f0ce0cec5eee05463715f6fa347196175e3f",
       "Quality": {
         "TownCount": 8,
         "LaneCount": 10,
@@ -921,21 +936,21 @@
         "ShipyardPortId": "town_001"
       },
       "NpcMerchants": 4,
-      "InitialAllAccountCash": "246830000",
+      "InitialAllAccountCash": "274100000",
       "Checkpoint": {
         "Day": 30,
         "Revision": 30,
-        "AllAccountCash": "246830000",
+        "AllAccountCash": "274100000",
         "Population": 376,
         "PlayerCash": 18000000,
-        "StateChecksum": "6511006c732928da042e09edc7816670641afe7e575eae6c652bae30697b8cf0"
+        "StateChecksum": "48ff3bbf8784ff8a50f076d45fb5277d3b15c649c78d2cfdc3fc507217c23987"
       },
       "DeterministicContinuationChecked": true
     },
     {
       "Seed": 99,
       "GeneratorVersion": 4,
-      "ConfigurationFingerprint": "a8a375dce11d8ff95e6f8bcbe383f3d7b9e78f7c3ce8826aa5f8605395c331ea",
+      "ConfigurationFingerprint": "72293b6921bfdc3136295e58b3e3f0ce0cec5eee05463715f6fa347196175e3f",
       "Quality": {
         "TownCount": 8,
         "LaneCount": 10,
@@ -1299,21 +1314,21 @@
         "ShipyardPortId": "town_008"
       },
       "NpcMerchants": 4,
-      "InitialAllAccountCash": "259370000",
+      "InitialAllAccountCash": "282430000",
       "Checkpoint": {
         "Day": 30,
         "Revision": 30,
-        "AllAccountCash": "259370000",
-        "Population": 333,
+        "AllAccountCash": "282430000",
+        "Population": 332,
         "PlayerCash": 18000000,
-        "StateChecksum": "830362af70472918e1fb8e62e565cc8d7cf65f473f110194281109ef83d6b6d5"
+        "StateChecksum": "e9404261f7725be1bb6b66d4e468f1986a96844bd7cdf62cfcdbbdb0e75cab79"
       },
       "DeterministicContinuationChecked": true
     },
     {
       "Seed": -2147483648,
       "GeneratorVersion": 4,
-      "ConfigurationFingerprint": "a8a375dce11d8ff95e6f8bcbe383f3d7b9e78f7c3ce8826aa5f8605395c331ea",
+      "ConfigurationFingerprint": "72293b6921bfdc3136295e58b3e3f0ce0cec5eee05463715f6fa347196175e3f",
       "Quality": {
         "TownCount": 12,
         "LaneCount": 14,
@@ -1790,21 +1805,21 @@
         "ShipyardPortId": "town_007"
       },
       "NpcMerchants": 6,
-      "InitialAllAccountCash": "323690000",
+      "InitialAllAccountCash": "361200000",
       "Checkpoint": {
         "Day": 30,
         "Revision": 30,
-        "AllAccountCash": "323690000",
+        "AllAccountCash": "361200000",
         "Population": 473,
         "PlayerCash": 18000000,
-        "StateChecksum": "dade9cd0132d6c604ef45594cfec8fa9f3235c57b9ead67a6df49480c6316d3f"
+        "StateChecksum": "6328c9e4529020d20fa4e36cc4fdc3c4848b0f7f291b9812c6ee4cd499454dc1"
       },
       "DeterministicContinuationChecked": true
     },
     {
       "Seed": 2147483647,
       "GeneratorVersion": 4,
-      "ConfigurationFingerprint": "a8a375dce11d8ff95e6f8bcbe383f3d7b9e78f7c3ce8826aa5f8605395c331ea",
+      "ConfigurationFingerprint": "72293b6921bfdc3136295e58b3e3f0ce0cec5eee05463715f6fa347196175e3f",
       "Quality": {
         "TownCount": 9,
         "LaneCount": 11,
@@ -2197,14 +2212,14 @@
         "ShipyardPortId": "town_009"
       },
       "NpcMerchants": 5,
-      "InitialAllAccountCash": "278890000",
+      "InitialAllAccountCash": "308810000",
       "Checkpoint": {
         "Day": 30,
         "Revision": 30,
-        "AllAccountCash": "278890000",
+        "AllAccountCash": "308810000",
         "Population": 416,
         "PlayerCash": 18000000,
-        "StateChecksum": "e8128ccfd39a9522df36fcecc3f1ff160d8bc784f0672a2fffdc233fe4872bfb"
+        "StateChecksum": "a11914270b2ee6ba30c41c83dbd40662e8c4c10a2225bd896f5db96042a048a4"
       },
       "DeterministicContinuationChecked": true
     }

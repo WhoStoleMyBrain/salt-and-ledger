@@ -26,7 +26,7 @@ Canonical recipes, building identities and goods remain in `data/content.json`. 
 | `startingInventories` | Per-good ranges | Whole goods, granted once; Silver starts at zero |
 | `npc.tradersPerTownPermille` | 500 | Merchants = ceiling(towns × density / 1000), bounded by explicit count settings |
 | `npc.minimumCount/maximumCount` | 2 / 24 | Merchant population limits |
-| `npc.startingCash/cargoCapacity/speed` | 300–500 coins / 3–6 goods / 100 | Independent finite merchant starting conditions |
+| `npc.startingCash/cargoCapacity/speed` | 800–1200 coins / 3–6 goods / 100 | Finite company endowments (no recurring grants) |
 | `institutions.*PortIndex` | null | Optional zero-based ordinal town indices for start, Mint, Silver source and shipyard |
 | `fleetLimit` | 3 | Completed plus pending player ships; configurable 1–32 |
 | `deadlineDays` | 720 | Grand Commission horizon; existing finite contract windows are capped to it |
@@ -92,8 +92,10 @@ Unity stages the same default JSON with `prepare_unity.py`. An optional `world-g
 
 ## Identity and verification
 
-Run identity retains generator4, content3, valuation1, full configuration/fingerprint, seed, charter, pricing, Ascension, draft2, storage2, itinerary1 and economic rules1. Save schema8 rejects old saves safely and reconstructs the exact configured world before restoring mutable state. Retry starts its original configuration; Load resumes exact stocks, accounts, voyages and schedules.
+Run identity retains generator4, content3, valuation1, full configuration/fingerprint, seed, charter, pricing, Ascension, draft2, storage2, itinerary1 and economic rules1. Save schema9 rejects old saves safely and reconstructs the exact configured world before restoring mutable state. Retry starts its original configuration; Load resumes exact stocks, accounts, voyages and schedules.
 
 See [Task3.1 verification](TASK-3.1-VERIFICATION.md) for actual results, test scope and the remaining Unity Editor/player checks. Bounded generation and simulation evidence do not establish long-run balance or universal profitability.
 
 Task3.2 uses these same configured capabilities, real market stocks, consumption and production schedules to generate [contracts and projects](CONTRACTS_PROJECTS.md). The optional `opportunities` object defaults identically when omitted; its complete canonical values participate in the configuration fingerprint. It cannot add disabled goods, unavailable recipes or structurally incompatible production.
+
+NPC settings also include `initialShips` (1–4, default1), `maximumShips` (up to8, default3), `maximumIndustries` (0–8, default2), `investmentIntervalDays` (1–365, default16), `cashReserve` (whole coins, default80) and strategy weights `merchantWeight`, `industrialWeight`, `diversifiedWeight` (0–100 each, default1). Initial ships cannot exceed the company limit; maximum company fleets plus the player fleet cannot exceed256. At least one strategy weight must be positive. Profiles cycle by weight while seeded commodity/site choices depend on actual generated capabilities. See [autonomous companies](NPC_COMPANIES.md).

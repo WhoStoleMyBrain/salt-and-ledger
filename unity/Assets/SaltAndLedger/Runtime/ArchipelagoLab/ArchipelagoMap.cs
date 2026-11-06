@@ -135,7 +135,7 @@ namespace SaltAndLedger.UnityHost
                 ships[ship.Id].EnableInClassList("sl-marker-sailing", ship.DockedPortId == null);
                 ships[ship.Id].EnableInClassList("sl-marker-active", ship.AutomationEnabled && !blocked);
                 ships[ship.Id].Q<Label>(className: "sl-map-blocked-badge").EnableInClassList("hidden", !blocked);
-                ships[ship.Id].tooltip = ship.Name + " · " + (ship.IsPlayer ? "Your ship" : "NPC merchant") +
+                ships[ship.Id].tooltip = ship.Name + " · " + (ship.IsPlayer ? "Your ship" : snapshot.Companies[ship.OwnerId].Name) +
                     "\n" + Quantity(ship.CargoUnits) + "/" + Quantity(ship.CargoCapacity) + " cargo" +
                     (ship.DockedPortId != null ? "\nDocked at " + snapshot.Ports[ship.DockedPortId].Name :
                         "\nTo " + snapshot.Ports[ship.DestinationPortId].Name + " · " + ship.RemainingTravelDays + " days remain") +

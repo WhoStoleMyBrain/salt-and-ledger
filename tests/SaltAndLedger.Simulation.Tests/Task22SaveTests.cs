@@ -109,7 +109,7 @@ public sealed class Task22SaveTests
                 Assert.Null(combined.Ships[secondShip].DockedPortId);
                 Assert.Equal(FacilityConstructionStatus.UnderConstruction,
                     combined.PrivateFacilities["pooled_save_second_mill"].ConstructionStatus);
-                Assert.True(combined.CompanyStockpiles.Values.Single().StoredUnits > 0);
+                Assert.True(combined.CompanyStockpiles.Values.Single(s => s.OwnerId == Owner).StoredUnits > 0);
                 Assert.NotEmpty(combined.Accounting.Stores[pool.Id].Goods.Values.SelectMany(g => g.Lots));
                 Assert.Equal(WorldSaveCodec.Save(world), WorldSaveCodec.Save(restored));
             }

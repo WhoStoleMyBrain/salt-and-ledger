@@ -92,8 +92,8 @@ namespace SaltAndLedger.UnityHost.Tests
             Click("closeTradeButton");
             for (var day = 0; day < 4; day++) Click("nextDayButton");
             var snapshot = controller.Session.Snapshot;
-            var mill = snapshot.PrivateFacilities.Values.Single(f => f.Blueprint.BuildingId == "mill");
-            var bakery = snapshot.PrivateFacilities.Values.Single(f => f.Blueprint.BuildingId == "bakery");
+            var mill = snapshot.PrivateFacilities.Values.Single(f => f.OwnerId == WorldIds.PlayerOwnerId && f.Blueprint.BuildingId == "mill");
+            var bakery = snapshot.PrivateFacilities.Values.Single(f => f.OwnerId == WorldIds.PlayerOwnerId && f.Blueprint.BuildingId == "bakery");
             Assert.That(mill.BatchesProduced, Is.EqualTo(1));
             Assert.That(bakery.BatchesProduced, Is.EqualTo(2));
             Assert.That(mill.WagesPaid, Is.GreaterThan(0)); Assert.That(bakery.WagesPaid, Is.GreaterThan(0));

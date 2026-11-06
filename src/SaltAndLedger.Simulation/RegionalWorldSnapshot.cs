@@ -259,8 +259,7 @@ namespace SaltAndLedger.Simulation
         {
             if (!Companies.ContainsKey(ownerId)) throw new KeyNotFoundException("Unknown company.");
             var blueprint = IndustryBlueprints[blueprintId];
-            var delay = Difficulty == RunDifficulty.SlowFoundations &&
-                Ships.Values.Any(s => s.IsPlayer && s.OwnerId == ownerId) ? 2 : 0;
+            var delay = Difficulty == RunDifficulty.SlowFoundations ? 2 : 0;
             return new ConstructionSchedule(Day, delay, blueprint.IntervalDays);
         }
 

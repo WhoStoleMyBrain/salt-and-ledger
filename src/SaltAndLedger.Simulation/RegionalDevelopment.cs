@@ -41,11 +41,13 @@ namespace SaltAndLedger.Simulation
         }
         public DevelopmentAttempt PreviewShipCommission(string ownerId, string portId)
         {
-            var economy = RequireEconomy(); var config = economy.Configuration; DevelopmentOwner(ownerId);
+            var economy = RequireEconomy(); var config = economy.Configuration;
+            var company = Companies[ownerId];
+            var limit = company.Npc == null ? config.MaximumPlayerShips : RunIdentity!.GenerationConfiguration.Npc.MaximumShips;
             if (portId != config.ShipwrightPortId) throw new InvalidOperationException("This port has no authorized shipwright.");
             var port = Ports[portId];
             var count = Ships.Values.Count(s => s.OwnerId == ownerId) + economy.ShipOrders.Count(s => s.OwnerId == ownerId);
-            var outcome = count >= config.MaximumPlayerShips ? DevelopmentOutcome.FleetLimit :
+            var outcome = count >= limit ? DevelopmentOutcome.FleetLimit :
                 Companies[ownerId].Cash < config.ShipCost ? DevelopmentOutcome.InsufficientFunds :
                 port.Inventory[ExpandingEconomyConfiguration.ShipMaterialGoodId] < config.ShipPlanks ? DevelopmentOutcome.InsufficientStock : DevelopmentOutcome.Started;
             var completion = checked(Day + config.ShipConstructionDays);
@@ -55,9 +57,10 @@ namespace SaltAndLedger.Simulation
                 _ = checked((port.City ?? throw new InvalidOperationException("Shipbuilding requires a local workforce.")).HouseholdCash + config.ShipLaborPayment);
             }
             return new DevelopmentAttempt(DevelopmentKind.ShipCommission, outcome, ownerId, portId,
-                "player_ship_" + economy.NextShipNumber.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                company.Npc == null ? "player_ship_" + economy.NextShipNumber.ToString(System.Globalization.CultureInfo.InvariantCulture) :
+                    ownerId + "_ship_" + (company.Npc.ShipsOrdered + 1).ToString(System.Globalization.CultureInfo.InvariantCulture),
                 ExpandingEconomyConfiguration.ShipMaterialGoodId, config.ShipPlanks, config.ShipCost, 0, config.ShipLaborPayment, completion,
-                outcome == DevelopmentOutcome.FleetLimit ? "The configured " + config.MaximumPlayerShips.ToString(System.Globalization.CultureInfo.InvariantCulture) + "-ship limit includes ships under construction." :
+                outcome == DevelopmentOutcome.FleetLimit ? "The configured " + limit.ToString(System.Globalization.CultureInfo.InvariantCulture) + "-ship limit includes ships under construction." :
                 outcome == DevelopmentOutcome.InsufficientFunds ? "Insufficient company cash for shipbuilding." :
                 outcome == DevelopmentOutcome.InsufficientStock ? "The shipwright needs actual local market Planks." :
                 "Payment and hull materials are charged once; the empty ship arrives after four days.");
@@ -203,7 +206,8 @@ namespace SaltAndLedger.Simulation
                 CashTransfers.Add(new CityCashTransfer(CityCashTransferKind.Wage, ownerId, "households:" + portId, portId,
                     attempt.HouseholdAmount, attempt.AssetId));
                 economy.Orders.Add(new ShipConstructionOrder(attempt.AssetId!, ownerId, portId, Day, attempt.CompletionDay!.Value, attempt.Payment));
-                economy.NextShipNumber = checked(economy.NextShipNumber + 1);
+                if (Companies[ownerId].Npc == null) economy.NextShipNumber = checked(economy.NextShipNumber + 1);
+                else Companies[ownerId].Npc = Companies[ownerId].Npc!.With(shipsOrdered: checked(Companies[ownerId].Npc!.ShipsOrdered + 1));
                 Accounting.Construct(ownerId, attempt.AssetId!, portId, attempt.Payment);
                 Changed = true;
             }
@@ -274,7 +278,7 @@ namespace SaltAndLedger.Simulation
                 foreach (var order in economy.Orders.OrderBy(o => o.ShipId, StringComparer.Ordinal).ToArray())
                 {
                     if (order.CompletionDay > nextDay) continue;
-                    var shipConfig = CreateCommissionedShipConfiguration(config, order.OwnerId, order.ShipId);
+                    var shipConfig = CreateCommissionedShipConfiguration(config, order.OwnerId, order.ShipId, before.Ships.Values.Any(s => s.OwnerId == order.OwnerId && s.IsPlayer));
                     var snapshot = new RegionalShipSnapshot(shipConfig,
                         new ShipSnapshot(order.ShipId, config.ShipCapacity, new Inventory(content).Snapshot(), order.PortId, null, null, 0),
                         Companies[order.OwnerId].Cash, null, false, 0);

@@ -48,6 +48,10 @@ def validate_world_generation(value: dict, content: dict | None = None) -> dict:
     npc = default["npc"] | value["npc"]
     if npc["minimumCount"] > npc["maximumCount"]:
         fail("npc.minimumCount must not exceed maximumCount.")
+    if npc["maximumShips"] < npc["initialShips"] or npc["maximumCount"] * npc["maximumShips"] + value.get("fleetLimit", default["fleetLimit"]) > 256:
+        fail("NPC initial/max fleet bounds require initialShips <= maximumShips and total fleet <= 256.")
+    if npc["merchantWeight"] + npc["industrialWeight"] + npc["diversifiedWeight"] == 0:
+        fail("At least one NPC strategy weight must be positive.")
     bounds(npc["startingCash"], "npc.startingCash")
     bounds(npc["cargoCapacity"], "npc.cargoCapacity")
     institutions = value["institutions"]

@@ -111,7 +111,8 @@
         "A public market owns its stock. Buying from it changes ownership and moves cash. A factory's private stock belongs to its company and is separate from the town market, even when they occupy the same port.",
         "Transfers between your ship and your warehouse preserve ownership and historical cost. They are not sales and move no cash or time. Both stores must have the same owner and the ship must be docked at the warehouse's town.",
         "Remote management may buy or sell against a factory's local market. It cannot move goods to another port. Company cash shown beside a ship is the same account, not another balance.",
-        "Storage rules 2 give each company one town stockpile and one FIFO account shared by its local industries. Ships, public markets, other owners and other towns remain separate. Facility reports keep separate labor and production counters, never duplicate copies of the shared goods. Current schema8 saves require storage rules 2; older save schemas are unsupported."
+        "Storage rules 2 give each company one town stockpile and one FIFO account shared by its local industries. Ships, public markets, other owners and other towns remain separate. Facility reports keep separate labor and production counters, never duplicate copies of the shared goods. Current schema9 saves require storage rules 2; older save schemas are unsupported.",
+        "NPC companies have persistent Merchant, Industrial or Diversified specializations. They pay for ships, factories, inputs, wages and market fees from finite company accounts. Select an NPC ship to inspect its company fleet and industries; local Industry lists show competing private factories. NPC assets are read-only. Companies can run short of money or materials and receive no hidden rescue."
       ],
       "relatedIds": [
         "help_factories",
@@ -489,7 +490,7 @@
       "description": "Local explicit saves preserve an economic run; retry starts its identity fresh.",
       "paragraphs": [
         "Save explicitly to one of three local slots. Continue or Load restores a current Expanding Economy v3 Grand Commission or Sandbox run without advancing time. Saves are local; there is no cloud recovery.",
-        "Only current schema8, circulation1, storage2 and itinerary1 are supported. Schemas1–7 are intentionally unsupported after the contracts and projects milestone. No migration or command replay is performed; failed loads preserve the active run.",
+        "Only current schema9, circulation1, storage2 and itinerary1 are supported. Schemas1–8 are intentionally unsupported after the autonomous companies milestone. No migration or command replay is performed; failed loads preserve the active run.",
         "Saves retain exact identity and drafted goals, accounts, fractional stock and demand residuals, FIFO lots, every voyage and route cursor/budget, pending construction, household history, fees, contracts, Mint and public treasury. Terminal outcomes remain frozen. Factory rate/priority and admitted scheduling phase, plus town warehouse Buy/Sell rules and counters, resume exactly.",
         "Complete validation precedes session replacement. Unsupported versions, damage or inconsistent state show an error and preserve the active world, selection and playback. Retry starts the original identity fresh. Text size remains an independent preference."
       ],

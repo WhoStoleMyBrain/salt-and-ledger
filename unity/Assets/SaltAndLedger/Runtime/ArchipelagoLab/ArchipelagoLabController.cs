@@ -291,7 +291,7 @@ namespace SaltAndLedger.UnityHost
         private void RefreshShip(RegionalShipSnapshot ship)
         {
             SetText("selectionTitle", ship.Name);
-            SetText("selectionSubtitle", ship.IsPlayer ? "Player ship · " + ship.OwnerId : "Independent NPC merchant · " + ship.OwnerId);
+            SetText("selectionSubtitle", ship.IsPlayer ? "Player ship · " + ship.OwnerId : "NPC company · " + Session.Snapshot.Companies[ship.OwnerId].Name + " · " + Session.Snapshot.Companies[ship.OwnerId].Npc?.Profile);
             SetText("shipStateLabel", ship.DockedPortId != null ? "Docked at " + PortName(ship.DockedPortId) :
                 "Sailing " + PortName(ship.OriginPortId) + " → " + PortName(ship.DestinationPortId) +
                 "\n" + ship.RemainingTravelDays + " of " + ship.VoyageDurationDays + " days remaining");
@@ -309,10 +309,28 @@ namespace SaltAndLedger.UnityHost
                 SetText("shipPolicyLabel", "Ordered itinerary · " + string.Join(" → ", ship.Itinerary.Stops.Select(stop => PortName(stop.PortId))) +
                     " → loop\n" + ship.Itinerary.Stops.Sum(stop => stop.Commands.Count) + " actions · mixed cargo retained · open Route planner to inspect each action.");
             else if (UsesItineraries && ship.IsPlayer) SetText("shipPolicyLabel", "No itinerary assigned. Open Fleet / Route planner to draft this ship's ordered work.");
+            if (ship.IndustrialPolicy != null)
+                SetText("shipPolicyLabel", "Company logistics · " + PortName(ship.IndustrialPolicy.OriginPortId) + " → " +
+                    PortName(ship.IndustrialPolicy.DestinationPortId) + " · " + ship.IndustrialStage);
             var decision = Session.DecisionFor(ship.Id);
             SetText("shipDecisionLabel", DecisionText(decision));
             SetText("shipControlLabel", ship.IsPlayer ? "You may disable your route and trade or plan a voyage manually." :
-                "Inspection only. This merchant obeys the same market cash, cargo and voyage rules.");
+                CompanyInspection(ship.OwnerId));
+        }
+
+        private string CompanyInspection(string ownerId)
+        {
+            var world = Session.Snapshot;
+            var company = world.Companies[ownerId];
+            var fleet = world.Ships.Values.Where(s => s.OwnerId == ownerId).OrderBy(s => s.Id, StringComparer.Ordinal);
+            var sites = world.PrivateFacilities.Values.Where(f => f.OwnerId == ownerId).OrderBy(f => f.Id, StringComparer.Ordinal);
+            return "Inspection only · " + company.Name + " · " + company.Npc?.Profile +
+                "\nFleet: " + string.Join(", ", fleet.Select(s => s.Name + " (" +
+                    (s.DockedPortId == null ? "sailing to " + PortName(s.DestinationPortId) : PortName(s.DockedPortId)) + ")")) +
+                "\nIndustries: " + (sites.Any() ? string.Join(", ", sites.Select(f => Session.Content.GetBuilding(f.Blueprint.BuildingId).Name +
+                    " at " + PortName(f.PortId) + " · " + f.ConstructionStatus + " · " + f.BatchesProduced + " batches")) : "none") +
+                "\nWarehouses: " + world.CompanyStockpiles.Values.Count(w => w.OwnerId == ownerId) +
+                " · ships under construction: " + (world.Economy?.ShipOrders.Count(o => o.OwnerId == ownerId) ?? 0);
         }
 
         private void RefreshPreviews() => RefreshTradeOverlay();
@@ -403,7 +421,7 @@ namespace SaltAndLedger.UnityHost
             " / last " + Number(preview.Price.LastMarginalPrice) +
             (preview.Outcome == TradeOutcome.Traded ? "" : "\n" + EconomicText.Outcome(preview.Outcome));
         private string SelectedGoodId() => goodIds[Math.Max(0, Element<DropdownField>("goodDropdown").index)];
-        private static string ShipChoice(RegionalShipSnapshot ship) => ship.Name + (ship.IsPlayer ? " (you)" : " (NPC)");
+        private string ShipChoice(RegionalShipSnapshot ship) => ship.Name + (ship.IsPlayer ? " (you)" : " · " + Session.Snapshot.Companies[ship.OwnerId].Name);
         private string PortName(string id) => Session.Snapshot.Ports[id].Name;
         private static string Number(long value) => value.ToString(CultureInfo.InvariantCulture);
         private static string Signed(long value) => (value > 0 ? "+" : "") + Number(value);

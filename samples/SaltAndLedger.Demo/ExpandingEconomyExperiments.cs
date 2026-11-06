@@ -638,7 +638,7 @@ internal static class ExpandingEconomyExperiments
             PlayerShips = state.Ships.Values.Count(s => s.IsPlayer), PendingShips = economy.ShipOrders.Count,
             Ships = state.Ships.Values.Select(s => new { s.Id, s.OwnerId, s.IsPlayer, s.DockedPortId, s.DestinationPortId,
                 s.RemainingTravelDays, s.Cargo, s.AutomationEnabled, Stage = s.IndustrialStage.ToString() }).ToArray(),
-            Facilities = state.PrivateFacilities.Values.Select(f => new { f.Id, f.PortId, f.Blueprint.BuildingId,
+            Facilities = state.PrivateFacilities.Values.Select(f => new { f.Id, f.OwnerId, f.PortId, f.Blueprint.BuildingId,
                 f.Enabled, f.OperatingRate, Priority = f.Priority.ToString(), f.ProductionCredit,
                 f.IsOperational, f.NextProductionDay, f.Inventory, f.SharedStockpileId, f.BatchesProduced, f.WagesPaid,
                 LastOutcome = f.LastOutcome.ToString() }).ToArray(),

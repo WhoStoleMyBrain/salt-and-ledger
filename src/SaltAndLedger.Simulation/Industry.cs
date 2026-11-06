@@ -9,11 +9,12 @@ namespace SaltAndLedger.Simulation
     {
         public string Id { get; }
         public long InitialCash { get; }
-        public CompanyConfiguration(string id, long initialCash)
+        public NpcCompanyState? Npc { get; }
+        public CompanyConfiguration(string id, long initialCash, NpcCompanyState? npc = null)
         {
             RuntimeIdentifier.Validate(id, nameof(id));
             if (initialCash < 0) throw new ArgumentOutOfRangeException(nameof(initialCash));
-            Id = id; InitialCash = initialCash;
+            Id = id; InitialCash = initialCash; Npc = npc;
         }
     }
 
@@ -21,7 +22,9 @@ namespace SaltAndLedger.Simulation
     {
         public string Id { get; }
         public long Cash { get; }
-        internal CompanySnapshot(string id, long cash) { Id = id; Cash = cash; }
+        public NpcCompanyState? Npc { get; }
+        public string Name => Npc?.Name ?? Id;
+        internal CompanySnapshot(string id, long cash, NpcCompanyState? npc = null) { Id = id; Cash = cash; Npc = npc; }
     }
 
     public sealed class IndustryBlueprint

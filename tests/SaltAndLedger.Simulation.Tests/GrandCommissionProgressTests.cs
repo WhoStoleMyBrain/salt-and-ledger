@@ -117,16 +117,18 @@ public sealed class GrandCommissionProgressTests
     [Fact]
     public void VisitsRequireRealArrivalAndSecondShipCannotWinByRemainingAtShipyard()
     {
+        // Reserve a real hull before other companies can consume its finite shipyard stock.
         var world = World(42, navigation: "second_command"); var g = ExpandingEconomyGeneration.Generate(42);
         Assert.Single(world.Snapshot().CommissionHistory!.Ships.Single().Visits);
         var initial = world.Snapshot();
         Assert.Throws<InvalidOperationException>(() => world.Depart(Ship, initial.Ships[Ship].DockedPortId!));
         Assert.Same(initial, world.Snapshot());
+        Assert.Equal(DevelopmentOutcome.Started, world.CommissionShip(Owner, g.ShipyardPortId).Development.Single().Outcome);
         world.Depart(Ship, g.ProcessingPortId);
         Assert.Single(world.Snapshot().CommissionHistory!.Ships.Single().Visits);
         while (world.Snapshot().Ships[Ship].DockedPortId == null) world.AdvanceDay();
-        Assert.Equal(2, world.Snapshot().CommissionHistory!.Ships.Single().Visits.Count);
-        world.CommissionShip(Owner, g.ShipyardPortId); Days(world, 4);
+        Assert.Equal(2, world.Snapshot().CommissionHistory!.Ships.Single(s => s.ShipId == Ship).Visits.Count);
+        Days(world, 4);
         Assert.Equal(2, world.Snapshot().CommissionHistory!.Ships.Count);
         var second = world.Snapshot().CommissionHistory!.Ships[1];
         Assert.Equal(1, second.AcquisitionOrder); Assert.Single(second.Visits);

@@ -27,6 +27,18 @@ class WorldGenerationValidationTests(unittest.TestCase):
             with self.assertRaises(ContentError):
                 validate_world_generation(config)
 
+    def test_npc_investment_and_strategy_bounds(self):
+        cases = [dict(initialShips=4, maximumShips=3), dict(maximumShips=9),
+                 dict(maximumCount=128, maximumShips=3), dict(maximumIndustries=-1),
+                 dict(investmentIntervalDays=0), dict(cashReserve=-1),
+                 dict(merchantWeight=0, industrialWeight=0, diversifiedWeight=0),
+                 dict(industrialWeight=1.5)]
+        for fields in cases:
+            config = copy.deepcopy(self.config)
+            config["npc"].update(fields)
+            with self.subTest(fields=fields), self.assertRaises(ContentError):
+                validate_world_generation(config)
+
     def test_integer_tokens_and_case_sensitive_properties_match_csharp(self):
         cases = [lambda c: c.update(schemaVersion=1.0), lambda c: c.update(DeadlineDays=720),
                  lambda c: c["townCount"].update(min=8.0), lambda c: c["townCount"].update(Min=8),

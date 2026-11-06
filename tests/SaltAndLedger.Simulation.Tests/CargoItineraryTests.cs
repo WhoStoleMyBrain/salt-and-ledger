@@ -554,7 +554,7 @@ public sealed class CargoItineraryTests
         Assert.Equal(EconomicUnits.Coins(300), finance.ConstructionExpenditure);
         Assert.Equal(0, after.Economy!.MintedCurrency);
         Assert.Equal(0, after.Economy.ExternalNetInflow);
-        Assert.All(after.Ships.Values.Where(s => !s.IsPlayer), s => Assert.NotNull(s.Policy));
+        Assert.All(after.Ships.Values.Where(s => !s.IsPlayer), s => Assert.NotNull(after.Companies[s.OwnerId].Npc));
         Assert.Contains(records, r => r.After.Ships[shipId].Cargo.Count(g => g.Value > 0) >= 2);
         Assert.All(records.SelectMany(r => r.Decisions).Where(d => d.ShipId == shipId && d.ItineraryDetail != null),
             d => Assert.InRange(d.Before.Ships[shipId].ItineraryProgress!.OperationsUsed, 0, 8));
@@ -587,7 +587,9 @@ public sealed class CargoItineraryTests
             var changes = result.Production.SelectMany(p => p.Changes).Concat(result.PrivateProduction.SelectMany(p => p.Changes))
                 .Where(c => c.GoodId == good).Aggregate(BigInteger.Zero, (n, c) => n + c.Delta);
             var consumed = result.Consumption.Where(c => c.GoodId == good).Aggregate(BigInteger.Zero, (n, c) => n + c.ConsumedQuantity);
-            Assert.Equal(Physical(before) + changes - consumed, Physical(after));
+            var hulls = result.Development.Where(d => d.Kind == DevelopmentKind.ShipCommission && d.Outcome == DevelopmentOutcome.Started &&
+                d.GoodId == good).Sum(d => (long)d.Quantity);
+            Assert.Equal(Physical(before) + changes - consumed - hulls, Physical(after));
         }
         foreach (var finance in after.Accounting.Companies.Values)
         {

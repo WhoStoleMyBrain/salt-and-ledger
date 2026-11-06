@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace SaltAndLedger.Simulation
 {
-    // Save schema 8 deliberately names every mutable field. Canonical configuration is rebuilt
+    // Save schema 9 deliberately names every mutable field. Canonical configuration is rebuilt
     // from identity and verified by fingerprint; it is never accepted as executable save data.
     [JsonObject(ItemRequired = Required.AllowNull)]
     internal sealed class RegionalSaveData
@@ -253,6 +253,7 @@ namespace SaltAndLedger.Simulation
         public string Id { get; set; } = "";
         public long Cash { get; set; }
         public long InitialCash { get; set; }
+        public NpcCompanyState? Npc { get; set; }
         public long Purchases { get; set; }
         public long Revenue { get; set; }
         public long CostOfGoodsSold { get; set; }

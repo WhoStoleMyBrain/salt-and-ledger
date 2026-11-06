@@ -303,6 +303,9 @@ public sealed class RegionalEconomyTests
                 if (recipe.Kind == RecipeKind.Extraction) extracted += recipe.Outputs.Sum(o => o.Quantity);
                 else processed++;
             }
+            foreach (var change in result.PrivateProduction.SelectMany(p => p.Changes)) expected[change.GoodId] += change.Delta;
+            foreach (var hull in result.Development.Where(d => d.Kind == DevelopmentKind.ShipCommission && d.Outcome == DevelopmentOutcome.Started))
+                expected[hull.GoodId!] -= hull.Quantity;
             foreach (var consumption in result.Consumption)
             {
                 Assert.InRange(consumption.ConsumedQuantity, 0, consumption.RequestedQuantity);
@@ -347,7 +350,8 @@ public sealed class RegionalEconomyTests
 
     private static long TotalGoods(RegionalWorldSnapshot snapshot, string goodId) =>
         snapshot.Ports.Values.Sum(port => (long)port.Inventory[goodId]) +
-        snapshot.Ships.Values.Sum(ship => (long)ship.Cargo[goodId]);
+        snapshot.Ships.Values.Sum(ship => (long)ship.Cargo[goodId]) + snapshot.CompanyStockpiles.Values.Sum(s => (long)s.Inventory[goodId]) +
+        snapshot.PrivateFacilities.Values.Sum(f => (long)f.Inventory[goodId]);
 
     private static BigInteger TotalCash(RegionalWorldSnapshot snapshot) => snapshot.TotalCash;
 }
