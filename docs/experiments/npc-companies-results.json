@@ -1,0 +1,1043 @@
+{
+  "Format": 1,
+  "Cases": [
+    {
+      "Seed": 42,
+      "Horizon": 720,
+      "Unaffordable": false,
+      "Towns": 8,
+      "ProductionBatches": 86,
+      "InputBatches": 86,
+      "Transfers": 108,
+      "ShipsOrdered": 1,
+      "ShippedSales": 5250000,
+      "WarehouseSales": 30000,
+      "MoneyConserved": true,
+      "SaveContinuationIdentical": true,
+      "Companies": [
+        {
+          "Id": "merchant_company_001",
+          "Name": "Bread Merchant Company 001",
+          "Profile": 0,
+          "Specialization": "bread",
+          "Ships": 2,
+          "Factories": 1,
+          "Warehouses": 1,
+          "Cash": 3407080,
+          "CapitalPaid": 8000000,
+          "WagesPaid": 0,
+          "FeesPaid": 44920
+        },
+        {
+          "Id": "merchant_company_002",
+          "Name": "Flour Industrial Company 002",
+          "Profile": 1,
+          "Specialization": "flour",
+          "Ships": 1,
+          "Factories": 2,
+          "Warehouses": 1,
+          "Cash": 777926,
+          "CapitalPaid": 5200000,
+          "WagesPaid": 4860000,
+          "FeesPaid": 98732
+        },
+        {
+          "Id": "merchant_company_003",
+          "Name": "Furniture Diversified Company 003",
+          "Profile": 2,
+          "Specialization": "furniture",
+          "Ships": 1,
+          "Factories": 1,
+          "Warehouses": 1,
+          "Cash": 4478996,
+          "CapitalPaid": 3600000,
+          "WagesPaid": 400000,
+          "FeesPaid": 60999
+        },
+        {
+          "Id": "merchant_company_004",
+          "Name": "Grain Merchant Company 004",
+          "Profile": 0,
+          "Specialization": "grain",
+          "Ships": 1,
+          "Factories": 0,
+          "Warehouses": 0,
+          "Cash": 10017800,
+          "CapitalPaid": 0,
+          "WagesPaid": 0,
+          "FeesPaid": 252200
+        }
+      ],
+      "Markets": [
+        {
+          "Id": "town_001",
+          "Inventory": {
+            "bread": 0,
+            "flour": 70000,
+            "furniture": 20000,
+            "grain": 130000,
+            "logs": 350000,
+            "planks": 0,
+            "silver": 0
+          },
+          "Prices": [
+            {
+              "GoodId": "bread",
+              "MarketStock": 0,
+              "Bid": 38,
+              "Ask": null
+            },
+            {
+              "GoodId": "flour",
+              "MarketStock": 70000,
+              "Bid": 21,
+              "Ask": 23
+            },
+            {
+              "GoodId": "furniture",
+              "MarketStock": 20000,
+              "Bid": 55,
+              "Ask": 58
+            },
+            {
+              "GoodId": "grain",
+              "MarketStock": 130000,
+              "Bid": 11,
+              "Ask": 13
+            },
+            {
+              "GoodId": "logs",
+              "MarketStock": 350000,
+              "Bid": 1,
+              "Ask": 2
+            },
+            {
+              "GoodId": "planks",
+              "MarketStock": 0,
+              "Bid": 34,
+              "Ask": null
+            },
+            {
+              "GoodId": "silver",
+              "MarketStock": 0,
+              "Bid": 48,
+              "Ask": null
+            }
+          ]
+        },
+        {
+          "Id": "town_002",
+          "Inventory": {
+            "bread": 0,
+            "flour": 240000,
+            "furniture": 0,
+            "grain": 4070000,
+            "logs": 170000,
+            "planks": 0,
+            "silver": 0
+          },
+          "Prices": [
+            {
+              "GoodId": "bread",
+              "MarketStock": 0,
+              "Bid": 38,
+              "Ask": null
+            },
+            {
+              "GoodId": "flour",
+              "MarketStock": 240000,
+              "Bid": 3,
+              "Ask": 6
+            },
+            {
+              "GoodId": "furniture",
+              "MarketStock": 0,
+              "Bid": 61,
+              "Ask": null
+            },
+            {
+              "GoodId": "grain",
+              "MarketStock": 4070000,
+              "Bid": 1,
+              "Ask": 1
+            },
+            {
+              "GoodId": "logs",
+              "MarketStock": 170000,
+              "Bid": 7,
+              "Ask": 9
+            },
+            {
+              "GoodId": "planks",
+              "MarketStock": 0,
+              "Bid": 34,
+              "Ask": null
+            },
+            {
+              "GoodId": "silver",
+              "MarketStock": 0,
+              "Bid": 48,
+              "Ask": null
+            }
+          ]
+        },
+        {
+          "Id": "town_003",
+          "Inventory": {
+            "bread": 0,
+            "flour": 50000,
+            "furniture": 1250,
+            "grain": 80000,
+            "logs": 120000,
+            "planks": 0,
+            "silver": 0
+          },
+          "Prices": [
+            {
+              "GoodId": "bread",
+              "MarketStock": 0,
+              "Bid": 38,
+              "Ask": null
+            },
+            {
+              "GoodId": "flour",
+              "MarketStock": 50000,
+              "Bid": 23,
+              "Ask": 25
+            },
+            {
+              "GoodId": "furniture",
+              "MarketStock": 1250,
+              "Bid": 61,
+              "Ask": 63
+            },
+            {
+              "GoodId": "grain",
+              "MarketStock": 80000,
+              "Bid": 12,
+              "Ask": 15
+            },
+            {
+              "GoodId": "logs",
+              "MarketStock": 120000,
+              "Bid": 9,
+              "Ask": 11
+            },
+            {
+              "GoodId": "planks",
+              "MarketStock": 0,
+              "Bid": 34,
+              "Ask": null
+            },
+            {
+              "GoodId": "silver",
+              "MarketStock": 0,
+              "Bid": 40,
+              "Ask": null
+            }
+          ]
+        },
+        {
+          "Id": "town_004",
+          "Inventory": {
+            "bread": 0,
+            "flour": 20000,
+            "furniture": 0,
+            "grain": 450000,
+            "logs": 0,
+            "planks": 0,
+            "silver": 0
+          },
+          "Prices": [
+            {
+              "GoodId": "bread",
+              "MarketStock": 0,
+              "Bid": 38,
+              "Ask": null
+            },
+            {
+              "GoodId": "flour",
+              "MarketStock": 20000,
+              "Bid": 25,
+              "Ask": 27
+            },
+            {
+              "GoodId": "furniture",
+              "MarketStock": 0,
+              "Bid": 74,
+              "Ask": null
+            },
+            {
+              "GoodId": "grain",
+              "MarketStock": 450000,
+              "Bid": 1,
+              "Ask": 2
+            },
+            {
+              "GoodId": "logs",
+              "MarketStock": 0,
+              "Bid": 18,
+              "Ask": null
+            },
+            {
+              "GoodId": "planks",
+              "MarketStock": 0,
+              "Bid": 25,
+              "Ask": null
+            },
+            {
+              "GoodId": "silver",
+              "MarketStock": 0,
+              "Bid": 48,
+              "Ask": null
+            }
+          ]
+        },
+        {
+          "Id": "town_005",
+          "Inventory": {
+            "bread": 0,
+            "flour": 0,
+            "furniture": 70000,
+            "grain": 50000,
+            "logs": 0,
+            "planks": 0,
+            "silver": 80000
+          },
+          "Prices": [
+            {
+              "GoodId": "bread",
+              "MarketStock": 0,
+              "Bid": 31,
+              "Ask": null
+            },
+            {
+              "GoodId": "flour",
+              "MarketStock": 0,
+              "Bid": 30,
+              "Ask": null
+            },
+            {
+              "GoodId": "furniture",
+              "MarketStock": 70000,
+              "Bid": 53,
+              "Ask": 56
+            },
+            {
+              "GoodId": "grain",
+              "MarketStock": 50000,
+              "Bid": 10,
+              "Ask": 12
+            },
+            {
+              "GoodId": "logs",
+              "MarketStock": 0,
+              "Bid": 18,
+              "Ask": null
+            },
+            {
+              "GoodId": "planks",
+              "MarketStock": 0,
+              "Bid": 25,
+              "Ask": null
+            },
+            {
+              "GoodId": "silver",
+              "MarketStock": 80000,
+              "Bid": 20,
+              "Ask": 23
+            }
+          ]
+        },
+        {
+          "Id": "town_006",
+          "Inventory": {
+            "bread": 0,
+            "flour": 20000,
+            "furniture": 125,
+            "grain": 70000,
+            "logs": 70000,
+            "planks": 0,
+            "silver": 0
+          },
+          "Prices": [
+            {
+              "GoodId": "bread",
+              "MarketStock": 0,
+              "Bid": 38,
+              "Ask": null
+            },
+            {
+              "GoodId": "flour",
+              "MarketStock": 20000,
+              "Bid": 25,
+              "Ask": 27
+            },
+            {
+              "GoodId": "furniture",
+              "MarketStock": 125,
+              "Bid": 61,
+              "Ask": 63
+            },
+            {
+              "GoodId": "grain",
+              "MarketStock": 70000,
+              "Bid": 13,
+              "Ask": 15
+            },
+            {
+              "GoodId": "logs",
+              "MarketStock": 70000,
+              "Bid": 14,
+              "Ask": 16
+            },
+            {
+              "GoodId": "planks",
+              "MarketStock": 0,
+              "Bid": 34,
+              "Ask": null
+            },
+            {
+              "GoodId": "silver",
+              "MarketStock": 0,
+              "Bid": 48,
+              "Ask": null
+            }
+          ]
+        },
+        {
+          "Id": "town_007",
+          "Inventory": {
+            "bread": 0,
+            "flour": 90000,
+            "furniture": 7250,
+            "grain": 0,
+            "logs": 180000,
+            "planks": 0,
+            "silver": 0
+          },
+          "Prices": [
+            {
+              "GoodId": "bread",
+              "MarketStock": 0,
+              "Bid": 38,
+              "Ask": null
+            },
+            {
+              "GoodId": "flour",
+              "MarketStock": 90000,
+              "Bid": 15,
+              "Ask": 17
+            },
+            {
+              "GoodId": "furniture",
+              "MarketStock": 7250,
+              "Bid": 72,
+              "Ask": 74
+            },
+            {
+              "GoodId": "grain",
+              "MarketStock": 0,
+              "Bid": 16,
+              "Ask": null
+            },
+            {
+              "GoodId": "logs",
+              "MarketStock": 180000,
+              "Bid": 12,
+              "Ask": 14
+            },
+            {
+              "GoodId": "planks",
+              "MarketStock": 0,
+              "Bid": 25,
+              "Ask": null
+            },
+            {
+              "GoodId": "silver",
+              "MarketStock": 0,
+              "Bid": 48,
+              "Ask": null
+            }
+          ]
+        },
+        {
+          "Id": "town_008",
+          "Inventory": {
+            "bread": 0,
+            "flour": 860000,
+            "furniture": 0,
+            "grain": 480000,
+            "logs": 150000,
+            "planks": 0,
+            "silver": 0
+          },
+          "Prices": [
+            {
+              "GoodId": "bread",
+              "MarketStock": 0,
+              "Bid": 31,
+              "Ask": null
+            },
+            {
+              "GoodId": "flour",
+              "MarketStock": 860000,
+              "Bid": 1,
+              "Ask": 1
+            },
+            {
+              "GoodId": "furniture",
+              "MarketStock": 0,
+              "Bid": 74,
+              "Ask": null
+            },
+            {
+              "GoodId": "grain",
+              "MarketStock": 480000,
+              "Bid": 1,
+              "Ask": 2
+            },
+            {
+              "GoodId": "logs",
+              "MarketStock": 150000,
+              "Bid": 13,
+              "Ask": 15
+            },
+            {
+              "GoodId": "planks",
+              "MarketStock": 0,
+              "Bid": 25,
+              "Ask": null
+            },
+            {
+              "GoodId": "silver",
+              "MarketStock": 0,
+              "Bid": 48,
+              "Ask": null
+            }
+          ]
+        }
+      ],
+      "FinalFingerprint": "bd08c8d9f50f983e1f25afdd5979a2d9290b75e08d9efe634cbee2713233c507"
+    },
+    {
+      "Seed": 42,
+      "Horizon": 720,
+      "Unaffordable": true,
+      "Towns": 8,
+      "ProductionBatches": 0,
+      "InputBatches": 0,
+      "Transfers": 0,
+      "ShipsOrdered": 0,
+      "ShippedSales": 0,
+      "WarehouseSales": 0,
+      "MoneyConserved": true,
+      "SaveContinuationIdentical": true,
+      "Companies": [
+        {
+          "Id": "merchant_company_001",
+          "Name": "Bread Merchant Company 001",
+          "Profile": 0,
+          "Specialization": "bread",
+          "Ships": 1,
+          "Factories": 0,
+          "Warehouses": 0,
+          "Cash": 0,
+          "CapitalPaid": 0,
+          "WagesPaid": 0,
+          "FeesPaid": 0
+        },
+        {
+          "Id": "merchant_company_002",
+          "Name": "Flour Industrial Company 002",
+          "Profile": 1,
+          "Specialization": "flour",
+          "Ships": 1,
+          "Factories": 0,
+          "Warehouses": 0,
+          "Cash": 0,
+          "CapitalPaid": 0,
+          "WagesPaid": 0,
+          "FeesPaid": 0
+        },
+        {
+          "Id": "merchant_company_003",
+          "Name": "Furniture Diversified Company 003",
+          "Profile": 2,
+          "Specialization": "furniture",
+          "Ships": 1,
+          "Factories": 0,
+          "Warehouses": 0,
+          "Cash": 0,
+          "CapitalPaid": 0,
+          "WagesPaid": 0,
+          "FeesPaid": 0
+        },
+        {
+          "Id": "merchant_company_004",
+          "Name": "Grain Merchant Company 004",
+          "Profile": 0,
+          "Specialization": "grain",
+          "Ships": 1,
+          "Factories": 0,
+          "Warehouses": 0,
+          "Cash": 0,
+          "CapitalPaid": 0,
+          "WagesPaid": 0,
+          "FeesPaid": 0
+        }
+      ],
+      "Markets": [
+        {
+          "Id": "town_001",
+          "Inventory": {
+            "bread": 0,
+            "flour": 70000,
+            "furniture": 40000,
+            "grain": 130000,
+            "logs": 350000,
+            "planks": 0,
+            "silver": 0
+          },
+          "Prices": [
+            {
+              "GoodId": "bread",
+              "MarketStock": 0,
+              "Bid": 38,
+              "Ask": null
+            },
+            {
+              "GoodId": "flour",
+              "MarketStock": 70000,
+              "Bid": 21,
+              "Ask": 23
+            },
+            {
+              "GoodId": "furniture",
+              "MarketStock": 40000,
+              "Bid": 49,
+              "Ask": 52
+            },
+            {
+              "GoodId": "grain",
+              "MarketStock": 130000,
+              "Bid": 11,
+              "Ask": 13
+            },
+            {
+              "GoodId": "logs",
+              "MarketStock": 350000,
+              "Bid": 1,
+              "Ask": 2
+            },
+            {
+              "GoodId": "planks",
+              "MarketStock": 0,
+              "Bid": 34,
+              "Ask": null
+            },
+            {
+              "GoodId": "silver",
+              "MarketStock": 0,
+              "Bid": 48,
+              "Ask": null
+            }
+          ]
+        },
+        {
+          "Id": "town_002",
+          "Inventory": {
+            "bread": 0,
+            "flour": 110000,
+            "furniture": 250,
+            "grain": 10000,
+            "logs": 170000,
+            "planks": 0,
+            "silver": 0
+          },
+          "Prices": [
+            {
+              "GoodId": "bread",
+              "MarketStock": 0,
+              "Bid": 38,
+              "Ask": null
+            },
+            {
+              "GoodId": "flour",
+              "MarketStock": 110000,
+              "Bid": 13,
+              "Ask": 15
+            },
+            {
+              "GoodId": "furniture",
+              "MarketStock": 250,
+              "Bid": 61,
+              "Ask": 63
+            },
+            {
+              "GoodId": "grain",
+              "MarketStock": 10000,
+              "Bid": 16,
+              "Ask": 18
+            },
+            {
+              "GoodId": "logs",
+              "MarketStock": 170000,
+              "Bid": 7,
+              "Ask": 9
+            },
+            {
+              "GoodId": "planks",
+              "MarketStock": 0,
+              "Bid": 34,
+              "Ask": null
+            },
+            {
+              "GoodId": "silver",
+              "MarketStock": 0,
+              "Bid": 48,
+              "Ask": null
+            }
+          ]
+        },
+        {
+          "Id": "town_003",
+          "Inventory": {
+            "bread": 0,
+            "flour": 50000,
+            "furniture": 1250,
+            "grain": 80000,
+            "logs": 120000,
+            "planks": 0,
+            "silver": 0
+          },
+          "Prices": [
+            {
+              "GoodId": "bread",
+              "MarketStock": 0,
+              "Bid": 38,
+              "Ask": null
+            },
+            {
+              "GoodId": "flour",
+              "MarketStock": 50000,
+              "Bid": 23,
+              "Ask": 25
+            },
+            {
+              "GoodId": "furniture",
+              "MarketStock": 1250,
+              "Bid": 61,
+              "Ask": 63
+            },
+            {
+              "GoodId": "grain",
+              "MarketStock": 80000,
+              "Bid": 12,
+              "Ask": 15
+            },
+            {
+              "GoodId": "logs",
+              "MarketStock": 120000,
+              "Bid": 9,
+              "Ask": 11
+            },
+            {
+              "GoodId": "planks",
+              "MarketStock": 0,
+              "Bid": 34,
+              "Ask": null
+            },
+            {
+              "GoodId": "silver",
+              "MarketStock": 0,
+              "Bid": 40,
+              "Ask": null
+            }
+          ]
+        },
+        {
+          "Id": "town_004",
+          "Inventory": {
+            "bread": 0,
+            "flour": 20000,
+            "furniture": 0,
+            "grain": 450000,
+            "logs": 0,
+            "planks": 0,
+            "silver": 0
+          },
+          "Prices": [
+            {
+              "GoodId": "bread",
+              "MarketStock": 0,
+              "Bid": 38,
+              "Ask": null
+            },
+            {
+              "GoodId": "flour",
+              "MarketStock": 20000,
+              "Bid": 25,
+              "Ask": 27
+            },
+            {
+              "GoodId": "furniture",
+              "MarketStock": 0,
+              "Bid": 74,
+              "Ask": null
+            },
+            {
+              "GoodId": "grain",
+              "MarketStock": 450000,
+              "Bid": 1,
+              "Ask": 2
+            },
+            {
+              "GoodId": "logs",
+              "MarketStock": 0,
+              "Bid": 18,
+              "Ask": null
+            },
+            {
+              "GoodId": "planks",
+              "MarketStock": 0,
+              "Bid": 25,
+              "Ask": null
+            },
+            {
+              "GoodId": "silver",
+              "MarketStock": 0,
+              "Bid": 48,
+              "Ask": null
+            }
+          ]
+        },
+        {
+          "Id": "town_005",
+          "Inventory": {
+            "bread": 0,
+            "flour": 0,
+            "furniture": 0,
+            "grain": 50000,
+            "logs": 0,
+            "planks": 0,
+            "silver": 80000
+          },
+          "Prices": [
+            {
+              "GoodId": "bread",
+              "MarketStock": 0,
+              "Bid": 31,
+              "Ask": null
+            },
+            {
+              "GoodId": "flour",
+              "MarketStock": 0,
+              "Bid": 30,
+              "Ask": null
+            },
+            {
+              "GoodId": "furniture",
+              "MarketStock": 0,
+              "Bid": 74,
+              "Ask": null
+            },
+            {
+              "GoodId": "grain",
+              "MarketStock": 50000,
+              "Bid": 10,
+              "Ask": 12
+            },
+            {
+              "GoodId": "logs",
+              "MarketStock": 0,
+              "Bid": 18,
+              "Ask": null
+            },
+            {
+              "GoodId": "planks",
+              "MarketStock": 0,
+              "Bid": 25,
+              "Ask": null
+            },
+            {
+              "GoodId": "silver",
+              "MarketStock": 80000,
+              "Bid": 20,
+              "Ask": 23
+            }
+          ]
+        },
+        {
+          "Id": "town_006",
+          "Inventory": {
+            "bread": 0,
+            "flour": 20000,
+            "furniture": 125,
+            "grain": 70000,
+            "logs": 70000,
+            "planks": 0,
+            "silver": 0
+          },
+          "Prices": [
+            {
+              "GoodId": "bread",
+              "MarketStock": 0,
+              "Bid": 38,
+              "Ask": null
+            },
+            {
+              "GoodId": "flour",
+              "MarketStock": 20000,
+              "Bid": 25,
+              "Ask": 27
+            },
+            {
+              "GoodId": "furniture",
+              "MarketStock": 125,
+              "Bid": 61,
+              "Ask": 63
+            },
+            {
+              "GoodId": "grain",
+              "MarketStock": 70000,
+              "Bid": 13,
+              "Ask": 15
+            },
+            {
+              "GoodId": "logs",
+              "MarketStock": 70000,
+              "Bid": 14,
+              "Ask": 16
+            },
+            {
+              "GoodId": "planks",
+              "MarketStock": 0,
+              "Bid": 34,
+              "Ask": null
+            },
+            {
+              "GoodId": "silver",
+              "MarketStock": 0,
+              "Bid": 48,
+              "Ask": null
+            }
+          ]
+        },
+        {
+          "Id": "town_007",
+          "Inventory": {
+            "bread": 0,
+            "flour": 60000,
+            "furniture": 7250,
+            "grain": 130000,
+            "logs": 180000,
+            "planks": 0,
+            "silver": 0
+          },
+          "Prices": [
+            {
+              "GoodId": "bread",
+              "MarketStock": 0,
+              "Bid": 38,
+              "Ask": null
+            },
+            {
+              "GoodId": "flour",
+              "MarketStock": 60000,
+              "Bid": 17,
+              "Ask": 19
+            },
+            {
+              "GoodId": "furniture",
+              "MarketStock": 7250,
+              "Bid": 72,
+              "Ask": 74
+            },
+            {
+              "GoodId": "grain",
+              "MarketStock": 130000,
+              "Bid": 13,
+              "Ask": 15
+            },
+            {
+              "GoodId": "logs",
+              "MarketStock": 180000,
+              "Bid": 12,
+              "Ask": 14
+            },
+            {
+              "GoodId": "planks",
+              "MarketStock": 0,
+              "Bid": 25,
+              "Ask": null
+            },
+            {
+              "GoodId": "silver",
+              "MarketStock": 0,
+              "Bid": 48,
+              "Ask": null
+            }
+          ]
+        },
+        {
+          "Id": "town_008",
+          "Inventory": {
+            "bread": 0,
+            "flour": 80000,
+            "furniture": 0,
+            "grain": 460000,
+            "logs": 150000,
+            "planks": 0,
+            "silver": 0
+          },
+          "Prices": [
+            {
+              "GoodId": "bread",
+              "MarketStock": 0,
+              "Bid": 31,
+              "Ask": null
+            },
+            {
+              "GoodId": "flour",
+              "MarketStock": 80000,
+              "Bid": 24,
+              "Ask": 27
+            },
+            {
+              "GoodId": "furniture",
+              "MarketStock": 0,
+              "Bid": 74,
+              "Ask": null
+            },
+            {
+              "GoodId": "grain",
+              "MarketStock": 460000,
+              "Bid": 1,
+              "Ask": 2
+            },
+            {
+              "GoodId": "logs",
+              "MarketStock": 150000,
+              "Bid": 13,
+              "Ask": 15
+            },
+            {
+              "GoodId": "planks",
+              "MarketStock": 0,
+              "Bid": 25,
+              "Ask": null
+            },
+            {
+              "GoodId": "silver",
+              "MarketStock": 0,
+              "Bid": 48,
+              "Ask": null
+            }
+          ]
+        }
+      ],
+      "FinalFingerprint": "5f633488b87d44149c0b70e9ae05584c6994d39b7ad7612730e29c05fbec1b19"
+    }
+  ]
+}

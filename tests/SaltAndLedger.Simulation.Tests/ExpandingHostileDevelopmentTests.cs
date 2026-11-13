@@ -170,7 +170,7 @@ public sealed class ExpandingHostileDevelopmentTests
         var config = world.Snapshot().Economy!.Configuration;
         var before = world.Snapshot();
         Assert.Throws<InvalidOperationException>(() => world.CommissionMint("npc_owner"));
-        Assert.Throws<InvalidOperationException>(() => world.CommissionShip("npc_owner", config.MintPortId));
+        Assert.Equal(DevelopmentOutcome.InsufficientFunds, world.CommissionShip("npc_owner", config.ShipwrightPortId).Development.Single().Outcome);
         Assert.Throws<InvalidOperationException>(() => world.MintSilver("npc"));
         Assert.Throws<InvalidOperationException>(() => world.FulfillExternalContract("npc", "royal_planks", 10000));
         Assert.Throws<InvalidOperationException>(() => world.SupplyPublicWorks("npc", 10000));

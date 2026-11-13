@@ -41,6 +41,26 @@ namespace SaltAndLedger.UnityHost.Tests
         }
 
         [UnityTest]
+        public IEnumerator NpcInspectionShowsCompanyFleetAndIndustryWithoutChangingOwnershipOrTime()
+        {
+            controller.BeginRun(new RunIdentity(null, RunScenario.MerchantCharter, seed: 42));
+            for (var day = 0; day < 20; day++) Click("nextDayButton");
+            var world = controller.Session.Snapshot;
+            var company = world.Companies.Values.First(c => c.Npc != null && world.PrivateFacilities.Values.Any(f => f.OwnerId == c.Id));
+            var ship = world.Ships.Values.First(s => s.OwnerId == company.Id);
+            Click("ship_" + ship.Id);
+            Assert.That(root.Q<Label>("selectionSubtitle").text, Does.Contain(company.Name));
+            Assert.That(root.Q<Label>("shipControlLabel").text, Does.Contain("Fleet:"));
+            Assert.That(root.Q<Label>("shipControlLabel").text, Does.Contain("Industries:"));
+            Assert.That(controller.Map.Q<Button>("ship_" + ship.Id).tooltip, Does.Contain(company.Name));
+            Assert.That(controller.Session.Snapshot, Is.SameAs(world));
+            Click("openTradeButton");
+            Assert.That(root.Q<Label>("tradeAvailabilityLabel").text, Does.Contain("NPC inspection"));
+            Assert.That(controller.Session.Snapshot, Is.SameAs(world));
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator V3SetupShowsVersionedRolesAndExactStartWithoutChangingThePreviewedWorld()
         {
             var before = controller.Session.Snapshot;
@@ -100,7 +120,7 @@ namespace SaltAndLedger.UnityHost.Tests
             var mineBlueprint = session.Snapshot.IndustryBlueprints.Values.Single(value => value.BuildingId == "silver_mine");
             Click("construct_" + mineBlueprint.Id); Click("closeIndustryButton");
             for (var day = 0; day < 4; day++) Click("nextDayButton");
-            var mine = session.Snapshot.PrivateFacilities.Values.Single(f => f.Blueprint.BuildingId == "silver_mine");
+            var mine = session.Snapshot.PrivateFacilities.Values.Single(f => f.OwnerId == WorldIds.PlayerOwnerId && f.Blueprint.BuildingId == "silver_mine");
             Assert.That(session.Snapshot.GetFacilityStorage(mine.Id).Inventory["silver"], Is.EqualTo(10000));
             Assert.That(mine.WagesPaid, Is.GreaterThan(0));
             Assert.That(session.Snapshot.Economy.MintStatus, Is.EqualTo(MintStatus.Active));

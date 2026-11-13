@@ -31,7 +31,7 @@ namespace SaltAndLedger.UnityHost.Tests
         {
             controller.BeginRun(null, RunScenario.MerchantCharter);
             Click("openIndustryButton"); Click("construct_" + WorldIds.BakeryBlueprint);
-            var bakery = controller.Session.Snapshot.PrivateFacilities.Values.Single();
+            var bakery = controller.Session.Snapshot.PrivateFacilities.Values.Single(f => f.OwnerId == WorldIds.PlayerOwnerId);
             var bakeryArt = root.Q<MaritimeIllustration>("industryIllustration");
             Assert.That(bakeryArt.Kind, Is.EqualTo("bakery"));
             Assert.That(bakeryArt.ClassListContains("hidden"), Is.False);
@@ -162,7 +162,7 @@ namespace SaltAndLedger.UnityHost.Tests
             Assert.That(root.Q("factorySettings").ClassListContains("hidden"), Is.True);
             yield return null;
             Click("industryBackToOverview");
-            var privateId = original.PrivateFacilities.Values.Single().Id;
+            var privateId = original.PrivateFacilities.Values.Single(f => f.OwnerId == WorldIds.PlayerOwnerId).Id;
             Click("manageFactory_" + privateId);
             Click("facilityRate50"); Click("facilityPriorityHigh");
             Assert.That(controller.Session.Snapshot, Is.SameAs(original));

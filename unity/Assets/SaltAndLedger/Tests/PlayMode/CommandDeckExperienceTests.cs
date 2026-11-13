@@ -196,7 +196,7 @@ namespace SaltAndLedger.UnityHost.Tests
             var portId = controller.Session.Player.DockedPortId;
             Click("port_" + portId); Click("modeIndustry");
             BuildMill();
-            var mill = controller.Session.Snapshot.PrivateFacilities.Values.Single(f => f.Blueprint.BuildingId == "mill");
+            var mill = controller.Session.Snapshot.PrivateFacilities.Values.Single(f => f.OwnerId == WorldIds.PlayerOwnerId && f.Blueprint.BuildingId == "mill");
             var blocked = EconomicSignals.PrivateProduction(controller.Session.Snapshot, controller.Session.Content, mill.Id);
             Assert.That(blocked.CurrentReadiness, Is.EqualTo(ScheduledProductionOutcome.InputShortage));
             Click("industryHarborButton");
@@ -219,7 +219,7 @@ namespace SaltAndLedger.UnityHost.Tests
             for (var day = 0; day < 4; day++) Click("nextDayButton");
             var after = controller.Session.Snapshot;
             Assert.That(after.PrivateFacilities[mill.Id].BatchesProduced, Is.EqualTo(1));
-            var bakery = after.PrivateFacilities.Values.Single(f => f.Blueprint.BuildingId == "bakery");
+            var bakery = after.PrivateFacilities.Values.Single(f => f.OwnerId == WorldIds.PlayerOwnerId && f.Blueprint.BuildingId == "bakery");
             Assert.That(bakery.BatchesProduced, Is.EqualTo(2));
             Assert.That(after.PrivateFacilities[mill.Id].WagesPaid, Is.GreaterThan(0));
             Assert.That(after.GetFacilityStorage(mill.Id), Is.SameAs(after.GetFacilityStorage(bakery.Id)));
@@ -242,7 +242,7 @@ namespace SaltAndLedger.UnityHost.Tests
             var portId = LivingCityGeneration.Generate(99).ProcessingPortId;
             Click("port_" + portId); Click("modeIndustry");
             BuildMill();
-            var facility = controller.Session.Snapshot.PrivateFacilities.Values.Single(f => f.Blueprint.BuildingId == "mill");
+            var facility = controller.Session.Snapshot.PrivateFacilities.Values.Single(f => f.OwnerId == WorldIds.PlayerOwnerId && f.Blueprint.BuildingId == "mill");
             var preparation = controller.Session.Snapshot;
             var purchase = preparation.PreviewWarehouseTrade(facility.OwnerId, facility.Id,
                 new TradeCommand(TradeDirection.Buy, "grain", 10000));

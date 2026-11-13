@@ -107,6 +107,6 @@ public sealed class OpportunitySaveTests
         var saved = JObject.Parse(WorldSaveCodec.Save(World()));
         saved["SchemaVersion"] = 7;
         var failure = Assert.Throws<WorldSaveException>(() => WorldSaveCodec.Load(Content(), saved.ToString(Formatting.None)));
-        Assert.Contains("schema 8", failure.Message);
+        Assert.Contains("schema 9", failure.Message);
     }
 }

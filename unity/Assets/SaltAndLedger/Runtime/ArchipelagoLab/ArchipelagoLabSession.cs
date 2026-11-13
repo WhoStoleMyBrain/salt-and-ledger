@@ -450,12 +450,12 @@ namespace SaltAndLedger.UnityHost
             {
                 if (!result.Before.PrivateFacilities.TryGetValue(facility.Id, out var prior))
                     Add(facility.PortId, null, (facility.IsOperational ? "Constructed private " : "Started construction of private ") +
-                        Content.GetBuilding(facility.Blueprint.BuildingId).Name + "; first eligible batch day " + facility.FirstProductionDay + ".");
+                        result.After.Companies[facility.OwnerId].Name + " · " + Content.GetBuilding(facility.Blueprint.BuildingId).Name + "; first eligible batch day " + facility.FirstProductionDay + ".");
                 else if (!prior.IsOperational && facility.IsOperational)
                     Add(facility.PortId, null, "Construction completed: " + Content.GetBuilding(facility.Blueprint.BuildingId).Name +
                         ". First eligible batch day " + facility.FirstProductionDay + "; inputs and capacity still required.");
                 else if (facility.BatchesProduced > prior.BatchesProduced)
-                    Add(facility.PortId, null, "Your " + Content.GetBuilding(facility.Blueprint.BuildingId).Name + " completed a batch into private storage.");
+                    Add(facility.PortId, null, result.After.Companies[facility.OwnerId].Name + " · " + Content.GetBuilding(facility.Blueprint.BuildingId).Name + " completed a batch into private storage.");
             }
             if (result.Movements.Any(movement => movement.ShipId == Player.Id &&
                 (movement.Kind == ShipMovementKind.Departure || movement.Kind == ShipMovementKind.Arrival)))
@@ -534,7 +534,7 @@ namespace SaltAndLedger.UnityHost
                 lastReasons[key] = reason;
             }
             foreach (var development in result.Development)
-                Add(development.PortId, development.AssetId, development.Kind + ": " + development.Reason +
+                Add(development.PortId, development.AssetId, result.After.Companies[development.OwnerId].Name + " · " + development.Kind + ": " + development.Reason +
                     (development.Payment == 0 ? "" : " Amount " + Coins(development.Payment) + "."));
         }
 

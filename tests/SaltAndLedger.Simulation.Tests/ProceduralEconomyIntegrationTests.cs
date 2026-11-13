@@ -35,20 +35,22 @@ public sealed class ProceduralEconomyIntegrationTests
         Assert.Equal(generation.Configuration.FleetLimit, initial.Economy.Configuration.MaximumPlayerShips);
         foreach (var ship in initial.Ships.Values.Where(ship => !ship.IsPlayer))
         {
-            var policy = ship.Policy!;
-            var source = generation.Ports.Single(port => port.Id == policy.OriginPortId);
-            var destination = generation.Ports.Single(port => port.Id == policy.DestinationPortId);
+            var plan = initial.Companies[ship.OwnerId].Npc!;
+            var source = generation.Ports.Single(port => port.Id == plan.HomePortId);
+            var destination = generation.Ports.Single(port => port.Id == plan.DestinationPortId);
             var scoped = content.ForExpandingEconomy();
-            Assert.Contains(source.Facilities, facility => scoped.GetRecipe(facility.Instance.RecipeId)
-                .Outputs.Any(output => output.GoodId == policy.Outbound.GoodId));
+            Assert.True(source.Facilities.Any(f => scoped.GetRecipe(f.Instance.RecipeId).Outputs.Any(o => o.GoodId == plan.GoodId)) ||
+                generation.Blueprints.Any(b => b.EligiblePortIds.Contains(source.Id) && scoped.GetRecipe(b.RecipeId).Outputs.Any(o => o.GoodId == plan.GoodId)));
             Assert.True(destination.Facilities.Any(facility => scoped.GetRecipe(facility.Instance.RecipeId)
-                .Inputs.Any(input => input.GoodId == policy.Outbound.GoodId)) ||
-                destination.Consumption.Any(need => need.GoodId == policy.Outbound.GoodId));
+                .Inputs.Any(input => input.GoodId == plan.GoodId)) ||
+                destination.Consumption.Any(need => need.GoodId == plan.GoodId) ||
+                (plan.BlueprintId != null && scoped.GetRecipe(generation.Blueprints.Single(b => b.Id == plan.BlueprintId).RecipeId).Inputs.Any(i =>
+                    destination.Facilities.Any(f => scoped.GetRecipe(f.Instance.RecipeId).Outputs.Any(o => o.GoodId == i.GoodId)))));
             Assert.InRange(initial.Companies[ship.OwnerId].Cash, EconomicUnits.Coins(settings.StartingCash.Minimum),
                 EconomicUnits.Coins(settings.StartingCash.Maximum));
             Assert.Equal(0, ship.CargoUnits);
-            Assert.True(SeaNavigation.FindPath(generation.Geography.Routes, policy.OriginPortId,
-                policy.DestinationPortId, ship.Configuration.Speed).DurationDays > 0);
+            Assert.True(SeaNavigation.FindPath(generation.Geography.Routes, plan.HomePortId,
+                plan.DestinationPortId, ship.Configuration.Speed).DurationDays > 0);
         }
         var reversed = RunScenario.Create(content, initial.RunIdentity!, reverseConfiguration: true);
         Assert.Equal(WorldSaveCodec.Save(world), WorldSaveCodec.Save(reversed));

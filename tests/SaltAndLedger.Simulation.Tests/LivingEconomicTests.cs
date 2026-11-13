@@ -169,8 +169,11 @@ public sealed class LivingEconomicTests
     public void ForestFurnitureTownActuallyImportsPlanksBeforeExceedingItsInitialInputEndowment()
     {
         var content = ContentLoader.Load(ContentLoaderTests.CanonicalJson());
+        // Isolate this public import/production witness from autonomous competitors buying its finite inputs.
+        var config = Newtonsoft.Json.Linq.JObject.Parse(WorldGenerationConfiguration.Default.ToJson());
+        config["npc"]!["minimumCount"] = 0; config["npc"]!["maximumCount"] = 0;
         var world = RunScenario.Create(content, new RunIdentity(null, RunScenario.MerchantCharter,
-            RunWorldMode.ExpandingEconomy, 42));
+            RunWorldMode.ExpandingEconomy, 42, generationConfiguration: WorldGenerationConfiguration.Parse(config.ToString())));
         var port = world.Snapshot().Ports.Values.First(p => p.Facilities.Any(f => f.Configuration.Instance.RecipeId == "make_furniture"));
         Assert.Contains(port.Facilities, facility => facility.Configuration.Instance.BuildingId == "furniture_workshop");
         Assert.DoesNotContain(port.Facilities, facility => facility.Configuration.Instance.BuildingId == "sawmill");

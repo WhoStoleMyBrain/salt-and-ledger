@@ -24,7 +24,7 @@ namespace SaltAndLedger.Simulation
             var scopedContent = content.ForExpandingEconomy();
             var ships = new List<RegionalShipConfiguration>();
             var companies = new List<CompanyConfiguration>();
-            AddMerchants(generation, scopedContent, ships, companies);
+            AddCompanies(generation, scopedContent, ships, companies);
             ships.Add(new RegionalShipConfiguration(new ShipConfiguration(WorldIds.PlayerShipId,
                 charter.CargoCapacity, charter.StartingPortId, charter.Cargo), WorldIds.PlayerOwnerId,
                 "Ledger", 0, RunScenario.StartingShipSpeed, priority: 1000, isPlayer: true,
@@ -117,7 +117,7 @@ namespace SaltAndLedger.Simulation
         }
 
         /// <summary>Finite merchants connect actual producers with local industrial or household demand.</summary>
-        private static void AddMerchants(ExpandingEconomyGeneration generation, ContentCatalog content,
+        private static void AddCompanies(ExpandingEconomyGeneration generation, ContentCatalog content,
             List<RegionalShipConfiguration> ships, List<CompanyConfiguration> companies)
         {
             var settings = generation.Configuration.Npc;
@@ -180,22 +180,34 @@ namespace SaltAndLedger.Simulation
                     (uint)(settings.StartingCash.Maximum - settings.StartingCash.Minimum + 1));
                 var suffix = (index + 1).ToString("D3", System.Globalization.CultureInfo.InvariantCulture);
                 var owner = "merchant_company_" + suffix;
-                var returnRoute = candidates.Where(candidate => candidate.Origin == route.Destination &&
-                    candidate.Destination == route.Origin && candidate.GoodId != route.GoodId)
-                    .OrderBy(candidate => candidate.GoodId, StringComparer.Ordinal).FirstOrDefault();
-                RouteLeg MerchantLeg(string good, string source)
-                {
-                    var quote = generation.Ports.Single(port => port.Id == source).Market.Quotes[good];
-                    var reference = quote.Pricing?.ReferencePrice ?? quote.Ask;
-                    return new RouteLeg(good, Q(capacity), Q(1), checked(reference * 2),
-                        Math.Max(1, reference / 2));
-                }
-                var policy = new TradeRoutePolicy(route.Origin, route.Destination, MerchantLeg(route.GoodId, route.Origin),
-                    returnRoute == null ? null : MerchantLeg(returnRoute.GoodId, returnRoute.Origin), allowEmptyReturn: true);
-                ships.Add(new RegionalShipConfiguration(new ShipConfiguration("merchant_" + suffix, Q(capacity), route.Origin),
-                    owner, content.GetGood(route.GoodId).Name + " Merchant " + suffix, 0, settings.Speed,
-                    priority: index, policy: policy, automationEnabled: true));
-                companies.Add(new CompanyConfiguration(owner, M(cash)));
+                var strategy = index % (settings.MerchantWeight + settings.IndustrialWeight + settings.DiversifiedWeight);
+                var profile = strategy < settings.MerchantWeight ? NpcCompanyProfile.Merchant :
+                    strategy < settings.MerchantWeight + settings.IndustrialWeight ? NpcCompanyProfile.Industrial : NpcCompanyProfile.Diversified;
+                // Round-robin commodities and seeded site ranking preserve diversity without observing future markets.
+                var eligible = generation.Blueprints.Where(b => content.GetRecipe(b.RecipeId).Outputs.Any(o => o.GoodId == route.GoodId))
+                    .SelectMany(b => b.EligiblePortIds.Select(port => new { Blueprint = b, Port = port }))
+                    .OrderBy(x => StableDraw(generation.Seed, owner + "/" + x.Blueprint.Id + "/" + x.Port))
+                    .ThenBy(x => x.Blueprint.Id, StringComparer.Ordinal).ThenBy(x => x.Port, StringComparer.Ordinal).FirstOrDefault();
+                var home = eligible?.Port ?? route.Origin;
+                var recipe = eligible == null ? null : content.GetRecipe(eligible.Blueprint.RecipeId);
+                var destination = generation.Ports.Where(port => port.Id != home)
+                    .OrderByDescending(port => recipe != null && recipe.Inputs.Any(i => port.Facilities.Any(f =>
+                        content.GetRecipe(f.Instance.RecipeId).Outputs.Any(o => o.GoodId == i.GoodId))))
+                    .ThenByDescending(port => port.Consumption.Any(c => c.GoodId == route.GoodId) || port.Facilities.Any(f =>
+                        content.GetRecipe(f.Instance.RecipeId).Inputs.Any(i => i.GoodId == route.GoodId)))
+                    .ThenBy(port => Duration(home, port.Id)).ThenBy(port => port.Id, StringComparer.Ordinal).First().Id;
+                if (profile == NpcCompanyProfile.Merchant) { home = route.Origin; destination = route.Destination; }
+                // A merchant's later supporting industry must be eligible at its real home harbor.
+                var blueprint = generation.Blueprints.FirstOrDefault(b => b.EligiblePortIds.Contains(home) &&
+                    content.GetRecipe(b.RecipeId).Outputs.Any(o => o.GoodId == route.GoodId));
+                var plan = new NpcCompanyState(content.GetGood(route.GoodId).Name + " " + profile + " Company " + suffix,
+                    profile, home, destination, route.GoodId, blueprint?.Id);
+                for (var shipIndex = 0; shipIndex < settings.InitialShips; shipIndex++)
+                    ships.Add(new RegionalShipConfiguration(new ShipConfiguration("merchant_" + suffix +
+                        (shipIndex == 0 ? "" : "_initial_" + shipIndex.ToString(System.Globalization.CultureInfo.InvariantCulture)), Q(capacity), home),
+                        owner, content.GetGood(route.GoodId).Name + " Carrier " + suffix + "/" + (shipIndex + 1).ToString(System.Globalization.CultureInfo.InvariantCulture),
+                        0, settings.Speed, priority: index));
+                companies.Add(new CompanyConfiguration(owner, M(cash), plan));
             }
         }
 
